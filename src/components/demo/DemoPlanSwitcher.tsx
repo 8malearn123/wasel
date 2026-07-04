@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Zap, ChevronUp, ChevronDown, Loader2 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -14,7 +15,8 @@ const PLANS = [
 export default function DemoPlanSwitcher() {
   const [open, setOpen] = useState(false);
   const [switching, setSwitching] = useState<string | null>(null);
-  const { subscription } = useAuth();
+  const { subscription, refreshMerchantData } = useAuth();
+  const queryClient = useQueryClient();
 
   const currentPlan = subscription?.plan || 'trial';
 
@@ -36,11 +38,13 @@ export default function DemoPlanSwitcher() {
       }
 
       toast.success(`تم التبديل إلى ${PLANS.find(p => p.name === planName)?.name_ar}`);
-      // Force full reload to refresh all data
-      window.location.reload();
+      // Refresh subscription and all cached data without a full page reload
+      await refreshMerchantData();
+      await queryClient.invalidateQueries();
     } catch (err) {
       console.error('Switch error:', err);
       toast.error('فشل تبديل الباقة');
+    } finally {
       setSwitching(null);
     }
   };
