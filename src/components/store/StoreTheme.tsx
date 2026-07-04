@@ -58,6 +58,17 @@ export function StoreThemeProvider({ store, children }: Props) {
     link.href = fontHref;
   }, [fontHref]);
 
+  // Public storefronts keep the light theme with the merchant's own colors,
+  // even though the merchant dashboard defaults to dark
+  useEffect(() => {
+    const root = document.documentElement;
+    const wasDark = root.classList.contains('dark');
+    root.classList.remove('dark');
+    return () => {
+      if (wasDark) root.classList.add('dark');
+    };
+  }, []);
+
   const style: Record<string, string> = {
     '--store-primary': hexToHsl(primary),
     '--store-secondary': hexToHsl(secondary),
