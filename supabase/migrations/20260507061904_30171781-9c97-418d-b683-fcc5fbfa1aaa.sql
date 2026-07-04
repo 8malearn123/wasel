@@ -1,0 +1,1 @@
+ALTER TABLE public.merchants ADD COLUMN IF NOT EXISTS auto_print_closing boolean NOT NULL DEFAULT false;

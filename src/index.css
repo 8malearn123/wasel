@@ -1,0 +1,237 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+/* Mobile Retail OS - Enterprise Design System */
+
+@layer base {
+  :root {
+    /* Core brand colors - Deep Teal & Amber */
+    --background: 210 20% 98%;
+    --foreground: 210 40% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 40% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 40% 10%;
+
+    /* Primary - Deep Teal */
+    --primary: 185 70% 28%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary - Soft slate */
+    --secondary: 210 15% 94%;
+    --secondary-foreground: 210 40% 20%;
+
+    /* Muted */
+    --muted: 210 15% 96%;
+    --muted-foreground: 210 15% 45%;
+
+    /* Accent - Warm Amber */
+    --accent: 38 95% 50%;
+    --accent-foreground: 38 95% 15%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Success */
+    --success: 142 70% 40%;
+    --success-foreground: 0 0% 100%;
+
+    /* Warning */
+    --warning: 38 95% 50%;
+    --warning-foreground: 38 95% 15%;
+
+    --border: 210 20% 90%;
+    --input: 210 20% 90%;
+    --ring: 185 70% 28%;
+
+    --radius: 0.75rem;
+
+    /* Sidebar */
+    --sidebar-background: 210 35% 12%;
+    --sidebar-foreground: 210 15% 85%;
+    --sidebar-primary: 185 70% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 30% 18%;
+    --sidebar-accent-foreground: 210 15% 95%;
+    --sidebar-border: 210 30% 20%;
+    --sidebar-ring: 185 70% 45%;
+
+    /* Custom semantic tokens */
+    --surface-elevated: 0 0% 100%;
+    --surface-sunken: 210 20% 96%;
+    --text-muted: 210 15% 55%;
+    --gradient-primary: linear-gradient(135deg, hsl(185 70% 28%) 0%, hsl(195 75% 22%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(38 95% 50%) 0%, hsl(28 90% 55%) 100%);
+    --gradient-surface: linear-gradient(180deg, hsl(210 20% 98%) 0%, hsl(210 15% 96%) 100%);
+    --shadow-sm: 0 1px 2px 0 hsl(210 15% 10% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(210 15% 10% / 0.08), 0 2px 4px -2px hsl(210 15% 10% / 0.06);
+    --shadow-lg: 0 10px 15px -3px hsl(210 15% 10% / 0.08), 0 4px 6px -4px hsl(210 15% 10% / 0.05);
+    --shadow-xl: 0 20px 25px -5px hsl(210 15% 10% / 0.1), 0 8px 10px -6px hsl(210 15% 10% / 0.08);
+    --shadow-glow: 0 0 20px hsl(185 70% 28% / 0.15);
+  }
+
+  .dark {
+    --background: 210 35% 8%;
+    --foreground: 210 15% 95%;
+
+    --card: 210 30% 12%;
+    --card-foreground: 210 15% 95%;
+
+    --popover: 210 30% 12%;
+    --popover-foreground: 210 15% 95%;
+
+    --primary: 185 70% 45%;
+    --primary-foreground: 210 35% 8%;
+
+    --secondary: 210 25% 18%;
+    --secondary-foreground: 210 15% 90%;
+
+    --muted: 210 25% 15%;
+    --muted-foreground: 210 15% 60%;
+
+    --accent: 38 95% 55%;
+    --accent-foreground: 38 95% 10%;
+
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 70% 50%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 95% 55%;
+    --warning-foreground: 38 95% 10%;
+
+    --border: 210 25% 20%;
+    --input: 210 25% 20%;
+    --ring: 185 70% 45%;
+
+    --sidebar-background: 210 40% 6%;
+    --sidebar-foreground: 210 15% 85%;
+    --sidebar-primary: 185 70% 50%;
+    --sidebar-primary-foreground: 210 35% 8%;
+    --sidebar-accent: 210 30% 12%;
+    --sidebar-accent-foreground: 210 15% 95%;
+    --sidebar-border: 210 30% 15%;
+    --sidebar-ring: 185 70% 50%;
+
+    --surface-elevated: 210 30% 14%;
+    --surface-sunken: 210 35% 6%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  /* Metric card styles */
+  .metric-card {
+    @apply relative overflow-hidden rounded-xl bg-card p-6 shadow-md transition-all duration-300 hover:shadow-lg;
+  }
+
+  .metric-card::before {
+    content: '';
+    @apply absolute inset-0 opacity-0 transition-opacity duration-300;
+    background: var(--gradient-primary);
+  }
+
+  .metric-card:hover::before {
+    @apply opacity-5;
+  }
+
+  /* Status badges */
+  .status-available {
+    @apply bg-success/15 text-success border-success/20;
+  }
+
+  .status-reserved {
+    @apply bg-warning/15 text-warning border-warning/20;
+  }
+
+  .status-sold {
+    @apply bg-muted text-muted-foreground border-border;
+  }
+
+  .status-transferred {
+    @apply bg-primary/15 text-primary border-primary/20;
+  }
+
+  /* Sidebar navigation */
+  .nav-item {
+    @apply flex items-center gap-3 px-4 py-3 rounded-lg text-sidebar-foreground/70 transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-foreground;
+  }
+
+  .nav-item.active {
+    @apply bg-sidebar-primary text-sidebar-primary-foreground font-medium;
+  }
+
+  /* Touch-optimized buttons */
+  .touch-button {
+    @apply min-h-[48px] min-w-[48px] px-6 py-3 text-base font-medium;
+  }
+
+  /* POS grid */
+  .pos-grid {
+    @apply grid gap-4;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+
+  /* Data table */
+  .data-row {
+    @apply border-b border-border/50 transition-colors hover:bg-muted/50;
+  }
+
+  /* Scanner input */
+  .scanner-input {
+    @apply text-2xl font-mono tracking-wider text-center uppercase;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-primary);
+  }
+
+  .bg-gradient-primary {
+    background-image: var(--gradient-primary);
+  }
+
+  .bg-gradient-accent {
+    background-image: var(--gradient-accent);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .animate-pulse-subtle {
+    animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse-subtle {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.85;
+    }
+  }
+
+  /* Tablet-first touch targets */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+}
