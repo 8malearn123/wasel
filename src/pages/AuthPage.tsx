@@ -301,9 +301,9 @@ export default function AuthPage() {
             </button>
             {/* حسابات الباقات */}
             {[
-              { label: 'باقة أ (Basic)', email: 'demo-basic@wasil.demo', desc: 'تجربة الباقة الأساسية', letter: 'أ', color: 'bg-blue-500/10 text-blue-600' },
-              { label: 'باقة ب (Professional)', email: 'demo-professional@wasil.demo', desc: 'تجربة الباقة الاحترافية', letter: 'ب', color: 'bg-emerald-500/10 text-emerald-600' },
-              { label: 'باقة ج (Enterprise)', email: 'demo-enterprise@wasil.demo', desc: 'تجربة باقة المؤسسات', letter: 'ج', color: 'bg-purple-500/10 text-purple-600' },
+              { label: 'الباقة الفضية (Basic)', email: 'demo-basic@wasil.demo', desc: 'تجربة الباقة الفضية', letter: 'ف', color: 'bg-blue-500/10 text-blue-600' },
+              { label: 'الباقة الذهبية (Professional)', email: 'demo-professional@wasil.demo', desc: 'تجربة الباقة الذهبية', letter: 'ذ', color: 'bg-emerald-500/10 text-emerald-600' },
+              { label: 'الباقة البلاتينية (Enterprise)', email: 'demo-enterprise@wasil.demo', desc: 'تجربة الباقة البلاتينية', letter: 'ب', color: 'bg-purple-500/10 text-purple-600' },
               { label: 'باقة الموزع (Distributor)', email: 'demo-distributor@wasil.demo', desc: 'تجربة باقة الجملة B2B', letter: 'م', color: 'bg-amber-500/10 text-amber-600' },
             ].map((p) => (
               <button

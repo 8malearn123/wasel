@@ -6,9 +6,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
 const PLANS = [
-  { name: 'Basic', name_ar: 'باقة أ', price: '99' },
-  { name: 'Professional', name_ar: 'باقة ب', price: '199' },
-  { name: 'Enterprise', name_ar: 'باقة ج', price: '399' },
+  { name: 'Basic', name_ar: 'الباقة الفضية', price: '99' },
+  { name: 'Professional', name_ar: 'الباقة الذهبية', price: '199' },
+  { name: 'Enterprise', name_ar: 'الباقة البلاتينية', price: '399' },
   { name: 'Distributor', name_ar: 'باقة الموزع', price: '499' },
 ];
 
