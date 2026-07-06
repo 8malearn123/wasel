@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
-import { usePlans, Plan } from '@/hooks/usePlans';
+import { usePlans, planDisplayName, Plan } from '@/hooks/usePlans';
 import { useBranches } from '@/hooks/useBranches';
 import { useBranchRequests } from '@/hooks/useBranchRequests';
 import { supabase } from '@/integrations/supabase/client';
@@ -62,7 +62,7 @@ export default function SubscriptionPage() {
             </div>
             <div>
               <h3 className="text-lg font-bold text-foreground">باقتك الحالية</h3>
-              <p className="text-sm text-muted-foreground">{subscription?.plan || 'تجريبي'}</p>
+              <p className="text-sm text-muted-foreground">{planDisplayName(subscription?.plan)}</p>
             </div>
             <div className="mr-auto">
               <span className={cn(

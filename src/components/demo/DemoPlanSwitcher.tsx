@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Zap, ChevronUp, ChevronDown, Loader2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { planDisplayName } from '@/hooks/usePlans';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
@@ -59,7 +60,7 @@ export default function DemoPlanSwitcher() {
           <Zap className="w-4 h-4 text-primary" />
           <span className="text-xs font-medium text-foreground">ديمو: تبديل الباقة</span>
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium mr-1">
-            {currentPlan}
+            {planDisplayName(currentPlan)}
           </span>
           {open ? <ChevronDown className="w-3 h-3 text-muted-foreground mr-auto" /> : <ChevronUp className="w-3 h-3 text-muted-foreground mr-auto" />}
         </button>

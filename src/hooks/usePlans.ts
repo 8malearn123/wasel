@@ -15,6 +15,21 @@ export interface Plan {
   sort_order: number;
 }
 
+// Display names override what is stored in the plans table, so renames
+// take effect without a database migration
+const PLAN_DISPLAY_NAMES: Record<string, string> = {
+  Basic: 'الباقة الفضية',
+  Professional: 'الباقة الذهبية',
+  Enterprise: 'الباقة البلاتينية',
+};
+
+// Arabic display name for a plan's English key (e.g. "Basic"), falling
+// back to the key itself for unknown values like "trial"
+export function planDisplayName(name?: string | null): string {
+  if (!name) return 'تجريبي';
+  return PLAN_DISPLAY_NAMES[name] || name;
+}
+
 export function usePlans() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,7 +41,11 @@ export function usePlans() {
       .eq('is_active', true)
       .order('sort_order')
       .then(({ data }) => {
-        setPlans((data as any[]) || []);
+        const rows = ((data as any[]) || []).map((p) => ({
+          ...p,
+          name_ar: PLAN_DISPLAY_NAMES[p.name] || p.name_ar,
+        }));
+        setPlans(rows);
         setLoading(false);
       });
   }, []);
