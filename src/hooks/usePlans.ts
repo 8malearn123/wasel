@@ -18,9 +18,10 @@ export interface Plan {
 // Display names override what is stored in the plans table, so renames
 // take effect without a database migration
 const PLAN_DISPLAY_NAMES: Record<string, string> = {
-  Basic: 'الباقة الفضية',
-  Professional: 'الباقة الذهبية',
-  Enterprise: 'الباقة البلاتينية',
+  Basic: 'باقة لايت',
+  Professional: 'باقة بلس',
+  Enterprise: 'باقة برو',
+  Distributor: 'باقة ماكس',
 };
 
 // Arabic display name for a plan's English key (e.g. "Basic"), falling

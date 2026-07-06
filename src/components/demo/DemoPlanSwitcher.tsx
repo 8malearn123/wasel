@@ -7,10 +7,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
 const PLANS = [
-  { name: 'Basic', name_ar: 'الباقة الفضية', price: '99' },
-  { name: 'Professional', name_ar: 'الباقة الذهبية', price: '199' },
-  { name: 'Enterprise', name_ar: 'الباقة البلاتينية', price: '399' },
-  { name: 'Distributor', name_ar: 'باقة الموزع', price: '499' },
+  { name: 'Basic', name_ar: 'باقة لايت', price: '99' },
+  { name: 'Professional', name_ar: 'باقة بلس', price: '199' },
+  { name: 'Enterprise', name_ar: 'باقة برو', price: '399' },
+  { name: 'Distributor', name_ar: 'باقة ماكس', price: '499' },
 ];
 
 export default function DemoPlanSwitcher() {

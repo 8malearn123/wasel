@@ -301,10 +301,10 @@ export default function AuthPage() {
             </button>
             {/* حسابات الباقات */}
             {[
-              { label: 'الباقة الفضية (Basic)', email: 'demo-basic@wasil.demo', desc: 'تجربة الباقة الفضية', letter: 'ف', color: 'bg-blue-500/10 text-blue-600' },
-              { label: 'الباقة الذهبية (Professional)', email: 'demo-professional@wasil.demo', desc: 'تجربة الباقة الذهبية', letter: 'ذ', color: 'bg-emerald-500/10 text-emerald-600' },
-              { label: 'الباقة البلاتينية (Enterprise)', email: 'demo-enterprise@wasil.demo', desc: 'تجربة الباقة البلاتينية', letter: 'ب', color: 'bg-purple-500/10 text-purple-600' },
-              { label: 'باقة الموزع (Distributor)', email: 'demo-distributor@wasil.demo', desc: 'تجربة باقة الجملة B2B', letter: 'م', color: 'bg-amber-500/10 text-amber-600' },
+              { label: 'باقة لايت (Lite)', email: 'demo-basic@wasil.demo', desc: 'تجربة باقة لايت', letter: 'L', color: 'bg-blue-500/10 text-blue-600' },
+              { label: 'باقة بلس (Plus)', email: 'demo-professional@wasil.demo', desc: 'تجربة باقة بلس', letter: '+', color: 'bg-emerald-500/10 text-emerald-600' },
+              { label: 'باقة برو (Pro)', email: 'demo-enterprise@wasil.demo', desc: 'تجربة باقة برو', letter: 'P', color: 'bg-purple-500/10 text-purple-600' },
+              { label: 'باقة ماكس (Max)', email: 'demo-distributor@wasil.demo', desc: 'تجربة باقة ماكس B2B', letter: 'M', color: 'bg-amber-500/10 text-amber-600' },
             ].map((p) => (
               <button
                 key={p.email}
