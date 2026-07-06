@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  CreditCard, Check, X, Crown, Zap, Building2,
-  Users, BarChart3, Globe, Headphones, Loader2, AlertTriangle
+  Check, Crown, Zap, Loader2, AlertTriangle,
+  Wrench, ShoppingBag
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,62 @@ import { useBranchRequests } from '@/hooks/useBranchRequests';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+
+// Marketing copy for each plan, keyed by the plan's English name in the DB
+const PLAN_CONTENT: Record<string, { tagline: string; maintenance: string[]; purchase: string[] }> = {
+  Basic: {
+    tagline: 'مخصصة للعملاء الذين يحتاجون صيانة فورية أو يرغبون في شراء جهاز للاستخدام الشخصي البسيط وبأقل تكلفة.',
+    maintenance: [
+      'فحص فني مجاني لمرة واحدة (عن بعد أو في المركز)',
+      'خصم 5% على تكلفة العمالة (أجور اليد) للصيانة',
+      'ضمان أساسي لمدة 30 يوماً على القطع المستبدلة',
+    ],
+    purchase: [
+      'إمكانية الشراء من الموقع بالأسعار الرسمية المعتادة',
+      'شحن قياسي (غير مستعجل)',
+    ],
+  },
+  Professional: {
+    tagline: 'الباقة الأكثر توازناً، لمن يملكون أجهزة متعددة ويبحثون عن راحة البال وحماية أجهزتهم على المدى الطويل.',
+    maintenance: [
+      'فحص دوري مجاني (ربع سنوي) لجهاز واحد',
+      'خصم 15% على جميع عمليات الصيانة وأجور اليد',
+      'أولوية في طابور الصيانة (تسليم أسرع)',
+      'ضمان ممتد إلى 90 يوماً على قطع الغيار',
+    ],
+    purchase: [
+      'خصم 5% على الإكسسوارات وملحقات الأجهزة',
+      'شحن سريع مجاني لجميع الطلبات',
+    ],
+  },
+  Enterprise: {
+    tagline: 'موجهة لأصحاب الشركات الصغيرة والمكاتب والمحترفين الذين لا يمكنهم الاستغناء عن أجهزتهم، ويبحثون عن خدمات VIP.',
+    maintenance: [
+      'صيانة فورية شاملة (أولوية قصوى VIP) مع جهاز بديل مؤقت',
+      'خصم 25% على قطع الغيار وأجور الصيانة',
+      'استلام وتوصيل الجهاز من وإلى باب البيت مجاناً',
+      'دعم فني مخصص ومباشر على مدار الساعة 24/7',
+    ],
+    purchase: [
+      'خصومات حصرية على الأجهزة المجددة أو الجديدة',
+      'حجز مسبق للأجهزة الحديثة قبل طرحها للعامة',
+    ],
+  },
+  Distributor: {
+    tagline: 'مخصصة للتجار وأصحاب محلات الصيانة والموزعين الذين يشترون بكميات ويسندون الصيانة المعقدة لمركزك.',
+    maintenance: [
+      'قطع غيار أصلية بأسعار الجملة',
+      'صيانة تجارية بأسعار خاصة جداً بالموزعين',
+      'ضمان ممتد ومرن على كميات القطع المشتراة',
+    ],
+    purchase: [
+      'أسعار خاصة وتنافسية عند الشراء بالكميات',
+      'إمكانية الدفع الآجل أو بنظام الائتمان',
+      'لوحة تحكم مخصصة للموزع للطلبات والفواتير والصيانة',
+      'مدير حساب مخصص لتخليص المعاملات الكبيرة بسرعة',
+    ],
+  },
+};
 
 export default function SubscriptionPage() {
   const { merchant, subscription, branches } = useAuth();
@@ -41,14 +97,6 @@ export default function SubscriptionPage() {
     toast.success('تم إرسال طلب الترقية بنجاح. سيتم التواصل معك قريباً.');
     setUpgrading(null);
   };
-
-  const features = [
-    { key: 'branch_limit', icon: Building2, label: 'عدد الفروع' },
-    { key: 'user_limit', icon: Users, label: 'عدد المستخدمين' },
-    { key: 'has_online_store', icon: Globe, label: 'متجر إلكتروني' },
-    { key: 'advanced_reports', icon: BarChart3, label: 'تقارير متقدمة' },
-    { key: 'priority_support', icon: Headphones, label: 'دعم أولوية' },
-  ];
 
   return (
     <AppLayout title="الباقات والاشتراك" subtitle="إدارة باقتك واشتراكك">
@@ -157,7 +205,7 @@ export default function SubscriptionPage() {
                   </Badge>
                 )}
 
-                <div className="text-center mb-6">
+                <div className="text-center mb-4">
                   <h3 className="text-xl font-bold text-foreground">{plan.name_ar}</h3>
                   <div className="mt-2">
                     <span className="text-3xl font-bold text-foreground">{plan.price}</span>
@@ -165,36 +213,45 @@ export default function SubscriptionPage() {
                   </div>
                 </div>
 
-                <div className="space-y-3 mb-6">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground flex items-center gap-2">
-                      <Building2 className="w-4 h-4" /> الفروع
-                    </span>
-                    <span className="font-semibold">{plan.branch_limit}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground flex items-center gap-2">
-                      <Users className="w-4 h-4" /> المستخدمين
-                    </span>
-                    <span className="font-semibold">{plan.user_limit}</span>
-                  </div>
-                  {[
-                    { key: 'has_online_store', icon: Globe, label: 'متجر إلكتروني' },
-                    { key: 'advanced_reports', icon: BarChart3, label: 'تقارير متقدمة' },
-                    { key: 'priority_support', icon: Headphones, label: 'دعم أولوية' },
-                  ].map(({ key, icon: Icon, label }) => (
-                    <div key={key} className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground flex items-center gap-2">
-                        <Icon className="w-4 h-4" /> {label}
-                      </span>
-                      {(plan as any)[key] ? (
-                        <Check className="w-5 h-5 text-success" />
-                      ) : (
-                        <X className="w-5 h-5 text-muted-foreground/30" />
-                      )}
+                {(() => {
+                  const content = PLAN_CONTENT[plan.name];
+                  if (!content) return null;
+                  return (
+                    <div className="mb-6 space-y-4">
+                      <p className="text-xs text-muted-foreground leading-relaxed text-center">
+                        {content.tagline}
+                      </p>
+
+                      <div>
+                        <p className="text-sm font-semibold text-foreground flex items-center gap-2 mb-2">
+                          <Wrench className="w-4 h-4 text-primary" /> الصيانة
+                        </p>
+                        <ul className="space-y-1.5">
+                          {content.maintenance.map((item) => (
+                            <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground">
+                              <Check className="w-4 h-4 text-success shrink-0 mt-0.5" />
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div>
+                        <p className="text-sm font-semibold text-foreground flex items-center gap-2 mb-2">
+                          <ShoppingBag className="w-4 h-4 text-primary" /> الشراء
+                        </p>
+                        <ul className="space-y-1.5">
+                          {content.purchase.map((item) => (
+                            <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground">
+                              <Check className="w-4 h-4 text-success shrink-0 mt-0.5" />
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })()}
 
                 {isCurrent ? (
                   <Button className="w-full" disabled variant="outline">
