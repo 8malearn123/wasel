@@ -14,6 +14,27 @@ interface ProductGridProps {
   onAddAccessory: (accessory: Accessory) => void;
 }
 
+// Product photo shown when /products/<SKU>.jpg exists in public/,
+// falling back to the category icon when it doesn't
+function ProductImage({ sku, fallback, tint }: { sku: string; fallback: string; tint: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center mb-3", tint)}>
+        <span className="text-lg">{fallback}</span>
+      </div>
+    );
+  }
+  return (
+    <img
+      src={`/products/${sku}.jpg`}
+      alt=""
+      className="w-14 h-14 rounded-lg object-cover mb-3 bg-muted/30"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 export function ProductGrid({ devices, accessories, loading, onAddDevice, onAddAccessory }: ProductGridProps) {
   const { t, isRTL } = useLanguage();
   const { categories } = useCategories();
@@ -105,9 +126,7 @@ export function ProductGrid({ devices, accessories, loading, onAddDevice, onAddA
                 onClick={() => onAddDevice(device)}
                 className="p-4 rounded-xl border text-start transition-all hover:shadow-md hover:scale-[1.02] active:scale-[0.98] bg-primary/5 border-primary/20 hover:border-primary/40"
               >
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-3 bg-primary/10">
-                  <span className="text-lg">📱</span>
-                </div>
+                <ProductImage sku={device.imei} fallback="📱" tint="bg-primary/10" />
                 <p className="font-medium text-foreground text-sm truncate">
                   {device.brand ? `${device.brand} ` : ''}{device.model}
                 </p>
@@ -142,9 +161,7 @@ export function ProductGrid({ devices, accessories, loading, onAddDevice, onAddA
                 onClick={() => onAddAccessory(acc)}
                 className="p-4 rounded-xl border text-start transition-all hover:shadow-md hover:scale-[1.02] active:scale-[0.98] bg-accent/5 border-accent/20 hover:border-accent/40"
               >
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-3 bg-accent/10">
-                  <span className="text-lg">🎧</span>
-                </div>
+                <ProductImage sku={acc.sku} fallback="🎧" tint="bg-accent/10" />
                 <p className="font-medium text-foreground text-sm truncate">{acc.name}</p>
                 <p className="text-xs text-muted-foreground font-mono mt-0.5">{acc.sku}</p>
                 <div className="mt-2 flex items-center justify-between">
