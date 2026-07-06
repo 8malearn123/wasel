@@ -1,4 +1,9 @@
-import { Bell, Search, User, Building2, Languages, Sun, Moon } from "lucide-react";
+import {
+  Bell, Search, User, Building2, Languages, Sun, Moon, LayoutGrid,
+  LayoutDashboard, ShoppingCart, Package, ArrowLeftRight, Truck, Barcode,
+  Megaphone, Wrench, BarChart3, ClipboardCheck, Store, ShoppingBag,
+  Calculator, Heart, Warehouse, Users, CreditCard, LifeBuoy,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +24,28 @@ interface HeaderProps {
   title: string;
   subtitle?: string;
 }
+
+const SECTIONS = [
+  { icon: LayoutDashboard, label: "Dashboard", labelAr: "لوحة التحكم", path: "/" },
+  { icon: ShoppingCart, label: "Point of Sale", labelAr: "نقطة البيع", path: "/pos" },
+  { icon: Package, label: "Inventory", labelAr: "المخزون", path: "/inventory" },
+  { icon: Building2, label: "Branches", labelAr: "الفروع", path: "/branches" },
+  { icon: ArrowLeftRight, label: "Transfers", labelAr: "التحويلات", path: "/transfers" },
+  { icon: Truck, label: "Suppliers", labelAr: "الموردين", path: "/suppliers" },
+  { icon: Barcode, label: "Verification Codes", labelAr: "أكواد التحقق", path: "/labels" },
+  { icon: Megaphone, label: "Marketing", labelAr: "التسويق", path: "/marketing" },
+  { icon: Wrench, label: "Maintenance", labelAr: "الصيانة", path: "/repairs" },
+  { icon: BarChart3, label: "Reports", labelAr: "التقارير", path: "/reports" },
+  { icon: ClipboardCheck, label: "Stocktake", labelAr: "الجرد", path: "/stocktake" },
+  { icon: Store, label: "Online Store", labelAr: "المتجر الإلكتروني", path: "/online-store" },
+  { icon: ShoppingBag, label: "Online Orders", labelAr: "طلبات المتجر", path: "/online-orders" },
+  { icon: Calculator, label: "Daily Closings", labelAr: "الإغلاق اليومي", path: "/daily-closings" },
+  { icon: Heart, label: "Customers", labelAr: "العملاء والولاء", path: "/customers" },
+  { icon: Warehouse, label: "Wholesale", labelAr: "بيع الجملة", path: "/wholesale" },
+  { icon: Users, label: "Users", labelAr: "المستخدمين", path: "/users" },
+  { icon: CreditCard, label: "Subscription", labelAr: "الباقات والاشتراك", path: "/subscription" },
+  { icon: LifeBuoy, label: "Support", labelAr: "الدعم الفني", path: "/support" },
+];
 
 export function Header({ title, subtitle }: HeaderProps) {
   const { t, language, setLanguage, isRTL } = useLanguage();
@@ -41,6 +68,36 @@ export function Header({ title, subtitle }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-4">
+        {/* Browse Sections */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="gap-2 touch-target">
+              <LayoutGrid className="w-4 h-4" />
+              <span className="hidden sm:inline">
+                {language === 'ar' ? 'تصفح الأقسام' : 'Browse Sections'}
+              </span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align={isRTL ? "start" : "end"} className="w-[420px]">
+            <DropdownMenuLabel>
+              {language === 'ar' ? 'أقسام النظام' : 'System Sections'}
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <div className="grid grid-cols-2 gap-1 p-1 max-h-[60vh] overflow-y-auto">
+              {SECTIONS.map((s) => (
+                <DropdownMenuItem
+                  key={s.path}
+                  onClick={() => navigate(s.path)}
+                  className="gap-2 cursor-pointer"
+                >
+                  <s.icon className="w-4 h-4 text-primary" />
+                  <span>{language === 'ar' ? s.labelAr : s.label}</span>
+                </DropdownMenuItem>
+              ))}
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         {/* Search */}
         <div className="relative hidden lg:block">
           <Search className={cn(
