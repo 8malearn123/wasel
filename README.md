@@ -1,73 +1,39 @@
-# Welcome to your Lovable project
+# منصة وصل — Wasel Platform
 
-## Project info
+نظام متكامل لإدارة محلات الجوالات: نقطة بيع، مخزون، صيانة، فروع، متجر إلكتروني، وتقارير.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## التقنيات
 
-## How can I edit this code?
+- Vite + React + TypeScript
+- Tailwind CSS + shadcn/ui
+- Supabase (قاعدة بيانات، مصادقة، Edge Functions)
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## التشغيل محلياً
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+npm install
+npm run dev   # http://localhost:8080
 ```
 
-**Edit a file directly in GitHub**
+## الأوامر
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+| الأمر | الوظيفة |
+|---|---|
+| `npm run dev` | خادم التطوير |
+| `npm run build` | بناء نسخة الإنتاج في `dist/` |
+| `npm test` | تشغيل الاختبارات |
+| `npm run lint` | فحص الكود |
 
-**Use GitHub Codespaces**
+## النشر على Vercel
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+المشروع جاهز للنشر مباشرة — ملف `vercel.json` يعيد توجيه كل المسارات إلى
+`index.html` حتى يعمل توجيه React Router عند فتح الروابط الداخلية مباشرة.
 
-## What technologies are used for this project?
+## بنية المشروع
 
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+- `src/pages/` — صفحات التطبيق (لوحة التحكم، نقطة البيع، المخزون، ...)
+- `src/pages/admin/` — لوحة إدارة المنصة (`/admin`)
+- `src/pages/store/` — المتجر الإلكتروني العام (`/store/:slug`)
+- `src/components/` — المكونات المشتركة
+- `supabase/migrations/` — مخطط قاعدة البيانات
+- `supabase/functions/` — دوال الخادم (Edge Functions)
