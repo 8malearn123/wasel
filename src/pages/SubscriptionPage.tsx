@@ -17,9 +17,8 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 // Marketing copy for each plan, keyed by the plan's English name in the DB
-const PLAN_CONTENT: Record<string, { tagline: string; maintenance: string[]; purchase: string[] }> = {
+const PLAN_CONTENT: Record<string, { maintenance: string[]; purchase: string[] }> = {
   Basic: {
-    tagline: 'مخصصة للعملاء الذين يحتاجون صيانة فورية أو يرغبون في شراء جهاز للاستخدام الشخصي البسيط وبأقل تكلفة.',
     maintenance: [
       'فحص فني مجاني لمرة واحدة (عن بعد أو في المركز)',
       'خصم 5% على تكلفة العمالة (أجور اليد) للصيانة',
@@ -31,7 +30,6 @@ const PLAN_CONTENT: Record<string, { tagline: string; maintenance: string[]; pur
     ],
   },
   Professional: {
-    tagline: 'الباقة الأكثر توازناً، لمن يملكون أجهزة متعددة ويبحثون عن راحة البال وحماية أجهزتهم على المدى الطويل.',
     maintenance: [
       'فحص دوري مجاني (ربع سنوي) لجهاز واحد',
       'خصم 15% على جميع عمليات الصيانة وأجور اليد',
@@ -44,7 +42,6 @@ const PLAN_CONTENT: Record<string, { tagline: string; maintenance: string[]; pur
     ],
   },
   Enterprise: {
-    tagline: 'موجهة لأصحاب الشركات الصغيرة والمكاتب والمحترفين الذين لا يمكنهم الاستغناء عن أجهزتهم، ويبحثون عن خدمات VIP.',
     maintenance: [
       'صيانة فورية شاملة (أولوية قصوى VIP) مع جهاز بديل مؤقت',
       'خصم 25% على قطع الغيار وأجور الصيانة',
@@ -57,7 +54,6 @@ const PLAN_CONTENT: Record<string, { tagline: string; maintenance: string[]; pur
     ],
   },
   Distributor: {
-    tagline: 'مخصصة للتجار وأصحاب محلات الصيانة والموزعين الذين يشترون بكميات ويسندون الصيانة المعقدة لمركزك.',
     maintenance: [
       'قطع غيار أصلية بأسعار الجملة',
       'صيانة تجارية بأسعار خاصة جداً بالموزعين',
@@ -218,10 +214,6 @@ export default function SubscriptionPage() {
                   if (!content) return null;
                   return (
                     <div className="mb-6 space-y-4">
-                      <p className="text-xs text-muted-foreground leading-relaxed text-center">
-                        {content.tagline}
-                      </p>
-
                       <div>
                         <p className="text-sm font-semibold text-foreground flex items-center gap-2 mb-2">
                           <Wrench className="w-4 h-4 text-primary" /> الصيانة
