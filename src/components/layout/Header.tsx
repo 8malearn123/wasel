@@ -1,4 +1,4 @@
-import { Bell, Search, User, Building2, Languages } from "lucide-react";
+import { Bell, Search, User, Building2, Languages, Sun, Moon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/hooks/useTheme";
 import { useLanguage } from "@/i18n";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +22,7 @@ interface HeaderProps {
 
 export function Header({ title, subtitle }: HeaderProps) {
   const { t, language, setLanguage, isRTL } = useLanguage();
+  const { isDark, toggleTheme } = useTheme();
   const { signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -53,6 +55,17 @@ export function Header({ title, subtitle }: HeaderProps) {
             )}
           />
         </div>
+
+        {/* Theme Toggle */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="touch-target"
+          onClick={toggleTheme}
+          title={isDark ? 'الوضع الفاتح' : 'الوضع الداكن'}
+        >
+          {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+        </Button>
 
         {/* Language Selector */}
         <DropdownMenu>

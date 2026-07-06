@@ -2,6 +2,12 @@
 <html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      try {
+        if (localStorage.getItem('wasel-theme') === 'light')
+          document.documentElement.classList.remove('dark');
+      } catch (e) {}
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- TODO: Set the document title to the name of your application -->
     <title>منصةوصل</title>
