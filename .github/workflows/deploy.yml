@@ -1,0 +1,21 @@
+name: Deploy to Vercel
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  trigger-vercel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Vercel deploy hook
+        env:
+          DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$DEPLOY_HOOK" ]; then
+            echo "::error::VERCEL_DEPLOY_HOOK secret is not set. Add it in Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          curl -sS -X POST "$DEPLOY_HOOK"
+          echo "Vercel deployment triggered."
