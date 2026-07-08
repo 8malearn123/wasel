@@ -52,6 +52,7 @@ import { useDevices, useAccessories } from "@/hooks/useInventory";
 import { useRepairParts, RepairPart } from "@/hooks/useRepairParts";
 import { useCategories } from "@/hooks/useCategories";
 import { CategoryManager } from "@/components/inventory/CategoryManager";
+import { ProductThumb } from "@/components/common/ProductThumb";
 import { useAuth } from "@/hooks/useAuth";
 import type { Device, Accessory, DeviceStatus } from "@/types/database";
 
@@ -303,9 +304,15 @@ export default function InventoryPage() {
                       >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                              <Smartphone className="w-5 h-5 text-primary" />
-                            </div>
+                            <ProductThumb
+                              code={device.imei}
+                              className="w-10 h-10"
+                              fallback={
+                                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                  <Smartphone className="w-5 h-5 text-primary" />
+                                </div>
+                              }
+                            />
                             <div>
                               <p className="font-medium text-foreground">{device.model}</p>
                               <p className="text-sm text-muted-foreground">{device.storage} · {device.color}</p>
@@ -395,9 +402,15 @@ export default function InventoryPage() {
                         >
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
-                                <Package className="w-5 h-5 text-accent" />
-                              </div>
+                              <ProductThumb
+                                code={accessory.sku}
+                                className="w-10 h-10"
+                                fallback={
+                                  <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                                    <Package className="w-5 h-5 text-accent" />
+                                  </div>
+                                }
+                              />
                               <div>
                                 <p className="font-medium text-foreground">{accessory.name}</p>
                                 <p className="text-sm text-muted-foreground">{accessory.branch?.name || t.inventory.all}</p>
@@ -685,7 +698,20 @@ function DeviceDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{device ? t.inventory.editDevice : t.inventory.addNewDevice}</DialogTitle>
+          <DialogTitle className="flex items-center gap-3">
+            {device && (
+              <ProductThumb
+                code={device.imei}
+                className="w-14 h-14"
+                fallback={
+                  <div className="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Smartphone className="w-6 h-6 text-primary" />
+                  </div>
+                }
+              />
+            )}
+            {device ? t.inventory.editDevice : t.inventory.addNewDevice}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
@@ -885,7 +911,20 @@ function AccessoryDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{accessory ? t.inventory.editAccessory : t.inventory.addNewAccessory}</DialogTitle>
+          <DialogTitle className="flex items-center gap-3">
+            {accessory && (
+              <ProductThumb
+                code={accessory.sku}
+                className="w-14 h-14"
+                fallback={
+                  <div className="w-14 h-14 rounded-lg bg-accent/10 flex items-center justify-center">
+                    <Package className="w-6 h-6 text-accent" />
+                  </div>
+                }
+              />
+            )}
+            {accessory ? t.inventory.editAccessory : t.inventory.addNewAccessory}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">

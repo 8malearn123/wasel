@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Smartphone, Package, User, Wrench, Receipt, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { ProductThumb } from "@/components/common/ProductThumb";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +14,8 @@ interface SearchResult {
   title: string;
   subtitle: string;
   path: string;
+  /** SKU/IMEI whose photo lives at /products/<code>.jpg */
+  imageCode?: string;
 }
 
 export function GlobalSearch() {
@@ -92,6 +95,7 @@ export function GlobalSearch() {
           title: `${d.brand ? d.brand + " " : ""}${d.model}`,
           subtitle: `IMEI: ${d.imei} — ${Number(d.price).toLocaleString()} ر.س`,
           path: `/inventory?tab=devices&q=${encodeURIComponent(d.imei)}&open=${d.id}`,
+          imageCode: d.imei,
         });
       }
       for (const a of accessories.data || []) {
@@ -100,6 +104,7 @@ export function GlobalSearch() {
           title: a.name,
           subtitle: `${a.sku} — ${Number(a.price).toLocaleString()} ر.س`,
           path: `/inventory?tab=accessories&q=${encodeURIComponent(a.sku)}&open=${a.id}`,
+          imageCode: a.sku,
         });
       }
       for (const c of customers.data || []) {
@@ -181,9 +186,21 @@ export function GlobalSearch() {
                   onClick={() => go(r)}
                   className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted/60 transition-colors text-start"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                    <r.icon className="w-4 h-4" />
-                  </div>
+                  {r.imageCode ? (
+                    <ProductThumb
+                      code={r.imageCode}
+                      className="w-9 h-9"
+                      fallback={
+                        <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                          <r.icon className="w-4 h-4" />
+                        </div>
+                      }
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                      <r.icon className="w-4 h-4" />
+                    </div>
+                  )}
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-foreground truncate">{r.title}</p>
                     <p className="text-xs text-muted-foreground truncate">{r.subtitle}</p>
