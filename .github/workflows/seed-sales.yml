@@ -17,15 +17,6 @@ jobs:
           seed_merchant() {
             local TOKEN="$1" LABEL="$2"
 
-            # Skip if demo sales already exist for this merchant
-            local EXISTING
-            EXISTING=$(curl -sS "$SUPA/rest/v1/sales?invoice_number=eq.DEMO-0001&select=id&limit=1" \
-              -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN")
-            if [ "$(echo "$EXISTING" | jq 'length')" != "0" ]; then
-              echo "[$LABEL] demo sales already seeded — skipping"
-              return 0
-            fi
-
             local BR MID BID
             BR=$(curl -sS "$SUPA/rest/v1/branches?select=id,merchant_id&is_active=eq.true&limit=1" \
               -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN")
@@ -33,76 +24,113 @@ jobs:
             BID=$(echo "$BR" | jq -r '.[0].id // empty')
             [ -n "$MID" ] || { echo "[$LABEL] no branch"; return 1; }
 
+            # A) Ensure accessories exist (demo merchants start with none)
             local ACCS
             ACCS=$(curl -sS "$SUPA/rest/v1/accessories?select=id,price,cost&limit=8" \
               -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN")
+            if [ "$(echo "$ACCS" | jq 'length')" = "0" ]; then
+              local NEWACCS
+              NEWACCS=$(jq -n --arg m "$MID" --arg b "$BID" '[
+                {sku:"ACC-001", name:"كفر iPhone 15 Pro Max", cost:15, price:45, quantity:46, min_quantity:10},
+                {sku:"ACC-002", name:"شاحن سريع 65W USB-C", cost:35, price:75, quantity:30, min_quantity:8},
+                {sku:"ACC-003", name:"سماعات AirPods Pro 2", cost:380, price:550, quantity:15, min_quantity:5},
+                {sku:"ACC-004", name:"حماية شاشة Samsung", cost:8, price:25, quantity:96, min_quantity:20},
+                {sku:"ACC-005", name:"كيبل Lightning 1م أصلي", cost:25, price:55, quantity:38, min_quantity:10},
+                {sku:"ACC-006", name:"باور بانك 20000mAh", cost:70, price:130, quantity:20, min_quantity:6},
+                {sku:"ACC-007", name:"حامل جوال للسيارة", cost:12, price:35, quantity:23, min_quantity:8},
+                {sku:"ACC-008", name:"ساعة ذكية Galaxy Watch 6", cost:450, price:650, quantity:5, min_quantity:3}
+              ] | map(. + {merchant_id:$m, branch_id:$b})')
+              curl -sS -X POST "$SUPA/rest/v1/accessories" \
+                -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN" \
+                -H "Content-Type: application/json" -H "Prefer: return=minimal" \
+                --data "$NEWACCS" > /dev/null
+              ACCS=$(curl -sS "$SUPA/rest/v1/accessories?select=id,price,cost&limit=8" \
+                -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN")
+              echo "[$LABEL] seeded $(echo "$ACCS" | jq 'length') accessories"
+            fi
 
-            # 24 invoices spread across the last 7 days (totals are VAT-inclusive)
-            local SALES
-            SALES=$(jq -n --arg m "$MID" --arg b "$BID" '
-              def mk(i; day; hour; total; method; status; name):
-                { merchant_id: $m, branch_id: $b,
-                  invoice_number: ("DEMO-" + (i | tostring | ("0000" + .) | .[-4:])),
-                  customer_name: name,
-                  subtotal: ((total / 1.15 * 100 | round) / 100),
-                  tax_amount: ((total - total / 1.15) * 100 | round / 100),
-                  discount_amount: 0,
-                  total_amount: total,
-                  payment_method: method, payment_status: status,
-                  sale_date: ((now - day*86400 - hour*3600) | todate),
-                  created_at: ((now - day*86400 - hour*3600) | todate) };
-              [
-                mk(1; 0; 2;  4799; "card"; "paid"; "سالم العتيبي"),
-                mk(2; 0; 4;   235; "cash"; "paid"; null),
-                mk(3; 0; 6;  1899; "cash"; "paid"; "أحمد الزهراني"),
-                mk(4; 0; 8;   130; "card"; "paid"; null),
-                mk(5; 1; 3;  3399; "card"; "paid"; "خالد المطيري"),
-                mk(6; 1; 5;   680; "cash"; "paid"; null),
-                mk(7; 1; 7;    75; "cash"; "paid"; null),
-                mk(8; 1; 9;  2299; "bank_transfer"; "paid"; "شركة الاتصال"),
-                mk(9; 2; 2;  4599; "card"; "paid"; "فهد القحطاني"),
-                mk(10; 2; 4;   550; "cash"; "paid"; null),
-                mk(11; 2; 6;   105; "cash"; "paid"; null),
-                mk(12; 2; 8;  1349; "card"; "unpaid"; "مؤسسة النور"),
-                mk(13; 3; 3;  3899; "card"; "paid"; "عبدالله الشمري"),
-                mk(14; 3; 5;   165; "cash"; "paid"; null),
-                mk(15; 3; 7;  1599; "mixed"; "paid"; "سعود الحربي"),
-                mk(16; 4; 2;  2599; "card"; "paid"; "ماجد العنزي"),
-                mk(17; 4; 4;    60; "cash"; "paid"; null),
-                mk(18; 4; 6;   785; "cash"; "paid"; null),
-                mk(19; 5; 3;  3599; "bank_transfer"; "paid"; "مكتب الأفق"),
-                mk(20; 5; 5;   130; "cash"; "paid"; null),
-                mk(21; 5; 7;  1899; "card"; "unpaid"; "نايف السبيعي"),
-                mk(22; 6; 2;  4799; "card"; "paid"; "بندر الدوسري"),
-                mk(23; 6; 4;   310; "cash"; "paid"; null),
-                mk(24; 6; 6;   550; "cash"; "paid"; null)
-              ]')
+            # B) Ensure demo sales exist
+            local EXISTING
+            EXISTING=$(curl -sS "$SUPA/rest/v1/sales?invoice_number=eq.DEMO-0001&select=id&limit=1" \
+              -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN")
+            if [ "$(echo "$EXISTING" | jq 'length')" = "0" ]; then
+              local SALES
+              SALES=$(jq -n --arg m "$MID" --arg b "$BID" '
+                def mk(i; day; hour; total; method; status; name):
+                  { merchant_id: $m, branch_id: $b,
+                    invoice_number: ("DEMO-" + (i | tostring | ("0000" + .) | .[-4:])),
+                    customer_name: name,
+                    subtotal: ((total / 1.15 * 100 | round) / 100),
+                    tax_amount: ((total - total / 1.15) * 100 | round / 100),
+                    discount_amount: 0,
+                    total_amount: total,
+                    payment_method: method, payment_status: status,
+                    sale_date: ((now - day*86400 - hour*3600) | todate),
+                    created_at: ((now - day*86400 - hour*3600) | todate) };
+                [
+                  mk(1; 0; 2;  4799; "card"; "paid"; "سالم العتيبي"),
+                  mk(2; 0; 4;   235; "cash"; "paid"; null),
+                  mk(3; 0; 6;  1899; "cash"; "paid"; "أحمد الزهراني"),
+                  mk(4; 0; 8;   130; "card"; "paid"; null),
+                  mk(5; 1; 3;  3399; "card"; "paid"; "خالد المطيري"),
+                  mk(6; 1; 5;   680; "cash"; "paid"; null),
+                  mk(7; 1; 7;    75; "cash"; "paid"; null),
+                  mk(8; 1; 9;  2299; "bank_transfer"; "paid"; "شركة الاتصال"),
+                  mk(9; 2; 2;  4599; "card"; "paid"; "فهد القحطاني"),
+                  mk(10; 2; 4;   550; "cash"; "paid"; null),
+                  mk(11; 2; 6;   105; "cash"; "paid"; null),
+                  mk(12; 2; 8;  1349; "card"; "unpaid"; "مؤسسة النور"),
+                  mk(13; 3; 3;  3899; "card"; "paid"; "عبدالله الشمري"),
+                  mk(14; 3; 5;   165; "cash"; "paid"; null),
+                  mk(15; 3; 7;  1599; "mixed"; "paid"; "سعود الحربي"),
+                  mk(16; 4; 2;  2599; "card"; "paid"; "ماجد العنزي"),
+                  mk(17; 4; 4;    60; "cash"; "paid"; null),
+                  mk(18; 4; 6;   785; "cash"; "paid"; null),
+                  mk(19; 5; 3;  3599; "bank_transfer"; "paid"; "مكتب الأفق"),
+                  mk(20; 5; 5;   130; "cash"; "paid"; null),
+                  mk(21; 5; 7;  1899; "card"; "unpaid"; "نايف السبيعي"),
+                  mk(22; 6; 2;  4799; "card"; "paid"; "بندر الدوسري"),
+                  mk(23; 6; 4;   310; "cash"; "paid"; null),
+                  mk(24; 6; 6;   550; "cash"; "paid"; null)
+                ]')
+              local CRESP
+              CRESP=$(curl -sS -w "\nHTTP %{http_code}" -X POST "$SUPA/rest/v1/sales" \
+                -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN" \
+                -H "Content-Type: application/json" -H "Prefer: return=minimal" \
+                --data "$SALES")
+              echo "[$LABEL] sales: $(echo "$CRESP" | tail -1)"
+              echo "$CRESP" | grep -q "HTTP 201" || { echo "[$LABEL] sales insert failed: $CRESP"; return 1; }
+            else
+              echo "[$LABEL] demo sales already present"
+            fi
 
-            local CREATED
-            CREATED=$(curl -sS -X POST "$SUPA/rest/v1/sales?select=id" \
-              -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN" \
-              -H "Content-Type: application/json" -H "Prefer: return=representation" \
-              --data "$SALES")
-            local COUNT
-            COUNT=$(echo "$CREATED" | jq 'if type=="array" then length else -1 end')
-            if [ "$COUNT" = "-1" ]; then echo "[$LABEL] sales insert failed: $CREATED"; return 1; fi
-            echo "[$LABEL] inserted $COUNT sales"
-
-            # Attach 1-2 accessory line items per sale (round-robin)
-            local ITEMS
-            ITEMS=$(jq -n --argjson sales "$CREATED" --argjson accs "$ACCS" '
-              [ $sales | to_entries[] |
-                . as $e |
-                ($accs[$e.key % ($accs | length)]) as $a |
-                { sale_id: $e.value.id, accessory_id: $a.id,
-                  quantity: (1 + ($e.key % 2)),
-                  unit_price: $a.price, cost_at_sale: $a.cost } ]')
-            local IRESP
-            IRESP=$(curl -sS -w "\nHTTP %{http_code}" -X POST "$SUPA/rest/v1/sale_items" \
-              -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN" \
-              -H "Content-Type: application/json" -H "Prefer: return=minimal" \
-              --data "$ITEMS")
-            echo "[$LABEL] items: $(echo "$IRESP" | tail -1)"
+            # C) Ensure line items exist for the demo sales
+            local SALEIDS ITEMIDS MISSING
+            SALEIDS=$(curl -sS "$SUPA/rest/v1/sales?invoice_number=like.DEMO-*&select=id&order=invoice_number" \
+              -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN")
+            ITEMIDS=$(curl -sS "$SUPA/rest/v1/sale_items?select=sale_id" \
+              -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN")
+            MISSING=$(jq -n --argjson s "$SALEIDS" --argjson it "$ITEMIDS" \
+              '[$it[].sale_id] as $have | [$s[].id | select(. as $x | $have | index($x) | not)]')
+            local NMISS NACCS
+            NMISS=$(echo "$MISSING" | jq 'length')
+            NACCS=$(echo "$ACCS" | jq 'length')
+            if [ "$NMISS" != "0" ] && [ "$NACCS" != "0" ]; then
+              local ITEMS IRESP
+              ITEMS=$(jq -n --argjson miss "$MISSING" --argjson accs "$ACCS" '
+                [ $miss | to_entries[] |
+                  ($accs[.key % ($accs | length)]) as $a |
+                  { sale_id: .value, accessory_id: $a.id,
+                    quantity: (1 + (.key % 2)),
+                    unit_price: $a.price, cost_at_sale: $a.cost } ]')
+              IRESP=$(curl -sS -w "\nHTTP %{http_code}" -X POST "$SUPA/rest/v1/sale_items" \
+                -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN" \
+                -H "Content-Type: application/json" -H "Prefer: return=minimal" \
+                --data "$ITEMS")
+              echo "[$LABEL] added items for $NMISS sales: $(echo "$IRESP" | tail -1)"
+            else
+              echo "[$LABEL] items complete ($NMISS missing, $NACCS accessories)"
+            fi
           }
 
           FAILED=0
