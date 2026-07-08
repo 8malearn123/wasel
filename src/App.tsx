@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LanguageProvider } from "./i18n";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
+import { useVersionCheck } from "./hooks/useVersionCheck";
 import { useSubscription } from "./hooks/useSubscription";
 import Dashboard from "./pages/Dashboard";
 import POSPage from "./pages/POSPage";
@@ -126,6 +127,7 @@ function HomeRoute() {
 }
 
 function AppRoutes() {
+  useVersionCheck();
   return (
     <Routes>
       <Route path="/auth" element={<AuthPage />} />
