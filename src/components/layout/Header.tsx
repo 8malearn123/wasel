@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
+import { useNotifications } from "@/hooks/useNotifications";
 import { useLanguage } from "@/i18n";
 import { cn } from "@/lib/utils";
 
@@ -60,6 +61,9 @@ export function Header({ title, subtitle }: HeaderProps) {
   const visibleSections = isCashier
     ? SECTIONS.filter((s) => CASHIER_PATHS.has(s.path))
     : SECTIONS;
+
+  const { notifications } = useNotifications();
+  const urgentCount = notifications.filter((n) => n.type === "urgent").length;
 
   const handleSignOut = async () => {
     await signOut();
@@ -179,13 +183,69 @@ export function Header({ title, subtitle }: HeaderProps) {
         </DropdownMenu>
 
         {/* Notifications */}
-        <Button variant="ghost" size="icon" className="relative touch-target">
-          <Bell className="w-5 h-5" />
-          <span className={cn(
-            "absolute top-1 w-2 h-2 rounded-full bg-accent animate-pulse",
-            isRTL ? "left-1" : "right-1"
-          )} />
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="relative touch-target">
+              <Bell className="w-5 h-5" />
+              {notifications.length > 0 && (
+                <span className={cn(
+                  "absolute -top-0.5 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center",
+                  urgentCount > 0 ? "bg-destructive text-white" : "bg-accent text-accent-foreground",
+                  isRTL ? "-left-0.5" : "-right-0.5"
+                )}>
+                  {notifications.length > 99 ? "99+" : notifications.length}
+                </span>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align={isRTL ? "start" : "end"} className="w-[360px]">
+            <DropdownMenuLabel className="flex items-center justify-between">
+              <span>{language === "ar" ? "الإشعارات" : "Notifications"}</span>
+              {notifications.length > 0 && (
+                <span className="text-xs text-muted-foreground font-normal">{notifications.length}</span>
+              )}
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {notifications.length === 0 ? (
+              <div className="py-8 text-center">
+                <Bell className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">
+                  {language === "ar" ? "لا توجد إشعارات حالياً" : "No notifications"}
+                </p>
+              </div>
+            ) : (
+              <div className="max-h-[50vh] overflow-y-auto">
+                {notifications.slice(0, 8).map((notif) => (
+                  <DropdownMenuItem
+                    key={notif.id}
+                    onSelect={() => navigate("/notifications")}
+                    className="gap-3 items-start py-2.5 cursor-pointer"
+                  >
+                    <div className={cn(
+                      "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5",
+                      notif.type === "urgent" ? "bg-destructive/10 text-destructive" :
+                      notif.type === "warning" ? "bg-warning/10 text-warning" :
+                      "bg-primary/10 text-primary"
+                    )}>
+                      <notif.icon className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-foreground truncate">{notif.title}</p>
+                      <p className="text-xs text-muted-foreground truncate">{notif.message}</p>
+                    </div>
+                  </DropdownMenuItem>
+                ))}
+              </div>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={() => navigate("/notifications")}
+              className="justify-center text-primary font-medium cursor-pointer"
+            >
+              {language === "ar" ? "عرض كل الإشعارات" : "View all notifications"}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* User Menu */}
         <DropdownMenu>
