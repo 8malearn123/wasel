@@ -1,0 +1,70 @@
+name: Seed demo marketing
+
+on:
+  workflow_dispatch:
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Insert demo coupons and campaigns
+        env:
+          SUPA: https://ynwddyxzypbcftlevuam.supabase.co
+          ANON: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlud2RkeXh6eXBiY2Z0bGV2dWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5MjE1OTQsImV4cCI6MjA4NTQ5NzU5NH0.PsNDqovuzo7NmTiwsH4swskkIF3FdMlBXjYUy3MJkyA
+        run: |
+          set -euo pipefail
+
+          seed_merchant() {
+            local TOKEN="$1" LABEL="$2"
+
+            local BR MID
+            BR=$(curl -sS "$SUPA/rest/v1/branches?select=merchant_id&limit=1" \
+              -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN")
+            MID=$(echo "$BR" | jq -r '.[0].merchant_id // empty')
+            [ -n "$MID" ] || { echo "[$LABEL] no merchant"; return 1; }
+
+            # Coupons (unique per merchant+code → ignore duplicates)
+            local COUPONS CRESP
+            COUPONS=$(jq -n --arg m "$MID" '[
+              {code:"WELCOME10", name:"خصم ترحيبي 10%",        discount_type:"percentage", discount_value:10, min_order_amount:100,  max_discount_amount:150,  max_uses:100, used_count:23, is_active:true,  starts_at:((now-14*86400)|todate), expires_at:((now+30*86400)|todate), applies_to:"all"},
+              {code:"SUMMER26",  name:"عرض الصيف 15%",          discount_type:"percentage", discount_value:15, min_order_amount:500,  max_discount_amount:300,  max_uses:50,  used_count:8,  is_active:true,  starts_at:((now-7*86400)|todate),  expires_at:((now+45*86400)|todate), applies_to:"devices"},
+              {code:"ACC50",     name:"خصم 50 ريال إكسسوارات",  discount_type:"fixed",      discount_value:50, min_order_amount:200,  max_discount_amount:null, max_uses:200, used_count:61, is_active:true,  starts_at:((now-30*86400)|todate), expires_at:((now+15*86400)|todate), applies_to:"accessories"},
+              {code:"VIP25",     name:"عملاء VIP خصم 25%",      discount_type:"percentage", discount_value:25, min_order_amount:1000, max_discount_amount:500,  max_uses:20,  used_count:20, is_active:false, starts_at:((now-60*86400)|todate), expires_at:((now-5*86400)|todate),  applies_to:"all"}
+            ] | map(. + {merchant_id:$m})')
+            CRESP=$(curl -sS -w "\nHTTP %{http_code}" -X POST "$SUPA/rest/v1/coupons?on_conflict=merchant_id,code" \
+              -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN" \
+              -H "Content-Type: application/json" -H "Prefer: resolution=ignore-duplicates,return=minimal" \
+              --data "$COUPONS")
+            echo "[$LABEL] coupons: $(echo "$CRESP" | tail -1)"
+
+            # Campaigns (skip when any exist)
+            local CAMPS
+            CAMPS=$(curl -sS "$SUPA/rest/v1/campaigns?select=id&limit=1" \
+              -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN")
+            if [ "$(echo "$CAMPS" | jq 'length')" = "0" ]; then
+              local NEWCAMPS CARESP
+              NEWCAMPS=$(jq -n --arg m "$MID" '[
+                {name:"تخفيضات نهاية الأسبوع", description:"خصم 20% على كل الأجهزة المجددة من الخميس إلى السبت", campaign_type:"flash_sale",  discount_type:"percentage", discount_value:20, buy_quantity:null, get_quantity:null, is_active:true,  starts_at:((now-2*86400)|todate), ends_at:((now+2*86400)|todate)},
+                {name:"اشترِ 2 واحصل على 1",   description:"على جميع الإكسسوارات — الأرخص مجاناً",              campaign_type:"buy_x_get_y", discount_type:"percentage", discount_value:100, buy_quantity:2,   get_quantity:1,    is_active:true,  starts_at:((now-10*86400)|todate), ends_at:((now+20*86400)|todate)},
+                {name:"باقة الحماية الكاملة",  description:"كفر + حماية شاشة + شاحن بسعر مخفض",                 campaign_type:"bundle",      discount_type:"fixed",      discount_value:35, buy_quantity:null, get_quantity:null, is_active:false, starts_at:((now-40*86400)|todate), ends_at:((now-10*86400)|todate)}
+              ] | map(. + {merchant_id:$m})')
+              CARESP=$(curl -sS -w "\nHTTP %{http_code}" -X POST "$SUPA/rest/v1/campaigns" \
+                -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN" \
+                -H "Content-Type: application/json" -H "Prefer: return=minimal" \
+                --data "$NEWCAMPS")
+              echo "[$LABEL] campaigns: $(echo "$CARESP" | tail -1)"
+            else
+              echo "[$LABEL] campaigns already present"
+            fi
+          }
+
+          FAILED=0
+          for EMAIL in demo-basic@wasil.demo demo-professional@wasil.demo demo-enterprise@wasil.demo demo-distributor@wasil.demo; do
+            AUTH=$(curl -sS "$SUPA/auth/v1/token?grant_type=password" \
+              -H "apikey: $ANON" -H "Content-Type: application/json" \
+              -d "{\"email\":\"$EMAIL\",\"password\":\"demo1234\"}")
+            TOKEN=$(echo "$AUTH" | jq -r '.access_token // empty')
+            if [ -n "$TOKEN" ]; then seed_merchant "$TOKEN" "$EMAIL" || FAILED=1; else echo "[$EMAIL] login failed"; FAILED=1; fi
+          done
+
+          exit $FAILED
