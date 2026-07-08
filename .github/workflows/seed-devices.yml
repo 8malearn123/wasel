@@ -15,23 +15,35 @@ jobs:
         run: |
           set -euo pipefail
 
-          echo "== login with cashier code =="
-          SESSION=$(curl -sS "$SUPA/functions/v1/login-by-code" \
-            -H "apikey: $ANON" -H "Authorization: Bearer $ANON" \
-            -H "Content-Type: application/json" -d '{"code":"70035"}')
-          TOKEN=$(echo "$SESSION" | jq -r '.session.access_token // empty')
-          if [ -z "$TOKEN" ]; then echo "login failed: $SESSION"; exit 1; fi
+          seed_merchant() {
+            local TOKEN="$1" LABEL="$2"
 
-          echo "== resolve merchant & branch =="
-          BR=$(curl -sS "$SUPA/rest/v1/branches?select=id,merchant_id&is_active=eq.true&limit=1" \
-            -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN")
-          MID=$(echo "$BR" | jq -r '.[0].merchant_id // empty')
-          BID=$(echo "$BR" | jq -r '.[0].id // empty')
-          if [ -z "$MID" ]; then echo "no branch found: $BR"; exit 1; fi
-          echo "merchant=$MID branch=$BID"
+            local BR MID BID
+            BR=$(curl -sS "$SUPA/rest/v1/branches?select=id,merchant_id&is_active=eq.true&limit=1" \
+              -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN")
+            MID=$(echo "$BR" | jq -r '.[0].merchant_id // empty')
+            BID=$(echo "$BR" | jq -r '.[0].id // empty')
+            if [ -z "$MID" ]; then echo "[$LABEL] no branch found: $BR"; return 1; fi
+            echo "[$LABEL] merchant=$MID branch=$BID"
 
-          echo "== insert devices =="
-          jq -n --arg m "$MID" --arg b "$BID" '[
+            jq --arg m "$MID" --arg b "$BID" 'map(. + {merchant_id:$m, branch_id:$b, status:"available"})' \
+              devices-base.json > devices.json
+
+            local RESP
+            RESP=$(curl -sS -w "\nHTTP %{http_code}" -X POST \
+              "$SUPA/rest/v1/devices?on_conflict=merchant_id,imei" \
+              -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN" \
+              -H "Content-Type: application/json" \
+              -H "Prefer: resolution=ignore-duplicates,return=minimal" \
+              --data @devices.json)
+            echo "[$LABEL] $RESP"
+            echo "$RESP" | grep -q "HTTP 201" || { echo "[$LABEL] insert failed"; return 1; }
+
+            curl -sS "$SUPA/rest/v1/devices?select=model&order=created_at.desc&limit=10" \
+              -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN" | jq -r --arg l "$LABEL" '"[\($l)] seeded: " + (map(.model) | join(", "))'
+          }
+
+          jq -n '[
             {imei:"356789104563218", model:"iPhone 15 Pro Max", brand:"Apple",  storage:"256GB", color:"تيتانيوم طبيعي", condition:"new",  cost:4200, price:4799},
             {imei:"356789104563226", model:"iPhone 15",         brand:"Apple",  storage:"128GB", color:"أزرق",           condition:"new",  cost:2900, price:3399},
             {imei:"356789104563234", model:"iPhone 14 Pro",     brand:"Apple",  storage:"256GB", color:"بنفسجي",         condition:"new",  cost:3400, price:3899},
@@ -42,17 +54,32 @@ jobs:
             {imei:"358456120987432", model:"Pixel 8 Pro",       brand:"Google", storage:"256GB", color:"أبيض",           condition:"new",  cost:3100, price:3599},
             {imei:"358456120987440", model:"Xiaomi 14",         brand:"Xiaomi", storage:"256GB", color:"أسود",           condition:"new",  cost:2200, price:2599},
             {imei:"358456120987457", model:"Huawei Nova 12",    brand:"Huawei", storage:"256GB", color:"ذهبي",           condition:"new",  cost:1300, price:1599}
-          ] | map(. + {merchant_id:$m, branch_id:$b, status:"available"})' > devices.json
+          ]' > devices-base.json
 
-          RESP=$(curl -sS -w "\nHTTP %{http_code}" -X POST \
-            "$SUPA/rest/v1/devices?on_conflict=merchant_id,imei" \
-            -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN" \
-            -H "Content-Type: application/json" \
-            -H "Prefer: resolution=ignore-duplicates,return=minimal" \
-            --data @devices.json)
-          echo "$RESP"
-          echo "$RESP" | grep -q "HTTP 201" || { echo "insert failed"; exit 1; }
+          FAILED=0
 
-          echo "== verify =="
-          curl -sS "$SUPA/rest/v1/devices?select=model,imei,price&order=created_at.desc&limit=12" \
-            -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN" | jq -r '.[] | "\(.model) — \(.imei) — \(.price)"'
+          echo "== seed cashier-code merchant =="
+          SESSION=$(curl -sS "$SUPA/functions/v1/login-by-code" \
+            -H "apikey: $ANON" -H "Authorization: Bearer $ANON" \
+            -H "Content-Type: application/json" -d '{"code":"70035"}')
+          TOKEN=$(echo "$SESSION" | jq -r '.session.access_token // empty')
+          if [ -n "$TOKEN" ]; then
+            seed_merchant "$TOKEN" "cashier-70035" || FAILED=1
+          else
+            echo "[cashier-70035] login failed: $SESSION"; FAILED=1
+          fi
+
+          echo "== seed demo merchants =="
+          for EMAIL in demo-basic@wasil.demo demo-professional@wasil.demo demo-enterprise@wasil.demo demo-distributor@wasil.demo; do
+            AUTH=$(curl -sS "$SUPA/auth/v1/token?grant_type=password" \
+              -H "apikey: $ANON" -H "Content-Type: application/json" \
+              -d "{\"email\":\"$EMAIL\",\"password\":\"demo1234\"}")
+            TOKEN=$(echo "$AUTH" | jq -r '.access_token // empty')
+            if [ -n "$TOKEN" ]; then
+              seed_merchant "$TOKEN" "$EMAIL" || FAILED=1
+            else
+              echo "[$EMAIL] login failed: $(echo "$AUTH" | jq -c '{error, error_description, msg}')"; FAILED=1
+            fi
+          done
+
+          exit $FAILED
