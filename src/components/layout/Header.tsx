@@ -87,7 +87,7 @@ export function Header({ title, subtitle }: HeaderProps) {
               {SECTIONS.map((s) => (
                 <DropdownMenuItem
                   key={s.path}
-                  onClick={() => navigate(s.path)}
+                  onSelect={() => navigate(s.path)}
                   className="gap-2 cursor-pointer"
                 >
                   <s.icon className="w-4 h-4 text-primary" />
