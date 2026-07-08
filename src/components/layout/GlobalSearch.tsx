@@ -91,7 +91,7 @@ export function GlobalSearch() {
           id: `d-${d.id}`, icon: Smartphone,
           title: `${d.brand ? d.brand + " " : ""}${d.model}`,
           subtitle: `IMEI: ${d.imei} — ${Number(d.price).toLocaleString()} ر.س`,
-          path: `/inventory?tab=devices&q=${encodeURIComponent(d.imei)}`,
+          path: `/inventory?tab=devices&q=${encodeURIComponent(d.imei)}&open=${d.id}`,
         });
       }
       for (const a of accessories.data || []) {
@@ -99,7 +99,7 @@ export function GlobalSearch() {
           id: `a-${a.id}`, icon: Package,
           title: a.name,
           subtitle: `${a.sku} — ${Number(a.price).toLocaleString()} ر.س`,
-          path: `/inventory?tab=accessories&q=${encodeURIComponent(a.sku)}`,
+          path: `/inventory?tab=accessories&q=${encodeURIComponent(a.sku)}&open=${a.id}`,
         });
       }
       for (const c of customers.data || []) {

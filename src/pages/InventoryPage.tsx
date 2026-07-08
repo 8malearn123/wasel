@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
@@ -67,6 +67,9 @@ export default function InventoryPage() {
     if (q !== null) setSearchTerm(q);
     if (tab) setActiveTab(tab);
   }, [searchParams]);
+
+  // Open the product dialog requested by a global-search result (?open=<id>)
+  const openedProductRef = useRef<string | null>(null);
   const [showAddDevice, setShowAddDevice] = useState(false);
   const [showAddAccessory, setShowAddAccessory] = useState(false);
   const [showAddRepairPart, setShowAddRepairPart] = useState(false);
@@ -80,6 +83,22 @@ export default function InventoryPage() {
   const { accessories, loading: accessoriesLoading, addAccessory, updateAccessory, deleteAccessory } = useAccessories();
   const { parts: repairParts, loading: partsLoading, addPart, updatePart, deletePart } = useRepairParts();
   const { deviceCategories, accessoryCategories } = useCategories();
+
+  useEffect(() => {
+    const openId = searchParams.get("open");
+    if (!openId || openedProductRef.current === openId) return;
+    const dev = devices.find((d) => d.id === openId);
+    if (dev) {
+      setEditingDevice(dev);
+      openedProductRef.current = openId;
+      return;
+    }
+    const acc = accessories.find((a) => a.id === openId);
+    if (acc) {
+      setEditingAccessory(acc);
+      openedProductRef.current = openId;
+    }
+  }, [searchParams, devices, accessories]);
 
   // Filter by search
   const filteredDevices = devices.filter(d => 
