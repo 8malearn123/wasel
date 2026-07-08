@@ -58,8 +58,8 @@ jobs:
                 [
                   {order_number:"PO-DEMO-001", supplier_id: sup(0), status:"received", payment_status:"paid",    total_amount:28500, paid_amount:28500, order_date:((now-6*86400)|todate), received_date:((now-4*86400)|todate), notes:"دفعة أجهزة آيفون 15"},
                   {order_number:"PO-DEMO-002", supplier_id: sup(1), status:"received", payment_status:"partial", total_amount:9400,  paid_amount:5000,  order_date:((now-5*86400)|todate), received_date:((now-3*86400)|todate), notes:"إكسسوارات متنوعة"},
-                  {order_number:"PO-DEMO-003", supplier_id: sup(2), status:"approved", payment_status:"unpaid",  total_amount:16800, paid_amount:0,     order_date:((now-2*86400)|todate), notes:"أجهزة شاومي 14 — بانتظار الشحن"},
-                  {order_number:"PO-DEMO-004", supplier_id: sup(3), status:"pending",  payment_status:"unpaid",  total_amount:6300,  paid_amount:0,     order_date:((now-1*86400)|todate), notes:"شاشات بديلة"}
+                  {order_number:"PO-DEMO-003", supplier_id: sup(2), status:"approved", payment_status:"unpaid",  total_amount:16800, paid_amount:0,     order_date:((now-2*86400)|todate), received_date:null, notes:"أجهزة شاومي 14 — بانتظار الشحن"},
+                  {order_number:"PO-DEMO-004", supplier_id: sup(3), status:"pending",  payment_status:"unpaid",  total_amount:6300,  paid_amount:0,     order_date:((now-1*86400)|todate), received_date:null, notes:"شاشات بديلة"}
                 ] | map(. + {merchant_id:$m, branch_id:$b})')
               local PRESP
               PRESP=$(curl -sS -w "\nHTTP %{http_code}" -X POST "$SUPA/rest/v1/purchase_orders" \
