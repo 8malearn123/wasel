@@ -17,12 +17,12 @@ jobs:
           seed_merchant() {
             local TOKEN="$1" LABEL="$2"
 
-            local BR MID UID
+            local BR MID USERID
             BR=$(curl -sS "$SUPA/rest/v1/branches?select=merchant_id&limit=1" \
               -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN")
             MID=$(echo "$BR" | jq -r '.[0].merchant_id // empty')
-            UID=$(curl -sS "$SUPA/auth/v1/user" -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN" | jq -r '.id // empty')
-            { [ -n "$MID" ] && [ -n "$UID" ]; } || { echo "[$LABEL] no merchant/user"; return 1; }
+            USERID=$(curl -sS "$SUPA/auth/v1/user" -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN" | jq -r '.id // empty')
+            { [ -n "$MID" ] && [ -n "$USERID" ]; } || { echo "[$LABEL] no merchant/user"; return 1; }
 
             local EXIST
             EXIST=$(curl -sS "$SUPA/rest/v1/support_tickets?select=id&limit=1" \
@@ -33,7 +33,7 @@ jobs:
             fi
 
             local TICKETS RESP
-            TICKETS=$(jq -n --arg m "$MID" --arg u "$UID" '[
+            TICKETS=$(jq -n --arg m "$MID" --arg u "$USERID" '[
               {subject:"مشكلة في طباعة الفاتورة الحرارية",
                description:"عند إتمام البيع لا تطبع الطابعة الحرارية الفاتورة رغم أنها متصلة وتعمل مع برامج أخرى. الطابعة نوع Xprinter XP-80.",
                status:"open", priority:"high", admin_reply:null, replied_at:null,
