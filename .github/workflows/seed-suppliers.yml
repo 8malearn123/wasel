@@ -1,0 +1,92 @@
+name: Seed demo suppliers
+
+on:
+  workflow_dispatch:
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Insert demo suppliers and purchase orders
+        env:
+          SUPA: https://ynwddyxzypbcftlevuam.supabase.co
+          ANON: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlud2RkeXh6eXBiY2Z0bGV2dWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5MjE1OTQsImV4cCI6MjA4NTQ5NzU5NH0.PsNDqovuzo7NmTiwsH4swskkIF3FdMlBXjYUy3MJkyA
+        run: |
+          set -euo pipefail
+
+          seed_merchant() {
+            local TOKEN="$1" LABEL="$2"
+
+            local BR MID BID
+            BR=$(curl -sS "$SUPA/rest/v1/branches?select=id,merchant_id&is_active=eq.true&limit=1" \
+              -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN")
+            MID=$(echo "$BR" | jq -r '.[0].merchant_id // empty')
+            BID=$(echo "$BR" | jq -r '.[0].id // empty')
+            [ -n "$MID" ] || { echo "[$LABEL] no branch"; return 1; }
+
+            # Suppliers (skip when any exist)
+            local SUPS
+            SUPS=$(curl -sS "$SUPA/rest/v1/suppliers?select=id,name&limit=10" \
+              -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN")
+            if [ "$(echo "$SUPS" | jq 'length')" = "0" ]; then
+              local NEWSUPS
+              NEWSUPS=$(jq -n --arg m "$MID" '[
+                {name:"شركة الجوال الذهبي للتجارة", contact_name:"محمد العتيبي",  phone:"0551234567", email:"sales@goldenphone.sa",  address:"الرياض - حي العليا",   balance:12500, notes:"مورد أجهزة آبل وسامسونج"},
+                {name:"مؤسسة التقنية الحديثة",     contact_name:"عبدالعزيز الشهري", phone:"0567891234", email:"info@moderntech.sa",   address:"جدة - حي الروضة",      balance:4800,  notes:"إكسسوارات وقطع غيار"},
+                {name:"موزع الشرق للإلكترونيات",   contact_name:"سلطان الدوسري",   phone:"0509876543", email:"orders@eastdist.sa",   address:"الدمام - حي الفيصلية", balance:0,     notes:"أجهزة شاومي وهواوي"},
+                {name:"شركة النخبة للاتصالات",      contact_name:"فيصل الحربي",     phone:"0533456789", email:"supply@elite-com.sa",  address:"الرياض - حي السليمانية", balance:7200, notes:"شاشات وبطاريات أصلية"}
+              ] | map(. + {merchant_id:$m, is_active:true})')
+              curl -sS -X POST "$SUPA/rest/v1/suppliers" \
+                -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN" \
+                -H "Content-Type: application/json" -H "Prefer: return=minimal" \
+                --data "$NEWSUPS" > /dev/null
+              SUPS=$(curl -sS "$SUPA/rest/v1/suppliers?select=id,name&limit=10" \
+                -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN")
+              echo "[$LABEL] seeded $(echo "$SUPS" | jq 'length') suppliers"
+            else
+              echo "[$LABEL] suppliers already present"
+            fi
+
+            # Purchase orders (skip when the demo one exists)
+            local POEXIST
+            POEXIST=$(curl -sS "$SUPA/rest/v1/purchase_orders?order_number=eq.PO-DEMO-001&select=id&limit=1" \
+              -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN")
+            if [ "$(echo "$POEXIST" | jq 'length')" = "0" ] && [ "$(echo "$SUPS" | jq 'length')" != "0" ]; then
+              local POS
+              POS=$(jq -n --arg m "$MID" --arg b "$BID" --argjson sups "$SUPS" '
+                def sup(i): $sups[i % ($sups | length)].id;
+                [
+                  {order_number:"PO-DEMO-001", supplier_id: sup(0), status:"received", payment_status:"paid",    total_amount:28500, paid_amount:28500, order_date:((now-6*86400)|todate), received_date:((now-4*86400)|todate), notes:"دفعة أجهزة آيفون 15"},
+                  {order_number:"PO-DEMO-002", supplier_id: sup(1), status:"received", payment_status:"partial", total_amount:9400,  paid_amount:5000,  order_date:((now-5*86400)|todate), received_date:((now-3*86400)|todate), notes:"إكسسوارات متنوعة"},
+                  {order_number:"PO-DEMO-003", supplier_id: sup(2), status:"approved", payment_status:"unpaid",  total_amount:16800, paid_amount:0,     order_date:((now-2*86400)|todate), notes:"أجهزة شاومي 14 — بانتظار الشحن"},
+                  {order_number:"PO-DEMO-004", supplier_id: sup(3), status:"pending",  payment_status:"unpaid",  total_amount:6300,  paid_amount:0,     order_date:((now-1*86400)|todate), notes:"شاشات بديلة"}
+                ] | map(. + {merchant_id:$m, branch_id:$b})')
+              local PRESP
+              PRESP=$(curl -sS -w "\nHTTP %{http_code}" -X POST "$SUPA/rest/v1/purchase_orders" \
+                -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN" \
+                -H "Content-Type: application/json" -H "Prefer: return=minimal" \
+                --data "$POS")
+              echo "[$LABEL] purchase orders: $(echo "$PRESP" | tail -1)"
+              echo "$PRESP" | grep -q "HTTP 201" || { echo "[$LABEL] PO insert failed: $PRESP"; return 1; }
+            else
+              echo "[$LABEL] purchase orders already present"
+            fi
+          }
+
+          FAILED=0
+
+          SESSION=$(curl -sS "$SUPA/functions/v1/login-by-code" \
+            -H "apikey: $ANON" -H "Authorization: Bearer $ANON" \
+            -H "Content-Type: application/json" -d '{"code":"70035"}')
+          TOKEN=$(echo "$SESSION" | jq -r '.session.access_token // empty')
+          if [ -n "$TOKEN" ]; then seed_merchant "$TOKEN" "cashier-70035" || FAILED=1; else echo "cashier login failed"; FAILED=1; fi
+
+          for EMAIL in demo-basic@wasil.demo demo-professional@wasil.demo demo-enterprise@wasil.demo demo-distributor@wasil.demo; do
+            AUTH=$(curl -sS "$SUPA/auth/v1/token?grant_type=password" \
+              -H "apikey: $ANON" -H "Content-Type: application/json" \
+              -d "{\"email\":\"$EMAIL\",\"password\":\"demo1234\"}")
+            TOKEN=$(echo "$AUTH" | jq -r '.access_token // empty')
+            if [ -n "$TOKEN" ]; then seed_merchant "$TOKEN" "$EMAIL" || FAILED=1; else echo "[$EMAIL] login failed"; FAILED=1; fi
+          done
+
+          exit $FAILED
