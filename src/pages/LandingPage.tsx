@@ -2,29 +2,37 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Smartphone, ShoppingCart, Package, Wrench, Store, BarChart3,
-  Building2, Check, Zap, ArrowLeft, ShieldCheck, Clock,
+  Building2, Check, Zap, ArrowLeft, ArrowRight, ShieldCheck, Clock,
+  Sun, Moon, Languages,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/i18n";
+import { useTheme } from "@/hooks/useTheme";
 
 const FEATURES = [
-  { icon: ShoppingCart, title: "نقطة بيع سريعة", desc: "بيع بالباركود أو IMEI مع فواتير ضريبية مبسطة ورمز QR لهيئة الزكاة" },
-  { icon: Package, title: "إدارة مخزون ذكية", desc: "تتبع الأجهزة برقم IMEI والإكسسوارات بالكميات مع تنبيهات النفاد" },
-  { icon: Wrench, title: "إدارة الصيانة", desc: "طلبات صيانة بمراحل واضحة، قطع غيار، وإشعار العميل عند الجاهزية" },
-  { icon: Store, title: "متجر إلكتروني", desc: "متجرك الخاص على الإنترنت بهويتك وألوانك مع سلة وطلبات أونلاين" },
-  { icon: BarChart3, title: "تقارير وأرباح", desc: "مبيعات وأرباح يومية وشهرية ولوحة تحكم مباشرة لكل فروعك" },
-  { icon: Building2, title: "فروع متعددة", desc: "أدر عدة فروع ومستودعات بتحويلات مخزون موثقة بينها" },
+  { icon: ShoppingCart, ar: { t: "نقطة بيع سريعة", d: "بيع بالباركود أو IMEI مع فواتير ضريبية مبسطة ورمز QR لهيئة الزكاة" }, en: { t: "Fast Point of Sale", d: "Sell by barcode or IMEI with simplified tax invoices and ZATCA QR codes" } },
+  { icon: Package, ar: { t: "إدارة مخزون ذكية", d: "تتبع الأجهزة برقم IMEI والإكسسوارات بالكميات مع تنبيهات النفاد" }, en: { t: "Smart Inventory", d: "Track devices by IMEI and accessories by quantity, with low-stock alerts" } },
+  { icon: Wrench, ar: { t: "إدارة الصيانة", d: "طلبات صيانة بمراحل واضحة، قطع غيار، وإشعار العميل عند الجاهزية" }, en: { t: "Repair Management", d: "Repair orders with clear stages, spare parts, and customer pickup alerts" } },
+  { icon: Store, ar: { t: "متجر إلكتروني", d: "متجرك الخاص على الإنترنت بهويتك وألوانك مع سلة وطلبات أونلاين" }, en: { t: "Online Store", d: "Your own branded web store with cart and online orders" } },
+  { icon: BarChart3, ar: { t: "تقارير وأرباح", d: "مبيعات وأرباح يومية وشهرية ولوحة تحكم مباشرة لكل فروعك" }, en: { t: "Reports & Profits", d: "Daily and monthly sales, profits, and a live dashboard for all branches" } },
+  { icon: Building2, ar: { t: "فروع متعددة", d: "أدر عدة فروع ومستودعات بتحويلات مخزون موثقة بينها" }, en: { t: "Multi-Branch", d: "Manage branches and warehouses with documented stock transfers" } },
 ];
 
 const PLANS = [
-  { name: "باقة لايت", price: 99, popular: false, points: ["فرع واحد و3 مستخدمين", "نقطة بيع ومخزون كامل", "فحص فني مجاني وضمان 30 يوم"] },
-  { name: "باقة بلس", price: 199, popular: true, points: ["3 فروع و10 مستخدمين", "متجر إلكتروني وتقارير متقدمة", "خصم 15% على الصيانة وضمان 90 يوم"] },
-  { name: "باقة برو", price: 399, popular: false, points: ["10 فروع و50 مستخدم", "أولوية VIP وجهاز بديل", "دعم مخصص 24/7 واستلام وتوصيل"] },
-  { name: "باقة ماكس", price: 499, popular: false, points: ["للموزعين والتجار", "أسعار جملة ودفع آجل", "مدير حساب مخصص ولوحة موزع"] },
+  { price: 99, popular: false, ar: { n: "باقة لايت", p: ["فرع واحد و3 مستخدمين", "نقطة بيع ومخزون كامل", "فحص فني مجاني وضمان 30 يوم"] }, en: { n: "Lite Plan", p: ["1 branch, 3 users", "Full POS and inventory", "Free checkup, 30-day warranty"] } },
+  { price: 199, popular: true, ar: { n: "باقة بلس", p: ["3 فروع و10 مستخدمين", "متجر إلكتروني وتقارير متقدمة", "خصم 15% على الصيانة وضمان 90 يوم"] }, en: { n: "Plus Plan", p: ["3 branches, 10 users", "Online store & advanced reports", "15% repair discount, 90-day warranty"] } },
+  { price: 399, popular: false, ar: { n: "باقة برو", p: ["10 فروع و50 مستخدم", "أولوية VIP وجهاز بديل", "دعم مخصص 24/7 واستلام وتوصيل"] }, en: { n: "Pro Plan", p: ["10 branches, 50 users", "VIP priority & loaner device", "24/7 support, pickup & delivery"] } },
+  { price: 499, popular: false, ar: { n: "باقة ماكس", p: ["للموزعين والتجار", "أسعار جملة ودفع آجل", "مدير حساب مخصص ولوحة موزع"] }, en: { n: "Max Plan", p: ["For distributors & traders", "Wholesale prices, credit terms", "Dedicated account manager"] } },
 ];
 
 export default function LandingPage() {
+  const { language, setLanguage, isRTL } = useLanguage();
+  const { isDark, toggleTheme } = useTheme();
+  const ar = language === "ar";
+  const Arrow = isRTL ? ArrowLeft : ArrowRight;
+
   return (
-    <div dir="rtl" className="min-h-screen bg-background text-foreground">
+    <div dir={isRTL ? "rtl" : "ltr"} className="min-h-screen bg-background text-foreground">
       {/* Top bar */}
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -33,16 +41,35 @@ export default function LandingPage() {
               <Smartphone className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="font-bold leading-none">وصل</p>
-              <p className="text-[11px] text-muted-foreground">نظام محلات الجوالات</p>
+              <p className="font-bold leading-none">{ar ? "وصل" : "Wasel"}</p>
+              <p className="text-[11px] text-muted-foreground">{ar ? "نظام محلات الجوالات" : "Phone Shop System"}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            {/* Theme toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleTheme}
+              title={isDark ? (ar ? "الوضع الفاتح" : "Light mode") : (ar ? "الوضع الداكن" : "Dark mode")}
+            >
+              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </Button>
+            {/* Language toggle */}
+            <Button
+              variant="ghost"
+              className="gap-1.5 px-2.5"
+              onClick={() => setLanguage(ar ? "en" : "ar")}
+              title={ar ? "English" : "العربية"}
+            >
+              <Languages className="w-5 h-5" />
+              <span className="text-xs font-bold">{ar ? "EN" : "ع"}</span>
+            </Button>
             <Button asChild variant="ghost">
-              <Link to="/auth">تسجيل الدخول</Link>
+              <Link to="/auth">{ar ? "تسجيل الدخول" : "Sign in"}</Link>
             </Button>
             <Button asChild className="bg-gradient-primary hover:opacity-90">
-              <Link to="/auth">ابدأ مجاناً</Link>
+              <Link to="/auth">{ar ? "ابدأ مجاناً" : "Start free"}</Link>
             </Button>
           </div>
         </div>
@@ -58,31 +85,32 @@ export default function LandingPage() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium mb-6">
               <Zap className="w-3.5 h-3.5" />
-              تجربة مجانية 14 يوماً — بدون بطاقة ائتمانية
+              {ar ? "تجربة مجانية 14 يوماً — بدون بطاقة ائتمانية" : "14-day free trial — no credit card required"}
             </span>
             <h1 className="text-4xl md:text-6xl font-extrabold leading-tight mb-6">
-              نظام متكامل لإدارة
-              <span className="text-gradient block mt-2">محلات الجوالات</span>
+              {ar ? "نظام متكامل لإدارة" : "The all-in-one system for"}
+              <span className="text-gradient block mt-2">{ar ? "محلات الجوالات" : "phone shops"}</span>
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-10">
-              نقطة بيع، مخزون بالـ IMEI، صيانة، متجر إلكتروني، وتقارير أرباح —
-              كل ما يحتاجه محلك في منصة واحدة سهلة وسريعة.
+              {ar
+                ? "نقطة بيع، مخزون بالـ IMEI، صيانة، متجر إلكتروني، وتقارير أرباح — كل ما يحتاجه محلك في منصة واحدة سهلة وسريعة."
+                : "POS, IMEI inventory, repairs, an online store, and profit reports — everything your shop needs in one fast, simple platform."}
             </p>
             <div className="flex items-center justify-center gap-3 flex-wrap">
               <Button asChild size="lg" className="bg-gradient-primary hover:opacity-90 shadow-glow h-12 px-8 text-base">
                 <Link to="/auth">
-                  ابدأ تجربتك المجانية
-                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  {ar ? "ابدأ تجربتك المجانية" : "Start your free trial"}
+                  <Arrow className={isRTL ? "w-4 h-4 mr-2" : "w-4 h-4 ml-2"} />
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="h-12 px-8 text-base">
-                <Link to="/auth">جرّب حساب الديمو</Link>
+                <Link to="/auth">{ar ? "جرّب حساب الديمو" : "Try the demo"}</Link>
               </Button>
             </div>
             <div className="flex items-center justify-center gap-6 mt-8 text-xs text-muted-foreground flex-wrap">
-              <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-success" /> فواتير متوافقة مع هيئة الزكاة</span>
-              <span className="flex items-center gap-1.5"><Clock className="w-4 h-4 text-success" /> جاهز خلال دقائق</span>
-              <span className="flex items-center gap-1.5"><Check className="w-4 h-4 text-success" /> دعم عربي كامل</span>
+              <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-success" /> {ar ? "فواتير متوافقة مع هيئة الزكاة" : "ZATCA-compliant invoices"}</span>
+              <span className="flex items-center gap-1.5"><Clock className="w-4 h-4 text-success" /> {ar ? "جاهز خلال دقائق" : "Ready in minutes"}</span>
+              <span className="flex items-center gap-1.5"><Check className="w-4 h-4 text-success" /> {ar ? "دعم عربي كامل" : "Full Arabic support"}</span>
             </div>
           </motion.div>
         </div>
@@ -91,68 +119,74 @@ export default function LandingPage() {
       {/* Features */}
       <section className="max-w-6xl mx-auto px-6 py-20">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-3">كل أدوات محلك في مكان واحد</h2>
-          <p className="text-muted-foreground">صُمم خصيصاً لمحلات بيع وصيانة الجوالات</p>
+          <h2 className="text-3xl font-bold mb-3">{ar ? "كل أدوات محلك في مكان واحد" : "All your shop's tools in one place"}</h2>
+          <p className="text-muted-foreground">{ar ? "صُمم خصيصاً لمحلات بيع وصيانة الجوالات" : "Built specifically for phone sales and repair shops"}</p>
         </div>
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map((f, i) => (
-            <motion.div
-              key={f.title}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.05 }}
-              className="p-6 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-glow transition-all"
-            >
-              <div className="w-11 h-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-4">
-                <f.icon className="w-5 h-5" />
-              </div>
-              <h3 className="font-bold mb-1.5">{f.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
-            </motion.div>
-          ))}
+          {FEATURES.map((f, i) => {
+            const c = ar ? f.ar : f.en;
+            return (
+              <motion.div
+                key={c.t}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.05 }}
+                className="p-6 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-glow transition-all"
+              >
+                <div className="w-11 h-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-4">
+                  <f.icon className="w-5 h-5" />
+                </div>
+                <h3 className="font-bold mb-1.5">{c.t}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{c.d}</p>
+              </motion.div>
+            );
+          })}
         </div>
       </section>
 
       {/* Plans */}
       <section className="max-w-6xl mx-auto px-6 py-20">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-3">باقات تناسب كل الأحجام</h2>
-          <p className="text-muted-foreground">ابدأ صغيراً وكبّر متى ما احتجت — الأسعار شهرية</p>
+          <h2 className="text-3xl font-bold mb-3">{ar ? "باقات تناسب كل الأحجام" : "Plans for every size"}</h2>
+          <p className="text-muted-foreground">{ar ? "ابدأ صغيراً وكبّر متى ما احتجت — الأسعار شهرية" : "Start small and grow anytime — prices are monthly"}</p>
         </div>
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {PLANS.map((p, i) => (
-            <motion.div
-              key={p.name}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.05 }}
-              className={`relative p-6 rounded-2xl border-2 bg-card ${p.popular ? "border-primary shadow-glow" : "border-border"}`}
-            >
-              {p.popular && (
-                <span className="absolute -top-3 right-1/2 translate-x-1/2 px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-medium">
-                  الأكثر طلباً
-                </span>
-              )}
-              <h3 className="font-bold text-lg text-center">{p.name}</h3>
-              <p className="text-center my-4">
-                <span className="text-4xl font-extrabold">{p.price}</span>
-                <span className="text-muted-foreground text-sm"> ر.س/شهر</span>
-              </p>
-              <ul className="space-y-2.5 mb-6">
-                {p.points.map((pt) => (
-                  <li key={pt} className="flex items-start gap-2 text-sm text-muted-foreground">
-                    <Check className="w-4 h-4 text-success shrink-0 mt-0.5" />
-                    {pt}
-                  </li>
-                ))}
-              </ul>
-              <Button asChild className={`w-full ${p.popular ? "bg-gradient-primary hover:opacity-90" : ""}`} variant={p.popular ? "default" : "outline"}>
-                <Link to="/auth">اشترك الآن</Link>
-              </Button>
-            </motion.div>
-          ))}
+          {PLANS.map((p, i) => {
+            const c = ar ? p.ar : p.en;
+            return (
+              <motion.div
+                key={c.n}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.05 }}
+                className={`relative p-6 rounded-2xl border-2 bg-card ${p.popular ? "border-primary shadow-glow" : "border-border"}`}
+              >
+                {p.popular && (
+                  <span className="absolute -top-3 right-1/2 translate-x-1/2 px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-medium">
+                    {ar ? "الأكثر طلباً" : "Most popular"}
+                  </span>
+                )}
+                <h3 className="font-bold text-lg text-center">{c.n}</h3>
+                <p className="text-center my-4">
+                  <span className="text-4xl font-extrabold">{p.price}</span>
+                  <span className="text-muted-foreground text-sm"> {ar ? "ر.س/شهر" : "SAR/mo"}</span>
+                </p>
+                <ul className="space-y-2.5 mb-6">
+                  {c.p.map((pt) => (
+                    <li key={pt} className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <Check className="w-4 h-4 text-success shrink-0 mt-0.5" />
+                      {pt}
+                    </li>
+                  ))}
+                </ul>
+                <Button asChild className={`w-full ${p.popular ? "bg-gradient-primary hover:opacity-90" : ""}`} variant={p.popular ? "default" : "outline"}>
+                  <Link to="/auth">{ar ? "اشترك الآن" : "Subscribe"}</Link>
+                </Button>
+              </motion.div>
+            );
+          })}
         </div>
       </section>
 
@@ -161,12 +195,14 @@ export default function LandingPage() {
         <div className="rounded-3xl bg-gradient-primary p-10 md:p-14 text-center text-white relative overflow-hidden">
           <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
           <div className="absolute -left-10 -bottom-10 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
-          <h2 className="text-3xl md:text-4xl font-extrabold mb-4">جاهز تنقل محلك للمستوى التالي؟</h2>
+          <h2 className="text-3xl md:text-4xl font-extrabold mb-4">
+            {ar ? "جاهز تنقل محلك للمستوى التالي؟" : "Ready to level up your shop?"}
+          </h2>
           <p className="text-white/85 mb-8 max-w-xl mx-auto">
-            سجّل الآن وابدأ البيع خلال دقائق — 14 يوماً مجاناً بكل المميزات.
+            {ar ? "سجّل الآن وابدأ البيع خلال دقائق — 14 يوماً مجاناً بكل المميزات." : "Sign up now and start selling in minutes — 14 days free with every feature."}
           </p>
           <Button asChild size="lg" variant="secondary" className="h-12 px-8 text-base font-bold">
-            <Link to="/auth">أنشئ حسابك مجاناً</Link>
+            <Link to="/auth">{ar ? "أنشئ حسابك مجاناً" : "Create your free account"}</Link>
           </Button>
         </div>
       </section>
@@ -178,11 +214,11 @@ export default function LandingPage() {
             <div className="w-7 h-7 rounded-lg bg-gradient-primary flex items-center justify-center">
               <Smartphone className="w-4 h-4 text-white" />
             </div>
-            <span>منصة وصل — نظام محلات الجوالات</span>
+            <span>{ar ? "منصة وصل — نظام محلات الجوالات" : "Wasel — Phone Shop System"}</span>
           </div>
           <div className="flex items-center gap-4">
-            <Link to="/auth" className="hover:text-primary transition-colors">تسجيل الدخول</Link>
-            <Link to="/admin/login" className="hover:text-primary transition-colors">إدارة المنصة</Link>
+            <Link to="/auth" className="hover:text-primary transition-colors">{ar ? "تسجيل الدخول" : "Sign in"}</Link>
+            <Link to="/admin/login" className="hover:text-primary transition-colors">{ar ? "إدارة المنصة" : "Platform admin"}</Link>
           </div>
         </div>
       </footer>
