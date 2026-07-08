@@ -41,6 +41,7 @@ import AdminTicketsPage from "./pages/admin/AdminTicketsPage";
 import AdminReportsPage from "./pages/admin/AdminReportsPage";
 import AdminAuthPage from "./pages/admin/AdminAuthPage";
 import OAuthConsentPage from "./pages/OAuthConsentPage";
+import LandingPage from "./pages/LandingPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -99,13 +100,38 @@ function CashierRedirect({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Root: public landing page for visitors, dashboard for signed-in users
+function HomeRoute() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LandingPage />;
+  }
+
+  return (
+    <ProtectedRoute>
+      <CashierRedirect>
+        <Dashboard />
+      </CashierRedirect>
+    </ProtectedRoute>
+  );
+}
+
 function AppRoutes() {
   return (
     <Routes>
       <Route path="/auth" element={<AuthPage />} />
       <Route path="/.lovable/oauth/consent" element={<OAuthConsentPage />} />
       <Route path="/locked" element={<LockedRoute><LockedPage /></LockedRoute>} />
-      <Route path="/" element={<ProtectedRoute><CashierRedirect><Dashboard /></CashierRedirect></ProtectedRoute>} />
+      <Route path="/" element={<HomeRoute />} />
       <Route path="/pos" element={<ProtectedRoute><POSPage /></ProtectedRoute>} />
       <Route path="/inventory" element={<ProtectedRoute><CashierRedirect><InventoryPage /></CashierRedirect></ProtectedRoute>} />
       <Route path="/branches" element={<ProtectedRoute><CashierRedirect><BranchesPage /></CashierRedirect></ProtectedRoute>} />
