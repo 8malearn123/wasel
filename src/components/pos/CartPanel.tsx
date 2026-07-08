@@ -55,6 +55,8 @@ export function CartPanel({
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [showCustomerDialog, setShowCustomerDialog] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [cashReceived, setCashReceived] = useState("");
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
 
@@ -72,12 +74,25 @@ export function CartPanel({
   ];
 
   const handleComplete = () => {
+    setShowPaymentDialog(false);
+    setCashReceived("");
     onCompleteSale(customerName, customerPhone, discount);
     setCustomerName("");
     setCustomerPhone("");
     setCouponDiscount(0);
     setAppliedCoupon(null);
   };
+
+  const receivedAmount = parseFloat(cashReceived) || 0;
+  const changeDue = receivedAmount - total;
+  const cashInsufficient = selectedPayment === "cash" && cashReceived !== "" && receivedAmount < total;
+  const canConfirmPayment =
+    !!selectedPayment && (selectedPayment !== "cash" || cashReceived === "" || receivedAmount >= total);
+
+  // Sensible quick-tender suggestions for cash payments
+  const quickAmounts = Array.from(
+    new Set([Math.ceil(total), Math.ceil(total / 50) * 50, Math.ceil(total / 100) * 100, Math.ceil(total / 500) * 500])
+  ).filter((v) => v >= total).slice(0, 4);
 
   const hasCustomer = customerName.trim() || customerPhone.trim();
 
@@ -237,13 +252,110 @@ export function CartPanel({
         {/* Complete Sale */}
         <Button
           className="w-full h-12 text-base font-semibold bg-gradient-primary hover:opacity-90 shadow-glow touch-button"
-          disabled={cart.length === 0 || !selectedPayment || isProcessing}
-          onClick={handleComplete}
+          disabled={cart.length === 0 || isProcessing}
+          onClick={() => setShowPaymentDialog(true)}
         >
           <Receipt className={cn("w-4 h-4", isRTL ? "ml-2" : "mr-2")} />
           {isProcessing ? (isRTL ? "جاري المعالجة..." : "Processing...") : t.pos.completeSale}
         </Button>
       </div>
+
+      {/* Payment Dialog */}
+      <Dialog open={showPaymentDialog} onOpenChange={(open) => { setShowPaymentDialog(open); if (!open) setCashReceived(""); }}>
+        <DialogContent className="sm:max-w-[420px]" dir={isRTL ? "rtl" : "ltr"}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-primary" />
+              {isRTL ? "الدفع" : "Payment"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            {/* Amount due */}
+            <div className="rounded-xl bg-primary/5 border border-primary/20 p-4 text-center">
+              <p className="text-xs text-muted-foreground mb-1">{isRTL ? "المبلغ المستحق" : "Amount Due"}</p>
+              <p className="text-3xl font-bold text-primary">{total.toFixed(2)} <span className="text-base">ر.س</span></p>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                {isRTL ? `شامل ضريبة القيمة المضافة ${tax.toFixed(2)} ر.س` : `Includes VAT ${tax.toFixed(2)} SAR`}
+              </p>
+            </div>
+
+            {/* Payment method */}
+            <div>
+              <Label className="text-xs mb-2 block">{isRTL ? "طريقة الدفع" : "Payment Method"}</Label>
+              <div className="grid grid-cols-4 gap-1.5">
+                {paymentMethods.map((method) => (
+                  <button
+                    key={method.id}
+                    onClick={() => onSelectPayment(method.id)}
+                    className={cn(
+                      "py-2.5 rounded-lg border flex flex-col items-center gap-1 transition-all",
+                      selectedPayment === method.id
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-card text-muted-foreground hover:border-primary/50"
+                    )}
+                  >
+                    <method.icon className="w-4 h-4" />
+                    <span className="text-[10px] font-medium">{method.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Cash tender + change */}
+            {selectedPayment === "cash" && (
+              <div className="space-y-2">
+                <Label className="text-xs">{isRTL ? "المبلغ المستلم من العميل" : "Amount Received"}</Label>
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  value={cashReceived}
+                  onChange={(e) => setCashReceived(e.target.value)}
+                  placeholder={total.toFixed(2)}
+                  className={cn("text-lg font-bold text-center", cashInsufficient && "border-destructive")}
+                />
+                <div className="flex gap-1.5">
+                  {quickAmounts.map((v) => (
+                    <button
+                      key={v}
+                      onClick={() => setCashReceived(String(v))}
+                      className="flex-1 py-1.5 rounded-lg border border-border bg-muted/40 text-xs font-medium hover:border-primary/50 transition-all"
+                    >
+                      {v.toLocaleString()}
+                    </button>
+                  ))}
+                </div>
+                {cashReceived !== "" && (
+                  cashInsufficient ? (
+                    <p className="text-sm text-destructive font-medium text-center">
+                      {isRTL ? `المبلغ ناقص ${(total - receivedAmount).toFixed(2)} ر.س` : `Short by ${(total - receivedAmount).toFixed(2)} SAR`}
+                    </p>
+                  ) : (
+                    <div className="flex justify-between items-center rounded-lg bg-success/10 border border-success/20 px-3 py-2">
+                      <span className="text-sm font-medium text-success">{isRTL ? "الباقي للعميل" : "Change Due"}</span>
+                      <span className="text-lg font-bold text-success">{changeDue.toFixed(2)} ر.س</span>
+                    </div>
+                  )
+                )}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowPaymentDialog(false)}>
+              {isRTL ? "إلغاء" : "Cancel"}
+            </Button>
+            <Button
+              className="bg-gradient-primary hover:opacity-90 flex-1"
+              disabled={!canConfirmPayment || isProcessing}
+              onClick={handleComplete}
+            >
+              <Receipt className={cn("w-4 h-4", isRTL ? "ml-2" : "mr-2")} />
+              {isRTL ? "تأكيد الدفع وإصدار الفاتورة" : "Confirm & Issue Invoice"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Customer Info Dialog */}
       <Dialog open={showCustomerDialog} onOpenChange={setShowCustomerDialog}>
