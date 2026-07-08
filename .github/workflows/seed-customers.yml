@@ -1,0 +1,64 @@
+name: Seed demo customers
+
+on:
+  workflow_dispatch:
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Insert demo customers
+        env:
+          SUPA: https://ynwddyxzypbcftlevuam.supabase.co
+          ANON: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlud2RkeXh6eXBiY2Z0bGV2dWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5MjE1OTQsImV4cCI6MjA4NTQ5NzU5NH0.PsNDqovuzo7NmTiwsH4swskkIF3FdMlBXjYUy3MJkyA
+        run: |
+          set -euo pipefail
+
+          seed_merchant() {
+            local TOKEN="$1" LABEL="$2"
+
+            local BR MID
+            BR=$(curl -sS "$SUPA/rest/v1/branches?select=merchant_id&limit=1" \
+              -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN")
+            MID=$(echo "$BR" | jq -r '.[0].merchant_id // empty')
+            [ -n "$MID" ] || { echo "[$LABEL] no merchant"; return 1; }
+
+            local EXIST
+            EXIST=$(curl -sS "$SUPA/rest/v1/customers?select=id&limit=1" \
+              -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN")
+            if [ "$(echo "$EXIST" | jq 'length')" != "0" ]; then
+              echo "[$LABEL] customers already present"
+              return 0
+            fi
+
+            local CUSTOMERS RESP
+            CUSTOMERS=$(jq -n --arg m "$MID" '[
+              {name:"سالم العتيبي",    phone:"0551000001", email:"salem@example.com",  address:"الرياض - حي النرجس",   loyalty_points:5200, total_spent:31450, total_purchases:14, loyalty_tier:"platinum", notes:"عميل VIP — يفضل التواصل واتساب"},
+              {name:"فهد القحطاني",   phone:"0551000002", email:"fahad@example.com",  address:"الرياض - حي الياسمين", loyalty_points:3900, total_spent:24800, total_purchases:11, loyalty_tier:"platinum", notes:null},
+              {name:"خالد المطيري",   phone:"0551000003", email:null,                 address:"جدة - حي الروضة",      loyalty_points:2100, total_spent:12300, total_purchases:8,  loyalty_tier:"gold",     notes:"صاحب مكتب عقار — يشتري أجهزة لموظفيه"},
+              {name:"عبدالله الشمري", phone:"0551000004", email:"a.shamri@example.com", address:"الدمام - حي الفيصلية", loyalty_points:1750, total_spent:9600, total_purchases:6, loyalty_tier:"gold", notes:null},
+              {name:"نورة السالم",    phone:"0551000005", email:"noura@example.com",  address:"الرياض - حي العليا",   loyalty_points:1500, total_spent:8200,  total_purchases:5,  loyalty_tier:"gold",     notes:null},
+              {name:"سعود الحربي",    phone:"0551000006", email:null,                 address:"مكة - حي العزيزية",    loyalty_points:800,  total_spent:4600,  total_purchases:4,  loyalty_tier:"silver",   notes:null},
+              {name:"لمى الحارثي",    phone:"0551000007", email:"lama@example.com",   address:"جدة - حي الشاطئ",      loyalty_points:650,  total_spent:3800,  total_purchases:3,  loyalty_tier:"silver",   notes:"تفضل الإكسسوارات الأصلية فقط"},
+              {name:"ماجد العنزي",    phone:"0551000008", email:null,                 address:"الخبر - حي العقربية",  loyalty_points:420,  total_spent:2650,  total_purchases:2,  loyalty_tier:"silver",   notes:null},
+              {name:"هند القرني",     phone:"0551000009", email:"hind@example.com",   address:"الرياض - حي السليمانية", loyalty_points:150, total_spent:890,  total_purchases:2,  loyalty_tier:"bronze",   notes:null},
+              {name:"زياد المالكي",   phone:"0551000010", email:null,                 address:"الدمام - حي الشاطئ",   loyalty_points:60,   total_spent:340,   total_purchases:1,  loyalty_tier:"bronze",   notes:"عميل جديد"}
+            ] | map(. + {merchant_id:$m, is_active:true})')
+            RESP=$(curl -sS -w "\nHTTP %{http_code}" -X POST "$SUPA/rest/v1/customers" \
+              -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN" \
+              -H "Content-Type: application/json" -H "Prefer: return=minimal" \
+              --data "$CUSTOMERS")
+            echo "[$LABEL] customers: $(echo "$RESP" | tail -1)"
+            echo "$RESP" | grep -q "HTTP 201" || { echo "[$LABEL] insert failed: $RESP"; return 1; }
+          }
+
+          FAILED=0
+          for EMAIL in demo-basic@wasil.demo demo-professional@wasil.demo demo-enterprise@wasil.demo demo-distributor@wasil.demo; do
+            AUTH=$(curl -sS "$SUPA/auth/v1/token?grant_type=password" \
+              -H "apikey: $ANON" -H "Content-Type: application/json" \
+              -d "{\"email\":\"$EMAIL\",\"password\":\"demo1234\"}")
+            TOKEN=$(echo "$AUTH" | jq -r '.access_token // empty')
+            if [ -n "$TOKEN" ]; then seed_merchant "$TOKEN" "$EMAIL" || FAILED=1; else echo "[$EMAIL] login failed"; FAILED=1; fi
+          done
+
+          exit $FAILED
