@@ -1,0 +1,58 @@
+name: Seed demo devices
+
+on:
+  workflow_dispatch:
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Insert demo devices via Supabase REST
+        env:
+          SUPA: https://ynwddyxzypbcftlevuam.supabase.co
+          # Public anon key (already committed in .env) — RLS still applies
+          ANON: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlud2RkeXh6eXBiY2Z0bGV2dWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5MjE1OTQsImV4cCI6MjA4NTQ5NzU5NH0.PsNDqovuzo7NmTiwsH4swskkIF3FdMlBXjYUy3MJkyA
+        run: |
+          set -euo pipefail
+
+          echo "== login with cashier code =="
+          SESSION=$(curl -sS "$SUPA/functions/v1/login-by-code" \
+            -H "apikey: $ANON" -H "Authorization: Bearer $ANON" \
+            -H "Content-Type: application/json" -d '{"code":"70035"}')
+          TOKEN=$(echo "$SESSION" | jq -r '.session.access_token // empty')
+          if [ -z "$TOKEN" ]; then echo "login failed: $SESSION"; exit 1; fi
+
+          echo "== resolve merchant & branch =="
+          BR=$(curl -sS "$SUPA/rest/v1/branches?select=id,merchant_id&is_active=eq.true&limit=1" \
+            -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN")
+          MID=$(echo "$BR" | jq -r '.[0].merchant_id // empty')
+          BID=$(echo "$BR" | jq -r '.[0].id // empty')
+          if [ -z "$MID" ]; then echo "no branch found: $BR"; exit 1; fi
+          echo "merchant=$MID branch=$BID"
+
+          echo "== insert devices =="
+          jq -n --arg m "$MID" --arg b "$BID" '[
+            {imei:"356789104563218", model:"iPhone 15 Pro Max", brand:"Apple",  storage:"256GB", color:"تيتانيوم طبيعي", condition:"new",  cost:4200, price:4799},
+            {imei:"356789104563226", model:"iPhone 15",         brand:"Apple",  storage:"128GB", color:"أزرق",           condition:"new",  cost:2900, price:3399},
+            {imei:"356789104563234", model:"iPhone 14 Pro",     brand:"Apple",  storage:"256GB", color:"بنفسجي",         condition:"new",  cost:3400, price:3899},
+            {imei:"356789104563242", model:"iPhone 13",         brand:"Apple",  storage:"128GB", color:"أبيض",           condition:"used", cost:1500, price:1899},
+            {imei:"354123987654301", model:"Galaxy S24 Ultra",  brand:"Samsung",storage:"512GB", color:"أسود",           condition:"new",  cost:4100, price:4599},
+            {imei:"354123987654319", model:"Galaxy S23 FE",     brand:"Samsung",storage:"256GB", color:"أخضر",           condition:"new",  cost:1900, price:2299},
+            {imei:"354123987654327", model:"Galaxy A55",        brand:"Samsung",storage:"128GB", color:"أزرق فاتح",      condition:"new",  cost:1100, price:1349},
+            {imei:"358456120987432", model:"Pixel 8 Pro",       brand:"Google", storage:"256GB", color:"أبيض",           condition:"new",  cost:3100, price:3599},
+            {imei:"358456120987440", model:"Xiaomi 14",         brand:"Xiaomi", storage:"256GB", color:"أسود",           condition:"new",  cost:2200, price:2599},
+            {imei:"358456120987457", model:"Huawei Nova 12",    brand:"Huawei", storage:"256GB", color:"ذهبي",           condition:"new",  cost:1300, price:1599}
+          ] | map(. + {merchant_id:$m, branch_id:$b, status:"available"})' > devices.json
+
+          RESP=$(curl -sS -w "\nHTTP %{http_code}" -X POST \
+            "$SUPA/rest/v1/devices?on_conflict=merchant_id,imei" \
+            -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: resolution=ignore-duplicates,return=minimal" \
+            --data @devices.json)
+          echo "$RESP"
+          echo "$RESP" | grep -q "HTTP 201" || { echo "insert failed"; exit 1; }
+
+          echo "== verify =="
+          curl -sS "$SUPA/rest/v1/devices?select=model,imei,price&order=created_at.desc&limit=12" \
+            -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN" | jq -r '.[] | "\(.model) — \(.imei) — \(.price)"'
