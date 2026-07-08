@@ -4,6 +4,7 @@ import {
   Megaphone, Wrench, BarChart3, ClipboardCheck, Store, ShoppingBag,
   Calculator, Heart, Warehouse, Users, CreditCard, LifeBuoy,
 } from "lucide-react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { GlobalSearch } from "@/components/layout/GlobalSearch";
+import { ProfileDialog, ActivityLogDialog } from "@/components/layout/AccountDialogs";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -64,6 +66,9 @@ export function Header({ title, subtitle }: HeaderProps) {
 
   const { notifications } = useNotifications();
   const urgentCount = notifications.filter((n) => n.type === "urgent").length;
+
+  const [showProfile, setShowProfile] = useState(false);
+  const [showActivity, setShowActivity] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -248,9 +253,15 @@ export function Header({ title, subtitle }: HeaderProps) {
           <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuLabel>{t.common.myAccount}</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>{t.common.profile}</DropdownMenuItem>
-            <DropdownMenuItem>{t.common.settings}</DropdownMenuItem>
-            <DropdownMenuItem>{t.common.activityLog}</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setShowProfile(true)} className="cursor-pointer">
+              {t.common.profile}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => navigate("/settings")} className="cursor-pointer">
+              {t.common.settings}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setShowActivity(true)} className="cursor-pointer">
+              {t.common.activityLog}
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-destructive" onClick={handleSignOut}>
               {t.common.signOut}
@@ -258,6 +269,8 @@ export function Header({ title, subtitle }: HeaderProps) {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      <ProfileDialog open={showProfile} onOpenChange={setShowProfile} />
+      <ActivityLogDialog open={showActivity} onOpenChange={setShowActivity} />
     </header>
   );
 }
