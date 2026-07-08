@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
   Search, 
@@ -55,8 +56,17 @@ import { useAuth } from "@/hooks/useAuth";
 import type { Device, Accessory, DeviceStatus } from "@/types/database";
 
 export default function InventoryPage() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState("devices");
+  const [searchParams] = useSearchParams();
+  const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "devices");
+
+  // Sync when a global-search result is opened while already on this page
+  useEffect(() => {
+    const q = searchParams.get("q");
+    const tab = searchParams.get("tab");
+    if (q !== null) setSearchTerm(q);
+    if (tab) setActiveTab(tab);
+  }, [searchParams]);
   const [showAddDevice, setShowAddDevice] = useState(false);
   const [showAddAccessory, setShowAddAccessory] = useState(false);
   const [showAddRepairPart, setShowAddRepairPart] = useState(false);
@@ -184,7 +194,7 @@ export default function InventoryPage() {
         transition={{ delay: 0.2 }}
         className="bg-card rounded-xl border border-border shadow-md overflow-hidden"
       >
-        <Tabs defaultValue="devices" onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <div className="px-6 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <TabsList className="bg-muted/50">
               <TabsTrigger value="devices" className="gap-2">
