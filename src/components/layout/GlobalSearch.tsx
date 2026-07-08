@@ -42,7 +42,19 @@ export function GlobalSearch() {
       return;
     }
     setLoading(true);
-    const q = query.trim();
+    // Map common Arabic brand/model spellings to the English catalog names
+    const ALIASES: [RegExp, string][] = [
+      [/ايفون|آيفون|أيفون/g, "iPhone"],
+      [/سامسونج|سامسونغ|جالكسي|قالكسي/g, "Galaxy"],
+      [/بكسل|بيكسل/g, "Pixel"],
+      [/شاومي/g, "Xiaomi"],
+      [/هواوي/g, "Huawei"],
+      [/برو ماكس/g, "Pro Max"],
+      [/برو/g, "Pro"],
+      [/الترا|ألترا/g, "Ultra"],
+    ];
+    let q = query.trim();
+    for (const [re, en] of ALIASES) q = q.replace(re, en);
     const like = `%${q}%`;
     const timer = setTimeout(async () => {
       const [devices, accessories, customers, repairs, sales] = await Promise.all([

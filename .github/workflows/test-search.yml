@@ -1,0 +1,29 @@
+name: Test search query
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run the same device search the app uses
+        env:
+          SUPA: https://ynwddyxzypbcftlevuam.supabase.co
+          ANON: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlud2RkeXh6eXBiY2Z0bGV2dWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5MjE1OTQsImV4cCI6MjA4NTQ5NzU5NH0.PsNDqovuzo7NmTiwsH4swskkIF3FdMlBXjYUy3MJkyA
+        run: |
+          set -euo pipefail
+          AUTH=$(curl -sS "$SUPA/auth/v1/token?grant_type=password" \
+            -H "apikey: $ANON" -H "Content-Type: application/json" \
+            -d '{"email":"demo-enterprise@wasil.demo","password":"demo1234"}')
+          TOKEN=$(echo "$AUTH" | jq -r '.access_token // empty')
+          [ -n "$TOKEN" ] || { echo "login failed"; exit 1; }
+
+          for Q in iPhone iphone Galaxy 356789 "iPhone 15"; do
+            echo "== search: $Q =="
+            curl -sS -G "$SUPA/rest/v1/devices" \
+              --data-urlencode "select=model,brand,imei" \
+              --data-urlencode "or=(model.ilike.%$Q%,brand.ilike.%$Q%,imei.ilike.%$Q%)" \
+              --data-urlencode "limit=5" \
+              -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN" | jq -c
+          done
