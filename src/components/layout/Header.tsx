@@ -47,11 +47,19 @@ const SECTIONS = [
   { icon: LifeBuoy, label: "Support", labelAr: "الدعم الفني", path: "/support" },
 ];
 
+// Routes a cashier can open without being bounced back to the POS
+const CASHIER_PATHS = new Set(["/pos", "/repairs", "/daily-closings", "/support"]);
+
 export function Header({ title, subtitle }: HeaderProps) {
   const { t, language, setLanguage, isRTL } = useLanguage();
   const { isDark, toggleTheme } = useTheme();
-  const { signOut } = useAuth();
+  const { signOut, merchantUser } = useAuth();
   const navigate = useNavigate();
+
+  const isCashier = merchantUser?.role === "cashier";
+  const visibleSections = isCashier
+    ? SECTIONS.filter((s) => CASHIER_PATHS.has(s.path))
+    : SECTIONS;
 
   const handleSignOut = async () => {
     await signOut();
@@ -84,7 +92,7 @@ export function Header({ title, subtitle }: HeaderProps) {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <div className="grid grid-cols-2 gap-1 p-1 max-h-[60vh] overflow-y-auto">
-              {SECTIONS.map((s) => (
+              {visibleSections.map((s) => (
                 <DropdownMenuItem
                   key={s.path}
                   onSelect={() => navigate(s.path)}
