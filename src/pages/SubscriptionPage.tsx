@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Check, Crown, Zap, Loader2, AlertTriangle,
-  Wrench, ShoppingBag
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -16,54 +15,42 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
-// Marketing copy for each plan, keyed by the plan's English name in the DB
-const PLAN_CONTENT: Record<string, { maintenance: string[]; purchase: string[] }> = {
+// Tiered marketing copy: each plan lists only what it ADDS on top of
+// the previous one, keyed by the plan's English name in the DB
+const PLAN_CONTENT: Record<string, { inherits?: string; features: string[] }> = {
   Basic: {
-    maintenance: [
-      'فحص فني مجاني لمرة واحدة (عن بعد أو في المركز)',
-      'خصم 5% على تكلفة العمالة (أجور اليد) للصيانة',
-      'ضمان أساسي لمدة 30 يوماً على القطع المستبدلة',
-    ],
-    purchase: [
-      'إمكانية الشراء من الموقع بالأسعار الرسمية المعتادة',
-      'شحن قياسي (غير مستعجل)',
+    features: [
+      'فحص فني مجاني لمرة واحدة',
+      'خصم 5% على أجور الصيانة',
+      'ضمان 30 يوماً على القطع المستبدلة',
+      'الشراء من الموقع بالأسعار الرسمية',
     ],
   },
   Professional: {
-    maintenance: [
-      'فحص دوري مجاني (ربع سنوي) لجهاز واحد',
-      'خصم 15% على جميع عمليات الصيانة وأجور اليد',
-      'أولوية في طابور الصيانة (تسليم أسرع)',
-      'ضمان ممتد إلى 90 يوماً على قطع الغيار',
-    ],
-    purchase: [
-      'خصم 5% على الإكسسوارات وملحقات الأجهزة',
-      'شحن سريع مجاني لجميع الطلبات',
+    inherits: 'كل مميزات باقة لايت',
+    features: [
+      'فحص دوري مجاني (ربع سنوي)',
+      'خصم 15% على الصيانة وأولوية في الطابور',
+      'ضمان ممتد إلى 90 يوماً',
+      'خصم 5% على الإكسسوارات وشحن سريع مجاني',
     ],
   },
   Enterprise: {
-    maintenance: [
-      'صيانة فورية شاملة (أولوية قصوى VIP) مع جهاز بديل مؤقت',
-      'خصم 25% على قطع الغيار وأجور الصيانة',
-      'استلام وتوصيل الجهاز من وإلى باب البيت مجاناً',
-      'دعم فني مخصص ومباشر على مدار الساعة 24/7',
-    ],
-    purchase: [
-      'خصومات حصرية على الأجهزة المجددة أو الجديدة',
-      'حجز مسبق للأجهزة الحديثة قبل طرحها للعامة',
+    inherits: 'كل مميزات باقة بلس',
+    features: [
+      'أولوية قصوى VIP مع جهاز بديل مؤقت',
+      'خصم 25% على القطع وأجور الصيانة',
+      'استلام وتوصيل مجاني من باب البيت',
+      'دعم مخصص 24/7 وحجز مسبق للأجهزة الجديدة',
     ],
   },
   Distributor: {
-    maintenance: [
-      'قطع غيار أصلية بأسعار الجملة',
-      'صيانة تجارية بأسعار خاصة جداً بالموزعين',
-      'ضمان ممتد ومرن على كميات القطع المشتراة',
-    ],
-    purchase: [
-      'أسعار خاصة وتنافسية عند الشراء بالكميات',
-      'إمكانية الدفع الآجل أو بنظام الائتمان',
-      'لوحة تحكم مخصصة للموزع للطلبات والفواتير والصيانة',
-      'مدير حساب مخصص لتخليص المعاملات الكبيرة بسرعة',
+    inherits: 'كل مميزات باقة برو',
+    features: [
+      'قطع غيار وأجهزة بأسعار الجملة',
+      'صيانة تجارية بأسعار الموزعين',
+      'دفع آجل ونظام ائتمان',
+      'لوحة موزع خاصة ومدير حساب مخصص',
     ],
   },
 };
@@ -213,34 +200,21 @@ export default function SubscriptionPage() {
                   const content = PLAN_CONTENT[plan.name];
                   if (!content) return null;
                   return (
-                    <div className="mb-6 space-y-4">
-                      <div>
-                        <p className="text-sm font-semibold text-foreground flex items-center gap-2 mb-2">
-                          <Wrench className="w-4 h-4 text-primary" /> الصيانة
-                        </p>
-                        <ul className="space-y-1.5">
-                          {content.maintenance.map((item) => (
-                            <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground">
-                              <Check className="w-4 h-4 text-success shrink-0 mt-0.5" />
-                              <span>{item}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      <div>
-                        <p className="text-sm font-semibold text-foreground flex items-center gap-2 mb-2">
-                          <ShoppingBag className="w-4 h-4 text-primary" /> الشراء
-                        </p>
-                        <ul className="space-y-1.5">
-                          {content.purchase.map((item) => (
-                            <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground">
-                              <Check className="w-4 h-4 text-success shrink-0 mt-0.5" />
-                              <span>{item}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                    <div className="mb-6 space-y-3">
+                      {content.inherits && (
+                        <div className="flex items-center gap-2 rounded-lg bg-primary/10 border border-primary/20 px-3 py-2">
+                          <Zap className="w-4 h-4 text-primary shrink-0" />
+                          <span className="text-sm font-semibold text-primary">{content.inherits} +</span>
+                        </div>
+                      )}
+                      <ul className="space-y-2">
+                        {content.features.map((item) => (
+                          <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground">
+                            <Check className="w-4 h-4 text-success shrink-0 mt-0.5" />
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   );
                 })()}
