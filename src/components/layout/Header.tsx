@@ -1,12 +1,11 @@
 import {
-  Bell, Search, User, Building2, Languages, Sun, Moon, LayoutGrid,
+  Bell, User, Building2, Languages, Sun, Moon, LayoutGrid,
   LayoutDashboard, ShoppingCart, Package, ArrowLeftRight, Truck, Barcode,
   Megaphone, Wrench, BarChart3, ClipboardCheck, Store, ShoppingBag,
   Calculator, Heart, Warehouse, Users, CreditCard, LifeBuoy,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { GlobalSearch } from "@/components/layout/GlobalSearch";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -111,19 +111,7 @@ export function Header({ title, subtitle }: HeaderProps) {
         </DropdownMenu>
 
         {/* Search */}
-        <div className="relative hidden lg:block">
-          <Search className={cn(
-            "absolute top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground",
-            isRTL ? "right-3" : "left-3"
-          )} />
-          <Input
-            placeholder={t.common.search}
-            className={cn(
-              "w-80 bg-muted/50 border-transparent focus:border-primary",
-              isRTL ? "pr-9" : "pl-9"
-            )}
-          />
-        </div>
+        <GlobalSearch />
 
         {/* Theme Toggle */}
         <Button
