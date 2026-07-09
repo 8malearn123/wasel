@@ -26,7 +26,7 @@ const PLAN_CONTENT: Record<string, {
 }> = {
   Basic: {
     audience: 'للمحل الصغير المبتدئ',
-    limits: 'فرع واحد و3 مستخدمين',
+    limits: 'فرع واحد · عدد مستخدمين غير محدود',
     features: [
       'نقطة البيع الكاملة بالباركود والـ IMEI',
       'إدارة مخزون الأجهزة والإكسسوارات',
@@ -38,7 +38,7 @@ const PLAN_CONTENT: Record<string, {
   },
   Professional: {
     audience: 'الخيار المتوازن للمحلات النامية',
-    limits: '3 فروع و10 مستخدمين',
+    limits: 'فرع واحد · عدد مستخدمين غير محدود',
     inherits: 'كل مميزات باقة لايت',
     features: [
       'متجر إلكتروني خاص بمحلك',
@@ -50,7 +50,7 @@ const PLAN_CONTENT: Record<string, {
   },
   Enterprise: {
     audience: 'للشركات والمحلات الكبيرة',
-    limits: '10 فروع و50 مستخدماً',
+    limits: 'فرع واحد · عدد مستخدمين غير محدود',
     inherits: 'كل مميزات باقة بلس',
     features: [
       'دعم أولوية مخصص على مدار الساعة 24/7',
@@ -62,7 +62,7 @@ const PLAN_CONTENT: Record<string, {
   },
   Distributor: {
     audience: 'للموزعين والتجار وأصحاب الكميات',
-    limits: '20 فرعاً و50 مستخدماً',
+    limits: 'فرع واحد · عدد مستخدمين غير محدود',
     inherits: 'كل مميزات باقة برو',
     features: [
       'بيع الجملة B2B ولوحة موزع خاصة',
@@ -141,8 +141,9 @@ export default function SubscriptionPage() {
             </div>
             <div className="text-center p-3 rounded-lg bg-muted/30">
               <p className="text-2xl font-bold text-foreground">
-                —
-                <span className="text-sm text-muted-foreground">/{subscription?.max_users || 3}</span>
+                {(subscription?.max_users ?? 0) >= 9999
+                  ? 'غير محدود'
+                  : <>—<span className="text-sm text-muted-foreground">/{subscription?.max_users || 3}</span></>}
               </p>
               <p className="text-xs text-muted-foreground">المستخدمين</p>
             </div>
