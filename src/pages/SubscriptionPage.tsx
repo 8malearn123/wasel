@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Check, Crown, Zap, Loader2, AlertTriangle,
+  Check, X, Crown, Zap, Loader2, AlertTriangle, Users,
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -15,20 +15,34 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
-// Tiered marketing copy: each plan lists only what it ADDS on top of
-// the previous one, keyed by the plan's English name in the DB
-const PLAN_CONTENT: Record<string, { inherits?: string; features: string[] }> = {
+// Tiered marketing copy: each plan shows its audience, limits, and only
+// what it ADDS on top of the previous one, keyed by the plan's DB name
+const PLAN_CONTENT: Record<string, {
+  audience: string;
+  limits: string;
+  inherits?: string;
+  features: string[];
+  missing?: string[];
+}> = {
   Basic: {
+    audience: 'للمحل الصغير المبتدئ',
+    limits: 'فرع واحد و3 مستخدمين',
     features: [
+      'نقطة البيع الكاملة وإدارة المخزون بالـ IMEI',
       'فحص فني مجاني لمرة واحدة',
       'خصم 5% على أجور الصيانة',
       'ضمان 30 يوماً على القطع المستبدلة',
       'الشراء من الموقع بالأسعار الرسمية',
     ],
+    missing: ['متجر إلكتروني', 'تقارير متقدمة'],
   },
   Professional: {
+    audience: 'الخيار المتوازن للمحلات النامية',
+    limits: '3 فروع و10 مستخدمين',
     inherits: 'كل مميزات باقة لايت',
     features: [
+      'متجر إلكتروني خاص بمحلك',
+      'تقارير متقدمة للمبيعات والأرباح',
       'فحص دوري مجاني (ربع سنوي)',
       'خصم 15% على الصيانة وأولوية في الطابور',
       'ضمان ممتد إلى 90 يوماً',
@@ -36,21 +50,27 @@ const PLAN_CONTENT: Record<string, { inherits?: string; features: string[] }> = 
     ],
   },
   Enterprise: {
+    audience: 'خدمات VIP للشركات والمحترفين',
+    limits: '10 فروع و50 مستخدماً',
     inherits: 'كل مميزات باقة بلس',
     features: [
+      'دعم أولوية مخصص على مدار الساعة 24/7',
       'أولوية قصوى VIP مع جهاز بديل مؤقت',
       'خصم 25% على القطع وأجور الصيانة',
       'استلام وتوصيل مجاني من باب البيت',
-      'دعم مخصص 24/7 وحجز مسبق للأجهزة الجديدة',
+      'حجز مسبق للأجهزة الجديدة قبل طرحها',
     ],
   },
   Distributor: {
+    audience: 'للموزعين والتجار وأصحاب الكميات',
+    limits: '20 فرعاً و50 مستخدماً',
     inherits: 'كل مميزات باقة برو',
     features: [
+      'بيع الجملة B2B ولوحة موزع خاصة',
       'قطع غيار وأجهزة بأسعار الجملة',
       'صيانة تجارية بأسعار الموزعين',
       'دفع آجل ونظام ائتمان',
-      'لوحة موزع خاصة ومدير حساب مخصص',
+      'مدير حساب مخصص لمعاملاتك الكبيرة',
     ],
   },
 };
@@ -201,17 +221,31 @@ export default function SubscriptionPage() {
                   if (!content) return null;
                   return (
                     <div className="mb-6 space-y-3">
+                      <p className="text-xs text-muted-foreground text-center -mt-3">{content.audience}</p>
+
+                      <div className="flex items-center justify-center gap-2 rounded-lg bg-muted/40 border border-border px-3 py-2">
+                        <Users className="w-4 h-4 text-foreground shrink-0" />
+                        <span className="text-sm font-semibold text-foreground">{content.limits}</span>
+                      </div>
+
                       {content.inherits && (
                         <div className="flex items-center gap-2 rounded-lg bg-primary/10 border border-primary/20 px-3 py-2">
                           <Zap className="w-4 h-4 text-primary shrink-0" />
                           <span className="text-sm font-semibold text-primary">{content.inherits} +</span>
                         </div>
                       )}
+
                       <ul className="space-y-2">
                         {content.features.map((item) => (
                           <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground">
                             <Check className="w-4 h-4 text-success shrink-0 mt-0.5" />
                             <span>{item}</span>
+                          </li>
+                        ))}
+                        {content.missing?.map((item) => (
+                          <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground/50">
+                            <X className="w-4 h-4 shrink-0 mt-0.5" />
+                            <span className="line-through">{item}</span>
                           </li>
                         ))}
                       </ul>
