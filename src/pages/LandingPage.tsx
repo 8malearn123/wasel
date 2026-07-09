@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  Smartphone, ShoppingCart, Package, Wrench, Store, BarChart3,
+  Smartphone, ShoppingCart, Package, Ticket, Store, BarChart3,
   Building2, Check, Zap, ArrowLeft, ArrowRight, ShieldCheck, Clock,
   Sun, Moon, Languages,
 } from "lucide-react";
@@ -12,16 +12,16 @@ import { useTheme } from "@/hooks/useTheme";
 const FEATURES = [
   { icon: ShoppingCart, ar: { t: "نقطة بيع سريعة", d: "بيع بالباركود أو IMEI مع فواتير ضريبية مبسطة ورمز QR لهيئة الزكاة" }, en: { t: "Fast Point of Sale", d: "Sell by barcode or IMEI with simplified tax invoices and ZATCA QR codes" } },
   { icon: Package, ar: { t: "إدارة مخزون ذكية", d: "تتبع الأجهزة برقم IMEI والإكسسوارات بالكميات مع تنبيهات النفاد" }, en: { t: "Smart Inventory", d: "Track devices by IMEI and accessories by quantity, with low-stock alerts" } },
-  { icon: Wrench, ar: { t: "إدارة الصيانة", d: "طلبات صيانة بمراحل واضحة، قطع غيار، وإشعار العميل عند الجاهزية" }, en: { t: "Repair Management", d: "Repair orders with clear stages, spare parts, and customer pickup alerts" } },
+  { icon: Ticket, ar: { t: "كوبونات وعروض", d: "كوبونات خصم وحملات تسويقية ونظام نقاط ولاء يرجّع عملاءك" }, en: { t: "Coupons & Campaigns", d: "Discount coupons, marketing campaigns, and a loyalty points program" } },
   { icon: Store, ar: { t: "متجر إلكتروني", d: "متجرك الخاص على الإنترنت بهويتك وألوانك مع سلة وطلبات أونلاين" }, en: { t: "Online Store", d: "Your own branded web store with cart and online orders" } },
   { icon: BarChart3, ar: { t: "تقارير وأرباح", d: "مبيعات وأرباح يومية وشهرية ولوحة تحكم مباشرة لكل فروعك" }, en: { t: "Reports & Profits", d: "Daily and monthly sales, profits, and a live dashboard for all branches" } },
   { icon: Building2, ar: { t: "فروع متعددة", d: "أدر عدة فروع ومستودعات بتحويلات مخزون موثقة بينها" }, en: { t: "Multi-Branch", d: "Manage branches and warehouses with documented stock transfers" } },
 ];
 
 const PLANS = [
-  { price: 99, popular: false, ar: { n: "باقة لايت", p: ["فرع واحد و3 مستخدمين", "نقطة بيع ومخزون كامل", "فحص فني مجاني وضمان 30 يوم"] }, en: { n: "Lite Plan", p: ["1 branch, 3 users", "Full POS and inventory", "Free checkup, 30-day warranty"] } },
-  { price: 199, popular: true, ar: { n: "باقة بلس", p: ["3 فروع و10 مستخدمين", "متجر إلكتروني وتقارير متقدمة", "خصم 15% على الصيانة وضمان 90 يوم"] }, en: { n: "Plus Plan", p: ["3 branches, 10 users", "Online store & advanced reports", "15% repair discount, 90-day warranty"] } },
-  { price: 399, popular: false, ar: { n: "باقة برو", p: ["10 فروع و50 مستخدم", "أولوية VIP وجهاز بديل", "دعم مخصص 24/7 واستلام وتوصيل"] }, en: { n: "Pro Plan", p: ["10 branches, 50 users", "VIP priority & loaner device", "24/7 support, pickup & delivery"] } },
+  { price: 99, popular: false, ar: { n: "باقة لايت", p: ["فرع واحد و3 مستخدمين", "نقطة بيع ومخزون كامل", "فواتير ضريبية برمز QR"] }, en: { n: "Lite Plan", p: ["1 branch, 3 users", "Full POS and inventory", "Tax invoices with QR codes"] } },
+  { price: 199, popular: true, ar: { n: "باقة بلس", p: ["3 فروع و10 مستخدمين", "متجر إلكتروني وتقارير متقدمة", "كوبونات وحملات ونقاط ولاء"] }, en: { n: "Plus Plan", p: ["3 branches, 10 users", "Online store & advanced reports", "Coupons, campaigns & loyalty"] } },
+  { price: 399, popular: false, ar: { n: "باقة برو", p: ["10 فروع و50 مستخدم", "دعم مخصص 24/7", "ربط الأنظمة المحاسبية API"] }, en: { n: "Pro Plan", p: ["10 branches, 50 users", "Dedicated 24/7 support", "Accounting systems API"] } },
   { price: 499, popular: false, ar: { n: "باقة ماكس", p: ["للموزعين والتجار", "أسعار جملة ودفع آجل", "مدير حساب مخصص ولوحة موزع"] }, en: { n: "Max Plan", p: ["For distributors & traders", "Wholesale prices, credit terms", "Dedicated account manager"] } },
 ];
 
@@ -93,8 +93,8 @@ export default function LandingPage() {
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-10">
               {ar
-                ? "نقطة بيع، مخزون بالـ IMEI، صيانة، متجر إلكتروني، وتقارير أرباح — كل ما يحتاجه محلك في منصة واحدة سهلة وسريعة."
-                : "POS, IMEI inventory, repairs, an online store, and profit reports — everything your shop needs in one fast, simple platform."}
+                ? "نقطة بيع، مخزون بالـ IMEI، متجر إلكتروني، وتقارير أرباح — كل ما يحتاجه محلك في منصة واحدة سهلة وسريعة."
+                : "POS, IMEI inventory, an online store, and profit reports — everything your shop needs in one fast, simple platform."}
             </p>
             <div className="flex items-center justify-center gap-3 flex-wrap">
               <Button asChild size="lg" className="bg-gradient-primary hover:opacity-90 shadow-glow h-12 px-8 text-base">
@@ -120,7 +120,7 @@ export default function LandingPage() {
       <section className="max-w-6xl mx-auto px-6 py-20">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold mb-3">{ar ? "كل أدوات محلك في مكان واحد" : "All your shop's tools in one place"}</h2>
-          <p className="text-muted-foreground">{ar ? "صُمم خصيصاً لمحلات بيع وصيانة الجوالات" : "Built specifically for phone sales and repair shops"}</p>
+          <p className="text-muted-foreground">{ar ? "صُمم خصيصاً لمحلات بيع الجوالات والإكسسوارات" : "Built specifically for phone and accessory shops"}</p>
         </div>
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f, i) => {
