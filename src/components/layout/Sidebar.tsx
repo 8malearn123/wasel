@@ -108,7 +108,10 @@ export function Sidebar() {
       initial={false}
       animate={{ width: isCollapsed ? 80 : 280 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
-      className="fixed top-0 left-0 h-screen bg-sidebar z-50 flex flex-col border-r border-sidebar-border"
+      className={cn(
+        "fixed top-0 h-screen bg-sidebar z-50 flex flex-col",
+        isRTL ? "right-0 border-l border-sidebar-border" : "left-0 border-r border-sidebar-border"
+      )}
     >
       {/* Logo */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-sidebar-border">
@@ -176,11 +179,17 @@ export function Sidebar() {
               )}
 
               {item.badge && isCollapsed && (
-                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-accent" />
+                <span className={cn(
+                  "absolute top-1 w-2 h-2 rounded-full bg-accent",
+                  isRTL ? "left-1" : "right-1"
+                )} />
               )}
 
               {isCollapsed && (
-                <div className="absolute left-full ml-2 px-3 py-2 bg-popover text-popover-foreground rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 text-sm">
+                <div className={cn(
+                  "absolute px-3 py-2 bg-popover text-popover-foreground rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 text-sm",
+                  isRTL ? "right-full mr-2" : "left-full ml-2"
+                )}>
                   {label}
                 </div>
               )}
@@ -221,10 +230,10 @@ export function Sidebar() {
           className="nav-item w-full"
         >
           {isCollapsed ? (
-            <ChevronRight className="w-5 h-5 mx-auto" />
+            isRTL ? <ChevronLeft className="w-5 h-5 mx-auto" /> : <ChevronRight className="w-5 h-5 mx-auto" />
           ) : (
             <>
-              <ChevronLeft className="w-5 h-5" />
+              {isRTL ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
               <span className="text-sm">{t.nav.collapse}</span>
             </>
           )}

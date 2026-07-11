@@ -51,15 +51,15 @@
 
     --radius: 0.75rem;
 
-    /* Sidebar */
-    --sidebar-background: 210 35% 12%;
-    --sidebar-foreground: 210 15% 85%;
-    --sidebar-primary: 185 70% 45%;
+    /* Sidebar — baby pink */
+    --sidebar-background: 348 100% 92%;
+    --sidebar-foreground: 340 40% 28%;
+    --sidebar-primary: 345 70% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 30% 18%;
-    --sidebar-accent-foreground: 210 15% 95%;
-    --sidebar-border: 210 30% 20%;
-    --sidebar-ring: 185 70% 45%;
+    --sidebar-accent: 348 85% 86%;
+    --sidebar-accent-foreground: 340 45% 22%;
+    --sidebar-border: 348 65% 84%;
+    --sidebar-ring: 345 70% 58%;
 
     /* Custom semantic tokens */
     --surface-elevated: 0 0% 100%;
@@ -110,14 +110,14 @@
     --input: 210 25% 20%;
     --ring: 185 70% 45%;
 
-    --sidebar-background: 210 40% 6%;
-    --sidebar-foreground: 210 15% 85%;
-    --sidebar-primary: 185 70% 50%;
-    --sidebar-primary-foreground: 210 35% 8%;
-    --sidebar-accent: 210 30% 12%;
-    --sidebar-accent-foreground: 210 15% 95%;
-    --sidebar-border: 210 30% 15%;
-    --sidebar-ring: 185 70% 50%;
+    --sidebar-background: 348 100% 92%;
+    --sidebar-foreground: 340 40% 28%;
+    --sidebar-primary: 345 70% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 348 85% 86%;
+    --sidebar-accent-foreground: 340 45% 22%;
+    --sidebar-border: 348 65% 84%;
+    --sidebar-ring: 345 70% 58%;
 
     --surface-elevated: 210 30% 14%;
     --surface-sunken: 210 35% 6%;
