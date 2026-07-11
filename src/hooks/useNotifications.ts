@@ -118,12 +118,12 @@ export function useNotifications() {
       }
     }
 
-    // 5. Pending repairs (received/diagnosing for > 2 days)
+    // 5. Repairs still in progress for > 2 days
     const { data: pendingRepairs } = await supabase
       .from("repair_orders")
       .select("id, repair_number, customer_name, device_type, device_brand, device_model, status, received_at")
       .eq("merchant_id", merchant.id)
-      .in("status", ["received", "diagnosing"])
+      .in("status", ["received", "diagnosing", "waiting_parts", "in_progress"])
       .order("received_at", { ascending: true })
       .limit(10);
 

@@ -62,18 +62,28 @@ import { RepairInvoiceDialog } from "@/components/repairs/RepairInvoiceDialog";
 import { format, differenceInDays, differenceInHours, differenceInMinutes } from "date-fns";
 import { ar } from "date-fns/locale";
 
+// Simplified flow: older statuses (received/diagnosing/waiting_parts) display as "جاري الإصلاح"
+const inProgressConfig = { label: "جاري الإصلاح", color: "bg-cyan-500/10 text-cyan-600 border-cyan-500/20", icon: <Wrench className="w-3.5 h-3.5" /> };
+
 const statusConfig: Record<RepairStatus, { label: string; color: string; icon: React.ReactNode }> = {
-  received: { label: "مُستلم", color: "bg-blue-500/10 text-blue-600 border-blue-500/20", icon: <Package className="w-3.5 h-3.5" /> },
-  diagnosing: { label: "قيد الفحص", color: "bg-purple-500/10 text-purple-600 border-purple-500/20", icon: <Search className="w-3.5 h-3.5" /> },
-  waiting_parts: { label: "بانتظار قطع", color: "bg-amber-500/10 text-amber-600 border-amber-500/20", icon: <Clock className="w-3.5 h-3.5" /> },
-  in_progress: { label: "جاري الإصلاح", color: "bg-cyan-500/10 text-cyan-600 border-cyan-500/20", icon: <Wrench className="w-3.5 h-3.5" /> },
+  received: inProgressConfig,
+  diagnosing: inProgressConfig,
+  waiting_parts: inProgressConfig,
+  in_progress: inProgressConfig,
   completed: { label: "مكتمل", color: "bg-green-500/10 text-green-600 border-green-500/20", icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
   delivered: { label: "تم التسليم", color: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20", icon: <Truck className="w-3.5 h-3.5" /> },
   warranty_expired: { label: "انتهى الضمان", color: "bg-gray-500/10 text-gray-600 border-gray-500/20", icon: <ShieldOff className="w-3.5 h-3.5" /> },
   cancelled: { label: "ملغي", color: "bg-red-500/10 text-red-600 border-red-500/20", icon: <XCircle className="w-3.5 h-3.5" /> },
 };
 
-const statusFlow: RepairStatus[] = ['received', 'diagnosing', 'waiting_parts', 'in_progress', 'completed', 'delivered'];
+const statusFlow: RepairStatus[] = ['in_progress', 'completed', 'delivered'];
+
+// Statuses shown in the filter dropdown
+const filterStatuses: RepairStatus[] = ['in_progress', 'completed', 'delivered', 'warranty_expired', 'cancelled'];
+
+// Legacy statuses collapse into "جاري الإصلاح"
+const normalizeStatus = (s: RepairStatus): RepairStatus =>
+  (['received', 'diagnosing', 'waiting_parts'] as RepairStatus[]).includes(s) ? 'in_progress' : s;
 
 function getWarrantyRemaining(warrantyEndsAt: string | null) {
   if (!warrantyEndsAt) return null;
@@ -115,12 +125,13 @@ export default function RepairsPage() {
       r.customer_phone?.includes(searchQuery) ||
       r.device_model?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.device_imei?.includes(searchQuery);
-    const matchesStatus = filterStatus === "all" || r.status === filterStatus;
+    const matchesStatus = filterStatus === "all" || normalizeStatus(r.status) === filterStatus;
     return matchesSearch && matchesStatus;
   });
 
   const statusCounts = repairs.reduce((acc, r) => {
-    acc[r.status] = (acc[r.status] || 0) + 1;
+    const key = normalizeStatus(r.status);
+    acc[key] = (acc[key] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
@@ -198,10 +209,10 @@ export default function RepairsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">جميع الحالات</SelectItem>
-            {Object.entries(statusConfig).map(([key, val]) => (
+            {filterStatuses.map((key) => (
               <SelectItem key={key} value={key}>
                 <span className="flex items-center gap-2">
-                  {val.icon} {val.label}
+                  {statusConfig[key].icon} {statusConfig[key].label}
                   {statusCounts[key] ? ` (${statusCounts[key]})` : ''}
                 </span>
               </SelectItem>
@@ -305,7 +316,7 @@ function RepairRow({
   onPrintInvoice: () => void;
 }) {
   const status = statusConfig[repair.status] || statusConfig.received;
-  const nextStatus = statusFlow[statusFlow.indexOf(repair.status) + 1];
+  const nextStatus = statusFlow[statusFlow.indexOf(normalizeStatus(repair.status)) + 1];
   const warranty = getWarrantyRemaining(repair.warranty_ends_at);
 
   return (
@@ -645,7 +656,7 @@ function RepairDetailsDialog({
   if (!repair) return null;
 
   const status = statusConfig[repair.status] || statusConfig.received;
-  const nextStatus = statusFlow[statusFlow.indexOf(repair.status) + 1];
+  const nextStatus = statusFlow[statusFlow.indexOf(normalizeStatus(repair.status)) + 1];
   const warranty = getWarrantyRemaining(repair.warranty_ends_at);
 
   const handleSaveDetails = async () => {
@@ -725,7 +736,7 @@ function RepairDetailsDialog({
           <div className="flex items-center gap-1 overflow-x-auto pb-2">
             {statusFlow.map((s, i) => {
               const conf = statusConfig[s];
-              const currentIdx = statusFlow.indexOf(repair.status);
+              const currentIdx = statusFlow.indexOf(normalizeStatus(repair.status));
               const isActive = currentIdx >= i || (repair.status === 'warranty_expired' && i <= 5);
               const isCurrent = repair.status === s;
               return (

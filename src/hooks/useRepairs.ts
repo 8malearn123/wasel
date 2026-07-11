@@ -131,6 +131,7 @@ export function useRepairs() {
         warranty_days: input.warranty_days || 0,
         estimated_completion: input.estimated_completion || null,
         notes: input.notes || null,
+        status: 'in_progress',
         created_by: user.id,
       } as any)
       .select()
