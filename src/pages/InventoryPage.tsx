@@ -22,7 +22,8 @@ import {
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { useTabParam } from "@/hooks/useTabParam";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,14 +60,12 @@ import type { Device, Accessory, DeviceStatus } from "@/types/database";
 export default function InventoryPage() {
   const [searchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
-  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "devices");
+  const [activeTab, setActiveTab] = useTabParam("devices");
 
   // Sync when a global-search result is opened while already on this page
   useEffect(() => {
     const q = searchParams.get("q");
-    const tab = searchParams.get("tab");
     if (q !== null) setSearchTerm(q);
-    if (tab) setActiveTab(tab);
   }, [searchParams]);
 
   // Open the product dialog requested by a global-search result (?open=<id>)
@@ -215,26 +214,7 @@ export default function InventoryPage() {
         className="bg-card rounded-xl border border-border shadow-md overflow-hidden"
       >
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <div className="px-6 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <TabsList className="bg-muted/50">
-              <TabsTrigger value="devices" className="gap-2">
-                <Smartphone className="w-4 h-4" />
-                {t.inventory.devices}
-              </TabsTrigger>
-              <TabsTrigger value="accessories" className="gap-2">
-                <Package className="w-4 h-4" />
-                {t.inventory.accessories}
-              </TabsTrigger>
-              <TabsTrigger value="repair_parts" className="gap-2">
-                <Wrench className="w-4 h-4" />
-                {t.inventory.repairParts}
-              </TabsTrigger>
-              <TabsTrigger value="categories" className="gap-2">
-                <FolderOpen className="w-4 h-4" />
-                {isRTL ? "التصنيفات" : "Categories"}
-              </TabsTrigger>
-            </TabsList>
-
+          <div className="px-6 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-end gap-4">
             <div className="flex items-center gap-3">
               <div className="relative">
                 <Search className={cn(

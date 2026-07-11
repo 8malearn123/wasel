@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { UrlTabs } from '@/components/common/UrlTabs';
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useStoreSettings, useStorePages, uploadStoreAsset, type StorePage } from "@/hooks/useOnlineStore";
@@ -153,19 +154,7 @@ export default function OnlineStorePage() {
         </motion.div>
       )}
 
-      <Tabs defaultValue="general" dir="rtl">
-        <TabsList className="mb-6 flex-wrap h-auto">
-          <TabsTrigger value="general"><Store className="w-4 h-4 me-1" /> عام</TabsTrigger>
-          <TabsTrigger value="branding"><Palette className="w-4 h-4 me-1" /> الهوية</TabsTrigger>
-          <TabsTrigger value="hero"><Sparkles className="w-4 h-4 me-1" /> الواجهة</TabsTrigger>
-          <TabsTrigger value="banners"><ImageIcon className="w-4 h-4 me-1" /> البنرات</TabsTrigger>
-          <TabsTrigger value="legal"><FileText className="w-4 h-4 me-1" /> الصلاحيات والضريبة</TabsTrigger>
-          <TabsTrigger value="seo"><Search className="w-4 h-4 me-1" /> SEO</TabsTrigger>
-          <TabsTrigger value="pages"><FileText className="w-4 h-4 me-1" /> الصفحات</TabsTrigger>
-          <TabsTrigger value="categories"><Tag className="w-4 h-4 me-1" /> التصنيفات</TabsTrigger>
-          <TabsTrigger value="shipping"><Truck className="w-4 h-4 me-1" /> الشحن</TabsTrigger>
-          <TabsTrigger value="links"><Link2 className="w-4 h-4 me-1" /> الروابط</TabsTrigger>
-        </TabsList>
+      <UrlTabs defaultTab="general" dir="rtl">
 
         {/* GENERAL */}
         <TabsContent value="general">
@@ -740,7 +729,7 @@ export default function OnlineStorePage() {
             </div>
           </div>
         </TabsContent>
-      </Tabs>
+      </UrlTabs>
     </AppLayout>
   );
 }

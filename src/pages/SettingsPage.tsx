@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { UrlTabs } from '@/components/common/UrlTabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -173,29 +174,7 @@ export default function SettingsPage() {
 
   return (
     <AppLayout title={isRTL ? "الإعدادات" : "Settings"} subtitle={isRTL ? "تكوين النظام والتفضيلات" : "System configuration & preferences"}>
-      <Tabs defaultValue="business" className="space-y-6">
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="business" className="gap-2">
-            <Building2 className="w-4 h-4" />
-            {isRTL ? "المتجر" : "Business"}
-          </TabsTrigger>
-          <TabsTrigger value="tax-invoice" className="gap-2">
-            <Receipt className="w-4 h-4" />
-            {isRTL ? "الضريبة والفاتورة" : "Tax & Invoice"}
-          </TabsTrigger>
-          <TabsTrigger value="printer" className="gap-2">
-            <Printer className="w-4 h-4" />
-            {isRTL ? "الطابعة" : "Printer"}
-          </TabsTrigger>
-          <TabsTrigger value="subscription" className="gap-2">
-            <CreditCard className="w-4 h-4" />
-            {isRTL ? "الاشتراك" : "Subscription"}
-          </TabsTrigger>
-          <TabsTrigger value="api" className="gap-2">
-            <Code2 className="w-4 h-4" />
-            {isRTL ? "API المحاسبي" : "Accounting API"}
-          </TabsTrigger>
-        </TabsList>
+      <UrlTabs defaultTab="business" className="space-y-6">
 
         {/* Business Settings */}
         <TabsContent value="business">
@@ -495,7 +474,7 @@ export default function SettingsPage() {
         <TabsContent value="api">
           <AccountingAPISection isRTL={isRTL} />
         </TabsContent>
-      </Tabs>
+      </UrlTabs>
     </AppLayout>
   );
 }

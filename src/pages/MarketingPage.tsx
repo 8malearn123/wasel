@@ -3,6 +3,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useLanguage } from "@/i18n";
 import { useMarketing, Coupon, Campaign } from "@/hooks/useMarketing";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { UrlTabs } from '@/components/common/UrlTabs';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -233,15 +234,7 @@ export default function MarketingPage() {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="coupons">
-          <TabsList>
-            <TabsTrigger value="coupons" className="gap-1">
-              <Ticket className="h-4 w-4" /> {mk.couponsTab}
-            </TabsTrigger>
-            <TabsTrigger value="campaigns" className="gap-1">
-              <Megaphone className="h-4 w-4" /> {mk.campaignsTab}
-            </TabsTrigger>
-          </TabsList>
+        <UrlTabs defaultTab="coupons">
 
           {/* COUPONS TAB */}
           <TabsContent value="coupons" className="space-y-4">
@@ -404,7 +397,7 @@ export default function MarketingPage() {
               </div>
             )}
           </TabsContent>
-        </Tabs>
+        </UrlTabs>
 
         {/* COUPON DIALOG */}
         <Dialog open={couponDialog} onOpenChange={(v) => { setCouponDialog(v); if (!v) resetCouponForm(); }}>

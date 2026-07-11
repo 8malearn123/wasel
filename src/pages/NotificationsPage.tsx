@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTabParam } from '@/hooks/useTabParam';
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n";
@@ -15,7 +16,7 @@ export default function NotificationsPage() {
   const { t } = useLanguage();
   const n = t.notifications;
   const { notifications, loading } = useNotifications();
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeTab, setActiveTab] = useTabParam("all");
 
   const filtered = useMemo(() => {
     if (activeTab === "all") return notifications;
@@ -106,28 +107,6 @@ export default function NotificationsPage() {
 
       {/* Tabs + List */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-muted/50 mb-4">
-          <TabsTrigger value="all" className="gap-2">
-            <Bell className="w-4 h-4" /> {n.all}
-            {counts.all > 0 && <Badge variant="secondary" className="text-xs ml-1">{counts.all}</Badge>}
-          </TabsTrigger>
-          <TabsTrigger value="stock" className="gap-2">
-            <Package className="w-4 h-4" /> {n.stock}
-            {counts.stock > 0 && <Badge variant="secondary" className="text-xs ml-1">{counts.stock}</Badge>}
-          </TabsTrigger>
-          <TabsTrigger value="transfers" className="gap-2">
-            <ArrowRightLeft className="w-4 h-4" /> {n.transfers}
-            {counts.transfers > 0 && <Badge variant="secondary" className="text-xs ml-1">{counts.transfers}</Badge>}
-          </TabsTrigger>
-          <TabsTrigger value="sales" className="gap-2">
-            <ShoppingCart className="w-4 h-4" /> {n.sales}
-            {counts.sales > 0 && <Badge variant="secondary" className="text-xs ml-1">{counts.sales}</Badge>}
-          </TabsTrigger>
-          <TabsTrigger value="repairs" className="gap-2">
-            <Wrench className="w-4 h-4" /> {n.repairs}
-            {counts.repairs > 0 && <Badge variant="secondary" className="text-xs ml-1">{counts.repairs}</Badge>}
-          </TabsTrigger>
-        </TabsList>
 
         {["all", "stock", "transfers", "sales", "repairs"].map(tab => (
           <TabsContent key={tab} value={tab}>

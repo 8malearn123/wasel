@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTabParam } from '@/hooks/useTabParam';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Search, Printer, Barcode, Settings2, Package, Smartphone } from "lucide-react";
@@ -114,7 +115,7 @@ export default function LabelsPage() {
   const { devices, loading: devicesLoading } = useDevices();
   const { accessories, loading: accessoriesLoading } = useAccessories();
 
-  const [tab, setTab] = useState("all");
+  const [tab, setTab] = useTabParam("all");
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [labelSize, setLabelSize] = useState<LabelSize>("medium");
@@ -274,20 +275,6 @@ export default function LabelsPage() {
         {/* Tabs and Actions */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Tabs value={tab} onValueChange={setTab}>
-            <TabsList>
-              <TabsTrigger value="all" className="gap-1">
-                <Barcode className="w-4 h-4" />
-                {t.labels.allItems}
-              </TabsTrigger>
-              <TabsTrigger value="devices" className="gap-1">
-                <Smartphone className="w-4 h-4" />
-                {t.labels.devices}
-              </TabsTrigger>
-              <TabsTrigger value="accessories" className="gap-1">
-                <Package className="w-4 h-4" />
-                {t.labels.accessories}
-              </TabsTrigger>
-            </TabsList>
           </Tabs>
 
           <div className="flex items-center gap-2">

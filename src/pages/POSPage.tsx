@@ -10,6 +10,7 @@ import { CartPanel, POSCartItem } from "@/components/pos/CartPanel";
 import { InvoiceDialog } from "@/components/pos/InvoiceDialog";
 import { CashierSalesHistory } from "@/components/pos/CashierSalesHistory";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTabParam } from '@/hooks/useTabParam';
 import { ShoppingCart, FileText } from "lucide-react";
 import type { Device, Accessory, PaymentMethod } from "@/types/database";
 import { toast } from "sonner";
@@ -36,7 +37,7 @@ export default function POSPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
-  const [activeTab, setActiveTab] = useState("pos");
+  const [activeTab, setActiveTab] = useTabParam("pos");
   const { t, isRTL } = useLanguage();
   const { merchant, currentBranch, merchantUser } = useAuth();
 
@@ -194,16 +195,6 @@ export default function POSPage() {
   return (
     <AppLayout title={t.pos.title} subtitle={t.pos.subtitle}>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="h-[calc(100vh-140px)]">
-        <TabsList className="mb-4">
-          <TabsTrigger value="pos" className="gap-2">
-            <ShoppingCart className="w-4 h-4" />
-            {isRTL ? "نقطة البيع" : "POS"}
-          </TabsTrigger>
-          <TabsTrigger value="history" className="gap-2">
-            <FileText className="w-4 h-4" />
-            {isRTL ? "فواتيري" : "My Invoices"}
-          </TabsTrigger>
-        </TabsList>
 
         <TabsContent value="pos" className="h-[calc(100%-60px)]">
           <div className="flex gap-6 h-full">

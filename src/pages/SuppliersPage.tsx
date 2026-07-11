@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { useTabParam } from "@/hooks/useTabParam";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -43,7 +44,7 @@ const paymentStatusConfig: Record<string, { label: string; labelAr: string; colo
 };
 
 export default function SuppliersPage({ mode = 'suppliers' }: { mode?: 'suppliers' | 'purchases' }) {
-  const [activeTab, setActiveTab] = useState(mode === 'purchases' ? 'orders' : 'suppliers');
+  const [activeTab, setActiveTab] = useTabParam(mode === 'purchases' ? 'orders' : 'suppliers');
   const [showAdd, setShowAdd] = useState(false);
   const [editing, setEditing] = useState<Supplier | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -101,22 +102,6 @@ export default function SuppliersPage({ mode = 'suppliers' }: { mode?: 'supplier
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} dir={isRTL ? 'rtl' : 'ltr'}>
-        <TabsList className="mb-4">
-          <TabsTrigger value="suppliers" className="gap-2">
-            <Truck className="w-4 h-4" />
-            {isRTL ? 'الموردين' : 'Suppliers'}
-          </TabsTrigger>
-          <TabsTrigger value="orders" className="gap-2">
-            <FileText className="w-4 h-4" />
-            {isRTL ? 'أوامر الشراء' : 'Purchase Orders'}
-            {unpaidOrdersCount > 0 && <Badge variant="destructive" className="text-xs px-1.5 py-0">{unpaidOrdersCount}</Badge>}
-          </TabsTrigger>
-          <TabsTrigger value="debts" className="gap-2">
-            <DollarSign className="w-4 h-4" />
-            {isRTL ? 'المديونيات' : 'Debts'}
-          </TabsTrigger>
-        </TabsList>
-
         {/* Suppliers Tab */}
         <TabsContent value="suppliers">
           <div className="flex justify-between items-center mb-4">

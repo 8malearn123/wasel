@@ -7,6 +7,7 @@ import {
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTabParam } from '@/hooks/useTabParam';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -37,7 +38,7 @@ function exportToCSV(data: Record<string, any>[], filename: string) {
 
 export default function ReportsPage() {
   const [period, setPeriod] = useState<'daily' | 'monthly'>('daily');
-  const [activeTab, setActiveTab] = useState('sales');
+  const [activeTab, setActiveTab] = useTabParam('sales');
   const { t, isRTL } = useLanguage();
   const r = t.reports;
   const { 
@@ -153,23 +154,6 @@ export default function ReportsPage() {
     <AppLayout title={r.title} subtitle={r.subtitle}>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-          <TabsList className="bg-muted/50 flex-wrap">
-            <TabsTrigger value="sales" className="gap-2">
-              <BarChart3 className="w-4 h-4" /> {r.salesTab}
-            </TabsTrigger>
-            <TabsTrigger value="inventory" className="gap-2">
-              <Package className="w-4 h-4" /> {r.inventoryTab}
-            </TabsTrigger>
-            <TabsTrigger value="employees" className="gap-2">
-              <Users className="w-4 h-4" /> {isRTL ? "أداء الموظفين" : "Employees"}
-            </TabsTrigger>
-            <TabsTrigger value="deadstock" className="gap-2">
-              <Archive className="w-4 h-4" /> {r.deadStockTab}
-            </TabsTrigger>
-            <TabsTrigger value="parts" className="gap-2">
-              <Wrench className="w-4 h-4" /> {r.partsTab}
-            </TabsTrigger>
-          </TabsList>
         </div>
 
         {/* SALES TAB */}

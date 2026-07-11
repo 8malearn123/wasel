@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { UrlTabs } from '@/components/common/UrlTabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Package, ShoppingCart, Store, Truck, Plus, Trash2, Eye, EyeOff, Send, CheckCircle, XCircle, Clock, Lock, Wallet, AlertTriangle, Banknote } from 'lucide-react';
@@ -138,15 +139,7 @@ export default function WholesalePage() {
           )}
         </div>
 
-        <Tabs defaultValue="listings" className="space-y-4">
-          <TabsList className="flex-wrap">
-            <TabsTrigger value="listings">{t ? 'منتجاتي' : 'My Listings'}</TabsTrigger>
-            <TabsTrigger value="marketplace">{t ? 'سوق الجملة' : 'Marketplace'}</TabsTrigger>
-            <TabsTrigger value="my-orders">{t ? 'طلباتي' : 'My Orders'}</TabsTrigger>
-            <TabsTrigger value="incoming">{t ? 'طلبات واردة' : 'Incoming'}</TabsTrigger>
-            <TabsTrigger value="credits-out">{t ? 'مديونيات لي' : 'Credits Out'}</TabsTrigger>
-            <TabsTrigger value="credits-in">{t ? 'مديونياتي' : 'Credits In'}</TabsTrigger>
-          </TabsList>
+        <UrlTabs defaultTab="listings" className="space-y-4">
 
           {/* My Listings Tab */}
           <TabsContent value="listings">
@@ -423,7 +416,7 @@ export default function WholesalePage() {
               </CardContent>
             </Card>
           </TabsContent>
-        </Tabs>
+        </UrlTabs>
 
         {/* Order Dialog with Credit option */}
         <Dialog open={showOrderDialog} onOpenChange={setShowOrderDialog}>
