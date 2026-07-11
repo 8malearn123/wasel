@@ -35,6 +35,7 @@ const SECTIONS = [
   { icon: Building2, label: "Branches", labelAr: "الفروع", path: "/branches" },
   { icon: ArrowLeftRight, label: "Transfers", labelAr: "التحويلات", path: "/transfers" },
   { icon: Truck, label: "Suppliers", labelAr: "الموردين", path: "/suppliers" },
+  { icon: ShoppingBag, label: "Purchases", labelAr: "المشتريات", path: "/purchases" },
   { icon: Barcode, label: "Verification Codes", labelAr: "أكواد التحقق", path: "/labels" },
   { icon: Megaphone, label: "Marketing", labelAr: "التسويق", path: "/marketing" },
   { icon: Wrench, label: "Maintenance", labelAr: "الصيانة", path: "/repairs" },

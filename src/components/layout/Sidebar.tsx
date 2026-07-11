@@ -49,6 +49,7 @@ const navItems: NavItem[] = [
   { icon: Building2, label: "Branches", labelAr: "الفروع", path: "/branches" },
   { icon: ArrowLeftRight, label: "Transfers", labelAr: "التحويلات", path: "/transfers", requireFeature: 'transfers' },
   { icon: Truck, label: "Suppliers", labelAr: "الموردين", path: "/suppliers", requireFeature: 'suppliers' },
+  { icon: ShoppingBag, label: "Purchases", labelAr: "المشتريات", path: "/purchases", requireFeature: 'suppliers' },
   { icon: Barcode, label: "Verification Codes", labelAr: "أكواد التحقق", path: "/labels" },
   { icon: Bell, label: "Notifications", labelAr: "الإشعارات", path: "/notifications" },
   { icon: Megaphone, label: "Marketing", labelAr: "التسويق", path: "/marketing", requireFeature: 'marketing' },

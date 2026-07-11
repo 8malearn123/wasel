@@ -42,8 +42,8 @@ const paymentStatusConfig: Record<string, { label: string; labelAr: string; colo
   paid: { label: 'Paid', labelAr: 'مدفوع', color: 'bg-green-500/10 text-green-600' },
 };
 
-export default function SuppliersPage() {
-  const [activeTab, setActiveTab] = useState("suppliers");
+export default function SuppliersPage({ mode = 'suppliers' }: { mode?: 'suppliers' | 'purchases' }) {
+  const [activeTab, setActiveTab] = useState(mode === 'purchases' ? 'orders' : 'suppliers');
   const [showAdd, setShowAdd] = useState(false);
   const [editing, setEditing] = useState<Supplier | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -83,7 +83,13 @@ export default function SuppliersPage() {
   );
 
   return (
-    <AppLayout title={isRTL ? 'الموردين وأوامر الشراء' : 'Suppliers & Purchase Orders'} subtitle={isRTL ? 'إدارة الموردين والمشتريات والمديونيات' : 'Manage suppliers, purchases & debts'}>
+    <AppLayout
+      title={mode === 'purchases'
+        ? (isRTL ? 'المشتريات' : 'Purchases')
+        : (isRTL ? 'الموردين وأوامر الشراء' : 'Suppliers & Purchase Orders')}
+      subtitle={mode === 'purchases'
+        ? (isRTL ? 'إدارة أوامر الشراء والمدفوعات واستلام البضاعة' : 'Manage purchase orders, payments & receiving')
+        : (isRTL ? 'إدارة الموردين والمشتريات والمديونيات' : 'Manage suppliers, purchases & debts')}>
       {/* Summary Stats */}
       <div className="grid gap-4 sm:grid-cols-4 mb-6">
         <StatCard icon={Truck} value={activeSuppliers.length} label={isRTL ? 'الموردين النشطين' : 'Active Suppliers'} color="primary" delay={0} />
