@@ -88,8 +88,9 @@ export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
   const { t, isRTL } = useLanguage();
-  const { merchantUser, subscription } = useAuth();
+  const { merchant, merchantUser, subscription } = useAuth();
   const isCashier = merchantUser?.role === 'cashier';
+  const logoUrl = (merchant as { logo_url?: string | null } | null)?.logo_url;
 
   const currentPlanTier = PLAN_TIERS[subscription?.plan || 'trial'] ?? 3;
 
@@ -124,9 +125,13 @@ export function Sidebar() {
               exit={{ opacity: 0 }}
               className="flex items-center gap-3"
             >
-              <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
-                <Smartphone className="w-5 h-5 text-white" />
-              </div>
+              {logoUrl ? (
+                <img src={logoUrl} alt="logo" className="w-10 h-10 rounded-xl object-cover shadow-glow" />
+              ) : (
+                <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
+                  <Smartphone className="w-5 h-5 text-white" />
+                </div>
+              )}
               <div className="flex flex-col">
                 <span className="font-bold text-sidebar-foreground text-sm">وصل</span>
                 <span className="text-[10px] text-sidebar-foreground/50 uppercase tracking-wider">نظام محلات الجوالات</span>
@@ -136,9 +141,13 @@ export function Sidebar() {
         </AnimatePresence>
         
         {isCollapsed && (
-          <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow mx-auto">
-            <Smartphone className="w-5 h-5 text-white" />
-          </div>
+          logoUrl ? (
+            <img src={logoUrl} alt="logo" className="w-10 h-10 rounded-xl object-cover shadow-glow mx-auto" />
+          ) : (
+            <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow mx-auto">
+              <Smartphone className="w-5 h-5 text-white" />
+            </div>
+          )
         )}
       </div>
 

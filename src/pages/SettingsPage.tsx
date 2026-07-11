@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { 
+import {
   Building2, Key, CreditCard, Loader2, AlertTriangle, Printer,
-  Receipt, DollarSign, Globe, Shield, Save, Percent, Code2, Copy, Check, ExternalLink
+  Receipt, DollarSign, Globe, Shield, Save, Percent, Code2, Copy, Check, ExternalLink,
+  Upload, Image as ImageIcon
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import { useLanguage } from "@/i18n";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadStoreAsset } from "@/hooks/useOnlineStore";
 import { toast } from "sonner";
 
 interface StoreSettings {
@@ -123,6 +125,42 @@ export default function SettingsPage() {
     }
   };
 
+  // Site logo upload (shown in the sidebar)
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const currentLogo = (merchant as any)?.logo_url as string | null | undefined;
+
+  const handleLogoUpload = async (file: File) => {
+    if (!merchant) return;
+    setLogoUploading(true);
+    const url = await uploadStoreAsset(merchant.id, file, 'logo');
+    if (url) {
+      const { error } = await supabase
+        .from('merchants')
+        .update({ logo_url: url } as any)
+        .eq('id', merchant.id);
+      if (error) toast.error(error.message);
+      else {
+        toast.success(isRTL ? 'تم تحديث شعار الموقع' : 'Site logo updated');
+        await refreshMerchantData();
+      }
+    }
+    setLogoUploading(false);
+  };
+
+  const handleLogoRemove = async () => {
+    if (!merchant) return;
+    const { error } = await supabase
+      .from('merchants')
+      .update({ logo_url: null } as any)
+      .eq('id', merchant.id);
+    if (error) toast.error(error.message);
+    else {
+      toast.success(isRTL ? 'تمت إزالة الشعار' : 'Logo removed');
+      await refreshMerchantData();
+    }
+  };
+
   const SettingRow = ({ label, desc, children }: { label: string; desc?: string; children: React.ReactNode }) => (
     <div className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
       <div className="flex-1">
@@ -168,6 +206,36 @@ export default function SettingsPage() {
             </h3>
             
             <div className="grid gap-4 max-w-lg">
+              <div className="space-y-2">
+                <Label>{isRTL ? "شعار الموقع" : "Site Logo"}</Label>
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-xl border border-border bg-muted/30 flex items-center justify-center overflow-hidden shrink-0">
+                    {currentLogo
+                      ? <img src={currentLogo} alt="logo" className="w-full h-full object-cover" />
+                      : <ImageIcon className="w-6 h-6 text-muted-foreground" />}
+                  </div>
+                  <input
+                    ref={logoInputRef} type="file" accept="image/*" className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) handleLogoUpload(f);
+                      e.target.value = '';
+                    }} />
+                  <Button variant="outline" size="sm" className="gap-1"
+                    onClick={() => logoInputRef.current?.click()} disabled={logoUploading}>
+                    {logoUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                    {isRTL ? "تغيير الشعار" : "Change Logo"}
+                  </Button>
+                  {currentLogo && (
+                    <Button variant="ghost" size="sm" className="text-destructive" onClick={handleLogoRemove}>
+                      {isRTL ? "إزالة" : "Remove"}
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {isRTL ? "يظهر أعلى القائمة الجانبية في كل صفحات الموقع" : "Shown at the top of the sidebar across the site"}
+                </p>
+              </div>
               <div className="space-y-2">
                 <Label>{isRTL ? "اسم المتجر" : "Business Name"}</Label>
                 <Input value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
