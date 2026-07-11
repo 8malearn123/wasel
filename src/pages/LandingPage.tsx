@@ -87,7 +87,7 @@ export default function LandingPage() {
               <Zap className="w-3.5 h-3.5" />
               {ar ? "تجربة مجانية 14 يوماً — بدون بطاقة ائتمانية" : "14-day free trial — no credit card required"}
             </span>
-            <h1 className="text-4xl md:text-6xl font-extrabold leading-tight mb-6">
+            <h1 className="font-display text-4xl md:text-6xl font-extrabold leading-tight mb-6">
               {ar ? "نظام متكامل لإدارة" : "The all-in-one system for"}
               <span className="text-gradient block mt-2">{ar ? "محلات الجوالات" : "phone shops"}</span>
             </h1>
