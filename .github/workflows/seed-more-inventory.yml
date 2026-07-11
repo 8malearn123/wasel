@@ -37,13 +37,21 @@ jobs:
             echo "[$LABEL] devices: $(echo "$RESP" | tail -1)"
             echo "$RESP" | grep -q "HTTP 201" || { echo "[$LABEL] devices insert failed: $RESP"; return 1; }
 
+            # accessories table has no unique constraint on sku — check manually for idempotency
+            local EXIST
+            EXIST=$(curl -sS "$SUPA/rest/v1/accessories?sku=eq.ACC-009&select=id&limit=1" \
+              -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN")
+            if [ "$(echo "$EXIST" | jq 'length')" != "0" ]; then
+              echo "[$LABEL] battery accessories already present"
+              return 0
+            fi
             jq --arg m "$MID" --arg b "$BID" 'map(. + {merchant_id:$m, branch_id:$b})' \
               accessories-base.json > accessories.json
             RESP=$(curl -sS -w "\nHTTP %{http_code}" -X POST \
-              "$SUPA/rest/v1/accessories?on_conflict=merchant_id,sku" \
+              "$SUPA/rest/v1/accessories" \
               -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN" \
               -H "Content-Type: application/json" \
-              -H "Prefer: resolution=ignore-duplicates,return=minimal" \
+              -H "Prefer: return=minimal" \
               --data @accessories.json)
             echo "[$LABEL] accessories: $(echo "$RESP" | tail -1)"
             echo "$RESP" | grep -q "HTTP 201" || { echo "[$LABEL] accessories insert failed: $RESP"; return 1; }
