@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef, Fragment, ReactNode } from "react";
 import { en, TranslationKeys } from "./translations/en";
 import { ar } from "./translations/ar";
+import { startAutoTranslate, stopAutoTranslate } from "./autoTranslate";
 
 type Language = "en" | "ar";
 
@@ -28,15 +29,32 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const isRTL = language === "ar";
 
+  // Most pages hardcode Arabic text; a DOM-level translator swaps it to English.
+  // Switching back to Arabic remounts the tree (generation bump) to restore originals.
+  const [generation, setGeneration] = useState(0);
+  const prevLanguage = useRef(language);
+
   useEffect(() => {
     document.documentElement.dir = isRTL ? "rtl" : "ltr";
     document.documentElement.lang = language;
     document.documentElement.classList.toggle("rtl", isRTL);
+
+    if (prevLanguage.current === "en" && language === "ar") {
+      stopAutoTranslate();
+      setGeneration((g) => g + 1);
+    }
+    prevLanguage.current = language;
+
+    if (language === "en") {
+      startAutoTranslate();
+    } else {
+      stopAutoTranslate();
+    }
   }, [language, isRTL]);
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t: translations[language], isRTL }}>
-      {children}
+      <Fragment key={generation}>{children}</Fragment>
     </LanguageContext.Provider>
   );
 }
