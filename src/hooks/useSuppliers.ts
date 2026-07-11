@@ -15,6 +15,8 @@ interface PurchaseItem {
   color?: string;
   storage?: string;
   price?: number;
+  // Catalog reference for devices (an existing device row of the same model)
+  deviceId?: string;
   // For accessories
   accessoryId?: string;
 }
@@ -183,9 +185,24 @@ export function usePurchaseOrders() {
       return { error: orderError };
     }
 
+    // Persist order lines referencing the actual inventory products
+    const itemRows = items.map(item => ({
+      purchase_order_id: order.id,
+      accessory_id: item.type === 'accessory' ? item.accessoryId ?? null : null,
+      device_id: item.type === 'device' ? item.deviceId ?? null : null,
+      quantity: item.quantity,
+      unit_cost: item.unitCost,
+    }));
+    if (itemRows.length > 0) {
+      const { error: itemsError } = await supabase
+        .from('purchase_order_items')
+        .insert(itemRows);
+      if (itemsError) console.error('Error saving purchase order items:', itemsError);
+    }
+
     await fetchOrders();
     toast.success(`Purchase order created: ${order.order_number}`);
-    
+
     return { data: order, error: null };
   };
 
@@ -262,6 +279,10 @@ export function usePurchaseOrders() {
     const order = orders.find(o => o.id === orderId);
     if (!order) return { error: new Error('Order not found') };
 
+    // Orders created from the inventory picker already have their item rows;
+    // don't insert them again on receipt.
+    const hasExistingItems = (order.items?.length ?? 0) > 0;
+
     // Add items to inventory
     for (const item of items) {
       if (item.type === 'device' && item.imei && item.model) {
@@ -285,7 +306,7 @@ export function usePurchaseOrders() {
           .select()
           .single();
 
-        if (device) {
+        if (device && !hasExistingItems) {
           await supabase
             .from('purchase_order_items')
             .insert({
@@ -310,14 +331,16 @@ export function usePurchaseOrders() {
             .eq('id', item.accessoryId);
         }
 
-        await supabase
-          .from('purchase_order_items')
-          .insert({
-            purchase_order_id: orderId,
-            accessory_id: item.accessoryId,
-            quantity: item.quantity,
-            unit_cost: item.unitCost
-          });
+        if (!hasExistingItems) {
+          await supabase
+            .from('purchase_order_items')
+            .insert({
+              purchase_order_id: orderId,
+              accessory_id: item.accessoryId,
+              quantity: item.quantity,
+              unit_cost: item.unitCost
+            });
+        }
       }
     }
 

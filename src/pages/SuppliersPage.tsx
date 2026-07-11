@@ -54,6 +54,8 @@ export default function SuppliersPage({ mode = 'suppliers' }: { mode?: 'supplier
   const { t, isRTL } = useLanguage();
   const { suppliers, loading: suppliersLoading, addSupplier, updateSupplier, deleteSupplier } = useSuppliers();
   const { orders, loading: ordersLoading, createPurchaseOrder, updateOrderStatus, recordPayment, receivePurchase } = usePurchaseOrders();
+  const { devices } = useDevices();
+  const { accessories } = useAccessories();
 
   const activeSuppliers = suppliers.filter(s => s.is_active);
 
@@ -344,6 +346,7 @@ export default function SuppliersPage({ mode = 'suppliers' }: { mode?: 'supplier
         supplier={editing} onSave={async (data) => { if (editing) await updateSupplier(editing.id, data); else await addSupplier(data as any); }} isRTL={isRTL} />
 
       <CreatePODialog open={showCreatePO} onOpenChange={setShowCreatePO} suppliers={activeSuppliers}
+        devices={devices} accessories={accessories}
         onSave={createPurchaseOrder} isRTL={isRTL} />
 
       <ReceiveDialog open={!!showReceive} onOpenChange={(open) => { if (!open) setShowReceive(null); }}
@@ -414,24 +417,78 @@ function SupplierDialog({ open, onOpenChange, supplier, onSave, isRTL }: { open:
 }
 
 // --- Create PO Dialog ---
-function CreatePODialog({ open, onOpenChange, suppliers, onSave, isRTL }: { open: boolean; onOpenChange: (o: boolean) => void; suppliers: Supplier[]; onSave: (supplierId: string, items: any[], notes?: string) => Promise<any>; isRTL: boolean }) {
+type POItemDraft = {
+  type: 'device' | 'accessory';
+  productId: string;
+  quantity: number;
+  unitCost: number;
+  price: number;
+  model: string;
+  brand: string;
+  color: string;
+  storage: string;
+};
+
+function CreatePODialog({ open, onOpenChange, suppliers, devices, accessories, onSave, isRTL }: {
+  open: boolean; onOpenChange: (o: boolean) => void; suppliers: Supplier[];
+  devices: any[]; accessories: any[];
+  onSave: (supplierId: string, items: any[], notes?: string) => Promise<any>; isRTL: boolean;
+}) {
   const [loading, setLoading] = useState(false);
   const [supplierId, setSupplierId] = useState('');
   const [notes, setNotes] = useState('');
-  const [items, setItems] = useState<Array<{ type: 'device' | 'accessory'; model: string; brand: string; quantity: number; unitCost: number; price: number; imei: string; color: string; storage: string }>>([]);
+  const [items, setItems] = useState<POItemDraft[]>([]);
 
-  const addItem = () => setItems([...items, { type: 'device', model: '', brand: '', quantity: 1, unitCost: 0, price: 0, imei: '', color: '', storage: '' }]);
+  // Distinct device models from actual inventory (keyed by a representative device row)
+  const deviceModels = useMemo(() => {
+    const map = new Map<string, { id: string; brand: string; model: string; storage: string; color: string; cost: number; price: number; available: number }>();
+    for (const d of devices) {
+      const key = `${d.brand || ''}|${d.model}|${d.storage || ''}`;
+      const existing = map.get(key);
+      if (existing) {
+        if (d.status === 'available') existing.available += 1;
+      } else {
+        map.set(key, {
+          id: d.id, brand: d.brand || '', model: d.model, storage: d.storage || '', color: d.color || '',
+          cost: Number(d.cost), price: Number(d.price), available: d.status === 'available' ? 1 : 0,
+        });
+      }
+    }
+    return [...map.values()];
+  }, [devices]);
+
+  const activeAccessories = useMemo(() => accessories.filter((a: any) => a.is_active !== false), [accessories]);
+  const hasInventory = deviceModels.length > 0 || activeAccessories.length > 0;
+
+  const addItem = () => setItems([...items, {
+    type: deviceModels.length > 0 ? 'device' : 'accessory',
+    productId: '', quantity: 1, unitCost: 0, price: 0, model: '', brand: '', color: '', storage: '',
+  }]);
   const removeItem = (i: number) => setItems(items.filter((_, idx) => idx !== i));
-  const updateItem = (i: number, field: string, value: any) => { const updated = [...items]; (updated[i] as any)[field] = value; setItems(updated); };
+  const updateItem = (i: number, patch: Partial<POItemDraft>) => {
+    setItems(prev => prev.map((it, idx) => idx === i ? { ...it, ...patch } : it));
+  };
+
+  const selectProduct = (i: number, productId: string) => {
+    const item = items[i];
+    if (item.type === 'device') {
+      const m = deviceModels.find(d => d.id === productId);
+      if (m) updateItem(i, { productId, unitCost: m.cost, price: m.price, model: m.model, brand: m.brand, color: m.color, storage: m.storage });
+    } else {
+      const a = activeAccessories.find((x: any) => x.id === productId);
+      if (a) updateItem(i, { productId, unitCost: Number(a.cost), price: Number(a.price), model: a.name, brand: a.brand || '', color: '', storage: '' });
+    }
+  };
 
   const total = items.reduce((s, it) => s + it.unitCost * it.quantity, 0);
+  const allSelected = items.length > 0 && items.every(it => it.productId && it.quantity > 0);
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) { setSupplierId(''); setNotes(''); setItems([]); } onOpenChange(o); }}>
       <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isRTL ? 'إنشاء طلب شراء جديد' : 'Create New Purchase Order'}</DialogTitle>
-          <DialogDescription>{isRTL ? 'أضف المنتجات المطلوبة من المورد' : 'Add products to order from supplier'}</DialogDescription>
+          <DialogDescription>{isRTL ? 'اختر منتجات من مخزونك لطلب كميات إضافية من المورد' : 'Pick products from your inventory to reorder from the supplier'}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -443,42 +500,62 @@ function CreatePODialog({ open, onOpenChange, suppliers, onSave, isRTL }: { open
             </Select>
           </div>
 
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <Label>{isRTL ? 'المنتجات' : 'Items'}</Label>
-              <Button type="button" variant="outline" size="sm" onClick={addItem}><Plus className="w-4 h-4 mr-1" />{isRTL ? 'إضافة منتج' : 'Add Item'}</Button>
+          {!hasInventory ? (
+            <div className="p-4 rounded-lg border border-warning/30 bg-warning/5 text-sm text-muted-foreground">
+              {isRTL ? 'أضف أجهزة أو إكسسوارات للمخزون أولاً حتى تقدر تختار منها في طلب الشراء.' : 'Add devices or accessories to your inventory first so you can pick them in a purchase order.'}
             </div>
-            {items.map((item, i) => (
-              <div key={i} className="p-3 border border-border rounded-lg space-y-3">
-                <div className="flex justify-between items-center">
-                  <Badge variant="outline">{isRTL ? `منتج ${i + 1}` : `Item ${i + 1}`}</Badge>
-                  <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => removeItem(i)}><Trash2 className="w-4 h-4" /></Button>
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="space-y-1"><Label className="text-xs">{isRTL ? 'النوع' : 'Type'}</Label>
-                    <Select value={item.type} onValueChange={(v) => updateItem(i, 'type', v)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent><SelectItem value="device">{isRTL ? 'جهاز' : 'Device'}</SelectItem><SelectItem value="accessory">{isRTL ? 'إكسسوار' : 'Accessory'}</SelectItem></SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1"><Label className="text-xs">{isRTL ? 'الموديل/الاسم' : 'Model/Name'}</Label><Input value={item.model} onChange={(e) => updateItem(i, 'model', e.target.value)} placeholder={isRTL ? 'iPhone 15' : 'iPhone 15'} /></div>
-                  <div className="space-y-1"><Label className="text-xs">{isRTL ? 'الماركة' : 'Brand'}</Label><Input value={item.brand} onChange={(e) => updateItem(i, 'brand', e.target.value)} placeholder="Apple" /></div>
-                </div>
-                {item.type === 'device' && (
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="space-y-1"><Label className="text-xs">IMEI</Label><Input value={item.imei} onChange={(e) => updateItem(i, 'imei', e.target.value)} /></div>
-                    <div className="space-y-1"><Label className="text-xs">{isRTL ? 'اللون' : 'Color'}</Label><Input value={item.color} onChange={(e) => updateItem(i, 'color', e.target.value)} /></div>
-                    <div className="space-y-1"><Label className="text-xs">{isRTL ? 'السعة' : 'Storage'}</Label><Input value={item.storage} onChange={(e) => updateItem(i, 'storage', e.target.value)} placeholder="256GB" /></div>
-                  </div>
-                )}
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="space-y-1"><Label className="text-xs">{isRTL ? 'الكمية' : 'Qty'}</Label><Input type="number" min={1} value={item.quantity} onChange={(e) => updateItem(i, 'quantity', Number(e.target.value))} /></div>
-                  <div className="space-y-1"><Label className="text-xs">{isRTL ? 'تكلفة الوحدة' : 'Unit Cost'}</Label><Input type="number" min={0} value={item.unitCost} onChange={(e) => updateItem(i, 'unitCost', Number(e.target.value))} /></div>
-                  <div className="space-y-1"><Label className="text-xs">{isRTL ? 'سعر البيع' : 'Sell Price'}</Label><Input type="number" min={0} value={item.price} onChange={(e) => updateItem(i, 'price', Number(e.target.value))} /></div>
-                </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <Label>{isRTL ? 'المنتجات' : 'Items'}</Label>
+                <Button type="button" variant="outline" size="sm" onClick={addItem}><Plus className="w-4 h-4 mr-1" />{isRTL ? 'إضافة منتج' : 'Add Item'}</Button>
               </div>
-            ))}
-          </div>
+              {items.map((item, i) => (
+                <div key={i} className="p-3 border border-border rounded-lg space-y-3">
+                  <div className="flex justify-between items-center">
+                    <Badge variant="outline">{isRTL ? `منتج ${i + 1}` : `Item ${i + 1}`}</Badge>
+                    <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => removeItem(i)}><Trash2 className="w-4 h-4" /></Button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-1"><Label className="text-xs">{isRTL ? 'النوع' : 'Type'}</Label>
+                      <Select value={item.type} onValueChange={(v: 'device' | 'accessory') => updateItem(i, { type: v, productId: '', unitCost: 0, price: 0, model: '', brand: '', color: '', storage: '' })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {deviceModels.length > 0 && <SelectItem value="device">{isRTL ? 'جهاز' : 'Device'}</SelectItem>}
+                          {activeAccessories.length > 0 && <SelectItem value="accessory">{isRTL ? 'إكسسوار' : 'Accessory'}</SelectItem>}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1 col-span-2"><Label className="text-xs">{isRTL ? 'المنتج من المخزون *' : 'Product from inventory *'}</Label>
+                      <Select value={item.productId} onValueChange={(v) => selectProduct(i, v)}>
+                        <SelectTrigger><SelectValue placeholder={isRTL ? 'اختر المنتج' : 'Select product'} /></SelectTrigger>
+                        <SelectContent>
+                          {item.type === 'device'
+                            ? deviceModels.map(m => (
+                                <SelectItem key={m.id} value={m.id}>
+                                  {`${m.brand ? m.brand + ' ' : ''}${m.model}${m.storage ? ' · ' + m.storage : ''} — ${isRTL ? 'متوفر' : 'in stock'}: ${m.available}`}
+                                </SelectItem>
+                              ))
+                            : activeAccessories.map((a: any) => (
+                                <SelectItem key={a.id} value={a.id}>
+                                  {`${a.name}${a.sku ? ' (' + a.sku + ')' : ''} — ${isRTL ? 'متوفر' : 'in stock'}: ${a.quantity}`}
+                                </SelectItem>
+                              ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-1"><Label className="text-xs">{isRTL ? 'الكمية المطلوبة' : 'Qty to order'}</Label><Input type="number" min={1} value={item.quantity} onChange={(e) => updateItem(i, { quantity: Number(e.target.value) })} /></div>
+                    <div className="space-y-1"><Label className="text-xs">{isRTL ? 'تكلفة الوحدة' : 'Unit Cost'}</Label><Input type="number" min={0} value={item.unitCost} onChange={(e) => updateItem(i, { unitCost: Number(e.target.value) })} /></div>
+                    {item.type === 'device' && (
+                      <div className="space-y-1"><Label className="text-xs">{isRTL ? 'سعر البيع' : 'Sell Price'}</Label><Input type="number" min={0} value={item.price} onChange={(e) => updateItem(i, { price: Number(e.target.value) })} /></div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="space-y-2"><Label>{isRTL ? 'ملاحظات' : 'Notes'}</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
 
@@ -490,9 +567,11 @@ function CreatePODialog({ open, onOpenChange, suppliers, onSave, isRTL }: { open
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>{isRTL ? 'إلغاء' : 'Cancel'}</Button>
-          <Button disabled={loading || !supplierId || items.length === 0} onClick={async () => {
+          <Button disabled={loading || !supplierId || !allSelected} onClick={async () => {
             setLoading(true);
-            const poItems = items.map(it => ({ type: it.type, quantity: it.quantity, unitCost: it.unitCost, imei: it.imei || undefined, model: it.model, brand: it.brand, color: it.color || undefined, storage: it.storage || undefined, price: it.price || undefined }));
+            const poItems = items.map(it => it.type === 'accessory'
+              ? { type: 'accessory', accessoryId: it.productId, quantity: it.quantity, unitCost: it.unitCost }
+              : { type: 'device', deviceId: it.productId, quantity: it.quantity, unitCost: it.unitCost, model: it.model, brand: it.brand || undefined, color: it.color || undefined, storage: it.storage || undefined, price: it.price || undefined });
             await onSave(supplierId, poItems, notes || undefined);
             setLoading(false);
             onOpenChange(false);
@@ -509,13 +588,15 @@ function CreatePODialog({ open, onOpenChange, suppliers, onSave, isRTL }: { open
 // --- Receive & Inspect Dialog ---
 function ReceiveDialog({ open, onOpenChange, order, onReceive, isRTL }: { open: boolean; onOpenChange: (o: boolean) => void; order: PurchaseOrder | null; onReceive: (orderId: string, items: any[]) => Promise<any>; isRTL: boolean }) {
   const [loading, setLoading] = useState(false);
-  const [receiveItems, setReceiveItems] = useState<Array<{ type: 'device' | 'accessory'; imei: string; model: string; brand: string; color: string; storage: string; quantity: number; unitCost: number; price: number; checked: boolean }>>([]);
+  const [receiveItems, setReceiveItems] = useState<Array<{ type: 'device' | 'accessory'; accessoryId?: string; imei: string; model: string; brand: string; color: string; storage: string; quantity: number; unitCost: number; price: number; checked: boolean }>>([]);
 
   const handleOpen = () => {
     if (order?.items) {
       setReceiveItems(order.items.map(item => ({
         type: item.device_id ? 'device' : 'accessory',
-        imei: item.device?.imei || '',
+        accessoryId: item.accessory_id || undefined,
+        // The device reference is the catalog model — the received unit gets its own new IMEI
+        imei: '',
         model: item.device?.model || item.accessory?.name || '',
         brand: item.device?.brand || item.accessory?.brand || '',
         color: item.device?.color || '',
@@ -608,7 +689,7 @@ function ReceiveDialog({ open, onOpenChange, order, onReceive, isRTL }: { open: 
             setLoading(true);
             const items = receiveItems.map(it => ({
               type: it.type, quantity: it.quantity, unitCost: it.unitCost,
-              imei: it.imei || undefined, model: it.model, brand: it.brand,
+              accessoryId: it.accessoryId, imei: it.imei || undefined, model: it.model, brand: it.brand,
               color: it.color || undefined, storage: it.storage || undefined, price: it.price || undefined,
             }));
             await onReceive(order.id, items);
