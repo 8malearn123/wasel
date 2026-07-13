@@ -143,11 +143,10 @@ export default function AuthPage() {
       >
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-primary flex items-center justify-center mx-auto mb-4 shadow-glow">
-            <Smartphone className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-foreground">وصل</h1>
-          <p className="text-muted-foreground mt-1">نظام محلات الجوالات</p>
+          <img src="/brand/app-icon.svg" alt="وصل" className="w-16 h-16 rounded-2xl mx-auto mb-4 shadow-glow" />
+          <img src="/brand/wordmark-ink.svg" alt="وصل" className="h-8 w-auto mx-auto dark:hidden" />
+          <img src="/brand/wordmark-white.svg" alt="وصل" className="h-8 w-auto mx-auto hidden dark:block" />
+          <p className="text-muted-foreground mt-2">نظام محلات الجوالات</p>
         </div>
 
         {/* Form Card */}

@@ -81,8 +81,8 @@ export function SalesChart({ data, loading }: SalesChartProps) {
               <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(215, 60%, 45%)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="hsl(215, 60%, 45%)" stopOpacity={0} />
+                    <stop offset="5%" stopColor="hsl(223, 100%, 59%)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(223, 100%, 59%)" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="hsl(38, 95%, 50%)" stopOpacity={0.3} />
@@ -103,7 +103,7 @@ export function SalesChart({ data, loading }: SalesChartProps) {
                     name === 'revenue' ? (isRTL ? 'الإيرادات' : 'Revenue') : (isRTL ? 'عدد المبيعات' : 'Sales Count')
                   ]}
                 />
-                <Area type="monotone" dataKey="revenue" stroke="hsl(215, 60%, 45%)" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
+                <Area type="monotone" dataKey="revenue" stroke="hsl(223, 100%, 59%)" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
                 <Area type="monotone" dataKey="count" stroke="hsl(38, 95%, 50%)" strokeWidth={2} fillOpacity={1} fill="url(#colorCount)" />
               </AreaChart>
             ) : (
@@ -122,7 +122,7 @@ export function SalesChart({ data, loading }: SalesChartProps) {
                     name === 'revenue' ? (isRTL ? 'الإيرادات' : 'Revenue') : (isRTL ? 'عدد المبيعات' : 'Sales Count')
                   ]}
                 />
-                <Bar dataKey="revenue" fill="hsl(215, 60%, 45%)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="revenue" fill="hsl(223, 100%, 59%)" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="count" fill="hsl(38, 95%, 50%)" radius={[4, 4, 0, 0]} />
               </BarChart>
             )}

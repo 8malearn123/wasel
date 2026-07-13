@@ -37,12 +37,11 @@ export default function LandingPage() {
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-gradient-primary flex items-center justify-center">
-              <Smartphone className="w-5 h-5 text-white" />
-            </div>
+            <img src="/brand/app-icon.svg" alt="وصل" className="w-9 h-9 rounded-xl" />
             <div>
-              <p className="font-bold leading-none">{ar ? "وصل" : "Wasel"}</p>
-              <p className="text-[11px] text-muted-foreground">{ar ? "نظام محلات الجوالات" : "Phone Shop System"}</p>
+              <img src="/brand/wordmark-ink.svg" alt="وصل" className="h-4 w-auto dark:hidden" />
+              <img src="/brand/wordmark-white.svg" alt="وصل" className="h-4 w-auto hidden dark:block" />
+              <p className="text-[11px] text-muted-foreground mt-0.5">{ar ? "نظام محلات الجوالات" : "Phone Shop System"}</p>
             </div>
           </div>
           <div className="flex items-center gap-1.5">

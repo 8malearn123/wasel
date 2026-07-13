@@ -19,8 +19,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 215 35% 14%;
 
-    /* Primary - Calm Blue */
-    --primary: 215 60% 45%;
+    /* Primary - Wasel Brand Blue #2F6BFF */
+    --primary: 223 100% 59%;
     --primary-foreground: 0 0% 100%;
 
     /* Secondary - Soft slate */
@@ -48,45 +48,45 @@
 
     --border: 215 20% 90%;
     --input: 215 20% 90%;
-    --ring: 215 60% 45%;
+    --ring: 223 100% 59%;
 
     --radius: 0.75rem;
 
     /* Sidebar — calm light slate */
     --sidebar-background: 215 28% 95%;
     --sidebar-foreground: 215 30% 28%;
-    --sidebar-primary: 215 60% 45%;
+    --sidebar-primary: 223 100% 59%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 215 25% 89%;
     --sidebar-accent-foreground: 215 35% 20%;
     --sidebar-border: 215 22% 87%;
-    --sidebar-ring: 215 60% 45%;
+    --sidebar-ring: 223 100% 59%;
 
     /* Custom semantic tokens */
     --surface-elevated: 0 0% 100%;
     --surface-sunken: 215 20% 96%;
     --text-muted: 215 12% 55%;
-    --gradient-primary: linear-gradient(135deg, hsl(215 60% 45%) 0%, hsl(225 55% 36%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(223 100% 59%) 0%, hsl(228 85% 47%) 100%);
     --gradient-accent: linear-gradient(135deg, hsl(38 90% 52%) 0%, hsl(28 88% 55%) 100%);
     --gradient-surface: linear-gradient(180deg, hsl(215 30% 98%) 0%, hsl(215 20% 96%) 100%);
     --shadow-sm: 0 1px 2px 0 hsl(215 25% 10% / 0.05);
     --shadow-md: 0 4px 6px -1px hsl(215 25% 10% / 0.08), 0 2px 4px -2px hsl(215 25% 10% / 0.06);
     --shadow-lg: 0 10px 15px -3px hsl(215 25% 10% / 0.08), 0 4px 6px -4px hsl(215 25% 10% / 0.05);
     --shadow-xl: 0 20px 25px -5px hsl(215 25% 10% / 0.1), 0 8px 10px -6px hsl(215 25% 10% / 0.08);
-    --shadow-glow: 0 0 20px hsl(215 60% 45% / 0.15);
+    --shadow-glow: 0 0 20px hsl(223 100% 59% / 0.18);
   }
 
   .dark {
-    --background: 215 30% 9%;
+    --background: 220 20% 9%;
     --foreground: 215 15% 95%;
 
-    --card: 215 25% 13%;
+    --card: 220 18% 13%;
     --card-foreground: 215 15% 95%;
 
-    --popover: 215 25% 13%;
+    --popover: 220 18% 13%;
     --popover-foreground: 215 15% 95%;
 
-    --primary: 215 70% 58%;
+    --primary: 223 100% 64%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 215 20% 18%;
@@ -109,16 +109,16 @@
 
     --border: 215 20% 20%;
     --input: 215 20% 20%;
-    --ring: 215 70% 58%;
+    --ring: 223 100% 64%;
 
-    --sidebar-background: 215 32% 7%;
+    --sidebar-background: 221 22% 7%;
     --sidebar-foreground: 215 15% 85%;
-    --sidebar-primary: 215 70% 55%;
+    --sidebar-primary: 223 100% 62%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 215 25% 13%;
     --sidebar-accent-foreground: 215 15% 95%;
     --sidebar-border: 215 25% 16%;
-    --sidebar-ring: 215 70% 55%;
+    --sidebar-ring: 223 100% 62%;
 
     --surface-elevated: 215 25% 14%;
     --surface-sunken: 215 30% 6%;

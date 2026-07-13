@@ -130,7 +130,7 @@ export default function AdminDashboardPage() {
                   <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={v => `${(v/1000).toFixed(0)}K`} />
                   <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={100} />
                   <Tooltip formatter={(v: number) => [`${v.toLocaleString()} ر.س`, 'المبيعات']} />
-                  <Bar dataKey="sales_total" fill="hsl(215, 60%, 45%)" radius={[0, 6, 6, 0]} />
+                  <Bar dataKey="sales_total" fill="hsl(223, 100%, 59%)" radius={[0, 6, 6, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
