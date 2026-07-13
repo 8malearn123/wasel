@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { 
   Search, 
@@ -81,6 +82,52 @@ export default function InventoryPage() {
   
   const { devices, loading: devicesLoading, addDevice, updateDevice, deleteDevice } = useDevices();
   const { accessories, loading: accessoriesLoading, addAccessory, updateAccessory, deleteAccessory } = useAccessories();
+
+  // "وصل حديثاً" = added within the last 7 days
+  const NEW_WINDOW_MS = 7 * 24 * 3600 * 1000;
+  const isNewProduct = (createdAt?: string) =>
+    !!createdAt && Date.now() - new Date(createdAt).getTime() < NEW_WINDOW_MS;
+
+  // "الأكثر مبيعاً" for devices: top 3 models by sold units
+  const topDeviceModels = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const d of devices) {
+      if (d.status !== 'sold') continue;
+      const key = `${d.brand || ''}|${d.model}`;
+      counts.set(key, (counts.get(key) || 0) + 1);
+    }
+    return new Set([...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k]) => k));
+  }, [devices]);
+
+  // "الأكثر مبيعاً" for accessories: top 3 by units sold
+  const [topAccessoryIds, setTopAccessoryIds] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from('sale_items')
+        .select('accessory_id, quantity')
+        .not('accessory_id', 'is', null)
+        .limit(2000);
+      if (!data) return;
+      const counts = new Map<string, number>();
+      for (const row of data) {
+        if (!row.accessory_id) continue;
+        counts.set(row.accessory_id, (counts.get(row.accessory_id) || 0) + (row.quantity || 1));
+      }
+      setTopAccessoryIds(new Set([...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([id]) => id)));
+    })();
+  }, []);
+
+  const NewBadge = () => (
+    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-success/15 text-success whitespace-nowrap">
+      {isRTL ? "وصل حديثاً" : "New Arrival"}
+    </span>
+  );
+  const BestSellerBadge = () => (
+    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-warning/15 text-warning whitespace-nowrap">
+      {isRTL ? "الأكثر مبيعاً 🔥" : "Best Seller 🔥"}
+    </span>
+  );
   const { parts: repairParts, loading: partsLoading, addPart, updatePart, deletePart } = useRepairParts();
   const { deviceCategories, accessoryCategories } = useCategories();
 
@@ -294,7 +341,11 @@ export default function InventoryPage() {
                               }
                             />
                             <div>
-                              <p className="font-medium text-foreground">{device.model}</p>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="font-medium text-foreground">{device.model}</p>
+                                {topDeviceModels.has(`${device.brand || ''}|${device.model}`) && <BestSellerBadge />}
+                                {isNewProduct(device.created_at) && <NewBadge />}
+                              </div>
                               <p className="text-sm text-muted-foreground">{device.storage} · {device.color}</p>
                             </div>
                           </div>
@@ -392,7 +443,11 @@ export default function InventoryPage() {
                                 }
                               />
                               <div>
-                                <p className="font-medium text-foreground">{accessory.name}</p>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <p className="font-medium text-foreground">{accessory.name}</p>
+                                  {topAccessoryIds.has(accessory.id) && <BestSellerBadge />}
+                                  {isNewProduct(accessory.created_at) && <NewBadge />}
+                                </div>
                                 <p className="text-sm text-muted-foreground">{accessory.branch?.name || t.inventory.all}</p>
                               </div>
                             </div>

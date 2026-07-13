@@ -1,10 +1,11 @@
 import { ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ShoppingCart, Search, Instagram, Twitter, Phone, Store as StoreIcon, ClipboardList, ShieldCheck, FileText } from 'lucide-react';
+import { ShoppingCart, Search, Instagram, Twitter, Phone, Store as StoreIcon, ClipboardList, ShieldCheck, FileText, Heart } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { StoreSettings, StorePage, MerchantLegalInfo } from '@/hooks/useOnlineStore';
 import { useStoreCart } from './StoreCart';
+import { useStoreFavorites } from './StoreFavorites';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -17,6 +18,7 @@ interface Props {
 export function StoreLayout({ store, pages = [], merchantLegal, children }: Props) {
   const { slug } = useParams<{ slug: string }>();
   const { count } = useStoreCart();
+  const { count: favCount } = useStoreFavorites();
   const base = `/store/${slug}`;
   const currency = store.currency_symbol || 'ر.س';
 
@@ -67,6 +69,16 @@ export function StoreLayout({ store, pages = [], merchantLegal, children }: Prop
             <Button variant="ghost" size="icon" asChild title="طلباتي">
               <Link to={`${base}/my-orders`}><ClipboardList className="w-5 h-5" /></Link>
             </Button>
+            <Button variant="ghost" size="icon" asChild className="relative" title="المفضلة">
+              <Link to={`${base}/favorites`}>
+                <Heart className="w-5 h-5" />
+                {favCount > 0 && (
+                  <Badge className="absolute -top-1 -left-1 h-5 min-w-5 px-1 text-[10px] bg-red-500 hover:bg-red-500">
+                    {favCount}
+                  </Badge>
+                )}
+              </Link>
+            </Button>
             <Button variant="ghost" size="icon" asChild className="relative">
               <Link to={`${base}/cart`}>
                 <ShoppingCart className="w-5 h-5" />
@@ -99,6 +111,7 @@ export function StoreLayout({ store, pages = [], merchantLegal, children }: Prop
               <li><Link to={base} className="hover:text-foreground">الرئيسية</Link></li>
               <li><Link to={`${base}/products`} className="hover:text-foreground">جميع المنتجات</Link></li>
               <li><Link to={`${base}/my-orders`} className="hover:text-foreground">طلباتي</Link></li>
+              <li><Link to={`${base}/favorites`} className="hover:text-foreground">المفضلة</Link></li>
               <li><Link to={`${base}/track`} className="hover:text-foreground">تتبع الطلب</Link></li>
             </ul>
           </div>

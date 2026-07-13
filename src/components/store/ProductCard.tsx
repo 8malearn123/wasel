@@ -1,8 +1,10 @@
 import { Link, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Smartphone, Package } from 'lucide-react';
+import { Smartphone, Package, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { useStoreCart } from './StoreCart';
+import { useStoreFavorites } from './StoreFavorites';
 
 export interface StoreProduct {
   id: string;
@@ -16,12 +18,25 @@ export interface StoreProduct {
   color?: string;
   condition?: string;
   category?: string;
+  createdAt?: string;
 }
+
+const NEW_WINDOW_MS = 7 * 24 * 3600 * 1000;
 
 export function ProductCard({ product, currency = 'ر.س' }: { product: StoreProduct; currency?: string }) {
   const { slug } = useParams<{ slug: string }>();
   const { addItem } = useStoreCart();
+  const { isFavorite, toggleFavorite } = useStoreFavorites();
   const detailPath = `/store/${slug}/${product.type === 'device' ? 'device' : 'accessory'}/${product.id}`;
+  const favId = `${product.type}-${product.id}`;
+  const fav = isFavorite(favId);
+  const isNew = !!product.createdAt && Date.now() - new Date(product.createdAt).getTime() < NEW_WINDOW_MS;
+
+  const handleFav = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleFavorite(favId);
+  };
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -41,7 +56,22 @@ export function ProductCard({ product, currency = 'ر.س' }: { product: StorePro
   return (
     <motion.div whileHover={{ y: -4 }} className="group">
       <Link to={detailPath} className="block bg-card rounded-2xl border overflow-hidden hover:shadow-xl transition-shadow">
-        <div className="aspect-square bg-muted/40 flex items-center justify-center overflow-hidden">
+        <div className="relative aspect-square bg-muted/40 flex items-center justify-center overflow-hidden">
+          <button
+            onClick={handleFav}
+            aria-label={fav ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}
+            className={cn(
+              'absolute top-2 left-2 z-10 w-9 h-9 rounded-full flex items-center justify-center bg-background/90 backdrop-blur shadow-sm border transition-all hover:scale-110',
+              fav ? 'text-red-500 border-red-200' : 'text-muted-foreground'
+            )}
+          >
+            <Heart className={cn('w-5 h-5', fav && 'fill-red-500')} />
+          </button>
+          {isNew && (
+            <span className="absolute top-2 right-2 z-10 text-[11px] font-bold px-2 py-1 rounded-full bg-emerald-500 text-white shadow-sm">
+              وصل حديثاً
+            </span>
+          )}
           {product.image ? (
             <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
           ) : product.type === 'device' ? (

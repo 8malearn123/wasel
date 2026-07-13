@@ -1272,6 +1272,9 @@ export const AR_EN: Record<string, string> = {
   "أو أدخل عدد مخصص...": "Or enter a custom amount...",
 
   // ===== Theme & misc =====
+  "وصل حديثاً": "New Arrival",
+  "الأكثر مبيعاً 🔥": "Best Seller 🔥",
+  "المفضلة": "Favorites",
   "الوضع الداكن": "Dark Mode",
   "الوضع الفاتح": "Light Mode",
   "يتوفر تحديث جديد للموقع": "A new site update is available",

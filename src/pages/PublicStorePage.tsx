@@ -3,6 +3,8 @@ import { Loader2, Store } from 'lucide-react';
 import { usePublicStore } from '@/hooks/useOnlineStore';
 import { StoreThemeProvider } from '@/components/store/StoreTheme';
 import { StoreCartProvider } from '@/components/store/StoreCart';
+import { StoreFavoritesProvider } from '@/components/store/StoreFavorites';
+import { StoreFavoritesPage } from '@/pages/store/StoreFavoritesPage';
 import { StoreLayout } from '@/components/store/StoreLayout';
 import { StoreSEO } from '@/components/store/StoreSEO';
 import { StoreHomePage } from '@/pages/store/StoreHomePage';
@@ -73,6 +75,7 @@ export default function PublicStorePage() {
         jsonLd={[orgJsonLd, websiteJsonLd]}
       />
       <StoreCartProvider slug={slug || ''}>
+       <StoreFavoritesProvider slug={slug || ''}>
         <StoreLayout store={store} pages={pages} merchantLegal={merchantLegal}>
           <Routes>
             <Route index element={<StoreHomePage store={store} devices={devices} accessories={accessories} categories={categories} />} />
@@ -85,10 +88,12 @@ export default function PublicStorePage() {
             <Route path="track" element={<StoreTrackOrderPage store={store} />} />
             <Route path="track/:orderNumber" element={<StoreTrackOrderPage store={store} />} />
             <Route path="my-orders" element={<StoreMyOrdersPage store={store} />} />
+            <Route path="favorites" element={<StoreFavoritesPage store={store} devices={devices} accessories={accessories} />} />
             <Route path="page/:pageSlug" element={<StoreCustomPage pages={pages} />} />
             <Route path="*" element={<Navigate to="" replace />} />
           </Routes>
         </StoreLayout>
+       </StoreFavoritesProvider>
       </StoreCartProvider>
     </StoreThemeProvider>
   );
