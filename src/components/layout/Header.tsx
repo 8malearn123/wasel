@@ -4,7 +4,7 @@ import {
   Megaphone, Wrench, BarChart3, ClipboardCheck, Store, ShoppingBag,
   Calculator, Heart, Warehouse, Users, CreditCard, LifeBuoy,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -71,6 +71,21 @@ export function Header({ title, subtitle }: HeaderProps) {
   const [showProfile, setShowProfile] = useState(false);
   const [showActivity, setShowActivity] = useState(false);
 
+  // Inventory favorites count (kept in sync with the inventory page)
+  const readFavCount = () => {
+    try { return (JSON.parse(localStorage.getItem("inventory-favs") || "[]") as string[]).length; } catch { return 0; }
+  };
+  const [favCount, setFavCount] = useState<number>(readFavCount);
+  useEffect(() => {
+    const update = () => setFavCount(readFavCount());
+    window.addEventListener("inventory-favs-changed", update);
+    window.addEventListener("storage", update);
+    return () => {
+      window.removeEventListener("inventory-favs-changed", update);
+      window.removeEventListener("storage", update);
+    };
+  }, []);
+
   const handleSignOut = async () => {
     await signOut();
     navigate('/auth');
@@ -86,6 +101,24 @@ export function Header({ title, subtitle }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-4">
+        {/* Favorites */}
+        {!isCashier && (
+          <Button
+            variant="outline"
+            className="gap-2 touch-target"
+            onClick={() => {
+              navigate("/inventory?fav=1");
+              window.dispatchEvent(new Event("show-inventory-favs"));
+            }}
+          >
+            <Heart className="w-4 h-4 text-red-500 fill-red-500" />
+            <span className="hidden sm:inline">
+              {language === "ar" ? "المفضلة" : "Favorites"}
+            </span>
+            {favCount > 0 && <span className="text-xs font-bold">({favCount})</span>}
+          </Button>
+        )}
+
         {/* Browse Sections */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

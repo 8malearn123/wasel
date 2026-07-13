@@ -157,9 +157,20 @@ export default function InventoryPage() {
     setFavIds(prev => {
       const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
       try { localStorage.setItem("inventory-favs", JSON.stringify(next)); } catch { /* ignore */ }
+      window.dispatchEvent(new Event("inventory-favs-changed"));
       return next;
     });
   };
+
+  // Turn the favorites filter on when opened from the header (?fav=1 / event)
+  useEffect(() => {
+    if (searchParams.get("fav") === "1") setShowFavsOnly(true);
+  }, [searchParams]);
+  useEffect(() => {
+    const show = () => setShowFavsOnly(true);
+    window.addEventListener("show-inventory-favs", show);
+    return () => window.removeEventListener("show-inventory-favs", show);
+  }, []);
   const FavButton = ({ id }: { id: string }) => {
     const fav = favIds.includes(id);
     return (
