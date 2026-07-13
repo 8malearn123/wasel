@@ -18,7 +18,8 @@ import {
   Loader2,
   X,
   Wrench,
-  FolderOpen
+  FolderOpen,
+  Heart
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -147,16 +148,43 @@ export default function InventoryPage() {
     }
   }, [searchParams, devices, accessories]);
 
+  // Favorites (saved on this device)
+  const [favIds, setFavIds] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem("inventory-favs") || "[]"); } catch { return []; }
+  });
+  const [showFavsOnly, setShowFavsOnly] = useState(false);
+  const toggleFav = (id: string) => {
+    setFavIds(prev => {
+      const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
+      try { localStorage.setItem("inventory-favs", JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+  };
+  const FavButton = ({ id }: { id: string }) => {
+    const fav = favIds.includes(id);
+    return (
+      <Button
+        variant="ghost" size="icon"
+        title={fav ? (isRTL ? "إزالة من المفضلة" : "Remove from favorites") : (isRTL ? "إضافة للمفضلة" : "Add to favorites")}
+        onClick={() => toggleFav(id)}
+      >
+        <Heart className={cn("w-4 h-4", fav ? "text-red-500 fill-red-500" : "text-muted-foreground")} />
+      </Button>
+    );
+  };
+
   // Filter by search
-  const filteredDevices = devices.filter(d => 
-    d.imei.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredDevices = devices.filter(d =>
+    (d.imei.toLowerCase().includes(searchTerm.toLowerCase()) ||
     d.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    d.brand?.toLowerCase().includes(searchTerm.toLowerCase())
+    d.brand?.toLowerCase().includes(searchTerm.toLowerCase())) &&
+    (!showFavsOnly || favIds.includes(d.id))
   );
 
   const filteredAccessories = accessories.filter(a =>
-    a.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    a.name.toLowerCase().includes(searchTerm.toLowerCase())
+    (a.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    a.name.toLowerCase().includes(searchTerm.toLowerCase())) &&
+    (!showFavsOnly || favIds.includes(a.id))
   );
 
   const filteredRepairParts = repairParts.filter(p =>
@@ -275,7 +303,16 @@ export default function InventoryPage() {
                   className={cn("w-64", isRTL ? "pr-9" : "pl-9")}
                 />
               </div>
-              <Button 
+              <Button
+                variant={showFavsOnly ? "default" : "outline"}
+                className={cn("gap-2", showFavsOnly && "bg-red-500 hover:bg-red-600 text-white")}
+                onClick={() => setShowFavsOnly(v => !v)}
+              >
+                <Heart className={cn("w-4 h-4", showFavsOnly && "fill-white")} />
+                {isRTL ? "المفضلة" : "Favorites"}
+                {favIds.length > 0 && <span className="text-xs">({favIds.length})</span>}
+              </Button>
+              <Button
                 className="gap-2 bg-gradient-primary hover:opacity-90"
                 onClick={() => {
                   if (activeTab === "devices") setShowAddDevice(true);
@@ -360,6 +397,8 @@ export default function InventoryPage() {
                         <td className="px-6 py-4 text-sm text-muted-foreground">{Number(device.cost).toLocaleString()} ر.س</td>
                         <td className="px-6 py-4 font-semibold text-foreground">{Number(device.price).toLocaleString()} ر.س</td>
                         <td className={cn("px-6 py-4", isRTL ? "text-left" : "text-right")}>
+                          <div className="flex items-center gap-0.5 justify-end">
+                          <FavButton id={device.id} />
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon">
@@ -371,7 +410,7 @@ export default function InventoryPage() {
                                 <Edit className="w-4 h-4 mr-2" /> {t.inventory.edit}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 className="text-destructive"
                                 onClick={() => deleteDevice(device.id)}
                               >
@@ -379,6 +418,7 @@ export default function InventoryPage() {
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
+                          </div>
                         </td>
                       </motion.tr>
                     ))}
@@ -470,6 +510,8 @@ export default function InventoryPage() {
                           <td className="px-6 py-4 text-sm text-muted-foreground">{Number(accessory.cost).toLocaleString()} ر.س</td>
                           <td className="px-6 py-4 font-semibold text-foreground">{Number(accessory.price).toLocaleString()} ر.س</td>
                           <td className={cn("px-6 py-4", isRTL ? "text-left" : "text-right")}>
+                            <div className="flex items-center gap-0.5 justify-end">
+                            <FavButton id={accessory.id} />
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon">
@@ -481,7 +523,7 @@ export default function InventoryPage() {
                                   <Edit className="w-4 h-4 mr-2" /> {t.inventory.edit}
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem 
+                                <DropdownMenuItem
                                   className="text-destructive"
                                   onClick={() => deleteAccessory(accessory.id)}
                                 >
@@ -489,6 +531,7 @@ export default function InventoryPage() {
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
+                            </div>
                           </td>
                         </motion.tr>
                       );
