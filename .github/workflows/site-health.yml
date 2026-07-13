@@ -1,0 +1,78 @@
+name: Site health check
+
+on:
+  workflow_dispatch:
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check live site and database
+        env:
+          SITE: https://wasel-alpha.vercel.app
+          SUPA: https://ynwddyxzypbcftlevuam.supabase.co
+          ANON: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlud2RkeXh6eXBiY2Z0bGV2dWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5MjE1OTQsImV4cCI6MjA4NTQ5NzU5NH0.PsNDqovuzo7NmTiwsH4swskkIF3FdMlBXjYUy3MJkyA
+        run: |
+          set -uo pipefail
+          FAILED=0
+
+          echo "===== 1) LIVE SITE ====="
+          for P in "/" "/pos" "/auth" "/store/alanam" "/brand/favicon-64.png" "/brand/app-icon.svg" "/products/ACC-011.jpg" "/products/SN-MBP14-4502.jpg"; do
+            CODE=$(curl -s -o /dev/null -w "%{http_code}" "$SITE$P")
+            if [ "$CODE" = "200" ]; then echo "OK  $P"; else echo "FAIL $P -> HTTP $CODE"; FAILED=1; fi
+          done
+
+          BUNDLE=$(curl -s "$SITE/" | grep -oE '/assets/index-[A-Za-z0-9_-]+\.js' | head -1)
+          echo "bundle: ${BUNDLE:-NOT FOUND}"
+          [ -n "$BUNDLE" ] || FAILED=1
+
+          check_merchant() {
+            local TOKEN="$1" LABEL="$2"
+            echo "----- $LABEL -----"
+            local T
+            for T in devices accessories sales suppliers purchase_orders stock_transfers coupons campaigns online_orders customers support_tickets; do
+              local N
+              N=$(curl -sS "$SUPA/rest/v1/$T?select=id&limit=1000" \
+                -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN" | jq 'if type=="array" then length else -1 end')
+              if [ "$N" = "-1" ]; then echo "  FAIL $T (query error)"; FAILED=1
+              elif [ "$N" = "0" ] && [ "$T" != "support_tickets" ]; then echo "  WARN $T = 0"; else echo "  OK   $T = $N"; fi
+            done
+            local STORE SUB
+            STORE=$(curl -sS "$SUPA/rest/v1/store_settings?select=slug,is_published&limit=1" \
+              -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN" | jq -c '.[0] // {}')
+            echo "  store: $STORE"
+            SUB=$(curl -sS "$SUPA/rest/v1/subscriptions?select=plan,status,max_branches,max_users&limit=1" \
+              -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN" | jq -c '.[0] // {}')
+            echo "  subscription: $SUB"
+            echo "$SUB" | jq -e '.max_users >= 9999 and .max_branches == 1' > /dev/null || { echo "  FAIL subscription limits wrong"; FAILED=1; }
+          }
+
+          echo ""
+          echo "===== 2) DATABASE (demo accounts) ====="
+          SESSION=$(curl -sS "$SUPA/functions/v1/login-by-code" \
+            -H "apikey: $ANON" -H "Authorization: Bearer $ANON" \
+            -H "Content-Type: application/json" -d '{"code":"70035"}')
+          TOKEN=$(echo "$SESSION" | jq -r '.session.access_token // empty')
+          if [ -n "$TOKEN" ]; then
+            echo "OK cashier code login (70035)"
+            echo "----- cashier-70035 -----"
+            for T in devices accessories sales; do
+              N=$(curl -sS "$SUPA/rest/v1/$T?select=id&limit=1000" \
+                -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN" | jq 'if type=="array" then length else -1 end')
+              echo "  $T = $N"; [ "$N" = "-1" ] && FAILED=1
+            done
+          else
+            echo "FAIL cashier code login: $SESSION"; FAILED=1
+          fi
+
+          for EMAIL in demo-basic@wasil.demo demo-professional@wasil.demo demo-enterprise@wasil.demo demo-distributor@wasil.demo; do
+            AUTH=$(curl -sS "$SUPA/auth/v1/token?grant_type=password" \
+              -H "apikey: $ANON" -H "Content-Type: application/json" \
+              -d "{\"email\":\"$EMAIL\",\"password\":\"demo1234\"}")
+            TOKEN=$(echo "$AUTH" | jq -r '.access_token // empty')
+            if [ -n "$TOKEN" ]; then check_merchant "$TOKEN" "$EMAIL"; else echo "FAIL login $EMAIL"; FAILED=1; fi
+          done
+
+          echo ""
+          if [ "$FAILED" = "0" ]; then echo "===== ALL CHECKS PASSED ====="; else echo "===== SOME CHECKS FAILED ====="; fi
+          exit $FAILED
