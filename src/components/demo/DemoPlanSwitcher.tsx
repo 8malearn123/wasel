@@ -38,6 +38,13 @@ export default function DemoPlanSwitcher() {
         return;
       }
 
+      // All plans are 1 branch / unlimited users — the DB function still writes
+      // the old per-plan limits, so correct them right after switching
+      await supabase
+        .from('subscriptions')
+        .update({ max_branches: 1, max_users: 9999 })
+        .eq('id', subscription.id);
+
       toast.success(`تم التبديل إلى ${PLANS.find(p => p.name === planName)?.name_ar}`);
       // Refresh subscription and all cached data without a full page reload
       await refreshMerchantData();
