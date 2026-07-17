@@ -28,13 +28,6 @@ const COLOR_PRESETS = [
   { name: "أخضر طبيعي", primary: "#16a34a", secondary: "#65a30d" },
 ];
 
-const FONT_PRESETS = [
-  { id: "cairo", name: "Cairo", sample: "أهلاً بكم في متجرنا", style: { fontFamily: '"Cairo", sans-serif' } },
-  { id: "tajawal", name: "Tajawal", sample: "أهلاً بكم في متجرنا", style: { fontFamily: '"Tajawal", sans-serif' } },
-  { id: "ibm_plex", name: "IBM Plex Arabic", sample: "أهلاً بكم في متجرنا", style: { fontFamily: '"IBM Plex Sans Arabic", sans-serif' } },
-  { id: "noto", name: "Noto Kufi", sample: "أهلاً بكم في متجرنا", style: { fontFamily: '"Noto Kufi Arabic", sans-serif' } },
-];
-
 export default function OnlineStorePage() {
   const { merchant } = useAuth();
   const { settings, categories, loading, initStore, updateSettings, addCategory, removeCategory } = useStoreSettings();
@@ -216,32 +209,6 @@ export default function OnlineStorePage() {
                   <Input value={val("secondary_color")} onChange={e => set("secondary_color", e.target.value)} className="font-mono" dir="ltr" />
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* Fonts */}
-          <div className="bg-card rounded-xl border p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Type className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold">الخط</h3>
-            </div>
-            <div className="grid sm:grid-cols-2 gap-3">
-              {FONT_PRESETS.map(f => {
-                const active = (val("font_family") || "cairo") === f.id;
-                return (
-                  <button
-                    key={f.id}
-                    onClick={() => set("font_family", f.id)}
-                    className={cn(
-                      "text-right p-4 rounded-xl border-2 transition-all",
-                      active ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
-                    )}
-                  >
-                    <p className="text-xs text-muted-foreground mb-1">{f.name}</p>
-                    <p className="text-xl font-semibold" style={f.style}>{f.sample}</p>
-                  </button>
-                );
-              })}
             </div>
           </div>
 
