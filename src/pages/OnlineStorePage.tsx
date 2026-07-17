@@ -35,13 +35,6 @@ const FONT_PRESETS = [
   { id: "noto", name: "Noto Kufi", sample: "أهلاً بكم في متجرنا", style: { fontFamily: '"Noto Kufi Arabic", sans-serif' } },
 ];
 
-const THEMES = [
-  { id: "modern", name: "عصري", desc: "تصميم نظيف بأقواس ناعمة وظلال خفيفة", emoji: "✨" },
-  { id: "minimal", name: "بسيط", desc: "أبيض، تباعد واسع، خطوط دقيقة", emoji: "◯" },
-  { id: "bold", name: "جريء", desc: "ألوان قوية، خطوط ثقيلة، تباين عالي", emoji: "⚡" },
-  { id: "classic", name: "كلاسيكي", desc: "زوايا حادة، تصميم تقليدي راقي", emoji: "♛" },
-];
-
 export default function OnlineStorePage() {
   const { merchant } = useAuth();
   const { settings, categories, loading, initStore, updateSettings, addCategory, removeCategory } = useStoreSettings();
@@ -187,34 +180,6 @@ export default function OnlineStorePage() {
 
         {/* BRANDING */}
         <TabsContent value="branding" className="space-y-6">
-          {/* Themes */}
-          <div className="bg-card rounded-xl border p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Layout className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold">قالب التصميم</h3>
-            </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {THEMES.map(t => {
-                const active = (val("theme_id") || "modern") === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    onClick={() => set("theme_id", t.id)}
-                    className={cn(
-                      "relative text-right p-4 rounded-xl border-2 transition-all hover:shadow-md",
-                      active ? "border-primary bg-primary/5" : "border-border bg-background"
-                    )}
-                  >
-                    {active && <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center"><Check className="w-3 h-3" /></div>}
-                    <div className="text-3xl mb-2">{t.emoji}</div>
-                    <p className="font-semibold">{t.name}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{t.desc}</p>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Colors */}
           <div className="bg-card rounded-xl border p-6">
             <h3 className="font-semibold mb-4">الألوان</h3>
