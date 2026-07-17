@@ -274,6 +274,8 @@ export default function RepairsPage() {
         onOpenChange={setShowCreate}
         branches={branches}
         onCreate={createRepair}
+        repairParts={repairParts}
+        onUseParts={usePartsInRepair}
       />
 
       <RepairDetailsDialog
@@ -440,11 +442,15 @@ function CreateRepairDialog({
   onOpenChange,
   branches,
   onCreate,
+  repairParts,
+  onUseParts,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   branches: { id: string; name: string }[];
   onCreate: (input: CreateRepairInput) => Promise<any>;
+  repairParts: RepairPart[];
+  onUseParts: (repairOrderId: string, items: { partId: string; quantity: number }[]) => Promise<any>;
 }) {
   const [loading, setLoading] = useState(false);
   const { customers } = useCustomers();
@@ -471,12 +477,26 @@ function CreateRepairDialog({
     notes: '',
   });
 
+  // Parts picked from stock for this repair
+  const [selectedParts, setSelectedParts] = useState<{ partId: string; quantity: number }[]>([]);
+  const availableParts = repairParts.filter(p => p.quantity > 0);
+  const partsCost = selectedParts.reduce((s, sp) => {
+    const p = repairParts.find(x => x.id === sp.partId);
+    return s + (p ? Number(p.cost) * sp.quantity : 0);
+  }, 0);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.customer_name || !form.issue_description) return;
 
     setLoading(true);
-    const { error } = await onCreate(form);
+    const { data, error } = await onCreate(form);
+
+    // Attach the picked stock parts and deduct their quantities
+    const validParts = selectedParts.filter(sp => sp.partId && sp.quantity > 0);
+    if (!error && data?.id && validParts.length > 0) {
+      await onUseParts(data.id, validParts);
+    }
     setLoading(false);
 
     if (!error) {
@@ -485,6 +505,7 @@ function CreateRepairDialog({
         device_brand: '', device_model: '', device_imei: '', device_color: '',
         issue_description: '', priority: 'normal', estimated_cost: 0, warranty_days: 30, notes: '',
       });
+      setSelectedParts([]);
       onOpenChange(false);
     }
   };
@@ -690,6 +711,61 @@ function CreateRepairDialog({
                   <Input type="number" placeholder="0" value={form.estimated_cost || ''} onChange={e => update('estimated_cost', parseFloat(e.target.value) || 0)} dir="ltr" />
                 </div>
               </div>
+              {/* Repair parts from stock */}
+              <div className="space-y-2 p-3 rounded-lg border border-border bg-muted/20">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-2">
+                    <Package className="w-4 h-4 text-primary" />
+                    قطع الصيانة من المخزون
+                  </Label>
+                  <Button type="button" variant="outline" size="sm"
+                    disabled={availableParts.length === 0}
+                    onClick={() => setSelectedParts(prev => [...prev, { partId: '', quantity: 1 }])}>
+                    <Plus className="w-4 h-4 ml-1" /> إضافة قطعة
+                  </Button>
+                </div>
+
+                {availableParts.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">لا توجد قطع صيانة في المخزون. أضف قطعاً من صفحة المخزون ← قطع الصيانة أولاً.</p>
+                ) : selectedParts.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">اختر القطع المطلوبة للإصلاح وسيتم خصمها من المخزون تلقائياً عند إنشاء الطلب.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedParts.map((sp, i) => {
+                      const part = repairParts.find(p => p.id === sp.partId);
+                      return (
+                        <div key={i} className="flex items-center gap-2">
+                          <Select value={sp.partId} onValueChange={v => setSelectedParts(prev => prev.map((x, idx) => idx === i ? { ...x, partId: v, quantity: 1 } : x))}>
+                            <SelectTrigger className="flex-1 h-9"><SelectValue placeholder="اختر قطعة..." /></SelectTrigger>
+                            <SelectContent>
+                              {availableParts.map(p => (
+                                <SelectItem key={p.id} value={p.id}>
+                                  {p.name} — متوفر: {p.quantity} — {Number(p.cost).toLocaleString()} ر.س
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            type="number" min={1} max={part?.quantity || 99}
+                            className="w-20 h-9" dir="ltr"
+                            value={sp.quantity}
+                            onChange={e => setSelectedParts(prev => prev.map((x, idx) => idx === i ? { ...x, quantity: Math.max(1, Number(e.target.value) || 1) } : x))}
+                          />
+                          <Button type="button" variant="ghost" size="icon" className="text-destructive h-9 w-9"
+                            onClick={() => setSelectedParts(prev => prev.filter((_, idx) => idx !== i))}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      );
+                    })}
+                    <div className="flex justify-between items-center text-sm pt-1 border-t border-border/50">
+                      <span className="text-muted-foreground">تكلفة القطع</span>
+                      <span className="font-bold text-foreground">{partsCost.toLocaleString()} ر.س</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Warranty Days */}
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
