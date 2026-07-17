@@ -55,6 +55,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { useRepairs, RepairOrder, RepairStatus, CreateRepairInput } from "@/hooks/useRepairs";
+import { useCustomers } from "@/hooks/useCustomers";
 import { useRepairParts, RepairPart, RepairOrderPart } from "@/hooks/useRepairParts";
 import { useBranches } from "@/hooks/useBranches";
 import { useAuth } from "@/hooks/useAuth";
@@ -445,6 +446,8 @@ function CreateRepairDialog({
   onCreate: (input: CreateRepairInput) => Promise<any>;
 }) {
   const [loading, setLoading] = useState(false);
+  const { customers } = useCustomers();
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [form, setForm] = useState<CreateRepairInput>({
     customer_name: '',
     customer_phone: '',
@@ -500,7 +503,56 @@ function CreateRepairDialog({
             <TabsContent value="customer" className="space-y-4 mt-4">
               <div className="space-y-2">
                 <Label>اسم العميل *</Label>
-                <Input placeholder="اسم العميل" value={form.customer_name} onChange={e => update('customer_name', e.target.value)} />
+                {(() => {
+                  const q = form.customer_name.trim().toLowerCase();
+                  const matches = q
+                    ? customers.filter(c =>
+                        c.name.toLowerCase().includes(q) || (c.phone || '').includes(q)
+                      ).slice(0, 6)
+                    : [];
+                  return (
+                    <div className="relative">
+                      <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                      <Input
+                        className="pr-9"
+                        placeholder="ابحث باسم العميل أو رقم جواله..."
+                        value={form.customer_name}
+                        onChange={e => { update('customer_name', e.target.value); setShowSuggestions(true); }}
+                        onFocus={() => setShowSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                      />
+                      {showSuggestions && q && (
+                        <div className="absolute z-50 top-full mt-1 w-full bg-popover border border-border rounded-lg shadow-lg overflow-hidden">
+                          {matches.length > 0 ? (
+                            matches.map(c => (
+                              <button
+                                type="button"
+                                key={c.id}
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  update('customer_name', c.name);
+                                  if (c.phone) update('customer_phone', c.phone);
+                                  setShowSuggestions(false);
+                                }}
+                                className="w-full text-right px-3 py-2.5 hover:bg-muted flex items-center justify-between gap-2 border-b border-border/50 last:border-0"
+                              >
+                                <span className="font-medium text-sm flex items-center gap-2">
+                                  <User className="w-3.5 h-3.5 text-muted-foreground" />
+                                  {c.name}
+                                </span>
+                                <span className="text-xs text-muted-foreground font-mono" dir="ltr">{c.phone || ''}</span>
+                              </button>
+                            ))
+                          ) : (
+                            <div className="px-3 py-2.5 text-xs text-muted-foreground">
+                              العميل غير مسجل — أكمل كتابة اسمه وسيُسجَّل الطلب بهذا الاسم ✍️
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
               <div className="space-y-2">
                 <Label>رقم الهاتف</Label>
