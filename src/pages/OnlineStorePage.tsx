@@ -19,15 +19,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useStoreSettings, useStorePages, uploadStoreAsset, type StorePage } from "@/hooks/useOnlineStore";
 import { toast } from "sonner";
 
-const COLOR_PRESETS = [
-  { name: "تيل ملكي", primary: "#0d9488", secondary: "#f59e0b" },
-  { name: "أزرق احترافي", primary: "#2563eb", secondary: "#0ea5e9" },
-  { name: "بنفسجي عصري", primary: "#7c3aed", secondary: "#ec4899" },
-  { name: "أسود فاخر", primary: "#111827", secondary: "#d4af37" },
-  { name: "أحمر جريء", primary: "#dc2626", secondary: "#f97316" },
-  { name: "أخضر طبيعي", primary: "#16a34a", secondary: "#65a30d" },
-];
-
 export default function OnlineStorePage() {
   const { merchant } = useAuth();
   const { settings, categories, loading, initStore, updateSettings, addCategory, removeCategory } = useStoreSettings();
@@ -173,45 +164,6 @@ export default function OnlineStorePage() {
 
         {/* BRANDING */}
         <TabsContent value="branding" className="space-y-6">
-          {/* Colors */}
-          <div className="bg-card rounded-xl border p-6">
-            <h3 className="font-semibold mb-4">الألوان</h3>
-            <div className="mb-4">
-              <Label className="text-sm text-muted-foreground mb-2 block">قوالب جاهزة</Label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-                {COLOR_PRESETS.map(p => (
-                  <button
-                    key={p.name}
-                    onClick={() => { set("primary_color", p.primary); set("secondary_color", p.secondary); }}
-                    className="group rounded-lg border p-2 hover:border-primary hover:shadow-sm transition-all"
-                  >
-                    <div className="flex gap-1 mb-1.5">
-                      <div className="flex-1 h-8 rounded" style={{ background: p.primary }} />
-                      <div className="flex-1 h-8 rounded" style={{ background: p.secondary }} />
-                    </div>
-                    <p className="text-xs font-medium text-center">{p.name}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="grid sm:grid-cols-2 gap-4 pt-4 border-t">
-              <div>
-                <Label>اللون الأساسي</Label>
-                <div className="flex items-center gap-2 mt-1">
-                  <input type="color" value={val("primary_color") || "#0d9488"} onChange={e => set("primary_color", e.target.value)} className="w-12 h-10 rounded cursor-pointer border" />
-                  <Input value={val("primary_color")} onChange={e => set("primary_color", e.target.value)} className="font-mono" dir="ltr" />
-                </div>
-              </div>
-              <div>
-                <Label>اللون الثانوي</Label>
-                <div className="flex items-center gap-2 mt-1">
-                  <input type="color" value={val("secondary_color") || "#f59e0b"} onChange={e => set("secondary_color", e.target.value)} className="w-12 h-10 rounded cursor-pointer border" />
-                  <Input value={val("secondary_color")} onChange={e => set("secondary_color", e.target.value)} className="font-mono" dir="ltr" />
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Logo + banner uploads */}
           <div className="bg-card rounded-xl border p-6 space-y-5">
             <h3 className="font-semibold flex items-center gap-2"><ImageIcon className="w-5 h-5 text-primary" /> الشعار والبانر</h3>
