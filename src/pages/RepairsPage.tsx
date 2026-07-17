@@ -56,6 +56,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { useRepairs, RepairOrder, RepairStatus, CreateRepairInput } from "@/hooks/useRepairs";
 import { useCustomers } from "@/hooks/useCustomers";
+import { useDevices } from "@/hooks/useInventory";
 import { useRepairParts, RepairPart, RepairOrderPart } from "@/hooks/useRepairParts";
 import { useBranches } from "@/hooks/useBranches";
 import { useAuth } from "@/hooks/useAuth";
@@ -447,7 +448,14 @@ function CreateRepairDialog({
 }) {
   const [loading, setLoading] = useState(false);
   const { customers } = useCustomers();
+  const { devices } = useDevices();
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showBrandSug, setShowBrandSug] = useState(false);
+  const [showModelSug, setShowModelSug] = useState(false);
+
+  const allBrands = [...new Set(devices.map(d => d.brand).filter(Boolean))] as string[];
+  const allModels = [...new Set(devices.map(d => `${d.brand || ''}|${d.model}`))]
+    .map(k => ({ brand: k.split('|')[0], model: k.split('|')[1] }));
   const [form, setForm] = useState<CreateRepairInput>({
     customer_name: '',
     customer_phone: '',
@@ -577,11 +585,74 @@ function CreateRepairDialog({
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>الماركة</Label>
-                  <Input placeholder="Apple, Samsung..." value={form.device_brand} onChange={e => update('device_brand', e.target.value)} />
+                  {(() => {
+                    const q = (form.device_brand || '').trim().toLowerCase();
+                    const matches = allBrands.filter(b => !q || b.toLowerCase().includes(q)).slice(0, 6);
+                    return (
+                      <div className="relative">
+                        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                        <Input
+                          className="pr-9"
+                          placeholder="ابحث: Apple, Samsung..."
+                          value={form.device_brand}
+                          onChange={e => { update('device_brand', e.target.value); setShowBrandSug(true); }}
+                          onFocus={() => setShowBrandSug(true)}
+                          onBlur={() => setTimeout(() => setShowBrandSug(false), 150)}
+                        />
+                        {showBrandSug && matches.length > 0 && (
+                          <div className="absolute z-50 top-full mt-1 w-full bg-popover border border-border rounded-lg shadow-lg overflow-hidden max-h-52 overflow-y-auto">
+                            {matches.map(b => (
+                              <button type="button" key={b}
+                                onMouseDown={(e) => { e.preventDefault(); update('device_brand', b); setShowBrandSug(false); }}
+                                className="w-full text-right px-3 py-2 hover:bg-muted text-sm border-b border-border/50 last:border-0">
+                                {b}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div className="space-y-2">
                   <Label>الموديل</Label>
-                  <Input placeholder="iPhone 15, S24..." value={form.device_model} onChange={e => update('device_model', e.target.value)} />
+                  {(() => {
+                    const q = (form.device_model || '').trim().toLowerCase();
+                    const brandFilter = (form.device_brand || '').trim().toLowerCase();
+                    const matches = allModels
+                      .filter(m => (!brandFilter || m.brand.toLowerCase().includes(brandFilter)) && (!q || m.model.toLowerCase().includes(q)))
+                      .slice(0, 6);
+                    return (
+                      <div className="relative">
+                        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                        <Input
+                          className="pr-9"
+                          placeholder="ابحث: iPhone 15, S24..."
+                          value={form.device_model}
+                          onChange={e => { update('device_model', e.target.value); setShowModelSug(true); }}
+                          onFocus={() => setShowModelSug(true)}
+                          onBlur={() => setTimeout(() => setShowModelSug(false), 150)}
+                        />
+                        {showModelSug && matches.length > 0 && (
+                          <div className="absolute z-50 top-full mt-1 w-full bg-popover border border-border rounded-lg shadow-lg overflow-hidden max-h-52 overflow-y-auto">
+                            {matches.map(m => (
+                              <button type="button" key={`${m.brand}|${m.model}`}
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  update('device_model', m.model);
+                                  if (m.brand) update('device_brand', m.brand);
+                                  setShowModelSug(false);
+                                }}
+                                className="w-full text-right px-3 py-2 hover:bg-muted text-sm flex items-center justify-between gap-2 border-b border-border/50 last:border-0">
+                                <span className="font-medium">{m.model}</span>
+                                <span className="text-xs text-muted-foreground">{m.brand}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
