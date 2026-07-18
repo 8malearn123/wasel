@@ -564,6 +564,7 @@ function CreateRepairDialog({
                       <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                       <Input
                         className="pr-9"
+                        onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
                         placeholder="ابحث باسم العميل أو رقم جواله..."
                         value={form.customer_name}
                         onChange={e => { update('customer_name', e.target.value); setShowSuggestions(true); }}
@@ -577,8 +578,10 @@ function CreateRepairDialog({
                               <button
                                 type="button"
                                 key={c.id}
-                                onMouseDown={(e) => {
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={(e) => {
                                   e.preventDefault();
+                                  e.stopPropagation();
                                   update('customer_name', c.name);
                                   if (c.phone) update('customer_phone', c.phone);
                                   setShowSuggestions(false);
@@ -634,7 +637,8 @@ function CreateRepairDialog({
                         <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                         <Input
                           className="pr-9"
-                          placeholder="ابحث: Apple, Samsung..."
+                          onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
+                        placeholder="ابحث: Apple, Samsung..."
                           value={form.device_brand}
                           onChange={e => { update('device_brand', e.target.value); setShowBrandSug(true); }}
                           onFocus={() => setShowBrandSug(true)}
@@ -644,7 +648,8 @@ function CreateRepairDialog({
                           <div className="absolute z-50 top-full mt-1 w-full bg-popover border border-border rounded-lg shadow-lg overflow-hidden max-h-52 overflow-y-auto">
                             {matches.map(b => (
                               <button type="button" key={b}
-                                onMouseDown={(e) => { e.preventDefault(); update('device_brand', b); setShowBrandSug(false); }}
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); update('device_brand', b); setShowBrandSug(false); }}
                                 className="w-full text-right px-3 py-2 hover:bg-muted text-sm border-b border-border/50 last:border-0">
                                 {b}
                               </button>
@@ -668,7 +673,8 @@ function CreateRepairDialog({
                         <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                         <Input
                           className="pr-9"
-                          placeholder="ابحث: iPhone 15, S24..."
+                          onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
+                        placeholder="ابحث: iPhone 15, S24..."
                           value={form.device_model}
                           onChange={e => { update('device_model', e.target.value); setShowModelSug(true); }}
                           onFocus={() => setShowModelSug(true)}
@@ -678,8 +684,10 @@ function CreateRepairDialog({
                           <div className="absolute z-50 top-full mt-1 w-full bg-popover border border-border rounded-lg shadow-lg overflow-hidden max-h-52 overflow-y-auto">
                             {matches.map(m => (
                               <button type="button" key={`${m.brand}|${m.model}`}
-                                onMouseDown={(e) => {
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={(e) => {
                                   e.preventDefault();
+                                  e.stopPropagation();
                                   update('device_model', m.model);
                                   if (m.brand) update('device_brand', m.brand);
                                   setShowModelSug(false);
@@ -747,6 +755,7 @@ function CreateRepairDialog({
                       <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                       <Input
                         className="pr-9 h-9"
+                        onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
                         placeholder="ابحث عن القطعة بالاسم واضغطها لإضافتها..."
                         value={partQuery}
                         onChange={e => { setPartQuery(e.target.value); setShowPartSug(true); }}
@@ -759,7 +768,8 @@ function CreateRepairDialog({
                             <button
                               type="button"
                               key={p.id}
-                              onMouseDown={(e) => { e.preventDefault(); addPart(p.id); }}
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); addPart(p.id); }}
                               className="w-full text-right px-3 py-2 hover:bg-muted flex items-center justify-between gap-2 border-b border-border/50 last:border-0"
                             >
                               <span className="text-sm font-medium">{p.name}</span>
