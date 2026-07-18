@@ -1,0 +1,89 @@
+name: Seed demo repair parts
+
+on:
+  workflow_dispatch:
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Insert repair parts via Supabase REST
+        env:
+          SUPA: https://ynwddyxzypbcftlevuam.supabase.co
+          # Public anon key (already committed in .env) — RLS still applies
+          ANON: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlud2RkeXh6eXBiY2Z0bGV2dWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5MjE1OTQsImV4cCI6MjA4NTQ5NzU5NH0.PsNDqovuzo7NmTiwsH4swskkIF3FdMlBXjYUy3MJkyA
+        run: |
+          set -euo pipefail
+
+          seed_merchant() {
+            local TOKEN="$1" LABEL="$2"
+
+            local BR MID BID
+            BR=$(curl -sS "$SUPA/rest/v1/branches?select=id,merchant_id&is_active=eq.true&limit=1" \
+              -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN")
+            MID=$(echo "$BR" | jq -r '.[0].merchant_id // empty')
+            BID=$(echo "$BR" | jq -r '.[0].id // empty')
+            [ -n "$MID" ] || { echo "[$LABEL] no branch"; return 1; }
+
+            # idempotency: skip if already seeded
+            local EXIST
+            EXIST=$(curl -sS "$SUPA/rest/v1/repair_parts?sku=eq.RP-001&select=id&limit=1" \
+              -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN")
+            if [ "$(echo "$EXIST" | jq 'length')" != "0" ]; then
+              echo "[$LABEL] repair parts already present"
+              return 0
+            fi
+
+            jq --arg m "$MID" --arg b "$BID" 'map(. + {merchant_id:$m, branch_id:$b})' \
+              parts-base.json > parts.json
+            local RESP
+            RESP=$(curl -sS -w "\nHTTP %{http_code}" -X POST "$SUPA/rest/v1/repair_parts" \
+              -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN" \
+              -H "Content-Type: application/json" -H "Prefer: return=minimal" \
+              --data @parts.json)
+            echo "[$LABEL] parts: $(echo "$RESP" | tail -1)"
+            echo "$RESP" | grep -q "HTTP 201" || { echo "[$LABEL] insert failed: $RESP"; return 1; }
+          }
+
+          jq -n '[
+            {sku:"RP-001", name:"شاشة iPhone 15 Pro أصلية",      brand:"Apple",   category:"شاشات",   compatible_models:"iPhone 15 Pro",            cost:450, price:699, quantity:8,  min_quantity:2},
+            {sku:"RP-002", name:"شاشة iPhone 13",                 brand:"Apple",   category:"شاشات",   compatible_models:"iPhone 13 / 13 Pro",       cost:280, price:449, quantity:12, min_quantity:3},
+            {sku:"RP-003", name:"شاشة Galaxy S24 Ultra",          brand:"Samsung", category:"شاشات",   compatible_models:"Galaxy S24 Ultra",         cost:520, price:799, quantity:5,  min_quantity:2},
+            {sku:"RP-004", name:"بطارية iPhone 14 أصلية",         brand:"Apple",   category:"بطاريات", compatible_models:"iPhone 14 / 14 Pro",       cost:95,  price:169, quantity:20, min_quantity:5},
+            {sku:"RP-005", name:"بطارية Galaxy S23",              brand:"Samsung", category:"بطاريات", compatible_models:"Galaxy S23 / S23 FE",      cost:80,  price:139, quantity:15, min_quantity:4},
+            {sku:"RP-006", name:"منفذ شحن iPhone (Lightning)",    brand:"Apple",   category:"منافذ شحن", compatible_models:"iPhone 11-14",           cost:35,  price:89,  quantity:25, min_quantity:5},
+            {sku:"RP-007", name:"منفذ شحن Type-C",                brand:null,      category:"منافذ شحن", compatible_models:"Samsung / Xiaomi / Huawei", cost:25, price:69,  quantity:30, min_quantity:6},
+            {sku:"RP-008", name:"كاميرا خلفية iPhone 13 Pro",     brand:"Apple",   category:"كاميرات", compatible_models:"iPhone 13 Pro",            cost:180, price:299, quantity:6,  min_quantity:2},
+            {sku:"RP-009", name:"سماعة أذن داخلية iPhone",        brand:"Apple",   category:"سماعات",  compatible_models:"iPhone 12-15",             cost:40,  price:99,  quantity:18, min_quantity:4},
+            {sku:"RP-010", name:"غطاء خلفي زجاج Galaxy S24",      brand:"Samsung", category:"أغطية",   compatible_models:"Galaxy S24",               cost:60,  price:129, quantity:10, min_quantity:3},
+            {sku:"RP-011", name:"شاشة iPad 10 بديلة",             brand:"Apple",   category:"شاشات",   compatible_models:"iPad 10",                  cost:220, price:379, quantity:4,  min_quantity:2},
+            {sku:"RP-012", name:"بطارية MacBook Air M2/M3",       brand:"Apple",   category:"بطاريات", compatible_models:"MacBook Air 13",           cost:310, price:499, quantity:3,  min_quantity:1}
+          ] | map(. + {notes: null})' > parts-base.json
+
+          FAILED=0
+
+          echo "== seed cashier-code merchant =="
+          SESSION=$(curl -sS "$SUPA/functions/v1/login-by-code" \
+            -H "apikey: $ANON" -H "Authorization: Bearer $ANON" \
+            -H "Content-Type: application/json" -d '{"code":"70035"}')
+          TOKEN=$(echo "$SESSION" | jq -r '.session.access_token // empty')
+          if [ -n "$TOKEN" ]; then
+            seed_merchant "$TOKEN" "cashier-70035" || FAILED=1
+          else
+            echo "[cashier-70035] login failed: $SESSION"; FAILED=1
+          fi
+
+          echo "== seed demo merchants =="
+          for EMAIL in demo-basic@wasil.demo demo-professional@wasil.demo demo-enterprise@wasil.demo demo-distributor@wasil.demo; do
+            AUTH=$(curl -sS "$SUPA/auth/v1/token?grant_type=password" \
+              -H "apikey: $ANON" -H "Content-Type: application/json" \
+              -d "{\"email\":\"$EMAIL\",\"password\":\"demo1234\"}")
+            TOKEN=$(echo "$AUTH" | jq -r '.access_token // empty')
+            if [ -n "$TOKEN" ]; then
+              seed_merchant "$TOKEN" "$EMAIL" || FAILED=1
+            else
+              echo "[$EMAIL] login failed"; FAILED=1
+            fi
+          done
+
+          exit $FAILED
