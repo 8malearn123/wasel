@@ -2,7 +2,7 @@ import {
   Bell, User, Building2, Languages, Sun, Moon, LayoutGrid,
   LayoutDashboard, ShoppingCart, Package, ArrowLeftRight, Truck, Barcode,
   Megaphone, Wrench, BarChart3, ClipboardCheck, Store, ShoppingBag,
-  Calculator, Heart, Warehouse, Users, CreditCard, LifeBuoy,
+  Calculator, Heart, Warehouse, Users, CreditCard, LifeBuoy, Briefcase,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -47,6 +47,7 @@ const SECTIONS = [
   { icon: Heart, label: "Customers", labelAr: "العملاء والولاء", path: "/customers" },
   { icon: Warehouse, label: "Wholesale", labelAr: "بيع الجملة", path: "/wholesale" },
   { icon: Users, label: "Users", labelAr: "المستخدمين", path: "/users" },
+  { icon: Briefcase, label: "Human Resources", labelAr: "الموارد البشرية", path: "/hr" },
   { icon: CreditCard, label: "Subscription", labelAr: "الباقات والاشتراك", path: "/subscription" },
   { icon: LifeBuoy, label: "Support", labelAr: "الدعم الفني", path: "/support" },
 ];

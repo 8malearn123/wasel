@@ -28,6 +28,7 @@ import {
   Heart,
   Warehouse,
   LifeBuoy,
+  Briefcase,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n";
@@ -119,6 +120,7 @@ const navItems: NavItem[] = [
     { key: "credits-in", label: "Credits In", labelAr: "مديونياتي" },
   ] },
   { icon: Users, label: "Users", labelAr: "المستخدمين", path: "/users" },
+  { icon: Briefcase, label: "Human Resources", labelAr: "الموارد البشرية", path: "/hr" },
   { icon: CreditCard, label: "Subscription", labelAr: "الباقات والاشتراك", path: "/subscription" },
   { icon: LifeBuoy, label: "Support", labelAr: "الدعم الفني", path: "/support" },
 ];

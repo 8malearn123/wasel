@@ -19,6 +19,7 @@ import MarketingPage from "./pages/MarketingPage";
 import RepairsPage from "./pages/RepairsPage";
 import ReportsPage from "./pages/ReportsPage";
 import UsersPage from "./pages/UsersPage";
+import HRPage from "./pages/HRPage";
 import SettingsPage from "./pages/SettingsPage";
 import SubscriptionPage from "./pages/SubscriptionPage";
 import StocktakePage from "./pages/StocktakePage";
@@ -147,6 +148,7 @@ function AppRoutes() {
       <Route path="/reports" element={<ProtectedRoute><CashierRedirect><ReportsPage /></CashierRedirect></ProtectedRoute>} />
       <Route path="/stocktake" element={<ProtectedRoute><CashierRedirect><StocktakePage /></CashierRedirect></ProtectedRoute>} />
       <Route path="/users" element={<ProtectedRoute><CashierRedirect><UsersPage /></CashierRedirect></ProtectedRoute>} />
+      <Route path="/hr" element={<ProtectedRoute><CashierRedirect><HRPage /></CashierRedirect></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><CashierRedirect><SettingsPage /></CashierRedirect></ProtectedRoute>} />
       <Route path="/subscription" element={<ProtectedRoute><CashierRedirect><SubscriptionPage /></CashierRedirect></ProtectedRoute>} />
       <Route path="/online-store" element={<ProtectedRoute><CashierRedirect><OnlineStorePage /></CashierRedirect></ProtectedRoute>} />
