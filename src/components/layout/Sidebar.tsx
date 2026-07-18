@@ -51,78 +51,113 @@ interface NavItem {
   children?: NavChild[];
 }
 
-const navItems: NavItem[] = [
-  { icon: LayoutDashboard, label: "Dashboard", labelAr: "لوحة التحكم", path: "/" },
-  { icon: ShoppingCart, label: "Point of Sale", labelAr: "نقطة البيع", path: "/pos", children: [
-    { key: "pos", label: "Point of Sale", labelAr: "نقطة البيع" },
-    { key: "history", label: "Sales History", labelAr: "سجل المبيعات" },
-  ] },
-  { icon: Package, label: "Inventory", labelAr: "المخزون", path: "/inventory", children: [
-    { key: "devices", label: "Devices", labelAr: "الأجهزة" },
-    { key: "accessories", label: "Accessories", labelAr: "الإكسسوارات" },
-    { key: "repair_parts", label: "Repair Parts", labelAr: "قطع الصيانة" },
-    { key: "categories", label: "Categories", labelAr: "التصنيفات" },
-  ] },
-  { icon: Building2, label: "Branches", labelAr: "الفروع", path: "/branches" },
-  { icon: ArrowLeftRight, label: "Transfers", labelAr: "التحويلات", path: "/transfers", requireFeature: 'transfers' },
-  { icon: Truck, label: "Suppliers", labelAr: "الموردين", path: "/suppliers", requireFeature: 'suppliers', children: [
-    { key: "suppliers", label: "Suppliers", labelAr: "الموردين" },
-    { key: "orders", label: "Purchase Orders", labelAr: "أوامر الشراء" },
-    { key: "debts", label: "Debts", labelAr: "المديونيات" },
-  ] },
-  { icon: ShoppingBag, label: "Purchases", labelAr: "المشتريات", path: "/purchases", requireFeature: 'suppliers' },
-  { icon: Barcode, label: "Verification Codes", labelAr: "أكواد التحقق", path: "/labels", children: [
-    { key: "all", label: "All", labelAr: "الكل" },
-    { key: "devices", label: "Devices", labelAr: "أجهزة" },
-    { key: "accessories", label: "Accessories", labelAr: "إكسسوارات" },
-  ] },
-  { icon: Bell, label: "Notifications", labelAr: "الإشعارات", path: "/notifications", children: [
-    { key: "all", label: "All", labelAr: "الكل" },
-    { key: "stock", label: "Stock", labelAr: "المخزون" },
-    { key: "transfers", label: "Transfers", labelAr: "التحويلات" },
-    { key: "sales", label: "Sales", labelAr: "المبيعات" },
-    { key: "repairs", label: "Repairs", labelAr: "الصيانة" },
-  ] },
-  { icon: Megaphone, label: "Marketing", labelAr: "التسويق", path: "/marketing", requireFeature: 'marketing', children: [
-    { key: "coupons", label: "Coupons", labelAr: "الكوبونات" },
-    { key: "campaigns", label: "Campaigns", labelAr: "الحملات" },
-  ] },
-  { icon: Wrench, label: "Maintenance", labelAr: "الصيانة", path: "/repairs", requireFeature: 'repairs' },
-  { icon: BarChart3, label: "Reports", labelAr: "التقارير", path: "/reports", requireFeature: 'reports', children: [
-    { key: "sales", label: "Sales", labelAr: "المبيعات" },
-    { key: "inventory", label: "Inventory", labelAr: "المخزون" },
-    { key: "employees", label: "Employees", labelAr: "الموظفين" },
-    { key: "deadstock", label: "Dead Stock", labelAr: "الرواكد" },
-    { key: "parts", label: "Repair Parts", labelAr: "قطع الصيانة" },
-  ] },
-  { icon: ClipboardCheck, label: "Stocktake", labelAr: "الجرد", path: "/stocktake", requireFeature: 'stocktake' },
-  { icon: Store, label: "Online Store", labelAr: "المتجر الإلكتروني", path: "/online-store", requireFeature: 'onlineStore', children: [
-    { key: "general", label: "General", labelAr: "عام" },
-    { key: "branding", label: "Branding", labelAr: "الهوية" },
-    { key: "hero", label: "Storefront", labelAr: "الواجهة" },
-    { key: "banners", label: "Banners", labelAr: "البنرات" },
-    { key: "legal", label: "Legal & Tax", labelAr: "الصلاحيات والضريبة" },
-    { key: "seo", label: "SEO", labelAr: "SEO" },
-    { key: "pages", label: "Pages", labelAr: "الصفحات" },
-    { key: "categories", label: "Categories", labelAr: "التصنيفات" },
-    { key: "shipping", label: "Shipping", labelAr: "الشحن" },
-    { key: "links", label: "Links", labelAr: "الروابط" },
-  ] },
-  { icon: ShoppingBag, label: "Online Orders", labelAr: "طلبات المتجر", path: "/online-orders", requireFeature: 'onlineStore' },
-  { icon: Calculator, label: "Daily Closings", labelAr: "الإغلاق اليومي", path: "/daily-closings" },
-  { icon: Heart, label: "Customers", labelAr: "العملاء والولاء", path: "/customers", requireFeature: 'customers' },
-  { icon: Warehouse, label: "Wholesale", labelAr: "بيع الجملة", path: "/wholesale", requireFeature: 'wholesale', children: [
-    { key: "listings", label: "My Listings", labelAr: "منتجاتي" },
-    { key: "marketplace", label: "Marketplace", labelAr: "سوق الجملة" },
-    { key: "my-orders", label: "My Orders", labelAr: "طلباتي" },
-    { key: "incoming", label: "Incoming", labelAr: "طلبات واردة" },
-    { key: "credits-out", label: "Credits Out", labelAr: "مديونيات لي" },
-    { key: "credits-in", label: "Credits In", labelAr: "مديونياتي" },
-  ] },
-  { icon: Users, label: "Users", labelAr: "المستخدمين", path: "/users" },
-  { icon: Briefcase, label: "Human Resources", labelAr: "الموارد البشرية", path: "/hr" },
-  { icon: CreditCard, label: "Subscription", labelAr: "الباقات والاشتراك", path: "/subscription" },
-  { icon: LifeBuoy, label: "Support", labelAr: "الدعم الفني", path: "/support" },
+interface NavSection {
+  title?: string;
+  titleAr?: string;
+  items: NavItem[];
+}
+
+const navSections: NavSection[] = [
+  {
+    items: [
+      { icon: LayoutDashboard, label: "Dashboard", labelAr: "لوحة التحكم", path: "/" },
+    ],
+  },
+  {
+    title: "Daily Operations", titleAr: "العمليات اليومية",
+    items: [
+      { icon: ShoppingCart, label: "Point of Sale", labelAr: "نقطة البيع", path: "/pos", children: [
+        { key: "pos", label: "Point of Sale", labelAr: "نقطة البيع" },
+        { key: "history", label: "Sales History", labelAr: "سجل المبيعات" },
+      ] },
+      { icon: Calculator, label: "Daily Closings", labelAr: "الإغلاق اليومي", path: "/daily-closings" },
+      { icon: Wrench, label: "Maintenance", labelAr: "الصيانة", path: "/repairs", requireFeature: 'repairs' },
+    ],
+  },
+  {
+    title: "Inventory & Purchasing", titleAr: "المخزون والمشتريات",
+    items: [
+      { icon: Package, label: "Inventory", labelAr: "المخزون", path: "/inventory", children: [
+        { key: "devices", label: "Devices", labelAr: "الأجهزة" },
+        { key: "accessories", label: "Accessories", labelAr: "الإكسسوارات" },
+        { key: "repair_parts", label: "Repair Parts", labelAr: "قطع الصيانة" },
+        { key: "categories", label: "Categories", labelAr: "التصنيفات" },
+      ] },
+      { icon: ClipboardCheck, label: "Stocktake", labelAr: "الجرد", path: "/stocktake", requireFeature: 'stocktake' },
+      { icon: ArrowLeftRight, label: "Transfers", labelAr: "التحويلات", path: "/transfers", requireFeature: 'transfers' },
+      { icon: Truck, label: "Suppliers", labelAr: "الموردين", path: "/suppliers", requireFeature: 'suppliers', children: [
+        { key: "suppliers", label: "Suppliers", labelAr: "الموردين" },
+        { key: "orders", label: "Purchase Orders", labelAr: "أوامر الشراء" },
+        { key: "debts", label: "Debts", labelAr: "المديونيات" },
+      ] },
+      { icon: ShoppingBag, label: "Purchases", labelAr: "المشتريات", path: "/purchases", requireFeature: 'suppliers' },
+      { icon: Barcode, label: "Verification Codes", labelAr: "أكواد التحقق", path: "/labels", children: [
+        { key: "all", label: "All", labelAr: "الكل" },
+        { key: "devices", label: "Devices", labelAr: "أجهزة" },
+        { key: "accessories", label: "Accessories", labelAr: "إكسسوارات" },
+      ] },
+    ],
+  },
+  {
+    title: "Online Store", titleAr: "المتجر الإلكتروني",
+    items: [
+      { icon: Store, label: "Online Store", labelAr: "المتجر الإلكتروني", path: "/online-store", requireFeature: 'onlineStore', children: [
+        { key: "general", label: "General", labelAr: "عام" },
+        { key: "branding", label: "Branding", labelAr: "الهوية" },
+        { key: "hero", label: "Storefront", labelAr: "الواجهة" },
+        { key: "banners", label: "Banners", labelAr: "البنرات" },
+        { key: "legal", label: "Legal & Tax", labelAr: "الصلاحيات والضريبة" },
+        { key: "seo", label: "SEO", labelAr: "SEO" },
+        { key: "pages", label: "Pages", labelAr: "الصفحات" },
+        { key: "categories", label: "Categories", labelAr: "التصنيفات" },
+        { key: "shipping", label: "Shipping", labelAr: "الشحن" },
+        { key: "links", label: "Links", labelAr: "الروابط" },
+      ] },
+      { icon: ShoppingBag, label: "Online Orders", labelAr: "طلبات المتجر", path: "/online-orders", requireFeature: 'onlineStore' },
+      { icon: Warehouse, label: "Wholesale", labelAr: "بيع الجملة", path: "/wholesale", requireFeature: 'wholesale', children: [
+        { key: "listings", label: "My Listings", labelAr: "منتجاتي" },
+        { key: "marketplace", label: "Marketplace", labelAr: "سوق الجملة" },
+        { key: "my-orders", label: "My Orders", labelAr: "طلباتي" },
+        { key: "incoming", label: "Incoming", labelAr: "طلبات واردة" },
+        { key: "credits-out", label: "Credits Out", labelAr: "مديونيات لي" },
+        { key: "credits-in", label: "Credits In", labelAr: "مديونياتي" },
+      ] },
+    ],
+  },
+  {
+    title: "Customers & Marketing", titleAr: "العملاء والتسويق",
+    items: [
+      { icon: Heart, label: "Customers", labelAr: "العملاء والولاء", path: "/customers", requireFeature: 'customers' },
+      { icon: Megaphone, label: "Marketing", labelAr: "التسويق", path: "/marketing", requireFeature: 'marketing', children: [
+        { key: "coupons", label: "Coupons", labelAr: "الكوبونات" },
+        { key: "campaigns", label: "Campaigns", labelAr: "الحملات" },
+      ] },
+      { icon: Bell, label: "Notifications", labelAr: "الإشعارات", path: "/notifications", children: [
+        { key: "all", label: "All", labelAr: "الكل" },
+        { key: "stock", label: "Stock", labelAr: "المخزون" },
+        { key: "transfers", label: "Transfers", labelAr: "التحويلات" },
+        { key: "sales", label: "Sales", labelAr: "المبيعات" },
+        { key: "repairs", label: "Repairs", labelAr: "الصيانة" },
+      ] },
+    ],
+  },
+  {
+    title: "Management", titleAr: "الإدارة",
+    items: [
+      { icon: BarChart3, label: "Reports", labelAr: "التقارير", path: "/reports", requireFeature: 'reports', children: [
+        { key: "sales", label: "Sales", labelAr: "المبيعات" },
+        { key: "inventory", label: "Inventory", labelAr: "المخزون" },
+        { key: "employees", label: "Employees", labelAr: "الموظفين" },
+        { key: "deadstock", label: "Dead Stock", labelAr: "الرواكد" },
+        { key: "parts", label: "Repair Parts", labelAr: "قطع الصيانة" },
+      ] },
+      { icon: Building2, label: "Branches", labelAr: "الفروع", path: "/branches" },
+      { icon: Users, label: "Users", labelAr: "المستخدمين", path: "/users" },
+      { icon: Briefcase, label: "Human Resources", labelAr: "الموارد البشرية", path: "/hr" },
+      { icon: CreditCard, label: "Subscription", labelAr: "الباقات والاشتراك", path: "/subscription" },
+      { icon: LifeBuoy, label: "Support", labelAr: "الدعم الفني", path: "/support" },
+    ],
+  },
 ];
 
 // Plan tier order: Basic=0, Professional=1, Enterprise=2, Distributor=3
@@ -154,7 +189,7 @@ export function Sidebar() {
 
   const currentPlanTier = PLAN_TIERS[subscription?.plan || 'trial'] ?? 3;
 
-  const filteredNavItems = navItems.filter(item => {
+  const filterItem = (item: NavItem) => {
     if (isCashier && item.path !== '/pos' && item.path !== '/daily-closings' && item.path !== '/repairs') {
       return false;
     }
@@ -163,7 +198,11 @@ export function Sidebar() {
       if (currentPlanTier < minTier) return false;
     }
     return true;
-  });
+  };
+
+  const filteredSections = navSections
+    .map(section => ({ ...section, items: section.items.filter(filterItem) }))
+    .filter(section => section.items.length > 0);
 
   return (
     <motion.aside
@@ -209,8 +248,19 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-        {filteredNavItems.map((item) => {
+      <nav className="flex-1 overflow-y-auto py-3 px-3">
+        {filteredSections.map((section, si) => (
+          <div key={section.title || si}>
+            {section.title && !isCollapsed && (
+              <p className="px-4 pt-3 pb-1 text-[10px] font-semibold text-sidebar-foreground/40 tracking-wider">
+                {isRTL ? section.titleAr : section.title}
+              </p>
+            )}
+            {section.title && isCollapsed && si > 0 && (
+              <div className="my-2 mx-3 border-t border-sidebar-border/60" />
+            )}
+            <div className="space-y-0.5">
+            {section.items.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
           const label = isRTL ? item.labelAr : item.label;
@@ -297,7 +347,9 @@ export function Sidebar() {
             </div>
           );
         })}
-
+            </div>
+          </div>
+        ))}
       </nav>
 
       {/* Settings & Collapse */}
