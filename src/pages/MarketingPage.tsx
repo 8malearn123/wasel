@@ -111,6 +111,8 @@ export default function MarketingPage() {
       get_quantity: c.get_quantity, is_active: c.is_active,
       starts_at: c.starts_at ? c.starts_at.slice(0, 16) : '',
       ends_at: c.ends_at ? c.ends_at.slice(0, 16) : '',
+      apply_scope: 'all', product_main: '', product_x: '', product_y: '',
+      bundle_products: ['', ''],
     });
     setCampaignDialog(true);
   };

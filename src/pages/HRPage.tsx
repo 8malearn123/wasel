@@ -59,14 +59,14 @@ export default function HRPage() {
       start.setHours(0, 0, 0, 0);
       const { data } = await supabase
         .from("sales")
-        .select("created_by, total_amount")
+        .select("sold_by, total_amount")
         .eq("merchant_id", merchant.id)
         .gte("sale_date", start.toISOString())
         .limit(2000);
       const totals: Record<string, number> = {};
       for (const s of data || []) {
-        if (!s.created_by) continue;
-        totals[s.created_by] = (totals[s.created_by] || 0) + Number(s.total_amount || 0);
+        if (!s.sold_by) continue;
+        totals[s.sold_by] = (totals[s.sold_by] || 0) + Number(s.total_amount || 0);
       }
       setMonthSales(totals);
     })();
