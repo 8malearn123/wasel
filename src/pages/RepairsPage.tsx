@@ -482,6 +482,24 @@ function CreateRepairDialog({
   // Parts picked from stock for this repair
   const [selectedParts, setSelectedParts] = useState<{ partId: string; quantity: number }[]>([]);
   const availableParts = repairParts.filter(p => p.quantity > 0);
+
+  // Instant part search: type, click a result, it's added
+  const [partQuery, setPartQuery] = useState('');
+  const [showPartSug, setShowPartSug] = useState(false);
+  const pq = partQuery.trim().toLowerCase();
+  const partMatches = (pq
+    ? availableParts.filter(p => p.name.toLowerCase().includes(pq) || (p.sku || '').toLowerCase().includes(pq))
+    : availableParts
+  ).slice(0, 6);
+  const addPart = (id: string) => {
+    setSelectedParts(prev => {
+      const existing = prev.find(x => x.partId === id);
+      if (existing) return prev.map(x => x.partId === id ? { ...x, quantity: x.quantity + 1 } : x);
+      return [...prev, { partId: id, quantity: 1 }];
+    });
+    setPartQuery('');
+    setShowPartSug(false);
+  };
   const partsCost = selectedParts.reduce((s, sp) => {
     const p = repairParts.find(x => x.id === sp.partId);
     return s + (p ? Number(p.cost) * sp.quantity : 0);
@@ -715,55 +733,75 @@ function CreateRepairDialog({
               </div>
               {/* Repair parts from stock */}
               <div className="space-y-2 p-3 rounded-lg border border-border bg-muted/20">
-                <div className="flex items-center justify-between">
-                  <Label className="flex items-center gap-2">
-                    <Package className="w-4 h-4 text-primary" />
-                    قطع الصيانة من المخزون
-                  </Label>
-                  <Button type="button" variant="outline" size="sm"
-                    disabled={availableParts.length === 0}
-                    onClick={() => setSelectedParts(prev => [...prev, { partId: '', quantity: 1 }])}>
-                    <Plus className="w-4 h-4 ml-1" /> إضافة قطعة
-                  </Button>
-                </div>
+                <Label className="flex items-center gap-2">
+                  <Package className="w-4 h-4 text-primary" />
+                  قطع الصيانة من المخزون
+                </Label>
 
                 {availableParts.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">لا توجد قطع صيانة في المخزون. أضف قطعاً من صفحة المخزون ← قطع الصيانة أولاً.</p>
-                ) : selectedParts.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">اختر القطع المطلوبة للإصلاح وسيتم خصمها من المخزون تلقائياً عند إنشاء الطلب.</p>
+                  <p className="text-xs text-muted-foreground">لا توجد قطع صيانة في المخزون بعد.</p>
                 ) : (
-                  <div className="space-y-2">
-                    {selectedParts.map((sp, i) => {
-                      const part = repairParts.find(p => p.id === sp.partId);
-                      return (
-                        <div key={i} className="flex items-center gap-2">
-                          <div className="flex-1">
-                            <SearchableSelect
-                              className="h-9"
-                              value={sp.partId}
-                              onChange={v => setSelectedParts(prev => prev.map((x, idx) => idx === i ? { ...x, partId: v, quantity: 1 } : x))}
-                              placeholder="اختر قطعة..."
-                              options={availableParts.map(p => ({ value: p.id, label: p.name, hint: `متوفر: ${p.quantity} · ${Number(p.cost).toLocaleString()} ر.س` }))}
-                            />
-                          </div>
-                          <Input
-                            type="number" min={1} max={part?.quantity || 99}
-                            className="w-20 h-9" dir="ltr"
-                            value={sp.quantity}
-                            onChange={e => setSelectedParts(prev => prev.map((x, idx) => idx === i ? { ...x, quantity: Math.max(1, Number(e.target.value) || 1) } : x))}
-                          />
-                          <Button type="button" variant="ghost" size="icon" className="text-destructive h-9 w-9"
-                            onClick={() => setSelectedParts(prev => prev.filter((_, idx) => idx !== i))}>
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                  <>
+                    {/* Type-to-search: pick a part and it's added instantly */}
+                    <div className="relative">
+                      <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                      <Input
+                        className="pr-9 h-9"
+                        placeholder="ابحث عن القطعة بالاسم واضغطها لإضافتها..."
+                        value={partQuery}
+                        onChange={e => { setPartQuery(e.target.value); setShowPartSug(true); }}
+                        onFocus={() => setShowPartSug(true)}
+                        onBlur={() => setTimeout(() => setShowPartSug(false), 150)}
+                      />
+                      {showPartSug && (
+                        <div className="absolute z-50 top-full mt-1 w-full bg-popover border border-border rounded-lg shadow-lg overflow-hidden max-h-52 overflow-y-auto">
+                          {partMatches.length > 0 ? partMatches.map(p => (
+                            <button
+                              type="button"
+                              key={p.id}
+                              onMouseDown={(e) => { e.preventDefault(); addPart(p.id); }}
+                              className="w-full text-right px-3 py-2 hover:bg-muted flex items-center justify-between gap-2 border-b border-border/50 last:border-0"
+                            >
+                              <span className="text-sm font-medium">{p.name}</span>
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">متوفر: {p.quantity} · {Number(p.cost).toLocaleString()} ر.س</span>
+                            </button>
+                          )) : (
+                            <div className="px-3 py-2 text-xs text-muted-foreground">لا توجد قطعة مطابقة</div>
+                          )}
                         </div>
-                      );
-                    })}
-                    <div className="flex justify-between items-center text-sm pt-1 border-t border-border/50">
-                      <span className="text-muted-foreground">تكلفة القطع</span>
-                      <span className="font-bold text-foreground">{partsCost.toLocaleString()} ر.س</span>
+                      )}
                     </div>
-                  </div>
+
+                    {selectedParts.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">اكتب حرفاً أو حرفين واضغط على القطعة — تنضاف فوراً وتُخصم من المخزون عند إنشاء الطلب.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {selectedParts.map((sp, i) => {
+                          const part = repairParts.find(p => p.id === sp.partId);
+                          return (
+                            <div key={i} className="flex items-center gap-2 rounded-md bg-background border border-border/60 px-2 py-1.5">
+                              <span className="flex-1 text-sm font-medium truncate">{part?.name || '—'}</span>
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">{Number(part?.cost || 0).toLocaleString()} ر.س</span>
+                              <Input
+                                type="number" min={1} max={part?.quantity || 99}
+                                className="w-16 h-8" dir="ltr"
+                                value={sp.quantity}
+                                onChange={e => setSelectedParts(prev => prev.map((x, idx) => idx === i ? { ...x, quantity: Math.max(1, Number(e.target.value) || 1) } : x))}
+                              />
+                              <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8"
+                                onClick={() => setSelectedParts(prev => prev.filter((_, idx) => idx !== i))}>
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          );
+                        })}
+                        <div className="flex justify-between items-center text-sm pt-1 border-t border-border/50">
+                          <span className="text-muted-foreground">تكلفة القطع</span>
+                          <span className="font-bold text-foreground">{partsCost.toLocaleString()} ر.س</span>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
