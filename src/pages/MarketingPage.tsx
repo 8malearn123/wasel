@@ -5,6 +5,8 @@ import { useMarketing, Coupon, Campaign } from "@/hooks/useMarketing";
 import { useDevices, useAccessories } from "@/hooks/useInventory";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UrlTabs } from '@/components/common/UrlTabs';
+import { SearchableSelect } from '@/components/common/SearchableSelect';
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -569,12 +571,7 @@ export default function MarketingPage() {
 
               {(() => {
                 const ProductSelect = ({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) => (
-                  <Select value={value} onValueChange={onChange}>
-                    <SelectTrigger><SelectValue placeholder={placeholder} /></SelectTrigger>
-                    <SelectContent className="max-h-64">
-                      {productOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect value={value} onChange={onChange} placeholder={placeholder} options={productOptions} />
                 );
 
                 if (campaignForm.campaign_type === 'discount') return (

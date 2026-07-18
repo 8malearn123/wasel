@@ -12,6 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { useTabParam } from "@/hooks/useTabParam";
+import { SearchableSelect } from '@/components/common/SearchableSelect';
+
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -512,22 +514,22 @@ function CreatePODialog({ open, onOpenChange, suppliers, devices, accessories, o
                       </Select>
                     </div>
                     <div className="space-y-1 col-span-2"><Label className="text-xs">{isRTL ? 'المنتج من المخزون *' : 'Product from inventory *'}</Label>
-                      <Select value={item.productId} onValueChange={(v) => selectProduct(i, v)}>
-                        <SelectTrigger><SelectValue placeholder={isRTL ? 'اختر المنتج' : 'Select product'} /></SelectTrigger>
-                        <SelectContent>
-                          {item.type === 'device'
-                            ? deviceModels.map(m => (
-                                <SelectItem key={m.id} value={m.id}>
-                                  {`${m.brand ? m.brand + ' ' : ''}${m.model}${m.storage ? ' · ' + m.storage : ''} — ${isRTL ? 'متوفر' : 'in stock'}: ${m.available}`}
-                                </SelectItem>
-                              ))
-                            : activeAccessories.map((a: any) => (
-                                <SelectItem key={a.id} value={a.id}>
-                                  {`${a.name}${a.sku ? ' (' + a.sku + ')' : ''} — ${isRTL ? 'متوفر' : 'in stock'}: ${a.quantity}`}
-                                </SelectItem>
-                              ))}
-                        </SelectContent>
-                      </Select>
+                      <SearchableSelect
+                        value={item.productId}
+                        onChange={(v) => selectProduct(i, v)}
+                        placeholder={isRTL ? 'اختر المنتج' : 'Select product'}
+                        options={item.type === 'device'
+                          ? deviceModels.map(m => ({
+                              value: m.id,
+                              label: `${m.brand ? m.brand + ' ' : ''}${m.model}${m.storage ? ' · ' + m.storage : ''}`,
+                              hint: `${isRTL ? 'متوفر' : 'stock'}: ${m.available}`,
+                            }))
+                          : activeAccessories.map((a: any) => ({
+                              value: a.id,
+                              label: `${a.name}${a.sku ? ' (' + a.sku + ')' : ''}`,
+                              hint: `${isRTL ? 'متوفر' : 'stock'}: ${a.quantity}`,
+                            }))}
+                      />
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-3">

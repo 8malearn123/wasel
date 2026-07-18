@@ -57,6 +57,8 @@ import { cn } from "@/lib/utils";
 import { useRepairs, RepairOrder, RepairStatus, CreateRepairInput } from "@/hooks/useRepairs";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useDevices } from "@/hooks/useInventory";
+import { SearchableSelect } from '@/components/common/SearchableSelect';
+
 import { useRepairParts, RepairPart, RepairOrderPart } from "@/hooks/useRepairParts";
 import { useBranches } from "@/hooks/useBranches";
 import { useAuth } from "@/hooks/useAuth";
@@ -735,16 +737,15 @@ function CreateRepairDialog({
                       const part = repairParts.find(p => p.id === sp.partId);
                       return (
                         <div key={i} className="flex items-center gap-2">
-                          <Select value={sp.partId} onValueChange={v => setSelectedParts(prev => prev.map((x, idx) => idx === i ? { ...x, partId: v, quantity: 1 } : x))}>
-                            <SelectTrigger className="flex-1 h-9"><SelectValue placeholder="اختر قطعة..." /></SelectTrigger>
-                            <SelectContent>
-                              {availableParts.map(p => (
-                                <SelectItem key={p.id} value={p.id}>
-                                  {p.name} — متوفر: {p.quantity} — {Number(p.cost).toLocaleString()} ر.س
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <div className="flex-1">
+                            <SearchableSelect
+                              className="h-9"
+                              value={sp.partId}
+                              onChange={v => setSelectedParts(prev => prev.map((x, idx) => idx === i ? { ...x, partId: v, quantity: 1 } : x))}
+                              placeholder="اختر قطعة..."
+                              options={availableParts.map(p => ({ value: p.id, label: p.name, hint: `متوفر: ${p.quantity} · ${Number(p.cost).toLocaleString()} ر.س` }))}
+                            />
+                          </div>
                           <Input
                             type="number" min={1} max={part?.quantity || 99}
                             className="w-20 h-9" dir="ltr"
@@ -1057,18 +1058,13 @@ function RepairDetailsDialog({
               <div className="flex items-end gap-2">
                 <div className="flex-1 space-y-1">
                   <Label className="text-xs">القطعة</Label>
-                  <Select value={selectedPartId} onValueChange={setSelectedPartId}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue placeholder="اختر قطعة..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {repairParts.filter(p => p.quantity > 0).map(p => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name} ({p.quantity} متوفر) — {p.cost} ر.س
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    className="h-9 text-sm"
+                    value={selectedPartId}
+                    onChange={setSelectedPartId}
+                    placeholder="اختر قطعة..."
+                    options={repairParts.filter(p => p.quantity > 0).map(p => ({ value: p.id, label: p.name, hint: `${p.quantity} متوفر · ${p.cost} ر.س` }))}
+                  />
                 </div>
                 <div className="w-20 space-y-1">
                   <Label className="text-xs">الكمية</Label>

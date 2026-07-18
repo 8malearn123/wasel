@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UrlTabs } from '@/components/common/UrlTabs';
+import { SearchableSelect } from '@/components/common/SearchableSelect';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Package, ShoppingCart, Store, Truck, Plus, Trash2, Eye, EyeOff, Send, CheckCircle, XCircle, Clock, Lock, Wallet, AlertTriangle, Banknote } from 'lucide-react';
@@ -161,16 +162,14 @@ export default function WholesalePage() {
                         </Select>
                       </div>
                       <div><Label>{t ? 'المنتج' : 'Product'}</Label>
-                        <Select value={selectedItemId} onValueChange={setSelectedItemId}>
-                          <SelectTrigger><SelectValue placeholder={t ? 'اختر' : 'Select'} /></SelectTrigger>
-                          <SelectContent>
-                            {itemType === 'device' ? availableDevices.map(d => (
-                              <SelectItem key={d.id} value={d.id}>{d.brand} {d.model} - {d.imei}</SelectItem>
-                            )) : availableAccessories.map(a => (
-                              <SelectItem key={a.id} value={a.id}>{a.name} ({a.quantity})</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <SearchableSelect
+                          value={selectedItemId}
+                          onChange={setSelectedItemId}
+                          placeholder={t ? 'اختر' : 'Select'}
+                          options={itemType === 'device'
+                            ? availableDevices.map(d => ({ value: d.id, label: `${d.brand || ''} ${d.model}`.trim(), hint: d.imei }))
+                            : availableAccessories.map(a => ({ value: a.id, label: a.name, hint: `${a.quantity}` }))}
+                        />
                       </div>
                       <div><Label>{t ? 'سعر الجملة' : 'Wholesale Price'} (SAR)</Label><Input type="number" value={wholesalePrice} onChange={e => setWholesalePrice(e.target.value)} /></div>
                       <div><Label>{t ? 'الحد الأدنى' : 'Min Qty'}</Label><Input type="number" value={minQty} onChange={e => setMinQty(e.target.value)} /></div>
