@@ -64,6 +64,7 @@ export default function MarketingPage() {
     discount_value: 0, buy_quantity: null as number | null, get_quantity: null as number | null,
     is_active: false, starts_at: new Date().toISOString().slice(0, 16), ends_at: '' as string,
     apply_scope: 'all' as 'all' | 'product', product_main: '', product_x: '', product_y: '',
+    bundle_products: ['', ''] as string[],
   });
 
   const resetCouponForm = () => {
@@ -81,6 +82,7 @@ export default function MarketingPage() {
       discount_value: 0, buy_quantity: null, get_quantity: null, is_active: false,
       starts_at: new Date().toISOString().slice(0, 16), ends_at: '',
       apply_scope: 'all', product_main: '', product_x: '', product_y: '',
+      bundle_products: ['', ''],
     });
     setEditingCampaign(null);
   };
@@ -147,8 +149,9 @@ export default function MarketingPage() {
     if (f.campaign_type === 'flash_sale' && !f.product_main) {
       toast({ title: mk.error, description: 'اختر منتج التخفيض السريع', variant: 'destructive' }); return;
     }
-    if (f.campaign_type === 'bundle' && (!f.product_x || !f.product_y || !f.discount_value)) {
-      toast({ title: mk.error, description: 'اختر منتجي الحزمة وحدد سعرها', variant: 'destructive' }); return;
+    const bundleItems = f.bundle_products.filter(Boolean);
+    if (f.campaign_type === 'bundle' && (bundleItems.length < 2 || !f.discount_value)) {
+      toast({ title: mk.error, description: 'اختر منتجين على الأقل للحزمة وحدد سعرها', variant: 'destructive' }); return;
     }
     if (f.campaign_type === 'buy_x_get_y' && (!f.product_x || !f.product_y)) {
       toast({ title: mk.error, description: 'اختر المنتج المطلوب شراؤه والمنتج الهدية', variant: 'destructive' }); return;
@@ -160,7 +163,7 @@ export default function MarketingPage() {
       autoParts.push(f.apply_scope === 'product' ? `يطبق على: ${f.product_main}` : 'يطبق على: كل المنتجات');
     }
     if (f.campaign_type === 'flash_sale') autoParts.push(`تخفيض سريع على: ${f.product_main}`);
-    if (f.campaign_type === 'bundle') autoParts.push(`الحزمة: ${f.product_x} + ${f.product_y} بسعر ${f.discount_value} ر.س`);
+    if (f.campaign_type === 'bundle') autoParts.push(`الحزمة: ${bundleItems.join(' + ')} بسعر ${f.discount_value} ر.س`);
     if (f.campaign_type === 'buy_x_get_y') autoParts.push(`اشترِ ${f.buy_quantity || 1} × ${f.product_x} واحصل على ${f.get_quantity || 1} × ${f.product_y}`);
     const description = [autoParts.join(' — '), f.description].filter(Boolean).join(' | ');
 
@@ -547,7 +550,7 @@ export default function MarketingPage() {
               </div>
               <div>
                 <Label>{mk.campaignType}</Label>
-                <Select value={campaignForm.campaign_type} onValueChange={v => setCampaignForm(p => ({ ...p, campaign_type: v as any, apply_scope: 'all', product_main: '', product_x: '', product_y: '' }))}>
+                <Select value={campaignForm.campaign_type} onValueChange={v => setCampaignForm(p => ({ ...p, campaign_type: v as any, apply_scope: 'all', product_main: '', product_x: '', product_y: '', bundle_products: ['', ''] }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="discount">{mk.typeDiscount}</SelectItem>
@@ -638,13 +641,31 @@ export default function MarketingPage() {
 
                 if (campaignForm.campaign_type === 'bundle') return (
                   <>
-                    <div>
-                      <Label>المنتج الأول *</Label>
-                      <ProductSelect value={campaignForm.product_x} onChange={v => setCampaignForm(p => ({ ...p, product_x: v }))} placeholder="اختر المنتج الأول..." />
-                    </div>
-                    <div>
-                      <Label>المنتج الثاني *</Label>
-                      <ProductSelect value={campaignForm.product_y} onChange={v => setCampaignForm(p => ({ ...p, product_y: v }))} placeholder="اختر المنتج الثاني..." />
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label>منتجات الحزمة (منتجان على الأقل) *</Label>
+                        <Button type="button" variant="outline" size="sm"
+                          onClick={() => setCampaignForm(p => ({ ...p, bundle_products: [...p.bundle_products, ''] }))}>
+                          <Plus className="h-4 w-4 me-1" /> إضافة منتج
+                        </Button>
+                      </div>
+                      {campaignForm.bundle_products.map((bp, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <div className="flex-1">
+                            <ProductSelect
+                              value={bp}
+                              onChange={v => setCampaignForm(p => ({ ...p, bundle_products: p.bundle_products.map((x, idx) => idx === i ? v : x) }))}
+                              placeholder={`المنتج ${i + 1}...`}
+                            />
+                          </div>
+                          {campaignForm.bundle_products.length > 2 && (
+                            <Button type="button" variant="ghost" size="icon" className="text-destructive shrink-0"
+                              onClick={() => setCampaignForm(p => ({ ...p, bundle_products: p.bundle_products.filter((_, idx) => idx !== i) }))}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
                     </div>
                     <div>
                       <Label>سعر الحزمة (ر.س) *</Label>
