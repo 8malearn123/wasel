@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useLanguage } from "@/i18n";
 import { useMarketing, Coupon, Campaign } from "@/hooks/useMarketing";
+import { useDevices, useAccessories } from "@/hooks/useInventory";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UrlTabs } from '@/components/common/UrlTabs';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +22,20 @@ import { format } from "date-fns";
 export default function MarketingPage() {
   const { t, language } = useLanguage();
   const mk = t.marketing;
+  const { devices } = useDevices();
+  const { accessories } = useAccessories();
+
+  // Products from real inventory for campaign targeting
+  const productOptions = useMemo(() => {
+    const models = new Set<string>();
+    for (const d of devices) {
+      models.add(`${d.brand ? d.brand + ' ' : ''}${d.model}${d.storage ? ' ' + d.storage : ''}`.trim());
+    }
+    return [
+      ...[...models].map(m => ({ value: `جهاز: ${m}`, label: `📱 ${m}` })),
+      ...accessories.map(a => ({ value: `إكسسوار: ${a.name}`, label: `🎧 ${a.name}` })),
+    ];
+  }, [devices, accessories]);
   const {
     coupons, campaigns, loading,
     createCoupon, updateCoupon, deleteCoupon, toggleCoupon,
@@ -48,6 +63,7 @@ export default function MarketingPage() {
     discount_type: 'percentage' as 'percentage' | 'fixed',
     discount_value: 0, buy_quantity: null as number | null, get_quantity: null as number | null,
     is_active: false, starts_at: new Date().toISOString().slice(0, 16), ends_at: '' as string,
+    apply_scope: 'all' as 'all' | 'product', product_main: '', product_x: '', product_y: '',
   });
 
   const resetCouponForm = () => {
@@ -64,6 +80,7 @@ export default function MarketingPage() {
       name: '', description: '', campaign_type: 'discount', discount_type: 'percentage',
       discount_value: 0, buy_quantity: null, get_quantity: null, is_active: false,
       starts_at: new Date().toISOString().slice(0, 16), ends_at: '',
+      apply_scope: 'all', product_main: '', product_x: '', product_y: '',
     });
     setEditingCampaign(null);
   };
@@ -118,14 +135,46 @@ export default function MarketingPage() {
   };
 
   const handleSaveCampaign = async () => {
-    if (!campaignForm.name) {
+    const f = campaignForm;
+    if (!f.name) {
       toast({ title: mk.error, description: mk.fillRequired, variant: 'destructive' });
       return;
     }
+    // Per-type required fields
+    if (f.campaign_type === 'discount' && f.apply_scope === 'product' && !f.product_main) {
+      toast({ title: mk.error, description: 'اختر المنتج الذي يطبق عليه الخصم', variant: 'destructive' }); return;
+    }
+    if (f.campaign_type === 'flash_sale' && !f.product_main) {
+      toast({ title: mk.error, description: 'اختر منتج التخفيض السريع', variant: 'destructive' }); return;
+    }
+    if (f.campaign_type === 'bundle' && (!f.product_x || !f.product_y || !f.discount_value)) {
+      toast({ title: mk.error, description: 'اختر منتجي الحزمة وحدد سعرها', variant: 'destructive' }); return;
+    }
+    if (f.campaign_type === 'buy_x_get_y' && (!f.product_x || !f.product_y)) {
+      toast({ title: mk.error, description: 'اختر المنتج المطلوب شراؤه والمنتج الهدية', variant: 'destructive' }); return;
+    }
+
+    // Auto-describe the campaign from the picked products
+    const autoParts: string[] = [];
+    if (f.campaign_type === 'discount') {
+      autoParts.push(f.apply_scope === 'product' ? `يطبق على: ${f.product_main}` : 'يطبق على: كل المنتجات');
+    }
+    if (f.campaign_type === 'flash_sale') autoParts.push(`تخفيض سريع على: ${f.product_main}`);
+    if (f.campaign_type === 'bundle') autoParts.push(`الحزمة: ${f.product_x} + ${f.product_y} بسعر ${f.discount_value} ر.س`);
+    if (f.campaign_type === 'buy_x_get_y') autoParts.push(`اشترِ ${f.buy_quantity || 1} × ${f.product_x} واحصل على ${f.get_quantity || 1} × ${f.product_y}`);
+    const description = [autoParts.join(' — '), f.description].filter(Boolean).join(' | ');
+
     const payload = {
-      ...campaignForm,
-      starts_at: campaignForm.starts_at ? new Date(campaignForm.starts_at).toISOString() : new Date().toISOString(),
-      ends_at: campaignForm.ends_at ? new Date(campaignForm.ends_at).toISOString() : null,
+      name: f.name,
+      description,
+      campaign_type: f.campaign_type,
+      discount_type: f.campaign_type === 'bundle' ? 'fixed' as const : f.discount_type,
+      discount_value: f.discount_value,
+      buy_quantity: f.buy_quantity,
+      get_quantity: f.get_quantity,
+      is_active: f.is_active,
+      starts_at: f.starts_at ? new Date(f.starts_at).toISOString() : new Date().toISOString(),
+      ends_at: f.ends_at ? new Date(f.ends_at).toISOString() : null,
     };
     let ok;
     if (editingCampaign) {
@@ -498,7 +547,7 @@ export default function MarketingPage() {
               </div>
               <div>
                 <Label>{mk.campaignType}</Label>
-                <Select value={campaignForm.campaign_type} onValueChange={v => setCampaignForm(p => ({ ...p, campaign_type: v as any }))}>
+                <Select value={campaignForm.campaign_type} onValueChange={v => setCampaignForm(p => ({ ...p, campaign_type: v as any, apply_scope: 'all', product_main: '', product_x: '', product_y: '' }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="discount">{mk.typeDiscount}</SelectItem>
@@ -507,36 +556,129 @@ export default function MarketingPage() {
                     <SelectItem value="buy_x_get_y">{mk.typeBuyXGetY}</SelectItem>
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {campaignForm.campaign_type === 'discount' && 'خصم بنسبة أو مبلغ ثابت — على كل المنتجات أو منتج محدد'}
+                  {campaignForm.campaign_type === 'bundle' && 'منتجان يُباعان معاً بسعر واحد مخفض'}
+                  {campaignForm.campaign_type === 'flash_sale' && 'تخفيض قوي لفترة قصيرة على منتج محدد'}
+                  {campaignForm.campaign_type === 'buy_x_get_y' && 'العميل يشتري منتجاً ويحصل على منتج آخر هدية'}
+                </p>
               </div>
-              {campaignForm.campaign_type === 'buy_x_get_y' ? (
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>{mk.buyQuantity}</Label>
-                    <Input type="number" value={campaignForm.buy_quantity ?? ''} onChange={e => setCampaignForm(p => ({ ...p, buy_quantity: e.target.value ? Number(e.target.value) : null }))} />
-                  </div>
-                  <div>
-                    <Label>{mk.getQuantity}</Label>
-                    <Input type="number" value={campaignForm.get_quantity ?? ''} onChange={e => setCampaignForm(p => ({ ...p, get_quantity: e.target.value ? Number(e.target.value) : null }))} />
-                  </div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>{mk.discountType}</Label>
-                    <Select value={campaignForm.discount_type} onValueChange={v => setCampaignForm(p => ({ ...p, discount_type: v as any }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="percentage">{mk.percentage}</SelectItem>
-                        <SelectItem value="fixed">{mk.fixedAmount}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>{mk.discountValue}</Label>
-                    <Input type="number" value={campaignForm.discount_value} onChange={e => setCampaignForm(p => ({ ...p, discount_value: Number(e.target.value) }))} />
-                  </div>
-                </div>
-              )}
+
+              {(() => {
+                const ProductSelect = ({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) => (
+                  <Select value={value} onValueChange={onChange}>
+                    <SelectTrigger><SelectValue placeholder={placeholder} /></SelectTrigger>
+                    <SelectContent className="max-h-64">
+                      {productOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                );
+
+                if (campaignForm.campaign_type === 'discount') return (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label>{mk.discountType}</Label>
+                        <Select value={campaignForm.discount_type} onValueChange={v => setCampaignForm(p => ({ ...p, discount_type: v as any }))}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="percentage">{mk.percentage}</SelectItem>
+                            <SelectItem value="fixed">{mk.fixedAmount}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>{mk.discountValue}</Label>
+                        <Input type="number" value={campaignForm.discount_value} onChange={e => setCampaignForm(p => ({ ...p, discount_value: Number(e.target.value) }))} />
+                      </div>
+                    </div>
+                    <div>
+                      <Label>يطبق على</Label>
+                      <Select value={campaignForm.apply_scope} onValueChange={v => setCampaignForm(p => ({ ...p, apply_scope: v as any }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">كل المنتجات</SelectItem>
+                          <SelectItem value="product">منتج محدد</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {campaignForm.apply_scope === 'product' && (
+                      <div>
+                        <Label>اختر المنتج من المخزون *</Label>
+                        <ProductSelect value={campaignForm.product_main} onChange={v => setCampaignForm(p => ({ ...p, product_main: v }))} placeholder="اختر المنتج..." />
+                      </div>
+                    )}
+                  </>
+                );
+
+                if (campaignForm.campaign_type === 'flash_sale') return (
+                  <>
+                    <div>
+                      <Label>المنتج من المخزون *</Label>
+                      <ProductSelect value={campaignForm.product_main} onChange={v => setCampaignForm(p => ({ ...p, product_main: v }))} placeholder="اختر منتج التخفيض..." />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label>{mk.discountType}</Label>
+                        <Select value={campaignForm.discount_type} onValueChange={v => setCampaignForm(p => ({ ...p, discount_type: v as any }))}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="percentage">{mk.percentage}</SelectItem>
+                            <SelectItem value="fixed">{mk.fixedAmount}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>{mk.discountValue}</Label>
+                        <Input type="number" value={campaignForm.discount_value} onChange={e => setCampaignForm(p => ({ ...p, discount_value: Number(e.target.value) }))} />
+                      </div>
+                    </div>
+                  </>
+                );
+
+                if (campaignForm.campaign_type === 'bundle') return (
+                  <>
+                    <div>
+                      <Label>المنتج الأول *</Label>
+                      <ProductSelect value={campaignForm.product_x} onChange={v => setCampaignForm(p => ({ ...p, product_x: v }))} placeholder="اختر المنتج الأول..." />
+                    </div>
+                    <div>
+                      <Label>المنتج الثاني *</Label>
+                      <ProductSelect value={campaignForm.product_y} onChange={v => setCampaignForm(p => ({ ...p, product_y: v }))} placeholder="اختر المنتج الثاني..." />
+                    </div>
+                    <div>
+                      <Label>سعر الحزمة (ر.س) *</Label>
+                      <Input type="number" min={0} value={campaignForm.discount_value} onChange={e => setCampaignForm(p => ({ ...p, discount_value: Number(e.target.value) }))} />
+                    </div>
+                  </>
+                );
+
+                // buy_x_get_y
+                return (
+                  <>
+                    <div className="grid grid-cols-[1fr_84px] gap-3 items-end">
+                      <div>
+                        <Label>المنتج المطلوب شراؤه (X) *</Label>
+                        <ProductSelect value={campaignForm.product_x} onChange={v => setCampaignForm(p => ({ ...p, product_x: v }))} placeholder="العميل يشتري..." />
+                      </div>
+                      <div>
+                        <Label>{mk.buyQuantity}</Label>
+                        <Input type="number" min={1} value={campaignForm.buy_quantity ?? ''} onChange={e => setCampaignForm(p => ({ ...p, buy_quantity: e.target.value ? Number(e.target.value) : null }))} />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-[1fr_84px] gap-3 items-end">
+                      <div>
+                        <Label>المنتج الهدية (Y) *</Label>
+                        <ProductSelect value={campaignForm.product_y} onChange={v => setCampaignForm(p => ({ ...p, product_y: v }))} placeholder="يحصل على..." />
+                      </div>
+                      <div>
+                        <Label>{mk.getQuantity}</Label>
+                        <Input type="number" min={1} value={campaignForm.get_quantity ?? ''} onChange={e => setCampaignForm(p => ({ ...p, get_quantity: e.target.value ? Number(e.target.value) : null }))} />
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>{mk.startDate}</Label>
