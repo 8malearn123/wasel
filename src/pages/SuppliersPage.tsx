@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { 
   Truck, Plus, Loader2, MoreHorizontal, Edit, Trash2, Phone, Mail,
   DollarSign, FileText, Package, CheckCircle2, Clock, Send, Eye,
-  AlertTriangle, ArrowRight, CreditCard, PackageCheck
+  AlertTriangle, ArrowRight, CreditCard, PackageCheck, Printer
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { useLanguage } from "@/i18n";
+import { useAuth } from "@/hooks/useAuth";
 import { useSuppliers, usePurchaseOrders } from "@/hooks/useSuppliers";
 import { useDevices, useAccessories } from "@/hooks/useInventory";
 import type { Supplier, PurchaseOrder, PurchaseStatus } from "@/types/database";
@@ -738,10 +739,53 @@ function PaymentDialog({ open, onOpenChange, order, onPay, isRTL }: { open: bool
 
 // --- PO Details Dialog ---
 function PODetailsDialog({ open, onOpenChange, order, isRTL }: { open: boolean; onOpenChange: (o: boolean) => void; order: PurchaseOrder | null; isRTL: boolean }) {
+  const { merchant } = useAuth();
   if (!order) return null;
   const remaining = Number(order.total_amount) - Number(order.paid_amount);
   const sc = statusConfig[order.status] || statusConfig.draft;
   const pc = paymentStatusConfig[order.payment_status] || paymentStatusConfig.unpaid;
+
+  const handlePrint = () => {
+    const win = window.open('', '_blank', 'width=800,height=600');
+    if (!win) { toast.error(isRTL ? 'تم حظر النافذة المنبثقة من المتصفح' : 'Popup blocked by browser'); return; }
+    const rows = (order.items || []).map(item => `
+      <tr>
+        <td>${item.device?.model || item.accessory?.name || '-'}</td>
+        <td>${item.quantity}</td>
+        <td>${Number(item.unit_cost).toLocaleString()}</td>
+        <td>${(item.quantity * Number(item.unit_cost)).toLocaleString()}</td>
+      </tr>`).join('');
+    win.document.write(`<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8">
+      <title>${order.order_number}</title>
+      <style>
+        body{font-family:'IBM Plex Sans Arabic',Arial,sans-serif;padding:24px;color:#111}
+        h1{font-size:20px;margin:0 0 4px}.muted{color:#666;font-size:12px}
+        .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #111;padding-bottom:12px}
+        table{width:100%;border-collapse:collapse;margin-top:16px}
+        th,td{border:1px solid #ddd;padding:8px;text-align:right;font-size:13px}
+        th{background:#f5f5f5}
+        .totals{margin-top:16px;display:flex;gap:24px}.totals div{font-size:14px}
+        .badge{display:inline-block;padding:2px 10px;border:1px solid #ccc;border-radius:99px;font-size:12px;margin-inline-start:6px}
+      </style></head><body>
+      <div class="head">
+        <div><h1>طلب شراء</h1><div class="muted">${merchant?.name || ''}</div></div>
+        <div style="text-align:left"><div style="font-weight:bold">${order.order_number}</div>
+        <div class="muted">${new Date(order.order_date).toLocaleDateString('ar-SA')}</div></div>
+      </div>
+      <p>المورد: <b>${order.supplier?.name || '-'}</b> — الفرع: <b>${order.branch?.name || '-'}</b>
+        <span class="badge">${sc.labelAr}</span><span class="badge">${pc.labelAr}</span></p>
+      <table><thead><tr><th>المنتج</th><th>الكمية</th><th>التكلفة</th><th>الإجمالي</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="totals">
+        <div>الإجمالي: <b>${Number(order.total_amount).toLocaleString()} ر.س</b></div>
+        <div>المدفوع: <b>${Number(order.paid_amount).toLocaleString()} ر.س</b></div>
+        <div>المتبقي: <b>${remaining.toLocaleString()} ر.س</b></div>
+      </div>
+      ${order.notes ? `<p class="muted">ملاحظات: ${order.notes}</p>` : ''}
+      </body></html>`);
+    win.document.close();
+    win.focus();
+    setTimeout(() => win.print(), 400);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -787,6 +831,13 @@ function PODetailsDialog({ open, onOpenChange, order, isRTL }: { open: boolean; 
           )}
           {order.notes && <div className="p-3 bg-muted rounded-lg"><p className="text-xs text-muted-foreground mb-1">{isRTL ? 'ملاحظات' : 'Notes'}</p><p className="text-sm">{order.notes}</p></div>}
         </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{isRTL ? 'إغلاق' : 'Close'}</Button>
+          <Button onClick={handlePrint} className="gap-2 bg-gradient-primary hover:opacity-90">
+            <Printer className="w-4 h-4" />
+            {isRTL ? 'طباعة الفاتورة' : 'Print Invoice'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
