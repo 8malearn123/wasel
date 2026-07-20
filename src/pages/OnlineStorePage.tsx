@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UrlTabs } from '@/components/common/UrlTabs';
+import { ColorWheel } from '@/components/common/ColorWheel';
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useStoreSettings, useStorePages, uploadStoreAsset, type StorePage, type DesignExtras } from "@/hooks/useOnlineStore";
@@ -76,6 +77,7 @@ export default function OnlineStorePage() {
 
   // إعدادات التصميم الحر (باقة ماكس)
   const [designSection, setDesignSection] = useState<string | null>(null);
+  const [colorTarget, setColorTarget] = useState<'primary_color' | 'secondary_color'>('primary_color');
   const [extras, setExtras] = useState<DesignExtras>({ gallery: [] });
   const [extrasDirty, setExtrasDirty] = useState(false);
   const [extrasLoaded, setExtrasLoaded] = useState(false);
@@ -393,40 +395,67 @@ export default function OnlineStorePage() {
               </>)}
 
               {designSection === 'colors' && (<>
-              {/* Colors */}
-              <div className="bg-card rounded-xl border p-6">
-                <h3 className="font-semibold mb-4">الألوان</h3>
-                <div className="mb-4">
-                  <Label className="text-sm text-muted-foreground mb-2 block">قوالب جاهزة</Label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-                    {COLOR_PRESETS.map(p => (
-                      <button
-                        key={p.name}
-                        onClick={() => { set("primary_color", p.primary); set("secondary_color", p.secondary); }}
-                        className="group rounded-lg border p-2 hover:border-primary hover:shadow-sm transition-all"
-                      >
-                        <div className="flex gap-1 mb-1.5">
-                          <div className="flex-1 h-8 rounded" style={{ background: p.primary }} />
-                          <div className="flex-1 h-8 rounded" style={{ background: p.secondary }} />
-                        </div>
-                        <p className="text-xs font-medium text-center">{p.name}</p>
-                      </button>
-                    ))}
-                  </div>
+              {/* Colors — عجلة ألوان كاملة */}
+              <div className="bg-card rounded-xl border p-6 space-y-5">
+                <div className="flex items-center gap-2">
+                  <Palette className="w-5 h-5 text-primary" />
+                  <h3 className="font-semibold">الألوان</h3>
                 </div>
-                <div className="grid sm:grid-cols-2 gap-4 pt-4 border-t">
-                  <div>
-                    <Label>اللون الأساسي</Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <input type="color" value={val("primary_color") || "#0d9488"} onChange={e => set("primary_color", e.target.value)} className="w-12 h-10 rounded cursor-pointer border" />
-                      <Input value={val("primary_color")} onChange={e => set("primary_color", e.target.value)} className="font-mono" dir="ltr" />
+
+                {/* اختر أي لون تعدله */}
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    { field: 'primary_color', label: 'اللون الأساسي', fallback: '#0d9488' },
+                    { field: 'secondary_color', label: 'اللون الثانوي', fallback: '#f59e0b' },
+                  ] as const).map(t => (
+                    <button key={t.field} type="button" onClick={() => setColorTarget(t.field)}
+                      className={cn(
+                        "flex items-center justify-center gap-2 rounded-xl border-2 p-3 transition-all",
+                        colorTarget === t.field ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/40"
+                      )}>
+                      <span className="w-6 h-6 rounded-full border-2 border-white shadow" style={{ background: val(t.field) || t.fallback }} />
+                      <span className="text-sm font-semibold">{t.label}</span>
+                      {colorTarget === t.field && <Check className="w-4 h-4 text-primary" />}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex flex-col md:flex-row items-center gap-8">
+                  {/* العجلة */}
+                  <ColorWheel
+                    value={val(colorTarget) || (colorTarget === 'primary_color' ? '#0d9488' : '#f59e0b')}
+                    onChange={hex => set(colorTarget, hex)}
+                  />
+
+                  <div className="flex-1 w-full space-y-4">
+                    <div>
+                      <Label>كود اللون</Label>
+                      <Input value={val(colorTarget)} onChange={e => set(colorTarget, e.target.value)}
+                        className="font-mono mt-1" dir="ltr" placeholder="#0d9488" />
                     </div>
-                  </div>
-                  <div>
-                    <Label>اللون الثانوي</Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <input type="color" value={val("secondary_color") || "#f59e0b"} onChange={e => set("secondary_color", e.target.value)} className="w-12 h-10 rounded cursor-pointer border" />
-                      <Input value={val("secondary_color")} onChange={e => set("secondary_color", e.target.value)} className="font-mono" dir="ltr" />
+                    <div>
+                      <Label className="text-sm text-muted-foreground">تدرجات جاهزة بضغطة</Label>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {COLOR_PRESETS.map(p => (
+                          <button key={p.name} type="button" title={p.name}
+                            onClick={() => { set("primary_color", p.primary); set("secondary_color", p.secondary); }}
+                            className="flex rounded-full overflow-hidden border-2 border-border hover:border-primary transition-all hover:scale-110">
+                            <span className="w-5 h-9" style={{ background: p.primary }} />
+                            <span className="w-5 h-9" style={{ background: p.secondary }} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* معاينة حية */}
+                    <div className="rounded-xl overflow-hidden border">
+                      <div className="h-14 flex items-center justify-center text-white font-bold drop-shadow"
+                        style={{ background: `linear-gradient(135deg, ${val("primary_color") || '#0d9488'}, ${val("secondary_color") || '#f59e0b'})` }}>
+                        هكذا بتظهر ألوان متجرك
+                      </div>
+                      <div className="p-3 flex gap-2 bg-muted/30">
+                        <span className="px-4 py-1.5 rounded-lg text-white text-sm font-semibold" style={{ background: val("primary_color") || '#0d9488' }}>زر أساسي</span>
+                        <span className="px-4 py-1.5 rounded-lg text-white text-sm font-semibold" style={{ background: val("secondary_color") || '#f59e0b' }}>زر ثانوي</span>
+                      </div>
                     </div>
                   </div>
                 </div>
