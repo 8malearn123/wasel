@@ -6,6 +6,12 @@ const FONT_LINKS: Record<string, string> = {
   tajawal: 'https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap',
   ibm_plex: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;700&display=swap',
   noto: 'https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;700;900&display=swap',
+  almarai: 'https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&display=swap',
+  changa: 'https://fonts.googleapis.com/css2?family=Changa:wght@400;600;700&display=swap',
+  elmessiri: 'https://fonts.googleapis.com/css2?family=El+Messiri:wght@400;600;700&display=swap',
+  amiri: 'https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap',
+  reemkufi: 'https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@400;600;700&display=swap',
+  lalezar: 'https://fonts.googleapis.com/css2?family=Lalezar&display=swap',
 };
 
 const FONT_FAMILY: Record<string, string> = {
@@ -13,6 +19,12 @@ const FONT_FAMILY: Record<string, string> = {
   tajawal: '"Tajawal", system-ui, sans-serif',
   ibm_plex: '"IBM Plex Sans Arabic", system-ui, sans-serif',
   noto: '"Noto Kufi Arabic", system-ui, sans-serif',
+  almarai: '"Almarai", system-ui, sans-serif',
+  changa: '"Changa", system-ui, sans-serif',
+  elmessiri: '"El Messiri", system-ui, sans-serif',
+  amiri: '"Amiri", serif',
+  reemkufi: '"Reem Kufi", system-ui, sans-serif',
+  lalezar: '"Lalezar", system-ui, sans-serif',
 };
 
 function hexToHsl(hex: string): string {
@@ -37,9 +49,11 @@ function hexToHsl(hex: string): string {
 interface Props {
   store: StoreSettings;
   children: ReactNode;
+  // لون خط المتجر المختار من استوديو تصميم ماكس
+  textColor?: string | null;
 }
 
-export function StoreThemeProvider({ store, children }: Props) {
+export function StoreThemeProvider({ store, children, textColor }: Props) {
   const fontKey = store.font_family || 'cairo';
   const fontHref = FONT_LINKS[fontKey] || FONT_LINKS.cairo;
   const fontStack = FONT_FAMILY[fontKey] || FONT_FAMILY.cairo;
@@ -76,6 +90,10 @@ export function StoreThemeProvider({ store, children }: Props) {
     '--store-secondary-hex': secondary,
     fontFamily: fontStack,
   };
+  if (textColor && /^#[0-9a-fA-F]{6}$/.test(textColor)) {
+    style['--foreground'] = hexToHsl(textColor);
+    style.color = textColor;
+  }
 
   return (
     <div style={style as React.CSSProperties} dir="rtl" className="store-root min-h-screen bg-background text-foreground">

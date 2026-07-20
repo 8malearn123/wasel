@@ -52,6 +52,7 @@ export interface DesignExtras {
   custom_heading?: string;
   custom_text?: string;
   product_motion?: 'none' | 'float' | 'marquee';
+  font_color?: string;
   // أقسام الصفحة الرئيسية (تصميم ماكس)
   wide_banners?: Array<{ image_url?: string; title?: string; subtitle?: string }>;
   feature_images?: Array<{ image_url: string; caption?: string }>;

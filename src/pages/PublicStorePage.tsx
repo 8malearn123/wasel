@@ -64,7 +64,7 @@ export default function PublicStorePage() {
   };
 
   return (
-    <StoreThemeProvider store={store}>
+    <StoreThemeProvider store={store} textColor={designExtras?.font_color}>
       <StoreSEO
         title={seoTitle}
         description={seoDesc}

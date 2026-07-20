@@ -30,11 +30,30 @@ const COLOR_PRESETS = [
   { name: "أخضر طبيعي", primary: "#16a34a", secondary: "#65a30d" },
 ];
 
+const FONT_SAMPLE = "أهلاً بكم في متجرنا";
 const FONT_PRESETS = [
-  { id: "cairo", name: "Cairo", sample: "أهلاً بكم في متجرنا", style: { fontFamily: '"Cairo", sans-serif' } },
-  { id: "tajawal", name: "Tajawal", sample: "أهلاً بكم في متجرنا", style: { fontFamily: '"Tajawal", sans-serif' } },
-  { id: "ibm_plex", name: "IBM Plex Arabic", sample: "أهلاً بكم في متجرنا", style: { fontFamily: '"IBM Plex Sans Arabic", sans-serif' } },
-  { id: "noto", name: "Noto Kufi", sample: "أهلاً بكم في متجرنا", style: { fontFamily: '"Noto Kufi Arabic", sans-serif' } },
+  { id: "cairo", name: "Cairo", desc: "عصري وواضح", gf: "Cairo:wght@400;700", style: { fontFamily: '"Cairo", sans-serif' } },
+  { id: "tajawal", name: "Tajawal", desc: "ناعم وبسيط", gf: "Tajawal:wght@400;700", style: { fontFamily: '"Tajawal", sans-serif' } },
+  { id: "ibm_plex", name: "IBM Plex Arabic", desc: "رسمي أنيق", gf: "IBM+Plex+Sans+Arabic:wght@400;700", style: { fontFamily: '"IBM Plex Sans Arabic", sans-serif' } },
+  { id: "noto", name: "Noto Kufi", desc: "كوفي حديث", gf: "Noto+Kufi+Arabic:wght@400;700", style: { fontFamily: '"Noto Kufi Arabic", sans-serif' } },
+  { id: "almarai", name: "Almarai", desc: "نظيف ومريح للقراءة", gf: "Almarai:wght@400;700", style: { fontFamily: '"Almarai", sans-serif' } },
+  { id: "changa", name: "Changa", desc: "قوي للعناوين", gf: "Changa:wght@400;700", style: { fontFamily: '"Changa", sans-serif' } },
+  { id: "elmessiri", name: "El Messiri", desc: "فخم بلمسة عربية", gf: "El+Messiri:wght@400;700", style: { fontFamily: '"El Messiri", sans-serif' } },
+  { id: "amiri", name: "Amiri", desc: "كلاسيكي أصيل", gf: "Amiri:wght@400;700", style: { fontFamily: '"Amiri", serif' } },
+  { id: "reemkufi", name: "Reem Kufi", desc: "هندسي مميز", gf: "Reem+Kufi:wght@400;700", style: { fontFamily: '"Reem Kufi", sans-serif' } },
+  { id: "lalezar", name: "Lalezar", desc: "جريء للعروض", gf: "Lalezar", style: { fontFamily: '"Lalezar", system-ui, sans-serif' } },
+];
+
+// ألوان جاهزة لخط المتجر
+const FONT_COLORS = [
+  { name: "أسود", hex: "#111827" },
+  { name: "رمادي غامق", hex: "#374151" },
+  { name: "كحلي", hex: "#1e3a5f" },
+  { name: "أزرق بترولي", hex: "#0c4a6e" },
+  { name: "أخضر غامق", hex: "#14532d" },
+  { name: "بني", hex: "#5b3a29" },
+  { name: "عنابي", hex: "#7f1d1d" },
+  { name: "بنفسجي غامق", hex: "#4c1d95" },
 ];
 
 // كل قالب معه إعدادات معاينة مصغرة تحاكي روح التصميم
@@ -88,6 +107,17 @@ export default function OnlineStorePage() {
       setExtrasLoaded(true);
     }
   }, [designExtras, extrasLoaded]);
+
+  // تحميل كل خطوط المعاينة مرة واحدة حتى تظهر عينات الخطوط بشكلها الحقيقي
+  useEffect(() => {
+    const id = 'design-fonts-preview';
+    if (document.getElementById(id)) return;
+    const link = document.createElement('link');
+    link.id = id;
+    link.rel = 'stylesheet';
+    link.href = `https://fonts.googleapis.com/css2?${FONT_PRESETS.map(f => `family=${f.gf}`).join('&')}&display=swap`;
+    document.head.appendChild(link);
+  }, []);
 
   const updExtras = (patch: Partial<DesignExtras>) => {
     setExtras(prev => ({ ...prev, ...patch }));
@@ -464,28 +494,89 @@ export default function OnlineStorePage() {
 
               {designSection === 'fonts' && (<>
               {/* Fonts */}
-              <div className="bg-card rounded-xl border p-6">
-                <div className="flex items-center gap-2 mb-4">
+              <div className="bg-card rounded-xl border p-6 space-y-6">
+                <div className="flex items-center gap-2">
                   <Type className="w-5 h-5 text-primary" />
                   <h3 className="font-semibold">الخط</h3>
                 </div>
-                <div className="grid sm:grid-cols-2 gap-3">
-                  {FONT_PRESETS.map(f => {
+
+                {/* اختيار الخط — 10 خطوط عربية */}
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {FONT_PRESETS.map((f, fi) => {
                     const active = (val("font_family") || "cairo") === f.id;
                     return (
-                      <button
+                      <motion.button
                         key={f.id}
+                        type="button"
                         onClick={() => set("font_family", f.id)}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: fi * 0.04 }}
+                        whileHover={{ y: -3 }}
                         className={cn(
-                          "text-right p-4 rounded-xl border-2 transition-all",
-                          active ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+                          "relative text-right p-4 rounded-xl border-2 transition-all",
+                          active ? "border-primary bg-primary/5 shadow-md shadow-primary/10" : "border-border hover:border-primary/50"
                         )}
                       >
-                        <p className="text-xs text-muted-foreground mb-1">{f.name}</p>
-                        <p className="text-xl font-semibold" style={f.style}>{f.sample}</p>
-                      </button>
+                        {active && (
+                          <div className="absolute top-2 left-2 w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                            <Check className="w-3 h-3" />
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-[11px] text-muted-foreground font-mono" dir="ltr">{f.name}</p>
+                          <p className="text-[11px] text-muted-foreground">{f.desc}</p>
+                        </div>
+                        <p className="text-xl font-semibold" style={{ ...f.style, color: extras.font_color || undefined }}>{FONT_SAMPLE}</p>
+                      </motion.button>
                     );
                   })}
+                </div>
+
+                {/* لون الخط */}
+                <div className="pt-4 border-t space-y-4">
+                  <div>
+                    <Label className="font-semibold">لون الخط</Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">اختر لون نصوص متجرك — من الألوان الجاهزة أو من العجلة</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button type="button"
+                      onClick={() => updExtras({ font_color: undefined })}
+                      className={cn(
+                        "px-3 h-9 rounded-full border-2 text-xs font-semibold transition-all",
+                        !extras.font_color ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+                      )}>
+                      تلقائي
+                    </button>
+                    {FONT_COLORS.map(c => (
+                      <button key={c.hex} type="button" title={c.name}
+                        onClick={() => updExtras({ font_color: c.hex })}
+                        className={cn(
+                          "w-9 h-9 rounded-full border-2 transition-all hover:scale-110",
+                          extras.font_color === c.hex ? "border-primary ring-2 ring-primary/30" : "border-border"
+                        )}
+                        style={{ background: c.hex }} />
+                    ))}
+                  </div>
+                  <div className="flex flex-col md:flex-row items-center gap-6">
+                    <ColorWheel
+                      size={180}
+                      value={extras.font_color || '#111827'}
+                      onChange={hex => updExtras({ font_color: hex })}
+                    />
+                    {/* معاينة حية */}
+                    <div className="flex-1 w-full rounded-xl border p-5 bg-muted/20">
+                      <p className="text-xs text-muted-foreground mb-2">معاينة</p>
+                      <p className="text-2xl font-bold mb-1"
+                        style={{ ...(FONT_PRESETS.find(f => f.id === (val("font_family") || "cairo"))?.style || {}), color: extras.font_color || undefined }}>
+                        {val("store_name") || "متجرك"}
+                      </p>
+                      <p className="text-sm leading-relaxed"
+                        style={{ ...(FONT_PRESETS.find(f => f.id === (val("font_family") || "cairo"))?.style || {}), color: extras.font_color || undefined }}>
+                        تسوّق أحدث الأجهزة والإكسسوارات بأفضل الأسعار — توصيل سريع لجميع المدن
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
               </>)}
