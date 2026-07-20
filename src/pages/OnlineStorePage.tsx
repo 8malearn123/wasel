@@ -44,6 +44,13 @@ const FONT_PRESETS = [
   { id: "lalezar", name: "Lalezar", desc: "جريء للعروض", gf: "Lalezar", style: { fontFamily: '"Lalezar", system-ui, sans-serif' } },
 ];
 
+// ألوان جاهزة للمصمم المبسط (باقة برو)
+const PRO_COLOR_PRESETS = [
+  { name: "أزرق وصل", primary: "#2563eb", secondary: "#f59e0b" },
+  { name: "تركواز هادئ", primary: "#0f766e", secondary: "#f59e0b" },
+  { name: "أسود أنيق", primary: "#111827", secondary: "#f59e0b" },
+];
+
 // ألوان جاهزة لخط المتجر
 const FONT_COLORS = [
   { name: "أسود", hex: "#111827" },
@@ -216,6 +223,8 @@ export default function OnlineStorePage() {
   const dirty = Object.keys(form).length > 0;
   // باقة ماكس (الموزع) والفترة التجريبية: استوديو التصميم الكامل
   const isMax = subscription?.plan === 'Distributor' || subscription?.plan === 'trial';
+  // باقة برو: مصمم متجر مبسط (شعار، بانر، ألوان جاهزة)
+  const isPro = subscription?.plan === 'Enterprise';
 
   return (
     <AppLayout title="المتجر الإلكتروني" subtitle="إدارة وتخصيص احترافي لمتجرك">
@@ -902,6 +911,102 @@ export default function OnlineStorePage() {
                 </div>
               )}
             </>
+          ) : isPro ? (
+            /* ===== باقة برو: مصمم متجر مبسط ===== */
+            <div className="max-w-3xl space-y-6">
+              <div className="bg-card rounded-xl border p-6 space-y-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <Palette className="w-5 h-5 text-primary" /> تصميم متجرك
+                  </h3>
+                  <Badge className="bg-primary/10 text-primary border-primary/30" variant="outline">باقة برو</Badge>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label>اسم المتجر</Label>
+                    <Input value={val("store_name")} onChange={e => set("store_name", e.target.value)} className="mt-1" />
+                  </div>
+                  <div>
+                    <Label>وصف قصير</Label>
+                    <Input value={val("description")} onChange={e => set("description", e.target.value)} className="mt-1" placeholder="يظهر تحت اسم المتجر..." />
+                  </div>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label>الشعار (Logo)</Label>
+                    <div className="flex items-center gap-3 mt-2">
+                      {settings.logo_url ? (
+                        <img src={settings.logo_url} alt="logo" className="w-16 h-16 rounded-lg object-contain border bg-muted/30" />
+                      ) : (
+                        <div className="w-16 h-16 rounded-lg border border-dashed flex items-center justify-center bg-muted/30">
+                          <ImageIcon className="w-6 h-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="space-y-1">
+                        <input ref={logoRef} type="file" accept="image/*" className="hidden"
+                          onChange={e => e.target.files?.[0] && handleUpload(e.target.files[0], 'logo', 'logo_url')} />
+                        <Button variant="outline" size="sm" onClick={() => logoRef.current?.click()} disabled={uploading === 'logo_url'}>
+                          {uploading === 'logo_url' ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : <Upload className="w-4 h-4 me-1" />}
+                          رفع شعار
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <Label>صورة البانر</Label>
+                    <div className="mt-2 space-y-2">
+                      {settings.banner_url && (
+                        <img src={settings.banner_url} alt="banner" className="w-full h-16 rounded-lg object-cover border" />
+                      )}
+                      <input ref={bannerRef} type="file" accept="image/*" className="hidden"
+                        onChange={e => e.target.files?.[0] && handleUpload(e.target.files[0], 'banner', 'banner_url')} />
+                      <Button variant="outline" size="sm" onClick={() => bannerRef.current?.click()} disabled={uploading === 'banner_url'}>
+                        {uploading === 'banner_url' ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : <Upload className="w-4 h-4 me-1" />}
+                        رفع بانر
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <Label>لون المتجر</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5 mb-2">اختر أحد الألوان الجاهزة — عجلة الألوان والتحكم الكامل في باقة ماكس</p>
+                  <div className="flex flex-wrap gap-3">
+                    {PRO_COLOR_PRESETS.map(p => (
+                      <button key={p.name} type="button"
+                        onClick={() => { set("primary_color", p.primary); set("secondary_color", p.secondary); }}
+                        className={cn(
+                          "flex items-center gap-2 rounded-xl border px-4 py-2.5 transition-all hover:border-primary/50",
+                          val("primary_color") === p.primary ? "border-primary ring-2 ring-primary/30 bg-primary/5" : "border-border"
+                        )}>
+                        <span className="flex -space-x-1">
+                          <span className="w-6 h-6 rounded-full border-2 border-background" style={{ backgroundColor: p.primary }} />
+                          <span className="w-6 h-6 rounded-full border-2 border-background" style={{ backgroundColor: p.secondary }} />
+                        </span>
+                        <span className="text-sm font-medium">{p.name}</span>
+                        {val("primary_color") === p.primary && <Check className="w-4 h-4 text-primary" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* ترقية لماكس */}
+              <div className="rounded-xl border border-primary/30 bg-primary/5 p-5 flex items-start gap-3">
+                <Sparkles className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-semibold text-foreground mb-1">تبغى استوديو التصميم الكامل؟</p>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    باقة ماكس تفتح لك: قوالب التصميم، عجلة الألوان الكاملة، 10 خطوط مع لون الخط، البنرات العريضة، الصور المميزة، الفاصل، المنتجات المتحركة، ومميزات المتجر.
+                  </p>
+                  <Button size="sm" asChild>
+                    <a href="/subscription">ترقية لباقة ماكس</a>
+                  </Button>
+                </div>
+              </div>
+            </div>
           ) : (
             <div className="bg-card rounded-xl border p-10 flex flex-col items-center text-center">
               <Sparkles className="w-10 h-10 text-primary mb-3" />

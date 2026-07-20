@@ -206,8 +206,8 @@ export function Sidebar() {
     .map(section => ({
       ...section,
       items: section.items.filter(filterItem).map(item => {
-        // تبويب "تصميم المتجر" (استوديو التصميم) حصري لباقة ماكس
-        if (item.path === '/online-store' && currentPlanTier < 3) {
+        // تبويب "تصميم المتجر": نسخة مبسطة من باقة برو، والاستوديو الكامل في ماكس
+        if (item.path === '/online-store' && currentPlanTier < 2) {
           return { ...item, children: item.children?.filter(c => c.key !== 'design') };
         }
         return item;
