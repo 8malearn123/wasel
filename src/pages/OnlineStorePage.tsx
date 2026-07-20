@@ -51,6 +51,22 @@ const PRO_COLOR_PRESETS = [
   { name: "أسود أنيق", primary: "#111827", secondary: "#f59e0b" },
 ];
 
+// ألوان أساسية منفردة للمصمم المبسط — تغير اللون الأساسي مباشرة
+const PRO_BASIC_COLORS = [
+  { name: "أحمر", hex: "#dc2626" },
+  { name: "برتقالي", hex: "#ea580c" },
+  { name: "أصفر ذهبي", hex: "#d97706" },
+  { name: "أخضر", hex: "#16a34a" },
+  { name: "تركواز", hex: "#0d9488" },
+  { name: "أزرق فاتح", hex: "#0284c7" },
+  { name: "أزرق", hex: "#2563eb" },
+  { name: "كحلي", hex: "#1e3a8a" },
+  { name: "بنفسجي", hex: "#7c3aed" },
+  { name: "وردي", hex: "#db2777" },
+  { name: "بني", hex: "#78350f" },
+  { name: "أسود", hex: "#111827" },
+];
+
 // ألوان جاهزة لخط المتجر
 const FONT_COLORS = [
   { name: "أسود", hex: "#111827" },
@@ -1037,6 +1053,26 @@ export default function OnlineStorePage() {
                           </button>
                         ))}
                       </div>
+
+                      {/* ألوان أساسية منفردة */}
+                      <div className="pt-3 border-t">
+                        <Label className="text-sm">ألوان أساسية</Label>
+                        <p className="text-xs text-muted-foreground mt-0.5 mb-2">اضغط أي لون ليصير اللون الأساسي لمتجرك</p>
+                        <div className="flex flex-wrap gap-2">
+                          {PRO_BASIC_COLORS.map(c => (
+                            <button key={c.hex} type="button" title={c.name}
+                              onClick={() => set("primary_color", c.hex)}
+                              className={cn(
+                                "w-10 h-10 rounded-full border-2 transition-all hover:scale-110",
+                                val("primary_color") === c.hex ? "border-primary ring-2 ring-primary/40 scale-110" : "border-border"
+                              )}
+                              style={{ background: c.hex }}>
+                              {val("primary_color") === c.hex && <Check className="w-4 h-4 text-white mx-auto drop-shadow" />}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
                       {/* معاينة حية */}
                       <div className="rounded-xl overflow-hidden border">
                         <div className="h-12 flex items-center justify-center text-white font-bold"
