@@ -175,7 +175,7 @@ const FEATURE_MIN_PLAN: Record<string, number> = {
   reports: 1,      // باقة ب
   marketing: 2,    // باقة ج
   customers: 2,    // باقة ج
-  onlineStore: 0,  // متاح من باقة لايت (نسخة مبسطة للتصميم)
+  onlineStore: 1,  // باقة ب — لايت ما لها متجر إلكتروني
   wholesale: 3,    // باقة الموزع (from DB has_wholesale)
 };
 
@@ -205,15 +205,9 @@ export function Sidebar() {
     .map(section => ({
       ...section,
       items: section.items.filter(filterItem).map(item => {
-        if (item.path === '/online-store') {
-          // باقة لايت: المتجر الإلكتروني نسخة مبسطة بدون تبويبات فرعية
-          if (currentPlanTier === 0) {
-            return { ...item, label: 'Store Design', labelAr: 'تصميم المتجر', children: undefined };
-          }
-          // تبويب "تصميم المتجر" (استوديو التصميم) حصري لباقة ماكس
-          if (currentPlanTier < 3) {
-            return { ...item, children: item.children?.filter(c => c.key !== 'design') };
-          }
+        // تبويب "تصميم المتجر" (استوديو التصميم) حصري لباقة ماكس
+        if (item.path === '/online-store' && currentPlanTier < 3) {
+          return { ...item, children: item.children?.filter(c => c.key !== 'design') };
         }
         return item;
       }),
