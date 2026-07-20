@@ -60,6 +60,7 @@ export interface DesignExtras {
   store_perks?: Array<{ icon: string; title: string; desc?: string }>;
   // محرر المتجر (تصميم ماكس)
   icon_shape?: 'circle' | 'square';
+  hero_effect?: 'none' | 'glow' | 'dark' | 'dots';
   button_radius?: number;
   button_color?: string;
   hero_button_text?: string;

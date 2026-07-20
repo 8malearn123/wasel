@@ -43,11 +43,23 @@ export function StoreHomePage({ store, devices, accessories, categories, designE
         className="relative overflow-hidden"
         style={{
           background: store.hero_image_url
-            ? `linear-gradient(135deg, hsl(var(--store-primary) / 0.85), hsl(var(--store-secondary) / 0.85)), url(${store.hero_image_url}) center/cover`
+            ? `linear-gradient(135deg, hsl(var(--store-primary) / ${designExtras?.hero_effect === 'glow' ? 0.55 : 0.85}), hsl(var(--store-secondary) / ${designExtras?.hero_effect === 'glow' ? 0.55 : 0.85})), url(${store.hero_image_url}) center/cover`
             : `linear-gradient(135deg, hsl(var(--store-primary)), hsl(var(--store-secondary)))`,
         }}
       >
-        <div className="max-w-7xl mx-auto px-4 py-20 md:py-28 text-white text-center">
+        {/* تأثيرات البانر (محرر المتجر) */}
+        {designExtras?.hero_effect === 'dots' && (
+          <div className="absolute inset-0 opacity-40 pointer-events-none"
+            style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,0.35) 1.5px, transparent 1.5px)', backgroundSize: '16px 16px' }} />
+        )}
+        {designExtras?.hero_effect === 'glow' && (
+          <div className="absolute inset-0 pointer-events-none"
+            style={{ background: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.3), transparent 60%)' }} />
+        )}
+        {designExtras?.hero_effect === 'dark' && (
+          <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+        )}
+        <div className="relative z-10 max-w-7xl mx-auto px-4 py-20 md:py-28 text-white text-center">
           <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-3xl md:text-5xl font-extrabold mb-4">
             {store.hero_title || `أهلاً في ${store.store_name}`}
           </motion.h1>
