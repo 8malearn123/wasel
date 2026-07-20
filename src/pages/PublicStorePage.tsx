@@ -19,7 +19,7 @@ import { StoreMyOrdersPage } from '@/pages/store/StoreMyOrdersPage';
 
 export default function PublicStorePage() {
   const { slug } = useParams<{ slug: string }>();
-  const { store, devices, accessories, categories, pages, merchantLegal, loading, error, placeOrder } = usePublicStore(slug || '');
+  const { store, devices, accessories, categories, pages, designExtras, merchantLegal, loading, error, placeOrder } = usePublicStore(slug || '');
 
   if (loading) {
     return (
@@ -78,7 +78,7 @@ export default function PublicStorePage() {
        <StoreFavoritesProvider slug={slug || ''}>
         <StoreLayout store={store} pages={pages} merchantLegal={merchantLegal}>
           <Routes>
-            <Route index element={<StoreHomePage store={store} devices={devices} accessories={accessories} categories={categories} />} />
+            <Route index element={<StoreHomePage store={store} devices={devices} accessories={accessories} categories={categories} designExtras={designExtras} />} />
             <Route path="products" element={<StoreProductsPage store={store} devices={devices} accessories={accessories} categories={categories} />} />
             <Route path="device/:productId" element={<StoreProductDetailPage store={store} devices={devices} accessories={accessories} type="device" />} />
             <Route path="accessory/:productId" element={<StoreProductDetailPage store={store} devices={devices} accessories={accessories} type="accessory" />} />

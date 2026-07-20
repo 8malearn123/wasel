@@ -43,6 +43,28 @@ export interface StoreSettings {
   updated_at: string;
 }
 
+// إعدادات التصميم الحر (باقة ماكس) — تُخزَّن كصفحة مخفية بدل عمود جديد
+// لأن تعديل مخطط قاعدة البيانات غير متاح من هنا
+export const DESIGN_EXTRAS_SLUG = '__design';
+
+export interface DesignExtras {
+  gallery: Array<{ image_url: string; caption?: string }>;
+  custom_heading?: string;
+  custom_text?: string;
+  product_motion?: 'none' | 'float' | 'marquee';
+}
+
+export function parseDesignExtras(pages: StorePage[]): DesignExtras | null {
+  const p = pages.find(pg => pg.slug === DESIGN_EXTRAS_SLUG);
+  if (!p?.content) return null;
+  try {
+    const parsed = JSON.parse(p.content);
+    return { gallery: [], ...parsed };
+  } catch {
+    return null;
+  }
+}
+
 export interface StorePage {
   id: string;
   merchant_id: string;
@@ -232,11 +254,32 @@ export function useStorePages() {
     toast.success('تم حذف الصفحة');
   };
 
-  return { pages, loading, upsertPage, deletePage, refetch: fetchPages };
+  const designExtras = parseDesignExtras(pages);
+
+  const saveDesignExtras = async (extras: DesignExtras) => {
+    if (!merchant) return;
+    const { error } = await supabase.from('store_pages').upsert({
+      merchant_id: merchant.id,
+      slug: DESIGN_EXTRAS_SLUG,
+      title: 'إعدادات التصميم',
+      content: JSON.stringify(extras),
+      is_published: true,
+      sort_order: 999,
+    } as any, { onConflict: 'merchant_id,slug' });
+    if (error) { toast.error(error.message); return; }
+    await fetchPages();
+    toast.success('تم حفظ التصميم');
+  };
+
+  return {
+    pages: pages.filter(p => p.slug !== DESIGN_EXTRAS_SLUG),
+    loading, upsertPage, deletePage, refetch: fetchPages,
+    designExtras, saveDesignExtras,
+  };
 }
 
 // ===== Storage Upload Helper =====
-export async function uploadStoreAsset(merchantId: string, file: File, kind: 'logo' | 'banner' | 'hero' | 'og' | 'category'): Promise<string | null> {
+export async function uploadStoreAsset(merchantId: string, file: File, kind: 'logo' | 'banner' | 'hero' | 'og' | 'category' | 'gallery'): Promise<string | null> {
   const ext = file.name.split('.').pop() || 'jpg';
   const path = `${merchantId}/${kind}-${Date.now()}.${ext}`;
   const { error } = await supabase.storage.from('store-assets').upload(path, file, { upsert: true, cacheControl: '3600' });
@@ -324,6 +367,7 @@ export function usePublicStore(slug: string) {
   const [accessories, setAccessories] = useState<any[]>([]);
   const [categories, setCategories] = useState<StoreCategory[]>([]);
   const [pages, setPages] = useState<StorePage[]>([]);
+  const [designExtras, setDesignExtras] = useState<DesignExtras | null>(null);
   const [merchantLegal, setMerchantLegal] = useState<MerchantLegalInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -359,7 +403,9 @@ export function usePublicStore(slug: string) {
       setDevices(devRes.data || []);
       setAccessories(accRes.data || []);
       setCategories((catRes.data || []) as unknown as StoreCategory[]);
-      setPages((pagesRes.data || []) as unknown as StorePage[]);
+      const rawPages = (pagesRes.data || []) as unknown as StorePage[];
+      setDesignExtras(parseDesignExtras(rawPages));
+      setPages(rawPages.filter(p => p.slug !== DESIGN_EXTRAS_SLUG));
       const legalRow = Array.isArray(legalRes.data) ? legalRes.data[0] : legalRes.data;
       setMerchantLegal((legalRow || null) as MerchantLegalInfo | null);
       setLoading(false);
@@ -422,7 +468,7 @@ export function usePublicStore(slug: string) {
     return { orderNumber, totalAmount, shippingCost };
   };
 
-  return { store, devices, accessories, categories, pages, merchantLegal, loading, error, placeOrder };
+  return { store, devices, accessories, categories, pages, designExtras, merchantLegal, loading, error, placeOrder };
 }
 
 // ===== Public Order Tracking (no auth, verifies via last 4 digits of phone) =====

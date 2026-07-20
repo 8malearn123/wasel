@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Store, Palette, Truck, Plus, Trash2, Save, ExternalLink, Eye, EyeOff,
@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UrlTabs } from '@/components/common/UrlTabs';
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
-import { useStoreSettings, useStorePages, uploadStoreAsset, type StorePage } from "@/hooks/useOnlineStore";
+import { useStoreSettings, useStorePages, uploadStoreAsset, type StorePage, type DesignExtras } from "@/hooks/useOnlineStore";
 import { toast } from "sonner";
 
 // ===== استوديو التصميم الكامل — حصري لباقة ماكس =====
@@ -53,7 +53,7 @@ const LITE_COLOR_PRESETS = [
 export default function OnlineStorePage() {
   const { merchant, subscription } = useAuth();
   const { settings, categories, loading, initStore, updateSettings, addCategory, removeCategory } = useStoreSettings();
-  const { pages, upsertPage, deletePage } = useStorePages();
+  const { pages, upsertPage, deletePage, designExtras, saveDesignExtras } = useStorePages();
   const [newCat, setNewCat] = useState("");
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<Record<string, any>>({});
@@ -64,6 +64,31 @@ export default function OnlineStorePage() {
   const bannerRef = useRef<HTMLInputElement>(null);
   const heroRef = useRef<HTMLInputElement>(null);
   const ogRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
+
+  // إعدادات التصميم الحر (باقة ماكس)
+  const [extras, setExtras] = useState<DesignExtras>({ gallery: [] });
+  const [extrasDirty, setExtrasDirty] = useState(false);
+  const [extrasLoaded, setExtrasLoaded] = useState(false);
+  const [savingExtras, setSavingExtras] = useState(false);
+  useEffect(() => {
+    if (designExtras && !extrasLoaded) {
+      setExtras(designExtras);
+      setExtrasLoaded(true);
+    }
+  }, [designExtras, extrasLoaded]);
+
+  const updExtras = (patch: Partial<DesignExtras>) => {
+    setExtras(prev => ({ ...prev, ...patch }));
+    setExtrasDirty(true);
+  };
+
+  const saveExtras = async () => {
+    setSavingExtras(true);
+    await saveDesignExtras(extras);
+    setExtrasDirty(false);
+    setSavingExtras(false);
+  };
 
   if (loading) {
     return (
@@ -109,6 +134,17 @@ export default function OnlineStorePage() {
     const url = await uploadStoreAsset(merchant.id, file, kind);
     if (url) {
       await updateSettings({ [field]: url } as any);
+    }
+    setUploading(null);
+  };
+
+  const handleGalleryUpload = async (file: File) => {
+    if (!merchant) return;
+    setUploading('gallery');
+    const url = await uploadStoreAsset(merchant.id, file, 'gallery');
+    if (url) {
+      setExtras(prev => ({ ...prev, gallery: [...(prev.gallery || []), { image_url: url }] }));
+      setExtrasDirty(true);
     }
     setUploading(null);
   };
@@ -448,6 +484,112 @@ export default function OnlineStorePage() {
                   })}
                 </div>
               </div>
+              {/* معرض صور المتجر */}
+              <div className="bg-card rounded-xl border p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ImageIcon className="w-5 h-5 text-primary" />
+                    <h3 className="font-semibold">معرض صور المتجر</h3>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => galleryRef.current?.click()} disabled={uploading === 'gallery'}>
+                    {uploading === 'gallery' ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : <Plus className="w-4 h-4 me-1" />}
+                    إضافة صورة
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">حط الصور اللي تبغاها تظهر في واجهة متجرك، مع تعليق اختياري تحت كل صورة</p>
+                <input ref={galleryRef} type="file" accept="image/*" className="hidden"
+                  onChange={e => { if (e.target.files?.[0]) handleGalleryUpload(e.target.files[0]); e.target.value = ''; }} />
+                {(extras.gallery || []).length === 0 ? (
+                  <div className="border border-dashed rounded-xl p-8 text-center text-sm text-muted-foreground">
+                    ما فيه صور بعد — اضغط "إضافة صورة" وارفع أي صورة تبغاها تظهر في متجرك
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {extras.gallery.map((g, i) => (
+                      <div key={i} className="rounded-xl border overflow-hidden bg-muted/20">
+                        <img src={g.image_url} alt="" className="w-full h-28 object-cover" />
+                        <div className="p-2 space-y-1.5">
+                          <Input
+                            value={g.caption || ''}
+                            placeholder="تعليق (اختياري)"
+                            className="h-8 text-xs"
+                            onChange={e => {
+                              const gallery = [...extras.gallery];
+                              gallery[i] = { ...gallery[i], caption: e.target.value };
+                              updExtras({ gallery });
+                            }}
+                          />
+                          <Button variant="ghost" size="sm" className="w-full h-7 text-destructive"
+                            onClick={() => updExtras({ gallery: extras.gallery.filter((_, j) => j !== i) })}>
+                            <Trash2 className="w-3.5 h-3.5 me-1" /> حذف
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* نصوص المتجر الخاصة */}
+              <div className="bg-card rounded-xl border p-6 space-y-4">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-primary" />
+                  <h3 className="font-semibold">كلامك الخاص في الواجهة</h3>
+                </div>
+                <p className="text-xs text-muted-foreground">اكتب أي عنوان أو رسالة تبغاها تظهر لعملائك في الصفحة الرئيسية</p>
+                <div>
+                  <Label>العنوان</Label>
+                  <Input value={extras.custom_heading || ''} onChange={e => updExtras({ custom_heading: e.target.value })}
+                    className="mt-1" placeholder="مثال: عروض حصرية هذا الأسبوع" />
+                </div>
+                <div>
+                  <Label>النص</Label>
+                  <Textarea value={extras.custom_text || ''} onChange={e => updExtras({ custom_text: e.target.value })}
+                    className="mt-1" rows={3} placeholder="اكتب الكلام اللي تبغاه يظهر تحت العنوان..." />
+                </div>
+              </div>
+
+              {/* حركة المنتجات */}
+              <div className="bg-card rounded-xl border p-6 space-y-4">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-primary" />
+                  <h3 className="font-semibold">حركة المنتجات</h3>
+                </div>
+                <p className="text-xs text-muted-foreground">خلّ منتجاتك تتحرك في الصفحة الرئيسية وتلفت نظر العملاء</p>
+                <div className="grid sm:grid-cols-3 gap-3">
+                  {([
+                    { id: 'none', name: 'بدون حركة', desc: 'عرض ثابت وهادئ', emoji: '⏸️' },
+                    { id: 'float', name: 'حركة عائمة', desc: 'المنتجات تطفو بلطف فوق وتحت', emoji: '🎈' },
+                    { id: 'marquee', name: 'شريط متحرك', desc: 'المنتجات تمشي تلقائياً بشكل مستمر', emoji: '🎬' },
+                  ] as const).map(m => {
+                    const active = (extras.product_motion || 'none') === m.id;
+                    return (
+                      <button key={m.id} type="button"
+                        onClick={() => updExtras({ product_motion: m.id })}
+                        className={cn(
+                          "relative text-right p-4 rounded-xl border-2 transition-all hover:shadow-md",
+                          active ? "border-primary bg-primary/5" : "border-border bg-background"
+                        )}>
+                        {active && <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center"><Check className="w-3 h-3" /></div>}
+                        <div className="text-2xl mb-2">{m.emoji}</div>
+                        <p className="font-semibold">{m.name}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{m.desc}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* حفظ التصميم الحر */}
+              {extrasDirty && (
+                <div className="sticky bottom-4 z-30 flex items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/10 backdrop-blur p-3 shadow-lg">
+                  <p className="text-sm font-medium">عندك تعديلات تصميم غير محفوظة</p>
+                  <Button size="sm" onClick={saveExtras} disabled={savingExtras}>
+                    {savingExtras ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : <Save className="w-4 h-4 me-1" />}
+                    حفظ التصميم
+                  </Button>
+                </div>
+              )}
             </>
           ) : (
             <div className="bg-card rounded-xl border p-10 flex flex-col items-center text-center">
