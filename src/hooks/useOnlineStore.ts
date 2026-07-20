@@ -58,7 +58,26 @@ export interface DesignExtras {
   feature_images?: Array<{ image_url: string; caption?: string }>;
   divider?: { enabled?: boolean; text?: string };
   store_perks?: Array<{ icon: string; title: string; desc?: string }>;
+  // محرر المتجر (تصميم ماكس)
+  icon_shape?: 'circle' | 'square';
+  button_radius?: number;
+  button_color?: string;
+  hero_button_text?: string;
+  home_sections?: Array<{ key: string; visible: boolean }>;
 }
+
+// الترتيب الافتراضي لأقسام الصفحة الرئيسية في المتجر
+export const DEFAULT_HOME_SECTIONS: Array<{ key: string; visible: boolean }> = [
+  { key: 'hero', visible: true },
+  { key: 'wide', visible: true },
+  { key: 'feature', visible: true },
+  { key: 'divider', visible: true },
+  { key: 'gallery', visible: true },
+  { key: 'text', visible: true },
+  { key: 'categories', visible: true },
+  { key: 'products', visible: true },
+  { key: 'perks', visible: true },
+];
 
 export function parseDesignExtras(pages: StorePage[]): DesignExtras | null {
   const p = pages.find(pg => pg.slug === DESIGN_EXTRAS_SLUG);

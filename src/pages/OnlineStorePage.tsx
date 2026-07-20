@@ -4,6 +4,7 @@ import {
   Store, Palette, Truck, Plus, Trash2, Save, ExternalLink, Eye, EyeOff,
   Loader2, Tag, Link2, Sparkles, Search, FileText, Image as ImageIcon,
   Upload, Megaphone, Type, Star, Layout, Check, ArrowRight,
+  Monitor, Smartphone, RotateCcw, GripVertical, ChevronDown, ArrowUp, ArrowDown, Rocket,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,7 @@ import { UrlTabs } from '@/components/common/UrlTabs';
 import { ColorWheel } from '@/components/common/ColorWheel';
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
-import { useStoreSettings, useStorePages, uploadStoreAsset, type StorePage, type DesignExtras } from "@/hooks/useOnlineStore";
+import { useStoreSettings, useStorePages, uploadStoreAsset, DEFAULT_HOME_SECTIONS, type StorePage, type DesignExtras } from "@/hooks/useOnlineStore";
 import { toast } from "sonner";
 
 // ===== استوديو التصميم الكامل — حصري لباقة ماكس =====
@@ -42,6 +43,32 @@ const FONT_PRESETS = [
   { id: "amiri", name: "Amiri", desc: "كلاسيكي أصيل", gf: "Amiri:wght@400;700", style: { fontFamily: '"Amiri", serif' } },
   { id: "reemkufi", name: "Reem Kufi", desc: "هندسي مميز", gf: "Reem+Kufi:wght@400;700", style: { fontFamily: '"Reem Kufi", sans-serif' } },
   { id: "lalezar", name: "Lalezar", desc: "جريء للعروض", gf: "Lalezar", style: { fontFamily: '"Lalezar", system-ui, sans-serif' } },
+];
+
+// أسماء أقسام الصفحة الرئيسية في محرر المتجر
+const SECTION_META: Record<string, { name: string; desc: string }> = {
+  hero: { name: "البنر الرئيسي", desc: "الواجهة الترحيبية بأعلى المتجر" },
+  wide: { name: "البنرات العريضة", desc: "بنرات عالية بعرض الصفحة" },
+  feature: { name: "الصور المميزة", desc: "صور كبيرة تبرز العروض" },
+  divider: { name: "الفاصل العالي", desc: "شريط ملون بجملة تسويقية" },
+  gallery: { name: "معرض الصور", desc: "صور حرة مع تعليقات" },
+  text: { name: "كلامك الخاص", desc: "عنوان ورسالة بأسلوبك" },
+  categories: { name: "تسوّق حسب الفئة", desc: "شبكة التصنيفات" },
+  products: { name: "الأكثر مبيعاً", desc: "شبكة المنتجات" },
+  perks: { name: "مميزات المتجر", desc: "توصيل، ضمان، دفع آمن" },
+};
+
+// عينات المنتجات في المعاينة الحية
+const PV_PRODUCTS = [
+  { name: "iPhone 15 Pro", price: "4,299", tag: "جديد" },
+  { name: "سماعة AirPods Pro", price: "899", tag: "" },
+  { name: "شاحن متنقل 20K", price: "149", tag: "الأكثر مبيعاً" },
+];
+const PV_CATS = [
+  { icon: "📱", name: "الجوالات" },
+  { icon: "🎧", name: "السماعات" },
+  { icon: "🔌", name: "الشواحن" },
+  { icon: "⌚", name: "الساعات" },
 ];
 
 // ألوان جاهزة للمصمم المبسط (باقة برو)
@@ -120,6 +147,10 @@ export default function OnlineStorePage() {
   // إعدادات التصميم الحر (باقة ماكس)
   const [designSection, setDesignSection] = useState<string | null>(null);
   const [colorTarget, setColorTarget] = useState<'primary_color' | 'secondary_color'>('primary_color');
+  // محرر المتجر (ماكس)
+  const [openPanel, setOpenPanel] = useState<string | null>('logo');
+  const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
+  const dragIdx = useRef<number | null>(null);
   const [extras, setExtras] = useState<DesignExtras>({ gallery: [] });
   const [extrasDirty, setExtrasDirty] = useState(false);
   const [extrasLoaded, setExtrasLoaded] = useState(false);
@@ -235,6 +266,63 @@ export default function OnlineStorePage() {
     { icon: '🎧', title: 'دعم متواصل', desc: 'فريقنا جاهز يخدمك في أي وقت' },
   ];
 
+  // ===== محرر المتجر (ماكس): أقسام الصفحة وحفظ ونشر =====
+  const homeSections = (extras.home_sections && extras.home_sections.length > 0)
+    ? [
+        ...extras.home_sections,
+        ...DEFAULT_HOME_SECTIONS.filter(d => !extras.home_sections!.some(s => s.key === d.key)),
+      ]
+    : DEFAULT_HOME_SECTIONS;
+
+  const reorderSections = (from: number, to: number) => {
+    if (from === to || from < 0 || to < 0 || from >= homeSections.length || to >= homeSections.length) return;
+    const list = [...homeSections];
+    const [moved] = list.splice(from, 1);
+    list.splice(to, 0, moved);
+    updExtras({ home_sections: list });
+  };
+
+  const toggleHomeSection = (key: string) =>
+    updExtras({ home_sections: homeSections.map(s => s.key === key ? { ...s, visible: s.visible === false } : s) });
+
+  const publishAll = async () => {
+    setSaving(true);
+    const pending = { ...form };
+    if (!settings.is_published) (pending as any).is_published = true;
+    if (Object.keys(pending).length > 0) {
+      await updateSettings(pending);
+      setForm({});
+    }
+    if (extrasDirty) {
+      await saveDesignExtras(extras);
+      setExtrasDirty(false);
+    }
+    setSaving(false);
+    toast.success('✓ تم نشر تصميم متجرك بنجاح');
+  };
+
+  const resetDesigner = () => {
+    setForm(prev => ({
+      ...prev,
+      theme_id: 'modern', font_family: 'cairo',
+      primary_color: '#2563eb', secondary_color: '#f59e0b',
+    }));
+    updExtras({
+      icon_shape: 'circle', button_radius: 12, button_color: undefined,
+      hero_button_text: undefined, home_sections: DEFAULT_HOME_SECTIONS,
+    });
+    toast.info('تم استعادة الافتراضي — اضغط "نشر التغييرات" للحفظ');
+  };
+
+  // قيم المعاينة الحية
+  const pvFont = FONT_PRESETS.find(f => f.id === (val("font_family") || "cairo"))?.style || {};
+  const pvPrimary = val("primary_color") || '#2563eb';
+  const pvSecondary = val("secondary_color") || '#f59e0b';
+  const pvBtn = extras.button_color || pvPrimary;
+  const pvRadius = extras.button_radius ?? 12;
+  const pvVisible = homeSections.filter(s => s.visible !== false).map(s => s.key);
+  const pvName = val("store_name") || "متجرك";
+
   const storeUrl = `${window.location.origin}/store/${settings.slug}`;
   const dirty = Object.keys(form).length > 0;
   // باقة ماكس (الموزع) والفترة التجريبية: استوديو التصميم الكامل
@@ -323,41 +411,500 @@ export default function OnlineStorePage() {
         <TabsContent value="design" className="space-y-6">
           {isMax ? (
             <>
-              {/* دليل أقسام التصميم — كل شي قسم مستقل */}
+              {/* ===== محرر المتجر — لوحة تحكم + معاينة حية ===== */}
               {designSection === null && (
-                <div className="space-y-8">
-                  {[
-                    { group: 'الهوية والشكل', items: [
-                      { key: 'themes', icon: Layout, name: 'قالب التصميم', desc: 'عصري، بسيط، جريء أو كلاسيكي' },
-                      { key: 'colors', icon: Palette, name: 'الألوان', desc: 'قوالب جاهزة أو أي لون تختاره' },
-                      { key: 'fonts', icon: Type, name: 'الخط', desc: 'اختر خط متجرك مع معاينة حية' },
-                    ]},
-                    { group: 'أقسام الصفحة الرئيسية', items: [
-                      { key: 'wide', icon: Megaphone, name: '١ — البنر العريض', desc: 'بنرات عريضة عالية بعدد ما تبغى' },
-                      { key: 'feature', icon: Star, name: '٢ — الصور المميزة', desc: 'صور كبيرة تبرز عروضك' },
-                      { key: 'divider', icon: Tag, name: '٣ — الفاصل العالي', desc: 'شريط ملون بجملة تلفت النظر' },
-                      { key: 'motion', icon: Sparkles, name: '٤ — المنتجات المتحركة', desc: 'حركة عائمة أو شريط متحرك' },
-                      { key: 'perks', icon: Check, name: '٥ — مميزات المتجر', desc: 'توصيل، ضمان، دفع آمن...' },
-                    ]},
-                    { group: 'إضافات', items: [
-                      { key: 'gallery', icon: ImageIcon, name: 'معرض صور المتجر', desc: 'أي صور تبغاها مع تعليقات' },
-                      { key: 'text', icon: FileText, name: 'كلامك الخاص', desc: 'عنوان ورسالة بأسلوبك' },
-                    ]},
-                  ].map(g => (
-                    <div key={g.group}>
-                      <h3 className="font-bold text-base mb-3">{g.group}</h3>
-                      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {g.items.map(it => (
+                <div className="space-y-4">
+                  {/* شريط المحرر */}
+                  <div className="bg-card rounded-xl border p-3 flex items-center justify-between flex-wrap gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-black">م</div>
+                      <div>
+                        <p className="font-bold text-sm">محرر المتجر</p>
+                        <p className="text-[11px] text-muted-foreground">{pvName} · {(dirty || extrasDirty) ? 'مسودة غير محفوظة' : 'كل التغييرات محفوظة'}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex rounded-lg border overflow-hidden">
+                        <button type="button" onClick={() => setPreviewDevice('desktop')}
+                          className={cn("px-3 h-9 text-xs font-semibold flex items-center gap-1.5 transition-colors", previewDevice === 'desktop' ? "bg-primary text-primary-foreground" : "hover:bg-muted")}>
+                          <Monitor className="w-3.5 h-3.5" /> سطح المكتب
+                        </button>
+                        <button type="button" onClick={() => setPreviewDevice('mobile')}
+                          className={cn("px-3 h-9 text-xs font-semibold flex items-center gap-1.5 transition-colors", previewDevice === 'mobile' ? "bg-primary text-primary-foreground" : "hover:bg-muted")}>
+                          <Smartphone className="w-3.5 h-3.5" /> جوال
+                        </button>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={resetDesigner}>
+                        <RotateCcw className="w-4 h-4 me-1" /> استعادة الافتراضي
+                      </Button>
+                      <Button size="sm" onClick={publishAll} disabled={saving || savingExtras}>
+                        {saving || savingExtras ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : <Rocket className="w-4 h-4 me-1" />}
+                        نشر التغييرات
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="grid lg:grid-cols-[360px_minmax(0,1fr)] gap-4 items-start">
+                    {/* ===== لوحة التحكم ===== */}
+                    <div className="space-y-3">
+                      <p className="text-xs font-bold text-muted-foreground px-1">الهوية والشكل</p>
+
+                      {/* الشعار واسم المتجر */}
+                      <div className="bg-card rounded-xl border overflow-hidden">
+                        <button type="button" onClick={() => setOpenPanel(openPanel === 'logo' ? null : 'logo')}
+                          className="w-full flex items-center justify-between p-4 text-right">
+                          <div className="flex items-center gap-3">
+                            <ImageIcon className="w-5 h-5 text-primary" />
+                            <div>
+                              <p className="font-semibold text-sm">الشعار واسم المتجر</p>
+                              <p className="text-[11px] text-muted-foreground">النص المعروض وأيقونة العلامة</p>
+                            </div>
+                          </div>
+                          <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform", openPanel === 'logo' && "rotate-180")} />
+                        </button>
+                        {openPanel === 'logo' && (
+                          <div className="px-4 pb-4 space-y-3 border-t pt-3">
+                            <div>
+                              <Label className="text-xs">اسم المتجر</Label>
+                              <Input value={val("store_name")} onChange={e => set("store_name", e.target.value)} className="mt-1 h-9" />
+                            </div>
+                            <div>
+                              <Label className="text-xs">شكل أيقونة العلامة</Label>
+                              <div className="flex gap-2 mt-1.5">
+                                {([
+                                  { id: 'circle', name: 'دائري' },
+                                  { id: 'square', name: 'مربع' },
+                                ] as const).map(sh => (
+                                  <button key={sh.id} type="button" onClick={() => updExtras({ icon_shape: sh.id })}
+                                    className={cn("flex items-center gap-2 rounded-lg border-2 px-3 py-2 text-xs font-semibold transition-all",
+                                      (extras.icon_shape || 'circle') === sh.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/40")}>
+                                    <span className={cn("w-6 h-6 flex items-center justify-center text-white text-[10px] font-black", sh.id === 'circle' ? "rounded-full" : "rounded-md")}
+                                      style={{ background: pvPrimary }}>
+                                      {pvName.charAt(0)}
+                                    </span>
+                                    {sh.name}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              {settings.logo_url ? (
+                                <img src={settings.logo_url} alt="logo" className="w-12 h-12 rounded-lg object-contain border bg-muted/30" />
+                              ) : (
+                                <div className="w-12 h-12 rounded-lg border border-dashed flex items-center justify-center bg-muted/30">
+                                  <ImageIcon className="w-5 h-5 text-muted-foreground" />
+                                </div>
+                              )}
+                              <input ref={logoRef} type="file" accept="image/*" className="hidden"
+                                onChange={e => e.target.files?.[0] && handleUpload(e.target.files[0], 'logo', 'logo_url')} />
+                              <Button variant="outline" size="sm" onClick={() => logoRef.current?.click()} disabled={uploading === 'logo_url'}>
+                                {uploading === 'logo_url' ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : <Upload className="w-4 h-4 me-1" />}
+                                رفع شعار
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* الخط */}
+                      <div className="bg-card rounded-xl border overflow-hidden">
+                        <button type="button" onClick={() => setOpenPanel(openPanel === 'font' ? null : 'font')}
+                          className="w-full flex items-center justify-between p-4 text-right">
+                          <div className="flex items-center gap-3">
+                            <Type className="w-5 h-5 text-primary" />
+                            <div>
+                              <p className="font-semibold text-sm">الخط</p>
+                              <p className="text-[11px] text-muted-foreground" dir="ltr">{FONT_PRESETS.find(f => f.id === (val("font_family") || "cairo"))?.name} — معاينة حية</p>
+                            </div>
+                          </div>
+                          <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform", openPanel === 'font' && "rotate-180")} />
+                        </button>
+                        {openPanel === 'font' && (
+                          <div className="px-4 pb-4 border-t pt-3 grid grid-cols-2 gap-2">
+                            {FONT_PRESETS.map(f => {
+                              const active = (val("font_family") || "cairo") === f.id;
+                              return (
+                                <button key={f.id} type="button" onClick={() => set("font_family", f.id)}
+                                  className={cn("text-right p-2.5 rounded-lg border-2 transition-all",
+                                    active ? "border-primary bg-primary/5" : "border-border hover:border-primary/40")}>
+                                  <p className="text-base font-semibold leading-tight" style={f.style}>{FONT_SAMPLE}</p>
+                                  <p className="text-[10px] text-muted-foreground mt-0.5" dir="ltr">{f.name}</p>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* الألوان */}
+                      <div className="bg-card rounded-xl border overflow-hidden">
+                        <button type="button" onClick={() => setOpenPanel(openPanel === 'colors' ? null : 'colors')}
+                          className="w-full flex items-center justify-between p-4 text-right">
+                          <div className="flex items-center gap-3">
+                            <Palette className="w-5 h-5 text-primary" />
+                            <div>
+                              <p className="font-semibold text-sm">الألوان</p>
+                              <p className="text-[11px] text-muted-foreground">لوحات جاهزة أو ألوان مخصصة</p>
+                            </div>
+                          </div>
+                          <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform", openPanel === 'colors' && "rotate-180")} />
+                        </button>
+                        {openPanel === 'colors' && (
+                          <div className="px-4 pb-4 border-t pt-3 space-y-3">
+                            <div className="flex flex-wrap gap-2">
+                              {COLOR_PRESETS.map(cp => (
+                                <button key={cp.name} type="button" title={cp.name}
+                                  onClick={() => { set("primary_color", cp.primary); set("secondary_color", cp.secondary); }}
+                                  className={cn("flex rounded-full overflow-hidden border-2 transition-all hover:scale-110",
+                                    pvPrimary === cp.primary ? "border-primary ring-2 ring-primary/30" : "border-border")}>
+                                  <span className="w-4 h-8" style={{ background: cp.primary }} />
+                                  <span className="w-4 h-8" style={{ background: cp.secondary }} />
+                                </button>
+                              ))}
+                            </div>
+                            {([
+                              { field: 'primary_color', label: 'اللون الأساسي', fb: '#2563eb' },
+                              { field: 'secondary_color', label: 'اللون الثانوي (التدرّج)', fb: '#f59e0b' },
+                            ] as const).map(cf => (
+                              <div key={cf.field}>
+                                <Label className="text-xs">{cf.label}</Label>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <input type="color" value={val(cf.field) || cf.fb} onChange={e => set(cf.field, e.target.value)}
+                                    className="w-10 h-9 rounded cursor-pointer border" />
+                                  <Input value={val(cf.field) || cf.fb} onChange={e => set(cf.field, e.target.value)} className="font-mono h-9" dir="ltr" />
+                                </div>
+                              </div>
+                            ))}
+                            <div>
+                              <Label className="text-xs">لون الأزرار</Label>
+                              <div className="flex items-center gap-2 mt-1">
+                                <input type="color" value={extras.button_color || pvPrimary} onChange={e => updExtras({ button_color: e.target.value })}
+                                  className="w-10 h-9 rounded cursor-pointer border" />
+                                <Input value={extras.button_color || ''} placeholder="تلقائي (نفس الأساسي)" onChange={e => updExtras({ button_color: e.target.value || undefined })}
+                                  className="font-mono h-9" dir="ltr" />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* قالب التصميم */}
+                      <div className="bg-card rounded-xl border overflow-hidden">
+                        <button type="button" onClick={() => setOpenPanel(openPanel === 'template' ? null : 'template')}
+                          className="w-full flex items-center justify-between p-4 text-right">
+                          <div className="flex items-center gap-3">
+                            <Layout className="w-5 h-5 text-primary" />
+                            <div>
+                              <p className="font-semibold text-sm">قالب التصميم</p>
+                              <p className="text-[11px] text-muted-foreground">{THEMES.find(t => t.id === (val("theme_id") || "modern"))?.name}</p>
+                            </div>
+                          </div>
+                          <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform", openPanel === 'template' && "rotate-180")} />
+                        </button>
+                        {openPanel === 'template' && (
+                          <div className="px-4 pb-4 border-t pt-3 grid grid-cols-2 gap-2">
+                            {THEMES.map(t => {
+                              const active = (val("theme_id") || "modern") === t.id;
+                              return (
+                                <button key={t.id} type="button" onClick={() => set("theme_id", t.id)}
+                                  className={cn("text-right p-3 rounded-lg border-2 transition-all",
+                                    active ? "border-primary bg-primary/5" : "border-border hover:border-primary/40")}>
+                                  <p className="font-semibold text-sm">{t.emoji} {t.name}</p>
+                                  <p className="text-[10px] text-muted-foreground mt-0.5">{t.desc}</p>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* الأزرار */}
+                      <div className="bg-card rounded-xl border overflow-hidden">
+                        <button type="button" onClick={() => setOpenPanel(openPanel === 'buttons' ? null : 'buttons')}
+                          className="w-full flex items-center justify-between p-4 text-right">
+                          <div className="flex items-center gap-3">
+                            <Check className="w-5 h-5 text-primary" />
+                            <div>
+                              <p className="font-semibold text-sm">الأزرار</p>
+                              <p className="text-[11px] text-muted-foreground">الشكل والاستدارة</p>
+                            </div>
+                          </div>
+                          <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform", openPanel === 'buttons' && "rotate-180")} />
+                        </button>
+                        {openPanel === 'buttons' && (
+                          <div className="px-4 pb-4 border-t pt-3 space-y-3">
+                            <div className="flex gap-2">
+                              {([
+                                { name: 'حبة كاملة', r: 999 },
+                                { name: 'مستديرة', r: 12 },
+                                { name: 'حادة', r: 0 },
+                              ] as const).map(bp => (
+                                <button key={bp.name} type="button" onClick={() => updExtras({ button_radius: bp.r })}
+                                  className={cn("flex-1 py-2 text-xs font-semibold border-2 transition-all text-white",
+                                    pvRadius === bp.r ? "border-primary ring-2 ring-primary/30" : "border-transparent")}
+                                  style={{ background: pvBtn, borderRadius: Math.min(bp.r, 24) }}>
+                                  {bp.name}
+                                </button>
+                              ))}
+                            </div>
+                            <div>
+                              <div className="flex items-center justify-between mb-1">
+                                <Label className="text-xs">درجة الاستدارة</Label>
+                                <span className="text-[11px] font-mono text-muted-foreground" dir="ltr">{pvRadius}px</span>
+                              </div>
+                              <input type="range" min={0} max={24} value={Math.min(pvRadius, 24)}
+                                onChange={e => updExtras({ button_radius: Number(e.target.value) })}
+                                className="w-full cursor-pointer" />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <p className="text-xs font-bold text-muted-foreground px-1 pt-2">أقسام الصفحة الرئيسية</p>
+                      <p className="text-[11px] text-muted-foreground px-1 -mt-2">اسحب لإعادة الترتيب · بدّل لإخفاء القسم</p>
+
+                      {/* ترتيب وإظهار الأقسام */}
+                      <div className="bg-card rounded-xl border divide-y">
+                        {homeSections.map((s, i) => (
+                          <div key={s.key}
+                            draggable
+                            onDragStart={() => { dragIdx.current = i; }}
+                            onDragOver={e => e.preventDefault()}
+                            onDrop={() => { if (dragIdx.current !== null) reorderSections(dragIdx.current, i); dragIdx.current = null; }}
+                            className={cn("flex items-center gap-2 p-3", s.visible === false && "opacity-50")}>
+                            <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold truncate">{SECTION_META[s.key]?.name || s.key}</p>
+                              <p className="text-[10px] text-muted-foreground truncate">{SECTION_META[s.key]?.desc}</p>
+                            </div>
+                            <button type="button" onClick={() => reorderSections(i, i - 1)} disabled={i === 0}
+                              className="p-1 rounded hover:bg-muted disabled:opacity-30"><ArrowUp className="w-3.5 h-3.5" /></button>
+                            <button type="button" onClick={() => reorderSections(i, i + 1)} disabled={i === homeSections.length - 1}
+                              className="p-1 rounded hover:bg-muted disabled:opacity-30"><ArrowDown className="w-3.5 h-3.5" /></button>
+                            <Switch checked={s.visible !== false} onCheckedChange={() => toggleHomeSection(s.key)} />
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* تعديل البنر */}
+                      <div className="bg-card rounded-xl border overflow-hidden">
+                        <button type="button" onClick={() => setOpenPanel(openPanel === 'banner' ? null : 'banner')}
+                          className="w-full flex items-center justify-between p-4 text-right">
+                          <div className="flex items-center gap-3">
+                            <Megaphone className="w-5 h-5 text-primary" />
+                            <div>
+                              <p className="font-semibold text-sm">تعديل البنر الرئيسي</p>
+                              <p className="text-[11px] text-muted-foreground">العنوان والنص والزر وصورة الخلفية</p>
+                            </div>
+                          </div>
+                          <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform", openPanel === 'banner' && "rotate-180")} />
+                        </button>
+                        {openPanel === 'banner' && (
+                          <div className="px-4 pb-4 border-t pt-3 space-y-3">
+                            <div>
+                              <Label className="text-xs">العنوان الرئيسي</Label>
+                              <Input value={val("hero_title")} onChange={e => set("hero_title", e.target.value)} className="mt-1 h-9" placeholder={`أهلاً في ${pvName}`} />
+                            </div>
+                            <div>
+                              <Label className="text-xs">النص الفرعي</Label>
+                              <Input value={val("hero_subtitle")} onChange={e => set("hero_subtitle", e.target.value)} className="mt-1 h-9" placeholder="اكتشف أحدث الأجهزة بأفضل الأسعار" />
+                            </div>
+                            <div>
+                              <Label className="text-xs">نص الزر</Label>
+                              <Input value={extras.hero_button_text || ''} onChange={e => updExtras({ hero_button_text: e.target.value || undefined })} className="mt-1 h-9" placeholder="تسوق الآن" />
+                            </div>
+                            <div>
+                              <Label className="text-xs">صورة الخلفية</Label>
+                              <div className="flex items-center gap-2 mt-1.5">
+                                <input ref={heroRef} type="file" accept="image/*" className="hidden"
+                                  onChange={e => e.target.files?.[0] && handleUpload(e.target.files[0], 'hero', 'hero_image_url')} />
+                                <Button variant="outline" size="sm" onClick={() => heroRef.current?.click()} disabled={uploading === 'hero_image_url'}>
+                                  {uploading === 'hero_image_url' ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : <Upload className="w-4 h-4 me-1" />}
+                                  رفع صورة
+                                </Button>
+                                {settings.hero_image_url && (
+                                  <Button variant="ghost" size="sm" className="text-destructive" onClick={() => updateSettings({ hero_image_url: null } as any)}>
+                                    <Trash2 className="w-4 h-4 me-1" /> إزالة
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <p className="text-xs font-bold text-muted-foreground px-1 pt-2">محتوى الأقسام</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { key: 'wide', icon: Megaphone, name: 'البنرات العريضة' },
+                          { key: 'feature', icon: Star, name: 'الصور المميزة' },
+                          { key: 'divider', icon: Tag, name: 'الفاصل العالي' },
+                          { key: 'motion', icon: Sparkles, name: 'حركة المنتجات' },
+                          { key: 'perks', icon: Check, name: 'مميزات المتجر' },
+                          { key: 'gallery', icon: ImageIcon, name: 'معرض الصور' },
+                          { key: 'text', icon: FileText, name: 'كلامك الخاص' },
+                          { key: 'fonts', icon: Type, name: 'لون الخط' },
+                        ].map(it => (
                           <button key={it.key} type="button" onClick={() => setDesignSection(it.key)}
-                            className="text-right bg-card rounded-xl border-2 border-border p-5 transition-all hover:border-primary/60 hover:shadow-md">
-                            <it.icon className="w-6 h-6 text-primary mb-3" />
-                            <p className="font-semibold mb-0.5">{it.name}</p>
-                            <p className="text-xs text-muted-foreground">{it.desc}</p>
+                            className="flex items-center gap-2 bg-card rounded-lg border p-2.5 text-xs font-semibold hover:border-primary/60 hover:shadow-sm transition-all">
+                            <it.icon className="w-4 h-4 text-primary shrink-0" />
+                            <span className="truncate">{it.name}</span>
                           </button>
                         ))}
                       </div>
                     </div>
-                  ))}
+
+                    {/* ===== المعاينة الحية ===== */}
+                    <div className="bg-muted/40 rounded-xl border p-3 lg:sticky lg:top-4">
+                      <div className="flex items-center justify-between mb-2 px-1">
+                        <p className="text-[11px] text-muted-foreground font-mono" dir="ltr">{window.location.host}/store/{settings.slug}</p>
+                        <Badge variant="outline" className="text-[10px]">معاينة حية</Badge>
+                      </div>
+                      <div className={cn("bg-white rounded-lg border shadow-sm overflow-hidden transition-all mx-auto", previewDevice === 'mobile' ? "max-w-[380px]" : "w-full")}
+                        style={{ ...pvFont, color: extras.font_color || '#1f2937' }} dir="rtl">
+
+                        {/* هيدر مصغر */}
+                        <div className="flex items-center justify-between px-4 py-2.5 border-b bg-white">
+                          <div className="flex items-center gap-2">
+                            <span className={cn("w-7 h-7 flex items-center justify-center text-white text-xs font-black", (extras.icon_shape || 'circle') === 'circle' ? "rounded-full" : "rounded-md")}
+                              style={{ background: pvPrimary }}>
+                              {pvName.charAt(0)}
+                            </span>
+                            <span className="font-bold text-sm">{pvName}</span>
+                          </div>
+                          {previewDevice === 'desktop' && (
+                            <div className="flex items-center gap-3 text-[11px] text-gray-500">
+                              <span className="font-semibold" style={{ color: pvPrimary }}>الرئيسية</span>
+                              <span>الجوالات</span>
+                              <span>الإكسسوارات</span>
+                              <span>العروض</span>
+                            </div>
+                          )}
+                          <span className="relative">
+                            🛒
+                            <span className="absolute -top-1.5 -left-1.5 w-4 h-4 rounded-full text-[9px] text-white flex items-center justify-center" style={{ background: pvBtn }}>٣</span>
+                          </span>
+                        </div>
+
+                        {pvVisible.map(sk => {
+                          if (sk === 'hero') return (
+                            <div key={sk} className="px-6 py-8 text-center text-white"
+                              style={{
+                                background: settings.hero_image_url
+                                  ? `linear-gradient(135deg, ${pvPrimary}d9, ${pvSecondary}d9), url(${settings.hero_image_url}) center/cover`
+                                  : `linear-gradient(135deg, ${pvPrimary}, ${pvSecondary})`,
+                              }}>
+                              <p className="text-lg font-extrabold mb-1">{val("hero_title") || `أهلاً في ${pvName}`}</p>
+                              <p className="text-[11px] opacity-90 mb-3">{val("hero_subtitle") || val("description") || 'اكتشف أحدث الأجهزة والإكسسوارات بأفضل الأسعار'}</p>
+                              <span className="inline-block bg-white text-gray-900 text-[11px] font-bold px-4 py-1.5" style={{ borderRadius: pvRadius }}>
+                                {extras.hero_button_text || 'تسوق الآن'}
+                              </span>
+                            </div>
+                          );
+                          if (sk === 'categories') return (
+                            <div key={sk} className="px-4 py-4">
+                              <p className="text-xs font-bold mb-2">تسوّق حسب الفئة</p>
+                              <div className="grid grid-cols-4 gap-2">
+                                {PV_CATS.map(c => (
+                                  <div key={c.name} className="rounded-lg border text-center py-2">
+                                    <p className="text-base">{c.icon}</p>
+                                    <p className="text-[9px] font-semibold mt-0.5">{c.name}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                          if (sk === 'wide') return (
+                            <div key={sk} className="h-16 flex items-center justify-center text-white text-xs font-extrabold"
+                              style={{ background: (extras.wide_banners?.[0]?.image_url)
+                                ? `linear-gradient(135deg, ${pvPrimary}66, ${pvSecondary}66), url(${extras.wide_banners[0].image_url}) center/cover`
+                                : `linear-gradient(135deg, ${pvPrimary}, ${pvSecondary})` }}>
+                              {extras.wide_banners?.[0]?.title || 'بنر عريض'}
+                            </div>
+                          );
+                          if (sk === 'feature') return (
+                            <div key={sk} className="px-4 py-3 grid grid-cols-2 gap-2">
+                              {[0, 1].map(fi => (
+                                <div key={fi} className="h-16 rounded-lg overflow-hidden"
+                                  style={{ background: extras.feature_images?.[fi]?.image_url
+                                    ? `url(${extras.feature_images[fi].image_url}) center/cover`
+                                    : `linear-gradient(135deg, ${pvPrimary}22, ${pvSecondary}33)` }} />
+                              ))}
+                            </div>
+                          );
+                          if (sk === 'divider') return (
+                            <div key={sk} className="h-10 flex items-center justify-center text-white text-[11px] font-extrabold"
+                              style={{ background: `linear-gradient(90deg, ${pvPrimary}, ${pvSecondary})` }}>
+                              {extras.divider?.text || 'عروض نهاية الأسبوع — خصومات تصل إلى ٤٠٪'}
+                            </div>
+                          );
+                          if (sk === 'gallery') return (
+                            <div key={sk} className="px-4 py-3 grid grid-cols-3 gap-1.5">
+                              {[0, 1, 2].map(gi => (
+                                <div key={gi} className="h-10 rounded-md"
+                                  style={{ background: extras.gallery?.[gi]?.image_url
+                                    ? `url(${extras.gallery[gi].image_url}) center/cover`
+                                    : `${pvPrimary}1a` }} />
+                              ))}
+                            </div>
+                          );
+                          if (sk === 'text') return (extras.custom_heading || extras.custom_text) ? (
+                            <div key={sk} className="px-4 py-3 text-center">
+                              {extras.custom_heading && <p className="text-sm font-extrabold" style={{ color: pvPrimary }}>{extras.custom_heading}</p>}
+                              {extras.custom_text && <p className="text-[10px] text-gray-500 mt-0.5">{extras.custom_text}</p>}
+                            </div>
+                          ) : null;
+                          if (sk === 'products') return (
+                            <div key={sk} className="px-4 py-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <p className="text-xs font-bold">الأكثر مبيعاً</p>
+                                <p className="text-[10px]" style={{ color: pvPrimary }}>عرض الكل ←</p>
+                              </div>
+                              <div className="grid grid-cols-3 gap-2">
+                                {PV_PRODUCTS.map(pp => (
+                                  <div key={pp.name} className="border rounded-lg overflow-hidden">
+                                    <div className="h-12 relative" style={{ background: `${pvPrimary}14` }}>
+                                      {pp.tag && <span className="absolute top-1 right-1 text-[7px] text-white px-1 py-0.5 rounded" style={{ background: pvSecondary }}>{pp.tag}</span>}
+                                    </div>
+                                    <div className="p-1.5">
+                                      <p className="text-[9px] font-semibold truncate">{pp.name}</p>
+                                      <p className="text-[9px] font-bold mt-0.5" style={{ color: pvPrimary }}>{pp.price} ر.س</p>
+                                      <span className="block text-center text-[8px] text-white font-bold py-1 mt-1" style={{ background: pvBtn, borderRadius: Math.min(pvRadius, 10) }}>
+                                        أضف للسلة
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                          if (sk === 'perks') return (
+                            <div key={sk} className="px-4 py-3 grid grid-cols-4 gap-1.5 border-t" style={{ background: `${pvPrimary}08` }}>
+                              {(extras.store_perks?.filter(pk => pk.title).length ? extras.store_perks.filter(pk => pk.title).slice(0, 4) : [
+                                { icon: '🚚', title: 'توصيل سريع' },
+                                { icon: '🛡️', title: 'ضمان موثوق' },
+                                { icon: '💳', title: 'دفع آمن' },
+                                { icon: '🎧', title: 'دعم متواصل' },
+                              ]).map((pk, pi) => (
+                                <div key={pi} className="text-center">
+                                  <p className="text-sm">{pk.icon}</p>
+                                  <p className="text-[8px] font-bold mt-0.5">{pk.title}</p>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                          return null;
+                        })}
+
+                        {/* فوتر مصغر */}
+                        <div className="px-4 py-3 text-white" style={{ background: '#111827' }}>
+                          <p className="text-[10px] font-bold mb-1">{pvName}</p>
+                          <p className="text-[8px] opacity-70">وجهتك الأولى للجوالات والإكسسوارات الأصلية — أسعار منافسة وشحن سريع.</p>
+                          <p className="text-[8px] opacity-50 mt-2 text-center">© ٢٠٢٦ {pvName} — جميع الحقوق محفوظة</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 

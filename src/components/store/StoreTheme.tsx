@@ -1,5 +1,5 @@
 import { ReactNode, useEffect } from 'react';
-import type { StoreSettings } from '@/hooks/useOnlineStore';
+import type { StoreSettings, DesignExtras } from '@/hooks/useOnlineStore';
 
 const FONT_LINKS: Record<string, string> = {
   cairo: 'https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap',
@@ -51,9 +51,11 @@ interface Props {
   children: ReactNode;
   // لون خط المتجر المختار من استوديو تصميم ماكس
   textColor?: string | null;
+  // إعدادات محرر المتجر (استدارة الأزرار ولونها)
+  extras?: DesignExtras | null;
 }
 
-export function StoreThemeProvider({ store, children, textColor }: Props) {
+export function StoreThemeProvider({ store, children, textColor, extras }: Props) {
   const fontKey = store.font_family || 'cairo';
   const fontHref = FONT_LINKS[fontKey] || FONT_LINKS.cairo;
   const fontStack = FONT_FAMILY[fontKey] || FONT_FAMILY.cairo;
@@ -93,6 +95,17 @@ export function StoreThemeProvider({ store, children, textColor }: Props) {
   if (textColor && /^#[0-9a-fA-F]{6}$/.test(textColor)) {
     style['--foreground'] = hexToHsl(textColor);
     style.color = textColor;
+  }
+  if (typeof extras?.button_radius === 'number') {
+    // متغير الاستدارة الذي تعتمد عليه أزرار المتجر (rounded-md وأخواتها)
+    style['--radius'] = `${extras.button_radius}px`;
+  }
+  if (extras?.button_color && /^#[0-9a-fA-F]{6}$/.test(extras.button_color)) {
+    style['--store-btn'] = hexToHsl(extras.button_color);
+    style['--store-btn-hex'] = extras.button_color;
+  } else {
+    style['--store-btn'] = hexToHsl(primary);
+    style['--store-btn-hex'] = primary;
   }
 
   return (
