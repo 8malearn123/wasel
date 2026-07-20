@@ -19,6 +19,30 @@ import { useAuth } from "@/hooks/useAuth";
 import { useStoreSettings, useStorePages, uploadStoreAsset, type StorePage } from "@/hooks/useOnlineStore";
 import { toast } from "sonner";
 
+// ===== استوديو التصميم الكامل — حصري لباقة ماكس =====
+const COLOR_PRESETS = [
+  { name: "تيل ملكي", primary: "#0d9488", secondary: "#f59e0b" },
+  { name: "أزرق احترافي", primary: "#2563eb", secondary: "#0ea5e9" },
+  { name: "بنفسجي عصري", primary: "#7c3aed", secondary: "#ec4899" },
+  { name: "أسود فاخر", primary: "#111827", secondary: "#d4af37" },
+  { name: "أحمر جريء", primary: "#dc2626", secondary: "#f97316" },
+  { name: "أخضر طبيعي", primary: "#16a34a", secondary: "#65a30d" },
+];
+
+const FONT_PRESETS = [
+  { id: "cairo", name: "Cairo", sample: "أهلاً بكم في متجرنا", style: { fontFamily: '"Cairo", sans-serif' } },
+  { id: "tajawal", name: "Tajawal", sample: "أهلاً بكم في متجرنا", style: { fontFamily: '"Tajawal", sans-serif' } },
+  { id: "ibm_plex", name: "IBM Plex Arabic", sample: "أهلاً بكم في متجرنا", style: { fontFamily: '"IBM Plex Sans Arabic", sans-serif' } },
+  { id: "noto", name: "Noto Kufi", sample: "أهلاً بكم في متجرنا", style: { fontFamily: '"Noto Kufi Arabic", sans-serif' } },
+];
+
+const THEMES = [
+  { id: "modern", name: "عصري", desc: "تصميم نظيف بأقواس ناعمة وظلال خفيفة", emoji: "✨" },
+  { id: "minimal", name: "بسيط", desc: "أبيض، تباعد واسع، خطوط دقيقة", emoji: "◯" },
+  { id: "bold", name: "جريء", desc: "ألوان قوية، خطوط ثقيلة، تباين عالي", emoji: "⚡" },
+  { id: "classic", name: "كلاسيكي", desc: "زوايا حادة، تصميم تقليدي راقي", emoji: "♛" },
+];
+
 // ألوان جاهزة لباقة لايت — اختيار واحد يضبط الأساسي والثانوي معاً
 const LITE_COLOR_PRESETS = [
   { name: "أزرق وصل", primary: "#2563eb", secondary: "#f59e0b" },
@@ -92,6 +116,8 @@ export default function OnlineStorePage() {
   const storeUrl = `${window.location.origin}/store/${settings.slug}`;
   const dirty = Object.keys(form).length > 0;
   const isLite = subscription?.plan === 'Basic';
+  // باقة ماكس (الموزع) والفترة التجريبية: استوديو التصميم الكامل
+  const isMax = subscription?.plan === 'Distributor' || subscription?.plan === 'trial';
 
   // ===== باقة لايت: مصمّم متجر مبسّط بمميزات محدودة =====
   if (isLite) {
@@ -323,6 +349,109 @@ export default function OnlineStorePage() {
 
         {/* BRANDING */}
         <TabsContent value="branding" className="space-y-6">
+          {/* استوديو التصميم الكامل — باقة ماكس فقط */}
+          {isMax && (
+            <>
+              {/* Themes */}
+              <div className="bg-card rounded-xl border p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Layout className="w-5 h-5 text-primary" />
+                    <h3 className="font-semibold">قالب التصميم</h3>
+                  </div>
+                  <Badge className="bg-primary/10 text-primary border-primary/30" variant="outline">
+                    <Sparkles className="w-3 h-3 me-1" /> باقة ماكس
+                  </Badge>
+                </div>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {THEMES.map(t => {
+                    const active = (val("theme_id") || "modern") === t.id;
+                    return (
+                      <button
+                        key={t.id}
+                        onClick={() => set("theme_id", t.id)}
+                        className={cn(
+                          "relative text-right p-4 rounded-xl border-2 transition-all hover:shadow-md",
+                          active ? "border-primary bg-primary/5" : "border-border bg-background"
+                        )}
+                      >
+                        {active && <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center"><Check className="w-3 h-3" /></div>}
+                        <div className="text-3xl mb-2">{t.emoji}</div>
+                        <p className="font-semibold">{t.name}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{t.desc}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Colors */}
+              <div className="bg-card rounded-xl border p-6">
+                <h3 className="font-semibold mb-4">الألوان</h3>
+                <div className="mb-4">
+                  <Label className="text-sm text-muted-foreground mb-2 block">قوالب جاهزة</Label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                    {COLOR_PRESETS.map(p => (
+                      <button
+                        key={p.name}
+                        onClick={() => { set("primary_color", p.primary); set("secondary_color", p.secondary); }}
+                        className="group rounded-lg border p-2 hover:border-primary hover:shadow-sm transition-all"
+                      >
+                        <div className="flex gap-1 mb-1.5">
+                          <div className="flex-1 h-8 rounded" style={{ background: p.primary }} />
+                          <div className="flex-1 h-8 rounded" style={{ background: p.secondary }} />
+                        </div>
+                        <p className="text-xs font-medium text-center">{p.name}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-4 pt-4 border-t">
+                  <div>
+                    <Label>اللون الأساسي</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <input type="color" value={val("primary_color") || "#0d9488"} onChange={e => set("primary_color", e.target.value)} className="w-12 h-10 rounded cursor-pointer border" />
+                      <Input value={val("primary_color")} onChange={e => set("primary_color", e.target.value)} className="font-mono" dir="ltr" />
+                    </div>
+                  </div>
+                  <div>
+                    <Label>اللون الثانوي</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <input type="color" value={val("secondary_color") || "#f59e0b"} onChange={e => set("secondary_color", e.target.value)} className="w-12 h-10 rounded cursor-pointer border" />
+                      <Input value={val("secondary_color")} onChange={e => set("secondary_color", e.target.value)} className="font-mono" dir="ltr" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Fonts */}
+              <div className="bg-card rounded-xl border p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Type className="w-5 h-5 text-primary" />
+                  <h3 className="font-semibold">الخط</h3>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {FONT_PRESETS.map(f => {
+                    const active = (val("font_family") || "cairo") === f.id;
+                    return (
+                      <button
+                        key={f.id}
+                        onClick={() => set("font_family", f.id)}
+                        className={cn(
+                          "text-right p-4 rounded-xl border-2 transition-all",
+                          active ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+                        )}
+                      >
+                        <p className="text-xs text-muted-foreground mb-1">{f.name}</p>
+                        <p className="text-xl font-semibold" style={f.style}>{f.sample}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          )}
+
           {/* Logo + banner uploads */}
           <div className="bg-card rounded-xl border p-6 space-y-5">
             <h3 className="font-semibold flex items-center gap-2"><ImageIcon className="w-5 h-5 text-primary" /> الشعار والبانر</h3>
