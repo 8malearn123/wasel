@@ -667,9 +667,13 @@ export default function OnlineStorePage() {
                 <input ref={wideRef} type="file" accept="image/*" className="hidden"
                   onChange={e => { if (e.target.files?.[0]) handleSectionUpload(e.target.files[0], 'wide'); e.target.value = ''; }} />
                 {(extras.wide_banners || []).length === 0 ? (
-                  <div className="border border-dashed rounded-xl p-6 text-center text-sm text-muted-foreground">
-                    ما فيه بنرات بعد — اضغط "إضافة بنر" وارفع صورة عريضة
-                  </div>
+                  <button type="button" onClick={() => wideRef.current?.click()} disabled={uploading === 'wide'}
+                    className="w-full border-2 border-dashed rounded-xl p-8 text-center text-sm text-muted-foreground hover:border-primary/60 hover:bg-primary/5 hover:text-primary transition-all flex flex-col items-center gap-2">
+                    <span className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                      {uploading === 'wide' ? <Loader2 className="w-6 h-6 animate-spin" /> : <Plus className="w-6 h-6" />}
+                    </span>
+                    اضغط هنا وارفع أول بنر عريض
+                  </button>
                 ) : (
                   <div className="space-y-3">
                     {(extras.wide_banners || []).map((b, i) => (
@@ -699,6 +703,14 @@ export default function OnlineStorePage() {
                         </div>
                       </div>
                     ))}
+                    {/* زر + لإضافة بنر آخر */}
+                    <button type="button" onClick={() => wideRef.current?.click()} disabled={uploading === 'wide'}
+                      className="w-full border-2 border-dashed rounded-xl p-5 text-center text-sm text-muted-foreground hover:border-primary/60 hover:bg-primary/5 hover:text-primary transition-all flex items-center justify-center gap-2">
+                      <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                        {uploading === 'wide' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                      </span>
+                      إضافة بنر آخر
+                    </button>
                   </div>
                 )}
               </div>
@@ -721,9 +733,13 @@ export default function OnlineStorePage() {
                 <input ref={featureRef} type="file" accept="image/*" className="hidden"
                   onChange={e => { if (e.target.files?.[0]) handleSectionUpload(e.target.files[0], 'feature'); e.target.value = ''; }} />
                 {(extras.feature_images || []).length === 0 ? (
-                  <div className="border border-dashed rounded-xl p-6 text-center text-sm text-muted-foreground">
-                    ما فيه صور مميزة بعد — اضغط "إضافة صورة"
-                  </div>
+                  <button type="button" onClick={() => featureRef.current?.click()} disabled={uploading === 'feature'}
+                    className="w-full border-2 border-dashed rounded-xl p-8 text-center text-sm text-muted-foreground hover:border-primary/60 hover:bg-primary/5 hover:text-primary transition-all flex flex-col items-center gap-2">
+                    <span className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                      {uploading === 'feature' ? <Loader2 className="w-6 h-6 animate-spin" /> : <Plus className="w-6 h-6" />}
+                    </span>
+                    اضغط هنا وارفع أول صورة مميزة
+                  </button>
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {(extras.feature_images || []).map((f, i) => (
@@ -743,6 +759,14 @@ export default function OnlineStorePage() {
                         </div>
                       </div>
                     ))}
+                    {/* زر + لإضافة صورة أخرى */}
+                    <button type="button" onClick={() => featureRef.current?.click()} disabled={uploading === 'feature'}
+                      className="border-2 border-dashed rounded-xl min-h-[176px] text-sm text-muted-foreground hover:border-primary/60 hover:bg-primary/5 hover:text-primary transition-all flex flex-col items-center justify-center gap-2">
+                      <span className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                        {uploading === 'feature' ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+                      </span>
+                      إضافة صورة
+                    </button>
                   </div>
                 )}
               </div>
