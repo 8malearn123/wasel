@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   Store, Palette, Truck, Plus, Trash2, Save, ExternalLink, Eye, EyeOff,
   Loader2, Tag, Link2, Sparkles, Search, FileText, Image as ImageIcon,
-  Upload, Megaphone, Type, Star, Layout, Check,
+  Upload, Megaphone, Type, Star, Layout, Check, ArrowRight,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -62,6 +62,7 @@ export default function OnlineStorePage() {
   const featureRef = useRef<HTMLInputElement>(null);
 
   // إعدادات التصميم الحر (باقة ماكس)
+  const [designSection, setDesignSection] = useState<string | null>(null);
   const [extras, setExtras] = useState<DesignExtras>({ gallery: [] });
   const [extrasDirty, setExtrasDirty] = useState(false);
   const [extrasLoaded, setExtrasLoaded] = useState(false);
@@ -252,6 +253,51 @@ export default function OnlineStorePage() {
         <TabsContent value="design" className="space-y-6">
           {isMax ? (
             <>
+              {/* دليل أقسام التصميم — كل شي قسم مستقل */}
+              {designSection === null && (
+                <div className="space-y-8">
+                  {[
+                    { group: 'الهوية والشكل', items: [
+                      { key: 'themes', icon: Layout, name: 'قالب التصميم', desc: 'عصري، بسيط، جريء أو كلاسيكي' },
+                      { key: 'colors', icon: Palette, name: 'الألوان', desc: 'قوالب جاهزة أو أي لون تختاره' },
+                      { key: 'fonts', icon: Type, name: 'الخط', desc: 'اختر خط متجرك مع معاينة حية' },
+                    ]},
+                    { group: 'أقسام الصفحة الرئيسية', items: [
+                      { key: 'wide', icon: Megaphone, name: '١ — البنر العريض', desc: 'بنرات عريضة عالية بعدد ما تبغى' },
+                      { key: 'feature', icon: Star, name: '٢ — الصور المميزة', desc: 'صور كبيرة تبرز عروضك' },
+                      { key: 'divider', icon: Tag, name: '٣ — الفاصل العالي', desc: 'شريط ملون بجملة تلفت النظر' },
+                      { key: 'motion', icon: Sparkles, name: '٤ — المنتجات المتحركة', desc: 'حركة عائمة أو شريط متحرك' },
+                      { key: 'perks', icon: Check, name: '٥ — مميزات المتجر', desc: 'توصيل، ضمان، دفع آمن...' },
+                    ]},
+                    { group: 'إضافات', items: [
+                      { key: 'gallery', icon: ImageIcon, name: 'معرض صور المتجر', desc: 'أي صور تبغاها مع تعليقات' },
+                      { key: 'text', icon: FileText, name: 'كلامك الخاص', desc: 'عنوان ورسالة بأسلوبك' },
+                    ]},
+                  ].map(g => (
+                    <div key={g.group}>
+                      <h3 className="font-bold text-base mb-3">{g.group}</h3>
+                      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {g.items.map(it => (
+                          <button key={it.key} type="button" onClick={() => setDesignSection(it.key)}
+                            className="text-right bg-card rounded-xl border-2 border-border p-5 transition-all hover:border-primary/60 hover:shadow-md">
+                            <it.icon className="w-6 h-6 text-primary mb-3" />
+                            <p className="font-semibold mb-0.5">{it.name}</p>
+                            <p className="text-xs text-muted-foreground">{it.desc}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {designSection !== null && (
+                <Button variant="outline" size="sm" onClick={() => setDesignSection(null)}>
+                  <ArrowRight className="w-4 h-4 me-1" /> رجوع لأقسام التصميم
+                </Button>
+              )}
+
+              {designSection === 'themes' && (<>
               {/* Themes */}
               <div className="bg-card rounded-xl border p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -284,7 +330,9 @@ export default function OnlineStorePage() {
                   })}
                 </div>
               </div>
+              </>)}
 
+              {designSection === 'colors' && (<>
               {/* Colors */}
               <div className="bg-card rounded-xl border p-6">
                 <h3 className="font-semibold mb-4">الألوان</h3>
@@ -323,7 +371,9 @@ export default function OnlineStorePage() {
                   </div>
                 </div>
               </div>
+              </>)}
 
+              {designSection === 'fonts' && (<>
               {/* Fonts */}
               <div className="bg-card rounded-xl border p-6">
                 <div className="flex items-center gap-2 mb-4">
@@ -349,6 +399,9 @@ export default function OnlineStorePage() {
                   })}
                 </div>
               </div>
+              </>)}
+
+              {designSection === 'gallery' && (<>
               {/* معرض صور المتجر */}
               <div className="bg-card rounded-xl border p-6 space-y-4">
                 <div className="flex items-center justify-between">
@@ -394,7 +447,9 @@ export default function OnlineStorePage() {
                   </div>
                 )}
               </div>
+              </>)}
 
+              {designSection === 'text' && (<>
               {/* نصوص المتجر الخاصة */}
               <div className="bg-card rounded-xl border p-6 space-y-4">
                 <div className="flex items-center gap-2">
@@ -413,13 +468,9 @@ export default function OnlineStorePage() {
                     className="mt-1" rows={3} placeholder="اكتب الكلام اللي تبغاه يظهر تحت العنوان..." />
                 </div>
               </div>
+              </>)}
 
-              {/* ===== أقسام الصفحة الرئيسية ===== */}
-              <div className="flex items-center gap-2 pt-2">
-                <Layout className="w-5 h-5 text-primary" />
-                <h2 className="font-bold text-lg">أقسام الصفحة الرئيسية</h2>
-              </div>
-
+              {designSection === 'wide' && (<>
               {/* ١ — البنر العريض */}
               <div className="bg-card rounded-xl border p-6 space-y-4">
                 <div className="flex items-center justify-between">
@@ -471,7 +522,9 @@ export default function OnlineStorePage() {
                   </div>
                 )}
               </div>
+              </>)}
 
+              {designSection === 'feature' && (<>
               {/* ٢ — الصور المميزة */}
               <div className="bg-card rounded-xl border p-6 space-y-4">
                 <div className="flex items-center justify-between">
@@ -513,7 +566,9 @@ export default function OnlineStorePage() {
                   </div>
                 )}
               </div>
+              </>)}
 
+              {designSection === 'divider' && (<>
               {/* ٣ — الفاصل العالي */}
               <div className="bg-card rounded-xl border p-6 space-y-4">
                 <div className="flex items-center justify-between">
@@ -538,7 +593,9 @@ export default function OnlineStorePage() {
                   </>
                 )}
               </div>
+              </>)}
 
+              {designSection === 'motion' && (<>
               {/* ٤ — المنتجات المتحركة */}
               <div className="bg-card rounded-xl border p-6 space-y-4">
                 <div className="flex items-center gap-2">
@@ -569,7 +626,9 @@ export default function OnlineStorePage() {
                   })}
                 </div>
               </div>
+              </>)}
 
+              {designSection === 'perks' && (<>
               {/* ٥ — مميزات المتجر */}
               <div className="bg-card rounded-xl border p-6 space-y-4">
                 <div className="flex items-center justify-between">
@@ -626,6 +685,7 @@ export default function OnlineStorePage() {
                   </div>
                 )}
               </div>
+              </>)}
 
               {/* حفظ التصميم الحر */}
               {extrasDirty && (
