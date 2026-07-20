@@ -20,8 +20,7 @@ const FEATURES = [
 
 const PLANS = [
   { price: 99, popular: false, ar: { n: "باقة لايت", p: ["فرع واحد ومستخدمون بلا حدود", "نقطة بيع ومخزون كامل", "فواتير ضريبية برمز QR"] }, en: { n: "Lite Plan", p: ["1 branch, unlimited users", "Full POS and inventory", "Tax invoices with QR codes"] } },
-  { price: 199, popular: true, ar: { n: "باقة بلس", p: ["فرع واحد ومستخدمون بلا حدود", "متجر إلكتروني وتقارير متقدمة", "كوبونات وحملات ونقاط ولاء"] }, en: { n: "Plus Plan", p: ["1 branch, unlimited users", "Online store & advanced reports", "Coupons, campaigns & loyalty"] } },
-  { price: 399, popular: false, ar: { n: "باقة برو", p: ["فرع واحد ومستخدمون بلا حدود", "دعم مخصص 24/7", "ربط الأنظمة المحاسبية API"] }, en: { n: "Pro Plan", p: ["1 branch, unlimited users", "Dedicated 24/7 support", "Accounting systems API"] } },
+  { price: 399, popular: true, ar: { n: "باقة برو", p: ["فرع واحد ومستخدمون بلا حدود", "متجر إلكتروني وتقارير متقدمة", "كوبونات ونقاط ولاء ودعم 24/7"] }, en: { n: "Pro Plan", p: ["1 branch, unlimited users", "Online store & advanced reports", "Coupons, loyalty & 24/7 support"] } },
   { price: 499, popular: false, ar: { n: "باقة ماكس", p: ["فرع واحد ومستخدمون بلا حدود", "أسعار جملة ودفع آجل", "مدير حساب مخصص ولوحة موزع"] }, en: { n: "Max Plan", p: ["1 branch, unlimited users", "Wholesale prices, credit terms", "Dedicated account manager"] } },
 ];
 

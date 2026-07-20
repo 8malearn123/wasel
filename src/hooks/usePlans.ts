@@ -42,10 +42,13 @@ export function usePlans() {
       .eq('is_active', true)
       .order('sort_order')
       .then(({ data }) => {
-        const rows = ((data as any[]) || []).map((p) => ({
-          ...p,
-          name_ar: PLAN_DISPLAY_NAMES[p.name] || p.name_ar,
-        }));
+        // باقة بلس (Professional) ملغاة — مميزاتها انتقلت لباقة برو
+        const rows = ((data as any[]) || [])
+          .filter((p) => p.name !== 'Professional')
+          .map((p) => ({
+            ...p,
+            name_ar: PLAN_DISPLAY_NAMES[p.name] || p.name_ar,
+          }));
         setPlans(rows);
         setLoading(false);
       });

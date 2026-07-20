@@ -167,16 +167,17 @@ const PLAN_TIERS: Record<string, number> = {
 };
 
 // Minimum plan required for each feature
+// باقة بلس (tier 1) ملغاة — مميزاتها انتقلت لباقة برو (tier 2)
 const FEATURE_MIN_PLAN: Record<string, number> = {
-  repairs: 1,      // باقة ب
-  suppliers: 1,    // باقة ب
-  transfers: 1,    // باقة ب
-  stocktake: 1,    // باقة ب
-  reports: 1,      // باقة ب
-  marketing: 2,    // باقة ج
-  customers: 2,    // باقة ج
-  onlineStore: 1,  // باقة ب — لايت ما لها متجر إلكتروني
-  wholesale: 3,    // باقة الموزع (from DB has_wholesale)
+  repairs: 2,      // باقة برو
+  suppliers: 2,    // باقة برو
+  transfers: 2,    // باقة برو
+  stocktake: 2,    // باقة برو
+  reports: 2,      // باقة برو
+  marketing: 2,    // باقة برو
+  customers: 2,    // باقة برو
+  onlineStore: 2,  // باقة برو — لايت ما لها متجر إلكتروني
+  wholesale: 3,    // باقة ماكس (from DB has_wholesale)
 };
 
 export function Sidebar() {

@@ -301,7 +301,6 @@ export default function AuthPage() {
             {/* حسابات الباقات */}
             {[
               { label: 'باقة لايت (Lite)', email: 'demo-basic@wasil.demo', desc: 'تجربة باقة لايت', letter: 'L', color: 'bg-blue-500/10 text-blue-600' },
-              { label: 'باقة بلس (Plus)', email: 'demo-professional@wasil.demo', desc: 'تجربة باقة بلس', letter: '+', color: 'bg-emerald-500/10 text-emerald-600' },
               { label: 'باقة برو (Pro)', email: 'demo-enterprise@wasil.demo', desc: 'تجربة باقة برو', letter: 'P', color: 'bg-purple-500/10 text-purple-600' },
               { label: 'باقة ماكس (Max)', email: 'demo-distributor@wasil.demo', desc: 'تجربة باقة ماكس B2B', letter: 'M', color: 'bg-amber-500/10 text-amber-600' },
             ].map((p) => (

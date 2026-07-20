@@ -8,7 +8,6 @@ import { toast } from 'sonner';
 
 const PLANS = [
   { name: 'Basic', name_ar: 'باقة لايت', price: '99' },
-  { name: 'Professional', name_ar: 'باقة بلس', price: '199' },
   { name: 'Enterprise', name_ar: 'باقة برو', price: '399' },
   { name: 'Distributor', name_ar: 'باقة ماكس', price: '499' },
 ];
