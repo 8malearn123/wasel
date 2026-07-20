@@ -65,6 +65,10 @@ export interface DesignExtras {
   button_color?: string;
   hero_button_text?: string;
   home_sections?: Array<{ key: string; visible: boolean }>;
+  // آراء العملاء — يتحكم فيها التاجر بالكامل
+  testimonials?: Array<{ name: string; text: string; rating?: number }>;
+  // قسم خدمة العملاء
+  customer_service?: { enabled?: boolean; whatsapp?: string; phone?: string; hours?: string; note?: string };
 }
 
 // الترتيب الافتراضي لأقسام الصفحة الرئيسية في المتجر
@@ -77,7 +81,9 @@ export const DEFAULT_HOME_SECTIONS: Array<{ key: string; visible: boolean }> = [
   { key: 'text', visible: true },
   { key: 'categories', visible: true },
   { key: 'products', visible: true },
+  { key: 'reviews', visible: true },
   { key: 'perks', visible: true },
+  { key: 'support', visible: true },
 ];
 
 export function parseDesignExtras(pages: StorePage[]): DesignExtras | null {

@@ -55,7 +55,9 @@ const SECTION_META: Record<string, { name: string; desc: string }> = {
   text: { name: "كلامك الخاص", desc: "عنوان ورسالة بأسلوبك" },
   categories: { name: "تسوّق حسب الفئة", desc: "شبكة التصنيفات" },
   products: { name: "الأكثر مبيعاً", desc: "شبكة المنتجات" },
+  reviews: { name: "آراء العملاء", desc: "تقييمات وشهادات عملائك" },
   perks: { name: "مميزات المتجر", desc: "توصيل، ضمان، دفع آمن" },
+  support: { name: "خدمة العملاء", desc: "واتساب واتصال وساعات العمل" },
 };
 
 // عينات المنتجات في المعاينة الحية
@@ -741,6 +743,8 @@ export default function OnlineStorePage() {
                           { key: 'divider', icon: Tag, name: 'الفاصل العالي' },
                           { key: 'motion', icon: Sparkles, name: 'حركة المنتجات' },
                           { key: 'perks', icon: Check, name: 'مميزات المتجر' },
+                          { key: 'reviews', icon: Star, name: 'آراء العملاء' },
+                          { key: 'support', icon: Megaphone, name: 'خدمة العملاء' },
                           { key: 'gallery', icon: ImageIcon, name: 'معرض الصور' },
                           { key: 'text', icon: FileText, name: 'كلامك الخاص' },
                           { key: 'fonts', icon: Type, name: 'لون الخط' },
@@ -878,6 +882,32 @@ export default function OnlineStorePage() {
                               </div>
                             </div>
                           );
+                          if (sk === 'reviews') return (extras.testimonials?.filter(t => t.text).length ? (
+                            <div key={sk} className="px-4 py-3">
+                              <p className="text-xs font-bold mb-2 text-center">آراء عملائنا</p>
+                              <div className="grid grid-cols-3 gap-1.5">
+                                {extras.testimonials.filter(t => t.text).slice(0, 3).map((t, ti) => (
+                                  <div key={ti} className="border rounded-lg p-1.5">
+                                    <p className="text-[8px]" dir="ltr" style={{ color: '#f59e0b' }}>{'★'.repeat(t.rating || 5)}</p>
+                                    <p className="text-[8px] text-gray-600 line-clamp-2 mt-0.5">"{t.text}"</p>
+                                    <p className="text-[8px] font-bold mt-0.5" style={{ color: pvPrimary }}>— {t.name || 'عميل'}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : null);
+                          if (sk === 'support') return (extras.customer_service?.enabled ? (
+                            <div key={sk} className="px-4 py-3">
+                              <div className="rounded-lg border text-center py-3 px-2" style={{ background: `${pvPrimary}08` }}>
+                                <p className="text-sm">🎧</p>
+                                <p className="text-[9px] font-bold">خدمة العملاء</p>
+                                <div className="flex justify-center gap-1.5 mt-1.5">
+                                  {extras.customer_service.whatsapp && <span className="text-[7px] text-white font-bold px-2 py-0.5 rounded" style={{ background: '#25D366' }}>💬 واتساب</span>}
+                                  {extras.customer_service.phone && <span className="text-[7px] text-white font-bold px-2 py-0.5 rounded" style={{ background: pvBtn }}>📞 اتصال</span>}
+                                </div>
+                              </div>
+                            </div>
+                          ) : null);
                           if (sk === 'perks') return (
                             <div key={sk} className="px-4 py-3 grid grid-cols-4 gap-1.5 border-t" style={{ background: `${pvPrimary}08` }}>
                               {(extras.store_perks?.filter(pk => pk.title).length ? extras.store_perks.filter(pk => pk.title).slice(0, 4) : [
@@ -1458,6 +1488,136 @@ export default function OnlineStorePage() {
                         </Button>
                       </div>
                     ))}
+                  </div>
+                )}
+              </div>
+              </>)}
+
+              {designSection === 'reviews' && (<>
+              {/* آراء العملاء — يتحكم فيها التاجر */}
+              <div className="bg-card rounded-xl border p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Star className="w-5 h-5 text-primary" />
+                    <h3 className="font-semibold">آراء العملاء</h3>
+                  </div>
+                  <Button variant="outline" size="sm"
+                    onClick={() => updExtras({ testimonials: [...(extras.testimonials || []), { name: '', text: '', rating: 5 }] })}>
+                    <Plus className="w-4 h-4 me-1" /> إضافة رأي
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">اكتب آراء عملائك بنفسك وتحكم فيها بالكامل — الاسم، التقييم بالنجوم، ونص الرأي. تظهر في الصفحة الرئيسية لمتجرك</p>
+                {(extras.testimonials || []).length === 0 ? (
+                  <button type="button"
+                    onClick={() => updExtras({ testimonials: [{ name: '', text: '', rating: 5 }] })}
+                    className="w-full border-2 border-dashed rounded-xl p-8 text-center text-sm text-muted-foreground hover:border-primary/60 hover:bg-primary/5 hover:text-primary transition-all flex flex-col items-center gap-2">
+                    <span className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                      <Plus className="w-6 h-6" />
+                    </span>
+                    اضغط هنا وأضف أول رأي عميل
+                  </button>
+                ) : (
+                  <div className="space-y-3">
+                    {(extras.testimonials || []).map((t, i) => (
+                      <div key={i} className="rounded-xl border p-4 space-y-2.5 bg-muted/20">
+                        <div className="flex items-center gap-2">
+                          <Input value={t.name} placeholder="اسم العميل" className="h-9 flex-1"
+                            onChange={e => {
+                              const testimonials = [...(extras.testimonials || [])];
+                              testimonials[i] = { ...testimonials[i], name: e.target.value };
+                              updExtras({ testimonials });
+                            }} />
+                          <div className="flex gap-0.5" dir="ltr">
+                            {[1, 2, 3, 4, 5].map(s => (
+                              <button key={s} type="button" className="text-xl leading-none"
+                                style={{ color: s <= (t.rating || 5) ? '#f59e0b' : 'hsl(var(--muted-foreground) / 0.3)' }}
+                                onClick={() => {
+                                  const testimonials = [...(extras.testimonials || [])];
+                                  testimonials[i] = { ...testimonials[i], rating: s };
+                                  updExtras({ testimonials });
+                                }}>★</button>
+                            ))}
+                          </div>
+                          <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive shrink-0"
+                            onClick={() => updExtras({ testimonials: (extras.testimonials || []).filter((_, j) => j !== i) })}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <Textarea value={t.text} placeholder="اكتب رأي العميل هنا... مثال: تعامل راقي وتوصيل سريع، أنصح فيهم" rows={2}
+                          onChange={e => {
+                            const testimonials = [...(extras.testimonials || [])];
+                            testimonials[i] = { ...testimonials[i], text: e.target.value };
+                            updExtras({ testimonials });
+                          }} />
+                      </div>
+                    ))}
+                    <button type="button"
+                      onClick={() => updExtras({ testimonials: [...(extras.testimonials || []), { name: '', text: '', rating: 5 }] })}
+                      className="w-full border-2 border-dashed rounded-xl p-4 text-center text-sm text-muted-foreground hover:border-primary/60 hover:bg-primary/5 hover:text-primary transition-all flex items-center justify-center gap-2">
+                      <Plus className="w-4 h-4" /> إضافة رأي آخر
+                    </button>
+                  </div>
+                )}
+              </div>
+              </>)}
+
+              {designSection === 'support' && (<>
+              {/* خدمة العملاء */}
+              <div className="bg-card rounded-xl border p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Megaphone className="w-5 h-5 text-primary" />
+                    <h3 className="font-semibold">خدمة العملاء</h3>
+                  </div>
+                  <Switch
+                    checked={!!extras.customer_service?.enabled}
+                    onCheckedChange={v => updExtras({ customer_service: { ...extras.customer_service, enabled: v } })}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">قسم في أسفل متجرك يعرض طرق التواصل — زر واتساب مباشر، رقم اتصال، وساعات العمل</p>
+                {extras.customer_service?.enabled && (
+                  <div className="space-y-3">
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs">رقم الواتساب</Label>
+                        <Input value={extras.customer_service?.whatsapp || ''} dir="ltr" placeholder="9665xxxxxxxx"
+                          onChange={e => updExtras({ customer_service: { ...extras.customer_service, whatsapp: e.target.value } })}
+                          className="mt-1 h-9 font-mono" />
+                      </div>
+                      <div>
+                        <Label className="text-xs">رقم الاتصال</Label>
+                        <Input value={extras.customer_service?.phone || ''} dir="ltr" placeholder="05xxxxxxxx"
+                          onChange={e => updExtras({ customer_service: { ...extras.customer_service, phone: e.target.value } })}
+                          className="mt-1 h-9 font-mono" />
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs">ساعات العمل</Label>
+                      <Input value={extras.customer_service?.hours || ''} placeholder="مثال: يومياً من ٩ صباحاً حتى ١١ مساءً"
+                        onChange={e => updExtras({ customer_service: { ...extras.customer_service, hours: e.target.value } })}
+                        className="mt-1 h-9" />
+                    </div>
+                    <div>
+                      <Label className="text-xs">رسالة ترحيبية (اختياري)</Label>
+                      <Input value={extras.customer_service?.note || ''} placeholder="فريقنا جاهز يخدمك ويجاوب على استفساراتك في أي وقت"
+                        onChange={e => updExtras({ customer_service: { ...extras.customer_service, note: e.target.value } })}
+                        className="mt-1 h-9" />
+                    </div>
+                    {/* معاينة */}
+                    <div className="rounded-xl border p-5 text-center bg-muted/20">
+                      <p className="text-2xl mb-1">🎧</p>
+                      <p className="font-bold text-sm mb-1">خدمة العملاء</p>
+                      <p className="text-xs text-muted-foreground mb-3">{extras.customer_service?.note || 'فريقنا جاهز يخدمك ويجاوب على استفساراتك في أي وقت'}</p>
+                      <div className="flex justify-center gap-2">
+                        {extras.customer_service?.whatsapp && (
+                          <span className="text-[11px] text-white font-bold px-3 py-1.5 rounded-lg" style={{ background: '#25D366' }}>💬 واتساب</span>
+                        )}
+                        {extras.customer_service?.phone && (
+                          <span className="text-[11px] text-white font-bold px-3 py-1.5 rounded-lg bg-primary">📞 {extras.customer_service.phone}</span>
+                        )}
+                      </div>
+                      {extras.customer_service?.hours && <p className="text-[11px] text-muted-foreground mt-3">🕐 {extras.customer_service.hours}</p>}
+                    </div>
                   </div>
                 )}
               </div>

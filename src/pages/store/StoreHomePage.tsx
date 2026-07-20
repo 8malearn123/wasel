@@ -257,6 +257,63 @@ export function StoreHomePage({ store, devices, accessories, categories, designE
       </section>
     ),
 
+    reviews: designExtras?.testimonials && designExtras.testimonials.filter(t => t.text).length > 0 ? (
+      <section key="reviews" className="max-w-7xl mx-auto px-4 py-12">
+        <h2 className="text-2xl font-bold mb-6 text-center">آراء عملائنا</h2>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {designExtras.testimonials.filter(t => t.text).map((t, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.08 }}
+              className="bg-card rounded-2xl border p-6 flex flex-col"
+            >
+              <div className="flex gap-0.5 mb-3" dir="ltr">
+                {[1, 2, 3, 4, 5].map(s => (
+                  <span key={s} className="text-lg" style={{ color: s <= (t.rating || 5) ? '#f59e0b' : 'hsl(var(--muted-foreground) / 0.3)' }}>★</span>
+                ))}
+              </div>
+              <p className="text-sm leading-relaxed flex-1">"{t.text}"</p>
+              <p className="text-sm font-bold mt-4" style={{ color: 'hsl(var(--store-primary))' }}>— {t.name || 'عميل'}</p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+    ) : null,
+
+    support: designExtras?.customer_service?.enabled ? (
+      <section key="support" className="max-w-5xl mx-auto px-4 py-12">
+        <div className="rounded-3xl border p-8 md:p-10 text-center" style={{ background: `hsl(var(--store-primary) / 0.05)` }}>
+          <div className="text-4xl mb-3">🎧</div>
+          <h2 className="text-2xl font-bold mb-2">خدمة العملاء</h2>
+          <p className="text-muted-foreground max-w-xl mx-auto">
+            {designExtras.customer_service.note || 'فريقنا جاهز يخدمك ويجاوب على استفساراتك في أي وقت'}
+          </p>
+          <div className="flex flex-wrap justify-center gap-3 mt-6">
+            {designExtras.customer_service.whatsapp && (
+              <a href={`https://wa.me/${designExtras.customer_service.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white font-bold text-sm shadow hover:opacity-90 transition-opacity"
+                style={{ background: '#25D366' }}>
+                💬 واتساب
+              </a>
+            )}
+            {designExtras.customer_service.phone && (
+              <a href={`tel:${designExtras.customer_service.phone}`}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white font-bold text-sm shadow hover:opacity-90 transition-opacity"
+                style={{ background: `hsl(var(--store-primary))` }}>
+                📞 {designExtras.customer_service.phone}
+              </a>
+            )}
+          </div>
+          {designExtras.customer_service.hours && (
+            <p className="text-sm text-muted-foreground mt-5">🕐 {designExtras.customer_service.hours}</p>
+          )}
+        </div>
+      </section>
+    ) : null,
+
     perks: designExtras?.store_perks && designExtras.store_perks.filter(p => p.title).length > 0 ? (
       <section key="perks" className="border-t" style={{ background: `hsl(var(--store-primary) / 0.04)` }}>
         <div className="max-w-7xl mx-auto px-4 py-12">
