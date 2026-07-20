@@ -103,6 +103,7 @@ const navSections: NavSection[] = [
     items: [
       { icon: Store, label: "Online Store", labelAr: "المتجر الإلكتروني", path: "/online-store", requireFeature: 'onlineStore', children: [
         { key: "general", label: "General", labelAr: "عام" },
+        { key: "design", label: "Store Design", labelAr: "تصميم المتجر" },
         { key: "branding", label: "Branding", labelAr: "الهوية" },
         { key: "hero", label: "Storefront", labelAr: "الواجهة" },
         { key: "banners", label: "Banners", labelAr: "البنرات" },
@@ -203,12 +204,19 @@ export function Sidebar() {
   const filteredSections = navSections
     .map(section => ({
       ...section,
-      items: section.items.filter(filterItem).map(item =>
-        // باقة لايت: المتجر الإلكتروني نسخة مبسطة بدون تبويبات فرعية
-        item.path === '/online-store' && currentPlanTier === 0
-          ? { ...item, label: 'Store Design', labelAr: 'تصميم المتجر', children: undefined }
-          : item
-      ),
+      items: section.items.filter(filterItem).map(item => {
+        if (item.path === '/online-store') {
+          // باقة لايت: المتجر الإلكتروني نسخة مبسطة بدون تبويبات فرعية
+          if (currentPlanTier === 0) {
+            return { ...item, label: 'Store Design', labelAr: 'تصميم المتجر', children: undefined };
+          }
+          // تبويب "تصميم المتجر" (استوديو التصميم) حصري لباقة ماكس
+          if (currentPlanTier < 3) {
+            return { ...item, children: item.children?.filter(c => c.key !== 'design') };
+          }
+        }
+        return item;
+      }),
     }))
     .filter(section => section.items.length > 0);
 

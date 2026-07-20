@@ -347,10 +347,9 @@ export default function OnlineStorePage() {
           </div>
         </TabsContent>
 
-        {/* BRANDING */}
-        <TabsContent value="branding" className="space-y-6">
-          {/* استوديو التصميم الكامل — باقة ماكس فقط */}
-          {isMax && (
+        {/* DESIGN STUDIO — حصري لباقة ماكس */}
+        <TabsContent value="design" className="space-y-6">
+          {isMax ? (
             <>
               {/* Themes */}
               <div className="bg-card rounded-xl border p-6">
@@ -450,8 +449,20 @@ export default function OnlineStorePage() {
                 </div>
               </div>
             </>
+          ) : (
+            <div className="bg-card rounded-xl border p-10 flex flex-col items-center text-center">
+              <Sparkles className="w-10 h-10 text-primary mb-3" />
+              <h3 className="font-bold text-lg mb-1">استوديو تصميم المتجر — حصري لباقة ماكس</h3>
+              <p className="text-sm text-muted-foreground max-w-md mb-4">
+                قوالب تصميم جاهزة، تحكم كامل بالألوان، واختيار الخطوط — رقّ لباقة ماكس وصمّم متجرك بنفسك.
+              </p>
+              <Button asChild size="sm"><a href="/subscription">ترقية الباقة</a></Button>
+            </div>
           )}
+        </TabsContent>
 
+        {/* BRANDING */}
+        <TabsContent value="branding" className="space-y-6">
           {/* Logo + banner uploads */}
           <div className="bg-card rounded-xl border p-6 space-y-5">
             <h3 className="font-semibold flex items-center gap-2"><ImageIcon className="w-5 h-5 text-primary" /> الشعار والبانر</h3>
