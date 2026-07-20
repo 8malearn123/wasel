@@ -36,11 +36,24 @@ const FONT_PRESETS = [
   { id: "noto", name: "Noto Kufi", sample: "أهلاً بكم في متجرنا", style: { fontFamily: '"Noto Kufi Arabic", sans-serif' } },
 ];
 
+// كل قالب معه إعدادات معاينة مصغرة تحاكي روح التصميم
 const THEMES = [
-  { id: "modern", name: "عصري", desc: "تصميم نظيف بأقواس ناعمة وظلال خفيفة", emoji: "✨" },
-  { id: "minimal", name: "بسيط", desc: "أبيض، تباعد واسع، خطوط دقيقة", emoji: "◯" },
-  { id: "bold", name: "جريء", desc: "ألوان قوية، خطوط ثقيلة، تباين عالي", emoji: "⚡" },
-  { id: "classic", name: "كلاسيكي", desc: "زوايا حادة، تصميم تقليدي راقي", emoji: "♛" },
+  {
+    id: "modern", name: "عصري", desc: "تصميم نظيف بأقواس ناعمة وظلال خفيفة", emoji: "✨",
+    pv: { bg: "#eef2ff", hero: "linear-gradient(135deg,#6366f1,#a855f7)", tile: "#ffffff", bar: "#c7d2fe", dot: "#6366f1", radius: 14, tileRadius: 8, border: "transparent" },
+  },
+  {
+    id: "minimal", name: "بسيط", desc: "أبيض، تباعد واسع، خطوط دقيقة", emoji: "◯",
+    pv: { bg: "#ffffff", hero: "#f4f4f5", tile: "#fafafa", bar: "#e4e4e7", dot: "#18181b", radius: 4, tileRadius: 3, border: "#e4e4e7" },
+  },
+  {
+    id: "bold", name: "جريء", desc: "ألوان قوية، خطوط ثقيلة، تباين عالي", emoji: "⚡",
+    pv: { bg: "#0f172a", hero: "linear-gradient(120deg,#f97316,#ef4444)", tile: "#1e293b", bar: "#f97316", dot: "#facc15", radius: 8, tileRadius: 6, border: "transparent" },
+  },
+  {
+    id: "classic", name: "كلاسيكي", desc: "زوايا حادة، تصميم تقليدي راقي", emoji: "♛",
+    pv: { bg: "#faf6ee", hero: "#1e2a4a", tile: "#ffffff", bar: "#d4af37", dot: "#d4af37", radius: 0, tileRadius: 0, border: "#e6dcc3" },
+  },
 ];
 
 export default function OnlineStorePage() {
@@ -309,23 +322,70 @@ export default function OnlineStorePage() {
                     <Sparkles className="w-3 h-3 me-1" /> باقة ماكس
                   </Badge>
                 </div>
-                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  {THEMES.map(t => {
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {THEMES.map((t, ti) => {
                     const active = (val("theme_id") || "modern") === t.id;
                     return (
-                      <button
+                      <motion.button
                         key={t.id}
+                        type="button"
                         onClick={() => set("theme_id", t.id)}
+                        initial={{ opacity: 0, y: 14 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: ti * 0.07 }}
+                        whileHover={{ y: -5 }}
                         className={cn(
-                          "relative text-right p-4 rounded-xl border-2 transition-all hover:shadow-md",
-                          active ? "border-primary bg-primary/5" : "border-border bg-background"
+                          "relative text-right rounded-2xl border-2 overflow-hidden transition-all",
+                          active
+                            ? "border-primary shadow-lg shadow-primary/20 ring-2 ring-primary/25"
+                            : "border-border hover:border-primary/40 hover:shadow-lg"
                         )}
                       >
-                        {active && <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center"><Check className="w-3 h-3" /></div>}
-                        <div className="text-3xl mb-2">{t.emoji}</div>
-                        <p className="font-semibold">{t.name}</p>
-                        <p className="text-xs text-muted-foreground mt-1">{t.desc}</p>
-                      </button>
+                        {/* معاينة مصغرة للمتجر بروح القالب */}
+                        <div className="p-4 pb-3" style={{ background: t.pv.bg }}>
+                          {/* شريط علوي مصغر */}
+                          <div className="flex items-center gap-1.5 mb-2" dir="ltr">
+                            <span className="w-2 h-2 rounded-full" style={{ background: t.pv.dot }} />
+                            <span className="h-1.5 flex-1 rounded-full opacity-60" style={{ background: t.pv.bar }} />
+                            <span className="h-1.5 w-6 rounded-full" style={{ background: t.pv.bar }} />
+                          </div>
+                          {/* هيرو مصغر */}
+                          <div
+                            className="h-16 mb-2.5 flex flex-col items-center justify-center gap-1.5"
+                            style={{ background: t.pv.hero, borderRadius: t.pv.radius }}
+                          >
+                            <span className="h-2 w-24 rounded-full" style={{ background: t.id === 'minimal' ? '#a1a1aa' : 'rgba(255,255,255,0.9)' }} />
+                            <span className="h-1.5 w-16 rounded-full" style={{ background: t.id === 'minimal' ? '#d4d4d8' : 'rgba(255,255,255,0.55)' }} />
+                          </div>
+                          {/* منتجات مصغرة */}
+                          <div className="grid grid-cols-3 gap-1.5">
+                            {[0, 1, 2].map(k => (
+                              <div
+                                key={k}
+                                className="p-1.5"
+                                style={{ background: t.pv.tile, borderRadius: t.pv.tileRadius, border: `1px solid ${t.pv.border}` }}
+                              >
+                                <div className="h-6 mb-1 opacity-80" style={{ background: t.pv.bar, borderRadius: Math.max(t.pv.tileRadius - 2, 0) }} />
+                                <div className="h-1 w-3/4 rounded-full mb-1" style={{ background: t.pv.bar }} />
+                                <div className="h-1 w-1/3 rounded-full" style={{ background: t.pv.dot }} />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        {/* اسم القالب */}
+                        <div className="flex items-center justify-between px-4 py-3 bg-card border-t">
+                          <div>
+                            <p className="font-bold flex items-center gap-1.5">{t.emoji} {t.name}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{t.desc}</p>
+                          </div>
+                          <div className={cn(
+                            "w-7 h-7 rounded-full flex items-center justify-center transition-all shrink-0",
+                            active ? "bg-primary text-primary-foreground scale-100" : "bg-muted scale-90"
+                          )}>
+                            {active && <Check className="w-4 h-4" />}
+                          </div>
+                        </div>
+                      </motion.button>
                     );
                   })}
                 </div>
