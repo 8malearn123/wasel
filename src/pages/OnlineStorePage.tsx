@@ -58,6 +58,8 @@ export default function OnlineStorePage() {
   const heroRef = useRef<HTMLInputElement>(null);
   const ogRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
+  const wideRef = useRef<HTMLInputElement>(null);
+  const featureRef = useRef<HTMLInputElement>(null);
 
   // إعدادات التصميم الحر (باقة ماكس)
   const [extras, setExtras] = useState<DesignExtras>({ gallery: [] });
@@ -141,6 +143,28 @@ export default function OnlineStorePage() {
     }
     setUploading(null);
   };
+
+  // رفع صورة لقسم البنر العريض أو الصور المميزة
+  const handleSectionUpload = async (file: File, section: 'wide' | 'feature') => {
+    if (!merchant) return;
+    setUploading(section);
+    const url = await uploadStoreAsset(merchant.id, file, 'banner');
+    if (url) {
+      setExtras(prev => section === 'wide'
+        ? { ...prev, wide_banners: [...(prev.wide_banners || []), { image_url: url }] }
+        : { ...prev, feature_images: [...(prev.feature_images || []), { image_url: url }] }
+      );
+      setExtrasDirty(true);
+    }
+    setUploading(null);
+  };
+
+  const READY_PERKS = [
+    { icon: '🚚', title: 'توصيل سريع', desc: 'نوصل طلبك لباب بيتك بأسرع وقت' },
+    { icon: '🛡️', title: 'ضمان موثوق', desc: 'كل منتجاتنا أصلية وعليها ضمان' },
+    { icon: '💳', title: 'دفع آمن', desc: 'طرق دفع متعددة ومحمية بالكامل' },
+    { icon: '🎧', title: 'دعم متواصل', desc: 'فريقنا جاهز يخدمك في أي وقت' },
+  ];
 
   const storeUrl = `${window.location.origin}/store/${settings.slug}`;
   const dirty = Object.keys(form).length > 0;
@@ -390,11 +414,136 @@ export default function OnlineStorePage() {
                 </div>
               </div>
 
-              {/* حركة المنتجات */}
+              {/* ===== أقسام الصفحة الرئيسية ===== */}
+              <div className="flex items-center gap-2 pt-2">
+                <Layout className="w-5 h-5 text-primary" />
+                <h2 className="font-bold text-lg">أقسام الصفحة الرئيسية</h2>
+              </div>
+
+              {/* ١ — البنر العريض */}
+              <div className="bg-card rounded-xl border p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Megaphone className="w-5 h-5 text-primary" />
+                    <h3 className="font-semibold">١ — البنر العريض</h3>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => wideRef.current?.click()} disabled={uploading === 'wide'}>
+                    {uploading === 'wide' ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : <Plus className="w-4 h-4 me-1" />}
+                    إضافة بنر
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">بنر عريض وعالي يظهر أعلى المتجر — تقدر تضيف أكثر من واحد بزر +</p>
+                <input ref={wideRef} type="file" accept="image/*" className="hidden"
+                  onChange={e => { if (e.target.files?.[0]) handleSectionUpload(e.target.files[0], 'wide'); e.target.value = ''; }} />
+                {(extras.wide_banners || []).length === 0 ? (
+                  <div className="border border-dashed rounded-xl p-6 text-center text-sm text-muted-foreground">
+                    ما فيه بنرات بعد — اضغط "إضافة بنر" وارفع صورة عريضة
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {(extras.wide_banners || []).map((b, i) => (
+                      <div key={i} className="rounded-xl border overflow-hidden bg-muted/20">
+                        <div className="h-28 w-full" style={{
+                          background: b.image_url
+                            ? `url(${b.image_url}) center/cover`
+                            : 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.5))',
+                        }} />
+                        <div className="p-3 grid sm:grid-cols-2 gap-2">
+                          <Input value={b.title || ''} placeholder="عنوان البنر (اختياري)" className="h-9"
+                            onChange={e => {
+                              const wide_banners = [...(extras.wide_banners || [])];
+                              wide_banners[i] = { ...wide_banners[i], title: e.target.value };
+                              updExtras({ wide_banners });
+                            }} />
+                          <Input value={b.subtitle || ''} placeholder="نص تحت العنوان (اختياري)" className="h-9"
+                            onChange={e => {
+                              const wide_banners = [...(extras.wide_banners || [])];
+                              wide_banners[i] = { ...wide_banners[i], subtitle: e.target.value };
+                              updExtras({ wide_banners });
+                            }} />
+                          <Button variant="ghost" size="sm" className="text-destructive sm:col-span-2 h-8"
+                            onClick={() => updExtras({ wide_banners: (extras.wide_banners || []).filter((_, j) => j !== i) })}>
+                            <Trash2 className="w-3.5 h-3.5 me-1" /> حذف البنر
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* ٢ — الصور المميزة */}
+              <div className="bg-card rounded-xl border p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Star className="w-5 h-5 text-primary" />
+                    <h3 className="font-semibold">٢ — الصور المميزة</h3>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => featureRef.current?.click()} disabled={uploading === 'feature'}>
+                    {uploading === 'feature' ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : <Plus className="w-4 h-4 me-1" />}
+                    إضافة صورة
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">صور كبيرة وعالية تبرز منتجاتك أو عروضك — زد العدد اللي تبغاه بزر +</p>
+                <input ref={featureRef} type="file" accept="image/*" className="hidden"
+                  onChange={e => { if (e.target.files?.[0]) handleSectionUpload(e.target.files[0], 'feature'); e.target.value = ''; }} />
+                {(extras.feature_images || []).length === 0 ? (
+                  <div className="border border-dashed rounded-xl p-6 text-center text-sm text-muted-foreground">
+                    ما فيه صور مميزة بعد — اضغط "إضافة صورة"
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {(extras.feature_images || []).map((f, i) => (
+                      <div key={i} className="rounded-xl border overflow-hidden bg-muted/20">
+                        <img src={f.image_url} alt="" className="w-full h-32 object-cover" />
+                        <div className="p-2 space-y-1.5">
+                          <Input value={f.caption || ''} placeholder="عنوان على الصورة (اختياري)" className="h-8 text-xs"
+                            onChange={e => {
+                              const feature_images = [...(extras.feature_images || [])];
+                              feature_images[i] = { ...feature_images[i], caption: e.target.value };
+                              updExtras({ feature_images });
+                            }} />
+                          <Button variant="ghost" size="sm" className="w-full h-7 text-destructive"
+                            onClick={() => updExtras({ feature_images: (extras.feature_images || []).filter((_, j) => j !== i) })}>
+                            <Trash2 className="w-3.5 h-3.5 me-1" /> حذف
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* ٣ — الفاصل العالي */}
+              <div className="bg-card rounded-xl border p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Palette className="w-5 h-5 text-primary" />
+                    <h3 className="font-semibold">٣ — الفاصل العالي</h3>
+                  </div>
+                  <Switch
+                    checked={!!extras.divider?.enabled}
+                    onCheckedChange={v => updExtras({ divider: { ...extras.divider, enabled: v } })}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">شريط ملون عالي بألوان متجرك يفصل بين الأقسام، مع كلمة أو جملة بالنص</p>
+                {extras.divider?.enabled && (
+                  <>
+                    <Input value={extras.divider?.text || ''} placeholder="النص داخل الفاصل (اختياري) — مثال: عروض لا تفوتك 🔥"
+                      onChange={e => updExtras({ divider: { ...extras.divider, text: e.target.value } })} />
+                    <div className="h-16 rounded-xl flex items-center justify-center text-white font-extrabold text-lg"
+                      style={{ background: `linear-gradient(90deg, ${val("primary_color") || '#0d9488'}, ${val("secondary_color") || '#f59e0b'})` }}>
+                      {extras.divider?.text || 'معاينة الفاصل'}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* ٤ — المنتجات المتحركة */}
               <div className="bg-card rounded-xl border p-6 space-y-4">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-primary" />
-                  <h3 className="font-semibold">حركة المنتجات</h3>
+                  <h3 className="font-semibold">٤ — المنتجات المتحركة</h3>
                 </div>
                 <p className="text-xs text-muted-foreground">خلّ منتجاتك تتحرك في الصفحة الرئيسية وتلفت نظر العملاء</p>
                 <div className="grid sm:grid-cols-3 gap-3">
@@ -419,6 +568,63 @@ export default function OnlineStorePage() {
                     );
                   })}
                 </div>
+              </div>
+
+              {/* ٥ — مميزات المتجر */}
+              <div className="bg-card rounded-xl border p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Check className="w-5 h-5 text-primary" />
+                    <h3 className="font-semibold">٥ — مميزات المتجر</h3>
+                  </div>
+                  <div className="flex gap-2">
+                    {(extras.store_perks || []).length === 0 && (
+                      <Button variant="outline" size="sm"
+                        onClick={() => updExtras({ store_perks: READY_PERKS })}>
+                        <Sparkles className="w-4 h-4 me-1" /> المميزات الجاهزة
+                      </Button>
+                    )}
+                    <Button variant="outline" size="sm"
+                      onClick={() => updExtras({ store_perks: [...(extras.store_perks || []), { icon: '⭐', title: '' }] })}>
+                      <Plus className="w-4 h-4 me-1" /> إضافة ميزة
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">مميزات تظهر أسفل المتجر تكسب ثقة العميل (توصيل سريع، ضمان، دفع آمن...) — الرمز مجرد إيموجي تقدر تغيره</p>
+                {(extras.store_perks || []).length === 0 ? (
+                  <div className="border border-dashed rounded-xl p-6 text-center text-sm text-muted-foreground">
+                    اضغط "المميزات الجاهزة" لإضافة 4 مميزات بضغطة وحدة، أو أضف مميزاتك بنفسك
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {(extras.store_perks || []).map((perk, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <Input value={perk.icon} className="w-16 text-center text-lg h-9"
+                          onChange={e => {
+                            const store_perks = [...(extras.store_perks || [])];
+                            store_perks[i] = { ...store_perks[i], icon: e.target.value };
+                            updExtras({ store_perks });
+                          }} />
+                        <Input value={perk.title} placeholder="عنوان الميزة" className="h-9 flex-1"
+                          onChange={e => {
+                            const store_perks = [...(extras.store_perks || [])];
+                            store_perks[i] = { ...store_perks[i], title: e.target.value };
+                            updExtras({ store_perks });
+                          }} />
+                        <Input value={perk.desc || ''} placeholder="وصف قصير (اختياري)" className="h-9 flex-1 hidden sm:block"
+                          onChange={e => {
+                            const store_perks = [...(extras.store_perks || [])];
+                            store_perks[i] = { ...store_perks[i], desc: e.target.value };
+                            updExtras({ store_perks });
+                          }} />
+                        <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive shrink-0"
+                          onClick={() => updExtras({ store_perks: (extras.store_perks || []).filter((_, j) => j !== i) })}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* حفظ التصميم الحر */}

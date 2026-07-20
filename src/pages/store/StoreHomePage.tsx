@@ -49,6 +49,73 @@ export function StoreHomePage({ store, devices, accessories, categories, designE
         </div>
       </section>
 
+      {/* ١ — البنر العريض العالي (تصميم ماكس) */}
+      {(designExtras?.wide_banners || []).map((b, i) => (
+        <motion.section
+          key={`wide-${i}`}
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          className="relative w-full h-64 md:h-96 overflow-hidden flex items-center justify-center"
+          style={{
+            background: b.image_url
+              ? `linear-gradient(135deg, hsl(var(--store-primary) / 0.35), hsl(var(--store-secondary) / 0.35)), url(${b.image_url}) center/cover`
+              : `linear-gradient(135deg, hsl(var(--store-primary)), hsl(var(--store-secondary)))`,
+          }}
+        >
+          {(b.title || b.subtitle) && (
+            <div className="text-center text-white px-4">
+              {b.title && <h2 className="text-2xl md:text-5xl font-extrabold mb-3 drop-shadow-lg">{b.title}</h2>}
+              {b.subtitle && <p className="text-base md:text-xl opacity-95 drop-shadow max-w-2xl mx-auto">{b.subtitle}</p>}
+            </div>
+          )}
+        </motion.section>
+      ))}
+
+      {/* ٢ — الصور المميزة العالية (تصميم ماكس) */}
+      {designExtras?.feature_images && designExtras.feature_images.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 py-10">
+          <div className="grid md:grid-cols-2 gap-4">
+            {designExtras.feature_images.map((f, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.08 }}
+                className="relative overflow-hidden rounded-3xl shadow-lg group h-72 md:h-96"
+              >
+                <img src={f.image_url} alt={f.caption || `صورة مميزة ${i + 1}`} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                {f.caption && (
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent p-5">
+                    <p className="text-white text-lg md:text-2xl font-bold drop-shadow">{f.caption}</p>
+                  </div>
+                )}
+              </motion.div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ٣ — الفاصل العالي (تصميم ماكس) */}
+      {designExtras?.divider?.enabled && (
+        <section
+          className="w-full h-24 md:h-36 flex items-center justify-center my-6"
+          style={{ background: `linear-gradient(90deg, hsl(var(--store-primary)), hsl(var(--store-secondary)))` }}
+        >
+          {designExtras.divider.text && (
+            <motion.p
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              className="text-white text-xl md:text-4xl font-extrabold drop-shadow px-4 text-center"
+            >
+              {designExtras.divider.text}
+            </motion.p>
+          )}
+        </section>
+      )}
+
       {/* Additional Banners */}
       {Array.isArray(store.additional_banners) && store.additional_banners.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 py-10">
@@ -195,6 +262,30 @@ export function StoreHomePage({ store, devices, accessories, categories, designE
           </div>
         )}
       </section>
+
+      {/* ٥ — مميزات المتجر (تصميم ماكس) */}
+      {designExtras?.store_perks && designExtras.store_perks.filter(p => p.title).length > 0 && (
+        <section className="border-t" style={{ background: `hsl(var(--store-primary) / 0.04)` }}>
+          <div className="max-w-7xl mx-auto px-4 py-12">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {designExtras.store_perks.filter(p => p.title).map((perk, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 14 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.08 }}
+                  className="bg-card rounded-2xl border p-6 text-center hover:shadow-md transition-shadow"
+                >
+                  <div className="text-4xl mb-3">{perk.icon}</div>
+                  <h3 className="font-bold mb-1">{perk.title}</h3>
+                  {perk.desc && <p className="text-xs text-muted-foreground leading-relaxed">{perk.desc}</p>}
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

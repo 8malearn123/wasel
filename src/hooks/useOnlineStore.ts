@@ -52,6 +52,11 @@ export interface DesignExtras {
   custom_heading?: string;
   custom_text?: string;
   product_motion?: 'none' | 'float' | 'marquee';
+  // أقسام الصفحة الرئيسية (تصميم ماكس)
+  wide_banners?: Array<{ image_url?: string; title?: string; subtitle?: string }>;
+  feature_images?: Array<{ image_url: string; caption?: string }>;
+  divider?: { enabled?: boolean; text?: string };
+  store_perks?: Array<{ icon: string; title: string; desc?: string }>;
 }
 
 export function parseDesignExtras(pages: StorePage[]): DesignExtras | null {
