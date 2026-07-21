@@ -13,6 +13,8 @@ interface SalesChartProps {
 export function SalesChart({ data, loading }: SalesChartProps) {
   const { t, isRTL } = useLanguage();
   const [chartType, setChartType] = useState<"area" | "bar">("area");
+  const [metric, setMetric] = useState<"revenue" | "count">("revenue");
+  const metricColor = metric === "revenue" ? "hsl(223, 100%, 59%)" : "hsl(38, 95%, 50%)";
 
   return (
     <motion.div
@@ -26,23 +28,19 @@ export function SalesChart({ data, loading }: SalesChartProps) {
           <h3 className="text-lg font-semibold text-foreground">{t.dashboard.salesOverview}</h3>
           <p className="text-sm text-muted-foreground">{t.dashboard.last7Days}</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 flex-wrap">
           <Tabs value={chartType} onValueChange={(v) => setChartType(v as "area" | "bar")}>
             <TabsList className="h-8">
               <TabsTrigger value="area" className="text-xs px-3 h-7">{isRTL ? "مساحي" : "Area"}</TabsTrigger>
               <TabsTrigger value="bar" className="text-xs px-3 h-7">{isRTL ? "أعمدة" : "Bar"}</TabsTrigger>
             </TabsList>
           </Tabs>
-          <div className="flex gap-4">
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-primary" />
-              <span className="text-sm text-muted-foreground">{t.dashboard.revenue}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-accent" />
-              <span className="text-sm text-muted-foreground">{t.dashboard.sales}</span>
-            </div>
-          </div>
+          <Tabs value={metric} onValueChange={(v) => setMetric(v as "revenue" | "count")}>
+            <TabsList className="h-8">
+              <TabsTrigger value="revenue" className="text-xs px-3 h-7">{t.dashboard.revenue}</TabsTrigger>
+              <TabsTrigger value="count" className="text-xs px-3 h-7">{t.dashboard.sales}</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
       </div>
 
@@ -80,50 +78,44 @@ export function SalesChart({ data, loading }: SalesChartProps) {
             {chartType === "area" ? (
               <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(223, 100%, 59%)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="hsl(223, 100%, 59%)" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(38, 95%, 50%)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="hsl(38, 95%, 50%)" stopOpacity={0} />
+                  <linearGradient id="colorMetric" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={metricColor} stopOpacity={0.3} />
+                    <stop offset="95%" stopColor={metricColor} stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => metric === 'revenue' ? `${(v / 1000).toFixed(0)}k` : String(v)} />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "hsl(var(--popover))",
                     border: "1px solid hsl(var(--border))",
                     borderRadius: "8px",
                   }}
-                  formatter={(value: number, name: string) => [
-                    `${value.toLocaleString()} ${name === 'revenue' ? 'ر.س' : ''}`,
-                    name === 'revenue' ? (isRTL ? 'الإيرادات' : 'Revenue') : (isRTL ? 'عدد المبيعات' : 'Sales Count')
+                  formatter={(value: number) => [
+                    `${value.toLocaleString()} ${metric === 'revenue' ? 'ر.س' : ''}`,
+                    metric === 'revenue' ? (isRTL ? 'الإيرادات' : 'Revenue') : (isRTL ? 'عدد المبيعات' : 'Sales Count')
                   ]}
                 />
-                <Area type="monotone" dataKey="revenue" stroke="hsl(223, 100%, 59%)" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
-                <Area type="monotone" dataKey="count" stroke="hsl(38, 95%, 50%)" strokeWidth={2} fillOpacity={1} fill="url(#colorCount)" />
+                <Area type="monotone" dataKey={metric} stroke={metricColor} strokeWidth={2} fillOpacity={1} fill="url(#colorMetric)" />
               </AreaChart>
             ) : (
               <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => metric === 'revenue' ? `${(v / 1000).toFixed(0)}k` : String(v)} />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "hsl(var(--popover))",
                     border: "1px solid hsl(var(--border))",
                     borderRadius: "8px",
                   }}
-                  formatter={(value: number, name: string) => [
-                    `${value.toLocaleString()} ${name === 'revenue' ? 'ر.س' : ''}`,
-                    name === 'revenue' ? (isRTL ? 'الإيرادات' : 'Revenue') : (isRTL ? 'عدد المبيعات' : 'Sales Count')
+                  formatter={(value: number) => [
+                    `${value.toLocaleString()} ${metric === 'revenue' ? 'ر.س' : ''}`,
+                    metric === 'revenue' ? (isRTL ? 'الإيرادات' : 'Revenue') : (isRTL ? 'عدد المبيعات' : 'Sales Count')
                   ]}
                 />
-                <Bar dataKey="revenue" fill="hsl(223, 100%, 59%)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="count" fill="hsl(38, 95%, 50%)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey={metric} fill={metricColor} radius={[6, 6, 0, 0]} />
               </BarChart>
             )}
           </ResponsiveContainer>
