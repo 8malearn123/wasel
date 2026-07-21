@@ -29,6 +29,12 @@ const COLOR_PRESETS = [
   { name: "أسود فاخر", primary: "#111827", secondary: "#d4af37" },
   { name: "أحمر جريء", primary: "#dc2626", secondary: "#f97316" },
   { name: "أخضر طبيعي", primary: "#16a34a", secondary: "#65a30d" },
+  { name: "ذهبي فاخر", primary: "#b08a57", secondary: "#17120f" },
+  { name: "نيلي ملكي", primary: "#4338ca", secondary: "#f59e0b" },
+  { name: "سماوي منعش", primary: "#0284c7", secondary: "#22c55e" },
+  { name: "وردي أنيق", primary: "#db2777", secondary: "#f472b6" },
+  { name: "رمادي راقي", primary: "#475569", secondary: "#94a3b8" },
+  { name: "زيتوني دافئ", primary: "#4d7c0f", secondary: "#d97706" },
 ];
 
 const FONT_SAMPLE = "أهلاً بكم في متجرنا";
@@ -489,21 +495,36 @@ export default function OnlineStorePage() {
                                 ))}
                               </div>
                             </div>
-                            <div className="flex items-center gap-3">
+                            {/* منطقة سحب وإفلات الشعار */}
+                            <input ref={logoRef} type="file" accept="image/*" className="hidden"
+                              onChange={e => e.target.files?.[0] && handleUpload(e.target.files[0], 'logo', 'logo_url')} />
+                            <div
+                              onDragOver={e => e.preventDefault()}
+                              onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) handleUpload(f, 'logo', 'logo_url'); }}
+                              className="border-2 border-dashed rounded-xl p-5 text-center hover:border-primary/60 hover:bg-primary/5 transition-all">
                               {settings.logo_url ? (
-                                <img src={settings.logo_url} alt="logo" className="w-12 h-12 rounded-lg object-contain border bg-muted/30" />
+                                <img src={settings.logo_url} alt="logo"
+                                  className={cn("w-16 h-16 mx-auto object-contain border bg-muted/30 mb-2", (extras.icon_shape || 'circle') === 'circle' ? "rounded-full" : "rounded-lg")} />
                               ) : (
-                                <div className="w-12 h-12 rounded-lg border border-dashed flex items-center justify-center bg-muted/30">
-                                  <ImageIcon className="w-5 h-5 text-muted-foreground" />
-                                </div>
+                                <span className={cn("w-14 h-14 mx-auto mb-2 flex items-center justify-center text-white text-xl font-black", (extras.icon_shape || 'circle') === 'circle' ? "rounded-full" : "rounded-lg")}
+                                  style={{ background: pvPrimary, display: 'flex' }}>
+                                  {pvName.charAt(0)}
+                                </span>
                               )}
-                              <input ref={logoRef} type="file" accept="image/*" className="hidden"
-                                onChange={e => e.target.files?.[0] && handleUpload(e.target.files[0], 'logo', 'logo_url')} />
-                              <Button variant="outline" size="sm" onClick={() => logoRef.current?.click()} disabled={uploading === 'logo_url'}>
-                                {uploading === 'logo_url' ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : <Upload className="w-4 h-4 me-1" />}
-                                رفع شعار
-                              </Button>
+                              <p className="text-xs text-muted-foreground">
+                                {uploading === 'logo_url' ? 'جاري الرفع...' : 'اسحب صورة الشعار هنا أو'}
+                                {' '}
+                                <button type="button" className="text-primary font-semibold underline-offset-2 hover:underline"
+                                  onClick={() => logoRef.current?.click()} disabled={uploading === 'logo_url'}>
+                                  تصفّح الملفات
+                                </button>
+                              </p>
                             </div>
+                            {settings.logo_url && (
+                              <Button variant="ghost" size="sm" className="text-destructive w-full" onClick={() => updateSettings({ logo_url: null } as any)}>
+                                <Trash2 className="w-4 h-4 me-1" /> إزالة الشعار
+                              </Button>
+                            )}
                           </div>
                         )}
                       </div>
@@ -553,16 +574,31 @@ export default function OnlineStorePage() {
                         </button>
                         {openPanel === 'colors' && (
                           <div className="px-4 pb-4 border-t pt-3 space-y-3">
-                            <div className="flex flex-wrap gap-2">
-                              {COLOR_PRESETS.map(cp => (
-                                <button key={cp.name} type="button" title={cp.name}
-                                  onClick={() => { set("primary_color", cp.primary); set("secondary_color", cp.secondary); }}
-                                  className={cn("flex rounded-full overflow-hidden border-2 transition-all hover:scale-110",
-                                    pvPrimary === cp.primary ? "border-primary ring-2 ring-primary/30" : "border-border")}>
-                                  <span className="w-4 h-8" style={{ background: cp.primary }} />
-                                  <span className="w-4 h-8" style={{ background: cp.secondary }} />
-                                </button>
-                              ))}
+                            <div>
+                              <Label className="text-xs">لوحات جاهزة</Label>
+                              <div className="flex flex-wrap gap-2 mt-1.5">
+                                {COLOR_PRESETS.map(cp => (
+                                  <button key={cp.name} type="button" title={cp.name}
+                                    onClick={() => { set("primary_color", cp.primary); set("secondary_color", cp.secondary); }}
+                                    className={cn("flex rounded-full overflow-hidden border-2 transition-all hover:scale-110",
+                                      pvPrimary === cp.primary ? "border-primary ring-2 ring-primary/30" : "border-border")}>
+                                    <span className="w-4 h-8" style={{ background: cp.primary }} />
+                                    <span className="w-4 h-8" style={{ background: cp.secondary }} />
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <div>
+                              <Label className="text-xs">ألوان أساسية</Label>
+                              <div className="flex flex-wrap gap-1.5 mt-1.5">
+                                {PRO_BASIC_COLORS.map(c => (
+                                  <button key={c.hex} type="button" title={c.name}
+                                    onClick={() => set("primary_color", c.hex)}
+                                    className={cn("w-8 h-8 rounded-full border-2 transition-all hover:scale-110",
+                                      pvPrimary === c.hex ? "border-primary ring-2 ring-primary/40" : "border-border")}
+                                    style={{ background: c.hex }} />
+                                ))}
+                              </div>
                             </div>
                             {([
                               { field: 'primary_color', label: 'اللون الأساسي', fb: '#2563eb' },
