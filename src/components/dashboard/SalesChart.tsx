@@ -14,7 +14,7 @@ export function SalesChart({ data, loading }: SalesChartProps) {
   const { t, isRTL } = useLanguage();
   const [chartType, setChartType] = useState<"area" | "bar">("area");
   const [metric, setMetric] = useState<"revenue" | "count">("revenue");
-  const metricColor = metric === "revenue" ? "hsl(223, 100%, 59%)" : "hsl(38, 95%, 50%)";
+  const metricColor = metric === "revenue" ? "hsl(var(--primary))" : "hsl(var(--accent))";
 
   return (
     <motion.div

@@ -9,94 +9,95 @@
 
 @layer base {
   :root {
-    /* Core brand colors - Calm Blue */
-    --background: 215 30% 98%;
-    --foreground: 215 35% 14%;
+    /* Core brand colors - Warm Gold/Bronze (من تصميم Wasl Dashboard) */
+    --background: 36 30% 96%;
+    --foreground: 24 30% 12%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 215 35% 14%;
+    --card: 40 40% 99%;
+    --card-foreground: 24 30% 12%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 215 35% 14%;
+    --popover: 40 40% 99%;
+    --popover-foreground: 24 30% 12%;
 
-    /* Primary - Wasel Brand Blue #2F6BFF */
-    --primary: 223 100% 59%;
+    /* Primary - Bronze/Gold */
+    --primary: 32 45% 44%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary - Soft slate */
-    --secondary: 215 20% 94%;
-    --secondary-foreground: 215 35% 22%;
+    /* Secondary - Warm sand */
+    --secondary: 34 25% 92%;
+    --secondary-foreground: 24 30% 20%;
 
     /* Muted */
-    --muted: 215 20% 96%;
-    --muted-foreground: 215 12% 46%;
+    --muted: 34 25% 94%;
+    --muted-foreground: 28 12% 45%;
 
-    /* Accent - Soft Amber */
-    --accent: 38 90% 52%;
-    --accent-foreground: 38 95% 15%;
+    /* Accent - Light gold */
+    --accent: 36 46% 58%;
+    --accent-foreground: 28 40% 12%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
     /* Success */
-    --success: 142 70% 40%;
+    --success: 142 70% 38%;
     --success-foreground: 0 0% 100%;
 
     /* Warning */
-    --warning: 38 95% 50%;
+    --warning: 38 92% 48%;
     --warning-foreground: 38 95% 15%;
 
-    --border: 215 20% 90%;
-    --input: 215 20% 90%;
-    --ring: 223 100% 59%;
+    --border: 32 22% 86%;
+    --input: 32 22% 86%;
+    --ring: 32 45% 44%;
 
     --radius: 0.75rem;
 
-    /* Sidebar — calm light slate */
-    --sidebar-background: 215 28% 95%;
-    --sidebar-foreground: 215 30% 28%;
-    --sidebar-primary: 223 100% 59%;
+    /* Sidebar — warm beige */
+    --sidebar-background: 33 26% 92%;
+    --sidebar-foreground: 26 25% 28%;
+    --sidebar-primary: 32 45% 44%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 25% 89%;
-    --sidebar-accent-foreground: 215 35% 20%;
-    --sidebar-border: 215 22% 87%;
-    --sidebar-ring: 223 100% 59%;
+    --sidebar-accent: 33 22% 86%;
+    --sidebar-accent-foreground: 24 30% 18%;
+    --sidebar-border: 33 20% 84%;
+    --sidebar-ring: 32 45% 44%;
 
     /* Custom semantic tokens */
-    --surface-elevated: 0 0% 100%;
-    --surface-sunken: 215 20% 96%;
-    --text-muted: 215 12% 55%;
-    --gradient-primary: linear-gradient(135deg, hsl(223 100% 59%) 0%, hsl(228 85% 47%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(38 90% 52%) 0%, hsl(28 88% 55%) 100%);
-    --gradient-surface: linear-gradient(180deg, hsl(215 30% 98%) 0%, hsl(215 20% 96%) 100%);
-    --shadow-sm: 0 1px 2px 0 hsl(215 25% 10% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(215 25% 10% / 0.08), 0 2px 4px -2px hsl(215 25% 10% / 0.06);
-    --shadow-lg: 0 10px 15px -3px hsl(215 25% 10% / 0.08), 0 4px 6px -4px hsl(215 25% 10% / 0.05);
-    --shadow-xl: 0 20px 25px -5px hsl(215 25% 10% / 0.1), 0 8px 10px -6px hsl(215 25% 10% / 0.08);
-    --shadow-glow: 0 0 20px hsl(223 100% 59% / 0.18);
+    --surface-elevated: 40 40% 99%;
+    --surface-sunken: 34 25% 94%;
+    --text-muted: 28 12% 52%;
+    --gradient-primary: linear-gradient(135deg, hsl(32 45% 48%) 0%, hsl(28 50% 36%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(36 55% 62%) 0%, hsl(30 50% 50%) 100%);
+    --gradient-surface: linear-gradient(180deg, hsl(36 30% 96%) 0%, hsl(34 25% 94%) 100%);
+    --shadow-sm: 0 1px 2px 0 hsl(28 25% 10% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(28 25% 10% / 0.08), 0 2px 4px -2px hsl(28 25% 10% / 0.06);
+    --shadow-lg: 0 10px 15px -3px hsl(28 25% 10% / 0.08), 0 4px 6px -4px hsl(28 25% 10% / 0.05);
+    --shadow-xl: 0 20px 25px -5px hsl(28 25% 10% / 0.1), 0 8px 10px -6px hsl(28 25% 10% / 0.08);
+    --shadow-glow: 0 0 20px hsl(34 45% 52% / 0.22);
   }
 
   .dark {
-    --background: 220 20% 9%;
-    --foreground: 215 15% 95%;
+    /* Warm dark brown (#17120f) مع لمسات ذهبية (#b08a57 / #cdaa77) */
+    --background: 22 21% 7%;
+    --foreground: 35 25% 92%;
 
-    --card: 220 18% 13%;
-    --card-foreground: 215 15% 95%;
+    --card: 24 28% 10%;
+    --card-foreground: 35 25% 92%;
 
-    --popover: 220 18% 13%;
-    --popover-foreground: 215 15% 95%;
+    --popover: 24 28% 10%;
+    --popover-foreground: 35 25% 92%;
 
-    --primary: 223 100% 64%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 34 38% 55%;
+    --primary-foreground: 24 40% 8%;
 
-    --secondary: 215 20% 18%;
-    --secondary-foreground: 215 15% 90%;
+    --secondary: 25 20% 16%;
+    --secondary-foreground: 35 20% 88%;
 
-    --muted: 215 20% 15%;
-    --muted-foreground: 215 12% 62%;
+    --muted: 25 20% 13%;
+    --muted-foreground: 30 12% 60%;
 
-    --accent: 38 95% 55%;
-    --accent-foreground: 38 95% 10%;
+    --accent: 36 46% 64%;
+    --accent-foreground: 24 40% 8%;
 
     --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
@@ -104,24 +105,24 @@
     --success: 142 70% 50%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 95% 55%;
+    --warning: 38 92% 55%;
     --warning-foreground: 38 95% 10%;
 
-    --border: 215 20% 20%;
-    --input: 215 20% 20%;
-    --ring: 223 100% 64%;
+    --border: 25 26% 18%;
+    --input: 25 26% 18%;
+    --ring: 34 38% 55%;
 
-    --sidebar-background: 221 22% 7%;
-    --sidebar-foreground: 215 15% 85%;
-    --sidebar-primary: 223 100% 62%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 25% 13%;
-    --sidebar-accent-foreground: 215 15% 95%;
-    --sidebar-border: 215 25% 16%;
-    --sidebar-ring: 223 100% 62%;
+    --sidebar-background: 24 25% 6%;
+    --sidebar-foreground: 33 15% 82%;
+    --sidebar-primary: 34 38% 55%;
+    --sidebar-primary-foreground: 24 40% 8%;
+    --sidebar-accent: 25 22% 12%;
+    --sidebar-accent-foreground: 35 20% 92%;
+    --sidebar-border: 25 24% 14%;
+    --sidebar-ring: 34 38% 55%;
 
-    --surface-elevated: 215 25% 14%;
-    --surface-sunken: 215 30% 6%;
+    --surface-elevated: 24 25% 12%;
+    --surface-sunken: 22 25% 5%;
   }
 }
 
