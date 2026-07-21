@@ -153,6 +153,13 @@ export default function InventoryPage() {
     try { return JSON.parse(localStorage.getItem("inventory-favs") || "[]"); } catch { return []; }
   });
   const [showFavsOnly, setShowFavsOnly] = useState(false);
+
+  // ترقيم صفحات جدول الأجهزة (من تصميم Devices Inventory)
+  const DEVICES_PER_PAGE = 6;
+  const [devicePage, setDevicePage] = useState(1);
+  useEffect(() => { setDevicePage(1); }, [searchTerm, showFavsOnly, activeTab]);
+  const arNum = (n: number) => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[Number(d)]);
+
   const toggleFav = (id: string) => {
     setFavIds(prev => {
       const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
@@ -355,7 +362,16 @@ export default function InventoryPage() {
                 </Button>
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div>
+                {/* ترويسة ثنائية اللغة — من تصميم Devices Inventory */}
+                <div className="px-6 pt-5 pb-3 flex items-end justify-between flex-wrap gap-2">
+                  <div>
+                    <p className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground/70" dir="ltr">Inventory · Devices</p>
+                    <h2 className="text-lg font-bold text-foreground mt-0.5">{isRTL ? "الأجهزة في المخزون" : "Devices in Stock"}</h2>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{arNum(filteredDevices.length)} {isRTL ? "جهازاً" : "devices"}</p>
+                </div>
+                <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-muted/30">
                     <tr>
@@ -369,7 +385,7 @@ export default function InventoryPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {filteredDevices.map((device, index) => (
+                    {filteredDevices.slice((devicePage - 1) * DEVICES_PER_PAGE, devicePage * DEVICES_PER_PAGE).map((device, index) => (
                       <motion.tr
                         key={device.id}
                         initial={{ opacity: 0 }}
@@ -406,7 +422,10 @@ export default function InventoryPage() {
                         </td>
                         <td className="px-6 py-4 text-sm text-muted-foreground">{device.branch?.name || t.inventory.unassigned}</td>
                         <td className="px-6 py-4 text-sm text-muted-foreground">{Number(device.cost).toLocaleString()} ر.س</td>
-                        <td className="px-6 py-4 font-semibold text-foreground">{Number(device.price).toLocaleString()} ر.س</td>
+                        <td className="px-6 py-4">
+                          <span className="text-base font-extrabold text-foreground">{Number(device.price).toLocaleString()}</span>
+                          <span className="text-[10px] font-semibold text-muted-foreground ms-1">ر.س</span>
+                        </td>
                         <td className={cn("px-6 py-4", isRTL ? "text-left" : "text-right")}>
                           <div className="flex items-center gap-0.5 justify-end">
                           <FavButton id={device.id} />
@@ -435,6 +454,34 @@ export default function InventoryPage() {
                     ))}
                   </tbody>
                 </table>
+                </div>
+                {/* ترقيم الصفحات */}
+                {filteredDevices.length > DEVICES_PER_PAGE && (
+                  <div className="px-6 py-4 border-t flex items-center justify-between flex-wrap gap-3">
+                    <p className="text-xs text-muted-foreground">
+                      {isRTL
+                        ? `عرض ${arNum(Math.min(devicePage * DEVICES_PER_PAGE, filteredDevices.length) - (devicePage - 1) * DEVICES_PER_PAGE)} من ${arNum(filteredDevices.length)} جهازاً`
+                        : `Showing ${Math.min(devicePage * DEVICES_PER_PAGE, filteredDevices.length) - (devicePage - 1) * DEVICES_PER_PAGE} of ${filteredDevices.length} devices`}
+                    </p>
+                    <div className="flex items-center gap-1.5">
+                      {Array.from({ length: Math.ceil(filteredDevices.length / DEVICES_PER_PAGE) }, (_, i) => i + 1).map(p => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => setDevicePage(p)}
+                          className={cn(
+                            "w-8 h-8 rounded-lg text-sm font-bold transition-all",
+                            devicePage === p
+                              ? "bg-primary text-primary-foreground shadow-sm"
+                              : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                          )}
+                        >
+                          {isRTL ? arNum(p) : p}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </TabsContent>
