@@ -236,4 +236,37 @@
   .touch-target {
     @apply min-h-[44px] min-w-[44px];
   }
+
+  /* قليتر — لمعة متلألئة متحركة فوق الأسطح الملونة */
+  .glitter-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      radial-gradient(rgba(255, 255, 255, 0.9) 1px, transparent 1.6px),
+      radial-gradient(rgba(255, 255, 255, 0.55) 1px, transparent 1.4px),
+      linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.22) 50%, transparent 58%);
+    background-size: 26px 26px, 17px 17px, 240% 240%;
+    background-position: 0 0, 9px 11px, 0% 0%;
+    animation: glitter-shimmer 3.2s linear infinite, glitter-twinkle 2.2s ease-in-out infinite alternate;
+  }
+
+  /* نقاط قليتر ثابتة لعينات الألوان الصغيرة */
+  .glitter-dots {
+    background-image:
+      radial-gradient(rgba(255, 255, 255, 0.95) 1px, transparent 1.5px),
+      radial-gradient(rgba(255, 255, 255, 0.55) 1px, transparent 1.3px);
+    background-size: 7px 7px, 5px 5px;
+    background-position: 0 0, 3px 3px;
+  }
+
+  @keyframes glitter-shimmer {
+    from { background-position: 0 0, 9px 11px, 120% 120%; }
+    to { background-position: 0 0, 9px 11px, -120% -120%; }
+  }
+
+  @keyframes glitter-twinkle {
+    from { opacity: 0.45; }
+    to { opacity: 0.95; }
+  }
 }

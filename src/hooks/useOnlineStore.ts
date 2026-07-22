@@ -61,6 +61,8 @@ export interface DesignExtras {
   // محرر المتجر (تصميم ماكس)
   icon_shape?: 'circle' | 'square';
   hero_effect?: 'none' | 'glow' | 'dark' | 'dots';
+  // قليتر: لمعة متلألئة على الأسطح الملونة (البنر، الفاصل، البنرات العريضة)
+  glitter?: boolean;
   button_radius?: number;
   button_color?: string;
   hero_button_text?: string;
@@ -74,15 +76,16 @@ export interface DesignExtras {
 // الترتيب الافتراضي لأقسام الصفحة الرئيسية في المتجر
 export const DEFAULT_HOME_SECTIONS: Array<{ key: string; visible: boolean }> = [
   { key: 'hero', visible: true },
+  { key: 'perks', visible: true },
   { key: 'wide', visible: true },
   { key: 'feature', visible: true },
   { key: 'divider', visible: true },
-  { key: 'gallery', visible: true },
-  { key: 'text', visible: true },
+  { key: 'banners', visible: true },
   { key: 'categories', visible: true },
   { key: 'products', visible: true },
   { key: 'reviews', visible: true },
-  { key: 'perks', visible: true },
+  { key: 'gallery', visible: true },
+  { key: 'text', visible: true },
   { key: 'support', visible: true },
 ];
 

@@ -57,6 +57,7 @@ const SECTION_META: Record<string, { name: string; desc: string }> = {
   wide: { name: "البنرات العريضة", desc: "بنرات عالية بعرض الصفحة" },
   feature: { name: "الصور المميزة", desc: "صور كبيرة تبرز العروض" },
   divider: { name: "الفاصل العالي", desc: "شريط ملون بجملة تسويقية" },
+  banners: { name: "البنرات الإضافية", desc: "بنرات تبويب البنرات — أطفئها من هنا" },
   gallery: { name: "معرض الصور", desc: "صور حرة مع تعليقات" },
   text: { name: "كلامك الخاص", desc: "عنوان ورسالة بأسلوبك" },
   categories: { name: "تسوّق حسب الفئة", desc: "شبكة التصنيفات" },
@@ -318,6 +319,7 @@ export default function OnlineStorePage() {
     updExtras({
       icon_shape: 'circle', button_radius: 12, button_color: undefined,
       hero_button_text: undefined, home_sections: DEFAULT_HOME_SECTIONS,
+      glitter: false,
     });
     toast.info('تم استعادة الافتراضي — اضغط "نشر التغييرات" للحفظ');
   };
@@ -575,13 +577,13 @@ export default function OnlineStorePage() {
                         {openPanel === 'colors' && (
                           <div className="px-4 pb-4 border-t pt-3 space-y-3">
                             <div>
-                              <Label className="text-xs">لوحات جاهزة</Label>
+                              <Label className="text-xs">لوحات جاهزة — بدون قليتر</Label>
                               <div className="flex flex-wrap gap-2 mt-1.5">
                                 {COLOR_PRESETS.map(cp => (
                                   <button key={cp.name} type="button" title={cp.name}
-                                    onClick={() => { set("primary_color", cp.primary); set("secondary_color", cp.secondary); }}
+                                    onClick={() => { set("primary_color", cp.primary); set("secondary_color", cp.secondary); updExtras({ glitter: false }); }}
                                     className={cn("flex rounded-full overflow-hidden border-2 transition-all hover:scale-110",
-                                      pvPrimary === cp.primary ? "border-primary ring-2 ring-primary/30" : "border-border")}>
+                                      pvPrimary === cp.primary && !extras.glitter ? "border-primary ring-2 ring-primary/30" : "border-border")}>
                                     <span className="w-4 h-8" style={{ background: cp.primary }} />
                                     <span className="w-4 h-8" style={{ background: cp.secondary }} />
                                   </button>
@@ -589,14 +591,43 @@ export default function OnlineStorePage() {
                               </div>
                             </div>
                             <div>
-                              <Label className="text-xs">ألوان أساسية</Label>
+                              <Label className="text-xs">لوحات جاهزة — مع قليتر ✨</Label>
+                              <div className="flex flex-wrap gap-2 mt-1.5">
+                                {COLOR_PRESETS.map(cp => (
+                                  <button key={`g-${cp.name}`} type="button" title={`${cp.name} — قليتر`}
+                                    onClick={() => { set("primary_color", cp.primary); set("secondary_color", cp.secondary); updExtras({ glitter: true }); }}
+                                    className={cn("relative flex rounded-full overflow-hidden border-2 transition-all hover:scale-110",
+                                      pvPrimary === cp.primary && extras.glitter ? "border-primary ring-2 ring-primary/30" : "border-border")}>
+                                    <span className="w-4 h-8" style={{ background: cp.primary }} />
+                                    <span className="w-4 h-8" style={{ background: cp.secondary }} />
+                                    <span className="absolute inset-0 glitter-dots" />
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <div>
+                              <Label className="text-xs">ألوان أساسية — بدون قليتر</Label>
                               <div className="flex flex-wrap gap-1.5 mt-1.5">
                                 {PRO_BASIC_COLORS.map(c => (
                                   <button key={c.hex} type="button" title={c.name}
-                                    onClick={() => set("primary_color", c.hex)}
+                                    onClick={() => { set("primary_color", c.hex); updExtras({ glitter: false }); }}
                                     className={cn("w-8 h-8 rounded-full border-2 transition-all hover:scale-110",
-                                      pvPrimary === c.hex ? "border-primary ring-2 ring-primary/40" : "border-border")}
+                                      pvPrimary === c.hex && !extras.glitter ? "border-primary ring-2 ring-primary/40" : "border-border")}
                                     style={{ background: c.hex }} />
+                                ))}
+                              </div>
+                            </div>
+                            <div>
+                              <Label className="text-xs">ألوان أساسية — مع قليتر ✨</Label>
+                              <div className="flex flex-wrap gap-1.5 mt-1.5">
+                                {PRO_BASIC_COLORS.map(c => (
+                                  <button key={`g-${c.hex}`} type="button" title={`${c.name} — قليتر`}
+                                    onClick={() => { set("primary_color", c.hex); updExtras({ glitter: true }); }}
+                                    className={cn("relative overflow-hidden w-8 h-8 rounded-full border-2 transition-all hover:scale-110",
+                                      pvPrimary === c.hex && extras.glitter ? "border-primary ring-2 ring-primary/40" : "border-border")}
+                                    style={{ background: c.hex }}>
+                                    <span className="absolute inset-0 glitter-dots" />
+                                  </button>
                                 ))}
                               </div>
                             </div>
@@ -828,13 +859,14 @@ export default function OnlineStorePage() {
 
                         {pvVisible.map(sk => {
                           if (sk === 'hero') return (
-                            <div key={sk} className="px-6 py-8 text-center text-white"
+                            <div key={sk} className="relative overflow-hidden px-6 py-8 text-center text-white"
                               style={{
                                 background: settings.hero_image_url
                                   ? `linear-gradient(135deg, ${pvPrimary}d9, ${pvSecondary}d9), url(${settings.hero_image_url}) center/cover`
                                   : `linear-gradient(135deg, ${pvPrimary}, ${pvSecondary})`,
                               }}>
-                              <p className="text-lg font-extrabold mb-1">{val("hero_title") || `أهلاً في ${pvName}`}</p>
+                              {extras.glitter && <span className="absolute inset-0 glitter-overlay" />}
+                              <p className="relative z-10 text-lg font-extrabold mb-1">{val("hero_title") || `أهلاً في ${pvName}`}</p>
                               <p className="text-[11px] opacity-90 mb-3">{val("hero_subtitle") || val("description") || 'اكتشف أحدث الأجهزة والإكسسوارات بأفضل الأسعار'}</p>
                               <span className="inline-block bg-white text-gray-900 text-[11px] font-bold px-4 py-1.5" style={{ borderRadius: pvRadius }}>
                                 {extras.hero_button_text || 'تسوق الآن'}
@@ -873,9 +905,10 @@ export default function OnlineStorePage() {
                             </div>
                           );
                           if (sk === 'divider') return (
-                            <div key={sk} className="h-10 flex items-center justify-center text-white text-[11px] font-extrabold"
+                            <div key={sk} className="relative overflow-hidden h-10 flex items-center justify-center text-white text-[11px] font-extrabold"
                               style={{ background: `linear-gradient(90deg, ${pvPrimary}, ${pvSecondary})` }}>
-                              {extras.divider?.text || 'عروض نهاية الأسبوع — خصومات تصل إلى ٤٠٪'}
+                              {extras.glitter && <span className="absolute inset-0 glitter-overlay" />}
+                              <span className="relative z-10">{extras.divider?.text || 'عروض نهاية الأسبوع — خصومات تصل إلى ٤٠٪'}</span>
                             </div>
                           );
                           if (sk === 'gallery') return (
