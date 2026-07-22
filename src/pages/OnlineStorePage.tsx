@@ -198,8 +198,8 @@ export default function OnlineStorePage() {
   // محرر المتجر (ماكس)
   const [openPanel, setOpenPanel] = useState<string | null>('logo');
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
-  // المعاينة الحقيقية تشتغل عند الطلب حتى ما تثقل فتح الصفحة
-  const [previewOn, setPreviewOn] = useState(false);
+  // المعاينة الحقيقية شغالة دائماً
+  const [previewOn, setPreviewOn] = useState(true);
   const dragIdx = useRef<number | null>(null);
 
   // باقة ماكس (الموزع) والفترة التجريبية: استوديو التصميم الكامل — برو: محرر مبسط
@@ -1024,7 +1024,7 @@ export default function OnlineStorePage() {
                         <Badge variant="outline" className="text-[10px]">معاينة حقيقية · تعديلاتك تظهر فوراً</Badge>
                       </div>
                       {settings.is_published && previewOn ? (
-                        <div className={cn("mx-auto transition-all rounded-lg overflow-hidden border shadow-sm bg-white", previewDevice === 'mobile' ? "max-w-[390px]" : "w-full")}>
+                        <div className={cn("mx-auto rounded-lg overflow-hidden border shadow-sm bg-white", previewDevice === 'mobile' ? "max-w-[390px]" : "w-full")}>
                           <iframe
                             ref={previewFrameRef}
                             src={`${storeUrl}?preview=1`}
@@ -2177,7 +2177,7 @@ export default function OnlineStorePage() {
                     <Badge variant="outline" className="text-[10px]">معاينة حقيقية · تعديلاتك تظهر فوراً</Badge>
                   </div>
                   {settings.is_published && previewOn ? (
-                    <div className={cn("mx-auto transition-all rounded-lg overflow-hidden border shadow-sm bg-white", previewDevice === 'mobile' ? "max-w-[390px]" : "w-full")}>
+                    <div className={cn("mx-auto rounded-lg overflow-hidden border shadow-sm bg-white", previewDevice === 'mobile' ? "max-w-[390px]" : "w-full")}>
                       <iframe
                         ref={previewFrameRef}
                         src={`${storeUrl}?preview=1`}
