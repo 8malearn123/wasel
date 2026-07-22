@@ -15,23 +15,27 @@ jobs:
         run: |
           set -euo pipefail
 
+          # كل تسجيل دخول يشوف كل المتاجر المنشورة، لذلك لازم نستهدف
+          # صف المتجر المملوك لنفس التاجر (merchant_id يطابق merchant_users)
           clear_merchant() {
             local TOKEN="$1" LABEL="$2"
 
+            local MID
+            MID=$(curl -sS "$SUPA/rest/v1/merchant_users?select=merchant_id&is_active=eq.true&limit=1" \
+              -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN" | jq -r '.[0].merchant_id // empty')
+            [ -n "$MID" ] || { echo "[$LABEL] no merchant"; return 0; }
+
             local ROW
-            ROW=$(curl -sS "$SUPA/rest/v1/store_settings?select=id,slug,additional_banners" \
+            ROW=$(curl -sS "$SUPA/rest/v1/store_settings?select=id,slug,additional_banners&merchant_id=eq.$MID" \
               -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN")
-            echo "[$LABEL] before: $ROW"
-            local SID
-            SID=$(echo "$ROW" | jq -r '.[0].id // empty')
-            [ -n "$SID" ] || { echo "[$LABEL] no store settings"; return 0; }
+            echo "[$LABEL] own store before: $ROW"
 
             local RESP
-            RESP=$(curl -sS -w "\nHTTP %{http_code}" -X PATCH "$SUPA/rest/v1/store_settings?id=eq.$SID" \
+            RESP=$(curl -sS -X PATCH "$SUPA/rest/v1/store_settings?merchant_id=eq.$MID" \
               -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN" \
-              -H "Content-Type: application/json" -H "Prefer: return=minimal" \
+              -H "Content-Type: application/json" -H "Prefer: return=representation" \
               --data '{"additional_banners": []}')
-            echo "[$LABEL] clear: $(echo "$RESP" | tail -1)"
+            echo "[$LABEL] after: $(echo "$RESP" | jq -c 'map({slug, additional_banners})' 2>/dev/null || echo "$RESP")"
           }
 
           FAILED=0
@@ -59,5 +63,11 @@ jobs:
               echo "[$EMAIL] login failed"; FAILED=1
             fi
           done
+
+          echo "== verify: any banners left anywhere? =="
+          curl -sS "$SUPA/rest/v1/store_settings?select=slug,additional_banners" \
+            -H "apikey: $ANON" -H "Authorization: Bearer $ANON" | jq -c '.[] | select((.additional_banners | length) > 0)' \
+            | tee leftovers.txt
+          [ ! -s leftovers.txt ] || { echo "STILL HAS BANNERS"; FAILED=1; }
 
           exit $FAILED
