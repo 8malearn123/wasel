@@ -172,7 +172,7 @@ export function StoreThankYouPage({ store }: { store: StoreSettings }) {
               </div>
               <div className="pt-3 flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">طريقة الدفع</span>
-                <span className="font-medium">{order.payment_method === 'bank_transfer' ? 'تحويل بنكي' : 'الدفع عند الاستلام'}</span>
+                <span className="font-medium">{order.payment_method === 'bank_transfer' ? 'تحويل بنكي' : order.payment_method === 'apple_pay' ? 'أبل باي' : 'الدفع عند الاستلام'}</span>
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">حالة الدفع</span>

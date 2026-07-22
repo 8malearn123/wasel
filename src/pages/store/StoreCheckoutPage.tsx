@@ -158,12 +158,26 @@ export function StoreCheckoutPage({ store, placeOrder }: Props) {
             <h2 className="text-xl font-bold mb-2">طريقة الدفع</h2>
             <RadioGroup value={payment} onValueChange={setPayment}>
               <label className="flex items-center gap-3 p-4 border rounded-xl cursor-pointer hover:bg-muted/30">
+                <RadioGroupItem value="apple_pay" />
+                <span className="font-medium flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1 bg-black text-white text-sm font-semibold px-2.5 py-1 rounded-lg" dir="ltr">
+                     Pay
+                  </span>
+                  أبل باي
+                </span>
+              </label>
+              <label className="flex items-center gap-3 p-4 border rounded-xl cursor-pointer hover:bg-muted/30">
                 <RadioGroupItem value="bank_transfer" /> <span className="font-medium">تحويل بنكي</span>
               </label>
               <label className="flex items-center gap-3 p-4 border rounded-xl cursor-pointer hover:bg-muted/30">
                 <RadioGroupItem value="cod" /> <span className="font-medium">الدفع عند الاستلام</span>
               </label>
             </RadioGroup>
+            {payment === 'apple_pay' && (
+              <p className="text-xs text-muted-foreground bg-muted/30 rounded-lg p-3">
+                بعد تأكيد الطلب بيتواصل معك المتجر بطلب الدفع عبر أبل باي لإتمام العملية.
+              </p>
+            )}
           </div>
         )}
         {step === 4 && (
@@ -173,7 +187,7 @@ export function StoreCheckoutPage({ store, placeOrder }: Props) {
               <p><b>الاسم:</b> {name}</p>
               <p><b>الجوال:</b> {phone}</p>
               <p><b>العنوان:</b> {address}, {city}</p>
-              <p><b>الدفع:</b> {payment === 'bank_transfer' ? 'تحويل بنكي' : 'الدفع عند الاستلام'}</p>
+              <p><b>الدفع:</b> {payment === 'bank_transfer' ? 'تحويل بنكي' : payment === 'apple_pay' ? 'أبل باي ( Pay)' : 'الدفع عند الاستلام'}</p>
             </div>
             <hr />
             <div className="space-y-1 text-sm">

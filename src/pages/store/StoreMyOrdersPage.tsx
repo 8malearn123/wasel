@@ -134,7 +134,7 @@ export function StoreMyOrdersPage({ store }: { store: StoreSettings }) {
                     </div>
                     <div className="space-y-1">
                       <p className="text-muted-foreground">الدفع</p>
-                      <p>{o.payment_method === 'bank_transfer' ? 'تحويل بنكي' : 'الدفع عند الاستلام'}</p>
+                      <p>{o.payment_method === 'bank_transfer' ? 'تحويل بنكي' : o.payment_method === 'apple_pay' ? 'أبل باي' : 'الدفع عند الاستلام'}</p>
                       <p className="text-muted-foreground">حالة الدفع</p>
                       <p>{o.payment_status === 'paid' ? 'مدفوع' : 'غير مدفوع'}</p>
                       {o.tracking_number && (
