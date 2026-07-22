@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,44 +8,44 @@ import { LanguageProvider } from "./i18n";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { useVersionCheck } from "./hooks/useVersionCheck";
 import { useSubscription } from "./hooks/useSubscription";
-import Dashboard from "./pages/Dashboard";
-import POSPage from "./pages/POSPage";
-import InventoryPage from "./pages/InventoryPage";
-import BranchesPage from "./pages/BranchesPage";
-import TransfersPage from "./pages/TransfersPage";
-import SuppliersPage from "./pages/SuppliersPage";
-import LabelsPage from "./pages/LabelsPage";
-import NotificationsPage from "./pages/NotificationsPage";
-import MarketingPage from "./pages/MarketingPage";
-import RepairsPage from "./pages/RepairsPage";
-import ReportsPage from "./pages/ReportsPage";
-import UsersPage from "./pages/UsersPage";
-import HRPage from "./pages/HRPage";
-import SettingsPage from "./pages/SettingsPage";
-import SubscriptionPage from "./pages/SubscriptionPage";
-import StocktakePage from "./pages/StocktakePage";
-import OnlineStorePage from "./pages/OnlineStorePage";
-import OnlineOrdersPage from "./pages/OnlineOrdersPage";
-import PublicStorePage from "./pages/PublicStorePage";
-import DailyClosingsPage from "./pages/DailyClosingsPage";
-import CustomersPage from "./pages/CustomersPage";
-import CustomerDetailPage from "./pages/CustomerDetailPage";
-import WholesalePage from "./pages/WholesalePage";
-import AuthPage from "./pages/AuthPage";
-import LockedPage from "./pages/LockedPage";
-import SupportPage from "./pages/SupportPage";
-import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
-import AdminCompaniesPage from "./pages/admin/AdminCompaniesPage";
-import AdminBranchRequestsPage from "./pages/admin/AdminBranchRequestsPage";
-import AdminPayoutsPage from "./pages/admin/AdminPayoutsPage";
-import AdminPlansPage from "./pages/admin/AdminPlansPage";
-import AdminActivityPage from "./pages/admin/AdminActivityPage";
-import AdminTicketsPage from "./pages/admin/AdminTicketsPage";
-import AdminReportsPage from "./pages/admin/AdminReportsPage";
-import AdminAuthPage from "./pages/admin/AdminAuthPage";
-import OAuthConsentPage from "./pages/OAuthConsentPage";
-import LandingPage from "./pages/LandingPage";
-import NotFound from "./pages/NotFound";
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const POSPage = lazy(() => import("./pages/POSPage"));
+const InventoryPage = lazy(() => import("./pages/InventoryPage"));
+const BranchesPage = lazy(() => import("./pages/BranchesPage"));
+const TransfersPage = lazy(() => import("./pages/TransfersPage"));
+const SuppliersPage = lazy(() => import("./pages/SuppliersPage"));
+const LabelsPage = lazy(() => import("./pages/LabelsPage"));
+const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
+const MarketingPage = lazy(() => import("./pages/MarketingPage"));
+const RepairsPage = lazy(() => import("./pages/RepairsPage"));
+const ReportsPage = lazy(() => import("./pages/ReportsPage"));
+const UsersPage = lazy(() => import("./pages/UsersPage"));
+const HRPage = lazy(() => import("./pages/HRPage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const SubscriptionPage = lazy(() => import("./pages/SubscriptionPage"));
+const StocktakePage = lazy(() => import("./pages/StocktakePage"));
+const OnlineStorePage = lazy(() => import("./pages/OnlineStorePage"));
+const OnlineOrdersPage = lazy(() => import("./pages/OnlineOrdersPage"));
+const PublicStorePage = lazy(() => import("./pages/PublicStorePage"));
+const DailyClosingsPage = lazy(() => import("./pages/DailyClosingsPage"));
+const CustomersPage = lazy(() => import("./pages/CustomersPage"));
+const CustomerDetailPage = lazy(() => import("./pages/CustomerDetailPage"));
+const WholesalePage = lazy(() => import("./pages/WholesalePage"));
+const AuthPage = lazy(() => import("./pages/AuthPage"));
+const LockedPage = lazy(() => import("./pages/LockedPage"));
+const SupportPage = lazy(() => import("./pages/SupportPage"));
+const AdminDashboardPage = lazy(() => import("./pages/admin/AdminDashboardPage"));
+const AdminCompaniesPage = lazy(() => import("./pages/admin/AdminCompaniesPage"));
+const AdminBranchRequestsPage = lazy(() => import("./pages/admin/AdminBranchRequestsPage"));
+const AdminPayoutsPage = lazy(() => import("./pages/admin/AdminPayoutsPage"));
+const AdminPlansPage = lazy(() => import("./pages/admin/AdminPlansPage"));
+const AdminActivityPage = lazy(() => import("./pages/admin/AdminActivityPage"));
+const AdminTicketsPage = lazy(() => import("./pages/admin/AdminTicketsPage"));
+const AdminReportsPage = lazy(() => import("./pages/admin/AdminReportsPage"));
+const AdminAuthPage = lazy(() => import("./pages/admin/AdminAuthPage"));
+const OAuthConsentPage = lazy(() => import("./pages/OAuthConsentPage"));
+const LandingPage = lazy(() => import("./pages/LandingPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 
@@ -130,6 +131,11 @@ function HomeRoute() {
 function AppRoutes() {
   useVersionCheck();
   return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
     <Routes>
       <Route path="/auth" element={<AuthPage />} />
       <Route path="/.lovable/oauth/consent" element={<OAuthConsentPage />} />
@@ -172,6 +178,7 @@ function AppRoutes() {
       <Route path="/admin/reports" element={<AdminReportsPage />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
+    </Suspense>
   );
 }
 

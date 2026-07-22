@@ -198,6 +198,8 @@ export default function OnlineStorePage() {
   // محرر المتجر (ماكس)
   const [openPanel, setOpenPanel] = useState<string | null>('logo');
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
+  // المعاينة الحقيقية تشتغل عند الطلب حتى ما تثقل فتح الصفحة
+  const [previewOn, setPreviewOn] = useState(false);
   const dragIdx = useRef<number | null>(null);
 
   // باقة ماكس (الموزع) والفترة التجريبية: استوديو التصميم الكامل — برو: محرر مبسط
@@ -1021,7 +1023,7 @@ export default function OnlineStorePage() {
                         <p className="text-[11px] text-muted-foreground font-mono" dir="ltr">{window.location.host}/store/{settings.slug}</p>
                         <Badge variant="outline" className="text-[10px]">معاينة حقيقية · تعديلاتك تظهر فوراً</Badge>
                       </div>
-                      {settings.is_published ? (
+                      {settings.is_published && previewOn ? (
                         <div className={cn("mx-auto transition-all rounded-lg overflow-hidden border shadow-sm bg-white", previewDevice === 'mobile' ? "max-w-[390px]" : "w-full")}>
                           <iframe
                             ref={previewFrameRef}
@@ -1031,7 +1033,12 @@ export default function OnlineStorePage() {
                             onLoad={postPreview}
                           />
                         </div>
-                      ) : (
+                      ) : settings.is_published ? (
+                        <div className="py-14 text-center text-sm text-muted-foreground">
+                          <p className="mb-3">شغّل المعاينة الحية لما تحتاجها — نوقفها افتراضياً عشان الصفحة تفتح بسرعة</p>
+                          <Button size="sm" onClick={() => setPreviewOn(true)}>▶ تشغيل المعاينة الحية</Button>
+                        </div>
+                        ) : (
                         <div className="py-16 text-center text-sm text-muted-foreground">
                           <p className="mb-3">المتجر غير منشور بعد — المعاينة الحقيقية تشتغل بعد أول نشر</p>
                           <Button size="sm" onClick={publishAll} disabled={saving || savingExtras}>انشر الآن</Button>
@@ -2169,7 +2176,7 @@ export default function OnlineStorePage() {
                     <p className="text-[11px] text-muted-foreground font-mono" dir="ltr">{window.location.host}/store/{settings.slug}</p>
                     <Badge variant="outline" className="text-[10px]">معاينة حقيقية · تعديلاتك تظهر فوراً</Badge>
                   </div>
-                  {settings.is_published ? (
+                  {settings.is_published && previewOn ? (
                     <div className={cn("mx-auto transition-all rounded-lg overflow-hidden border shadow-sm bg-white", previewDevice === 'mobile' ? "max-w-[390px]" : "w-full")}>
                       <iframe
                         ref={previewFrameRef}
@@ -2179,7 +2186,12 @@ export default function OnlineStorePage() {
                         onLoad={postPreview}
                       />
                     </div>
-                  ) : (
+                  ) : settings.is_published ? (
+                    <div className="py-14 text-center text-sm text-muted-foreground">
+                      <p className="mb-3">شغّل المعاينة الحية لما تحتاجها — نوقفها افتراضياً عشان الصفحة تفتح بسرعة</p>
+                      <Button size="sm" onClick={() => setPreviewOn(true)}>▶ تشغيل المعاينة الحية</Button>
+                    </div>
+                    ) : (
                     <div className="py-16 text-center text-sm text-muted-foreground">
                       <p className="mb-3">المتجر غير منشور بعد — المعاينة الحقيقية تشتغل بعد أول نشر</p>
                       <Button size="sm" onClick={publishAll} disabled={saving || savingExtras}>انشر الآن</Button>
