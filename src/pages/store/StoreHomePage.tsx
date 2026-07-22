@@ -14,14 +14,6 @@ interface Props {
   designExtras?: DesignExtras | null;
 }
 
-// مميزات افتراضية تظهر تحت البنر إذا ما خصص التاجر مميزاته
-const DEFAULT_PERKS = [
-  { icon: '🚚', title: 'توصيل سريع', desc: 'لكل مناطق المملكة' },
-  { icon: '🛡️', title: 'ضمان أصلي', desc: 'منتجات ١٠٠٪ أصلية' },
-  { icon: '💳', title: 'دفع آمن', desc: 'مدى · Apple Pay · تحويل' },
-  { icon: '↩️', title: 'إرجاع سهل', desc: 'خلال ١٤ يومًا' },
-];
-
 // عداد تنازلي حي للعروض
 function OfferCountdown({ endsAt, title, glitter }: { endsAt: string; title?: string; glitter?: boolean }) {
   const calc = () => Math.max(0, new Date(endsAt).getTime() - Date.now());
@@ -163,9 +155,9 @@ export function StoreHomePage({ store, devices, accessories, categories, designE
   });
 
   const glitter = !!designExtras?.glitter;
-  const perksList = (designExtras?.store_perks || []).filter(p => p.title).length > 0
-    ? designExtras!.store_perks!.filter(p => p.title)
-    : DEFAULT_PERKS;
+  // شريط المميزات يظهر فقط إذا ضافها التاجر بنفسه من محرر ماكس —
+  // باقة برو ما عندها هذا القسم فما يظهر في متاجرها
+  const perksList = (designExtras?.store_perks || []).filter(p => p.title);
 
   const sections: Record<string, React.ReactNode> = {
     hero: (
@@ -217,7 +209,7 @@ export function StoreHomePage({ store, devices, accessories, categories, designE
       </section>
     ),
 
-    perks: (
+    perks: perksList.length > 0 ? (
       <section key="perks" className="border-b bg-card/60">
         <div className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-2 md:grid-cols-4 gap-5">
           {perksList.slice(0, 4).map((perk, i) => (
@@ -229,7 +221,7 @@ export function StoreHomePage({ store, devices, accessories, categories, designE
           ))}
         </div>
       </section>
-    ),
+    ) : null,
 
     wide: (designExtras?.wide_banners || []).length > 0 ? (
       designExtras?.wide_slider && (designExtras.wide_banners || []).length > 1 ? (
