@@ -1914,24 +1914,20 @@ export default function OnlineStorePage() {
                 <p className="text-xs text-muted-foreground">النصوص اللي تظهر في أسفل كل صفحات متجرك — عدّلها بأسلوبك</p>
                 <div>
                   <Label className="text-xs">نص التعريف (تحت اسم المتجر)</Label>
-                  <Textarea value={extras.footer?.about || ''} rows={3}
-                    placeholder="وجهتك الأولى للجوالات والإكسسوارات الأصلية — أسعار منافسة وضمان موثوق وشحن سريع لكل مدن المملكة"
-                    onChange={e => updExtras({ footer: { ...extras.footer, about: e.target.value || undefined } })}
+                  <Textarea value={extras.footer?.about ?? (val("description") || '')} rows={3}
+                    onChange={e => updExtras({ footer: { ...extras.footer, about: e.target.value } })}
                     className="mt-1" />
-                  <p className="text-[11px] text-muted-foreground mt-1">إذا تركته فاضي يظهر وصف المتجر العادي</p>
                 </div>
                 <div>
                   <Label className="text-xs">ملاحظة تواصل معنا (نص الضريبة والعملة)</Label>
-                  <Textarea value={extras.footer?.note || ''} rows={2}
-                    placeholder="جميع الأسعار شاملة الضريبة 15%. العملة ر.س"
-                    onChange={e => updExtras({ footer: { ...extras.footer, note: e.target.value || undefined } })}
+                  <Textarea value={extras.footer?.note ?? 'جميع الأسعار شاملة الضريبة 15%. العملة ر.س.'} rows={2}
+                    onChange={e => updExtras({ footer: { ...extras.footer, note: e.target.value } })}
                     className="mt-1" />
                 </div>
                 <div>
                   <Label className="text-xs">سطر الحقوق (أسفل الصفحة)</Label>
-                  <Input value={extras.footer?.copyright || ''}
-                    placeholder={`© ${new Date().getFullYear()} ${val("store_name") || 'متجرك'} — جميع الحقوق محفوظة`}
-                    onChange={e => updExtras({ footer: { ...extras.footer, copyright: e.target.value || undefined } })}
+                  <Input value={extras.footer?.copyright ?? `© ${new Date().getFullYear()} ${val("store_name") || 'متجرك'} — جميع الحقوق محفوظة`}
+                    onChange={e => updExtras({ footer: { ...extras.footer, copyright: e.target.value } })}
                     className="mt-1 h-9" />
                 </div>
                 {/* معاينة */}
