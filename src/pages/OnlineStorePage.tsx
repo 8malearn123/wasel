@@ -1006,6 +1006,7 @@ export default function OnlineStorePage() {
                           { key: 'brands', icon: Award, name: 'شريط الماركات' },
                           { key: 'gallery', icon: ImageIcon, name: 'معرض الصور' },
                           { key: 'text', icon: FileText, name: 'كلامك الخاص' },
+                          { key: 'footer', icon: FileText, name: 'أسفل المتجر (الفوتر)' },
                           { key: 'fonts', icon: Type, name: 'لون الخط' },
                         ].map(it => (
                           <button key={it.key} type="button" onClick={() => setDesignSection(it.key)}
@@ -1900,6 +1901,46 @@ export default function OnlineStorePage() {
                     ))}
                   </div>
                 )}
+              </div>
+              </>)}
+
+              {designSection === 'footer' && (<>
+              {/* نصوص أسفل المتجر (الفوتر) */}
+              <div className="bg-card rounded-xl border p-6 space-y-4">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-primary" />
+                  <h3 className="font-semibold">أسفل المتجر (الفوتر)</h3>
+                </div>
+                <p className="text-xs text-muted-foreground">النصوص اللي تظهر في أسفل كل صفحات متجرك — عدّلها بأسلوبك</p>
+                <div>
+                  <Label className="text-xs">نص التعريف (تحت اسم المتجر)</Label>
+                  <Textarea value={extras.footer?.about || ''} rows={3}
+                    placeholder="وجهتك الأولى للجوالات والإكسسوارات الأصلية — أسعار منافسة وضمان موثوق وشحن سريع لكل مدن المملكة"
+                    onChange={e => updExtras({ footer: { ...extras.footer, about: e.target.value || undefined } })}
+                    className="mt-1" />
+                  <p className="text-[11px] text-muted-foreground mt-1">إذا تركته فاضي يظهر وصف المتجر العادي</p>
+                </div>
+                <div>
+                  <Label className="text-xs">ملاحظة تواصل معنا (نص الضريبة والعملة)</Label>
+                  <Textarea value={extras.footer?.note || ''} rows={2}
+                    placeholder="جميع الأسعار شاملة الضريبة 15%. العملة ر.س"
+                    onChange={e => updExtras({ footer: { ...extras.footer, note: e.target.value || undefined } })}
+                    className="mt-1" />
+                </div>
+                <div>
+                  <Label className="text-xs">سطر الحقوق (أسفل الصفحة)</Label>
+                  <Input value={extras.footer?.copyright || ''}
+                    placeholder={`© ${new Date().getFullYear()} ${val("store_name") || 'متجرك'} — جميع الحقوق محفوظة`}
+                    onChange={e => updExtras({ footer: { ...extras.footer, copyright: e.target.value || undefined } })}
+                    className="mt-1 h-9" />
+                </div>
+                {/* معاينة */}
+                <div className="rounded-xl border p-4 bg-muted/20 text-sm space-y-2">
+                  <p className="font-bold">{val("store_name") || 'متجرك'}</p>
+                  <p className="text-muted-foreground text-xs">{extras.footer?.about || val("description") || 'نوفر أحدث الأجهزة بأفضل الأسعار.'}</p>
+                  <p className="text-muted-foreground text-[11px]">{extras.footer?.note || 'جميع الأسعار شاملة الضريبة 15%. العملة ر.س'}</p>
+                  <p className="text-muted-foreground text-[11px] text-center pt-2 border-t">{extras.footer?.copyright || `© ${new Date().getFullYear()} ${val("store_name") || 'متجرك'}`}</p>
+                </div>
               </div>
               </>)}
 

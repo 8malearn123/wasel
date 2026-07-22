@@ -96,7 +96,7 @@ export default function PublicStorePage() {
       />
       <StoreCartProvider slug={slug || ''}>
        <StoreFavoritesProvider slug={slug || ''}>
-        <StoreLayout store={store} pages={pages} merchantLegal={merchantLegal}>
+        <StoreLayout store={store} pages={pages} merchantLegal={merchantLegal} designExtras={designExtras}>
           <Routes>
             <Route index element={<StoreHomePage store={store} devices={devices} accessories={accessories} categories={categories} designExtras={designExtras} />} />
             <Route path="products" element={<StoreProductsPage store={store} devices={devices} accessories={accessories} categories={categories} />} />

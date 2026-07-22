@@ -81,6 +81,8 @@ export interface DesignExtras {
   video?: { enabled?: boolean; url?: string; title?: string };
   // شريط الماركات
   brands?: Array<{ name: string; image_url?: string }>;
+  // نصوص أسفل المتجر (الفوتر)
+  footer?: { about?: string; note?: string; copyright?: string };
 }
 
 // الترتيب الافتراضي لأقسام الصفحة الرئيسية في المتجر

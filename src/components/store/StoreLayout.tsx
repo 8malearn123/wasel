@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { ShoppingCart, Search, Instagram, Twitter, Phone, Store as StoreIcon, ClipboardList, ShieldCheck, FileText, Heart } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import type { StoreSettings, StorePage, MerchantLegalInfo } from '@/hooks/useOnlineStore';
+import type { StoreSettings, StorePage, MerchantLegalInfo, DesignExtras } from '@/hooks/useOnlineStore';
 import { useStoreCart } from './StoreCart';
 import { useStoreFavorites } from './StoreFavorites';
 import { cn } from '@/lib/utils';
@@ -12,10 +12,12 @@ interface Props {
   store: StoreSettings;
   pages?: StorePage[];
   merchantLegal?: MerchantLegalInfo | null;
+  // نصوص الفوتر القابلة للتعديل من محرر المتجر
+  designExtras?: DesignExtras | null;
   children: ReactNode;
 }
 
-export function StoreLayout({ store, pages = [], merchantLegal, children }: Props) {
+export function StoreLayout({ store, pages = [], merchantLegal, designExtras, children }: Props) {
   const { slug } = useParams<{ slug: string }>();
   const { count } = useStoreCart();
   const { count: favCount } = useStoreFavorites();
@@ -103,7 +105,7 @@ export function StoreLayout({ store, pages = [], merchantLegal, children }: Prop
         <div className="max-w-7xl mx-auto px-4 py-10 grid md:grid-cols-4 gap-8 text-sm">
           <div>
             <h3 className="font-bold mb-3">{store.store_name}</h3>
-            <p className="text-muted-foreground">{store.description || 'نوفر أحدث الأجهزة بأفضل الأسعار.'}</p>
+            <p className="text-muted-foreground">{designExtras?.footer?.about || store.description || 'نوفر أحدث الأجهزة بأفضل الأسعار.'}</p>
           </div>
           <div>
             <h4 className="font-semibold mb-3">روابط سريعة</h4>
@@ -137,10 +139,11 @@ export function StoreLayout({ store, pages = [], merchantLegal, children }: Prop
                 <a href={store.twitter_url} target="_blank" rel="noopener" className="hover:text-foreground text-muted-foreground"><Twitter className="w-4 h-4" /></a>
               )}
             </div>
-            <p className="text-xs text-muted-foreground mt-3">
-              {store.show_vat_status !== false && merchantLegal?.vat_enabled
-                ? `جميع الأسعار شاملة الضريبة 15%. العملة ${currency}.`
-                : `العملة ${currency}.`}
+            <p className="text-xs text-muted-foreground mt-3 whitespace-pre-wrap">
+              {designExtras?.footer?.note
+                || (store.show_vat_status !== false && merchantLegal?.vat_enabled
+                  ? `جميع الأسعار شاملة الضريبة 15%. العملة ${currency}.`
+                  : `العملة ${currency}.`)}
             </p>
           </div>
         </div>
@@ -177,7 +180,9 @@ export function StoreLayout({ store, pages = [], merchantLegal, children }: Prop
           </div>
         )}
 
-        <div className="border-t py-4 text-center text-xs text-muted-foreground">© {new Date().getFullYear()} {store.store_name}</div>
+        <div className="border-t py-4 text-center text-xs text-muted-foreground">
+          {designExtras?.footer?.copyright || `© ${new Date().getFullYear()} ${store.store_name}`}
+        </div>
       </footer>
     </div>
   );
