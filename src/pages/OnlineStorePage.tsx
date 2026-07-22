@@ -225,7 +225,10 @@ export default function OnlineStorePage() {
     } catch { /* iframe not ready */ }
   };
   useEffect(() => {
-    if (isMax || isPro) postPreview();
+    if (!(isMax || isPro)) return;
+    // تجميع التعديلات المتتالية (مثل الكتابة) بإرسال واحد كل ٢٥٠ مللي ثانية
+    const t = setTimeout(postPreview, 250);
+    return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form, extras]);
   useEffect(() => {
