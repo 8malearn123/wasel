@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { useState, useEffect, useRef, createContext, useContext, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { MerchantUser, Merchant, Subscription, Branch } from '@/types/database';
@@ -100,19 +100,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // آخر مستخدم جلبنا بياناته — حتى ما نعيد الجلب (وتحديث الصفحة كلها)
+  // مع كل حدث توثيق مكرر مثل تجديد التوكن أو رسائل إطار المعاينة
+  const lastFetchedUid = useRef<string | null>(null);
+
   useEffect(() => {
+    // إطار المعاينة الحية (المتجر داخل المحرر) ما يحتاج توثيق إطلاقاً —
+    // تشغيله هنا كان يسبب أحداث توثيق متكررة تحدّث الصفحة الأم باستمرار
+    if (new URLSearchParams(window.location.search).get('preview') === '1') {
+      setLoading(false);
+      return;
+    }
+
     // Set up auth state listener FIRST
     const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Defer Supabase calls
-          setTimeout(() => {
-            fetchMerchantData(session.user.id);
-          }, 0);
+
+        const uid = session?.user?.id ?? null;
+        if (uid) {
+          if (uid !== lastFetchedUid.current) {
+            lastFetchedUid.current = uid;
+            // Defer Supabase calls
+            setTimeout(() => {
+              fetchMerchantData(uid);
+            }, 0);
+          }
         } else {
+          lastFetchedUid.current = null;
           setMerchantUser(null);
           setMerchant(null);
           setSubscription(null);
@@ -127,8 +143,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchMerchantData(session.user.id);
+      const uid = session?.user?.id ?? null;
+      if (uid && uid !== lastFetchedUid.current) {
+        lastFetchedUid.current = uid;
+        fetchMerchantData(uid);
       }
       setLoading(false);
     });
