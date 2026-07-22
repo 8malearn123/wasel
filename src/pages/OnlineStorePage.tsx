@@ -878,9 +878,8 @@ export default function OnlineStorePage() {
                               <p className="text-xs font-bold mb-2">تسوّق حسب الفئة</p>
                               <div className="grid grid-cols-4 gap-2">
                                 {PV_CATS.map(c => (
-                                  <div key={c.name} className="rounded-lg border text-center py-2">
-                                    <p className="text-base">{c.icon}</p>
-                                    <p className="text-[9px] font-semibold mt-0.5">{c.name}</p>
+                                  <div key={c.name} className="rounded-lg border text-center py-2.5">
+                                    <p className="text-[9px] font-semibold">{c.name}</p>
                                   </div>
                                 ))}
                               </div>
@@ -986,8 +985,7 @@ export default function OnlineStorePage() {
                                 { icon: '🎧', title: 'دعم متواصل' },
                               ]).map((pk, pi) => (
                                 <div key={pi} className="text-center">
-                                  <p className="text-sm">{pk.icon}</p>
-                                  <p className="text-[8px] font-bold mt-0.5">{pk.title}</p>
+                                  <p className="text-[8px] font-bold">{pk.title}</p>
                                 </div>
                               ))}
                             </div>

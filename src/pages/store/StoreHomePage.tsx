@@ -132,12 +132,9 @@ export function StoreHomePage({ store, devices, accessories, categories, designE
         <div className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-2 md:grid-cols-4 gap-5">
           {perksList.slice(0, 4).map((perk, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-              transition={{ delay: i * 0.07 }} className="flex items-center gap-3">
-              <span className="text-2xl shrink-0">{perk.icon}</span>
-              <div className="min-w-0">
-                <p className="font-bold text-sm">{perk.title}</p>
-                {perk.desc && <p className="text-[11px] text-muted-foreground truncate">{perk.desc}</p>}
-              </div>
+              transition={{ delay: i * 0.07 }} className="text-center">
+              <p className="font-bold text-sm">{perk.title}</p>
+              {perk.desc && <p className="text-[11px] text-muted-foreground truncate">{perk.desc}</p>}
             </motion.div>
           ))}
         </div>
@@ -252,14 +249,7 @@ export function StoreHomePage({ store, devices, accessories, categories, designE
           {categories.map((c, i) => (
             <motion.div key={c.id} initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.06 }}>
               <Link to={`/store/${slug}/products?category=${encodeURIComponent(c.name)}`}
-                className="group block bg-card rounded-2xl border p-6 text-center transition-all hover:shadow-lg hover:-translate-y-0.5"
-                style={{ borderColor: undefined }}>
-                {c.image_url ? (
-                  <img src={c.image_url} alt={c.name} className="w-16 h-16 mx-auto rounded-2xl object-cover mb-3" />
-                ) : (
-                  <div className="w-16 h-16 mx-auto rounded-2xl mb-3 flex items-center justify-center text-2xl"
-                    style={{ background: `hsl(var(--store-primary) / 0.08)` }}>🛍️</div>
-                )}
+                className="group block bg-card rounded-2xl border py-6 px-4 text-center transition-all hover:shadow-lg hover:-translate-y-0.5">
                 <h3 className="font-bold text-sm group-hover:underline underline-offset-4">{c.name}</h3>
               </Link>
             </motion.div>
