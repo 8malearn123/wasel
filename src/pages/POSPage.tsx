@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useLanguage } from "@/i18n";
 import { useAuth } from "@/hooks/useAuth";
@@ -39,7 +40,35 @@ export default function POSPage() {
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
   const [activeTab, setActiveTab] = useTabParam("pos");
   const { t, isRTL } = useLanguage();
-  const { merchant, currentBranch, merchantUser } = useAuth();
+  const { merchant, currentBranch, merchantUser, user } = useAuth();
+
+  // تسجيل حضور الكاشير (مرة واحدة في اليوم) عند دخوله نقطة البيع —
+  // يظهر في قسم الموارد البشرية كموعد الدخول
+  useEffect(() => {
+    if (!merchant || !user || merchantUser?.role !== 'cashier') return;
+    (async () => {
+      try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const { data } = await supabase
+          .from('activity_logs')
+          .select('id')
+          .eq('merchant_id', merchant.id)
+          .eq('user_id', user.id)
+          .eq('action', 'pos_check_in')
+          .gte('created_at', today.toISOString())
+          .limit(1);
+        if (!data || data.length === 0) {
+          await supabase.from('activity_logs').insert({
+            merchant_id: merchant.id,
+            user_id: user.id,
+            action: 'pos_check_in',
+            entity_type: 'attendance',
+          } as any);
+        }
+      } catch { /* السجل اختياري — ما نعطل نقطة البيع */ }
+    })();
+  }, [merchant?.id, user?.id, merchantUser?.role]);
 
   const { devices, accessories, loading, refetch, searchByIMEI, searchBySkuOrName } = usePOSInventory();
   const { createSale, markAsPrinted, sales, loading: salesLoading, updateSale, refetch: refetchSales } = useSales();

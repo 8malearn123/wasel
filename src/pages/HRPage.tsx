@@ -49,6 +49,54 @@ export default function HRPage() {
   const [hr, setHr] = useState<Record<string, HRInfo>>(loadHR);
   const [editing, setEditing] = useState<MerchantUser | null>(null);
   const [monthSales, setMonthSales] = useState<Record<string, number>>({});
+  // سجل الحضور: دخول/انصراف الكاشير من نقطة البيع (آخر ٧ أيام)
+  const [attendance, setAttendance] = useState<Array<{ user_id: string; action: string; created_at: string }>>([]);
+
+  useEffect(() => {
+    if (!merchant) return;
+    (async () => {
+      const from = new Date();
+      from.setDate(from.getDate() - 7);
+      from.setHours(0, 0, 0, 0);
+      const { data } = await supabase
+        .from("activity_logs")
+        .select("user_id, action, created_at")
+        .eq("merchant_id", merchant.id)
+        .in("action", ["pos_check_in", "pos_check_out"])
+        .gte("created_at", from.toISOString())
+        .order("created_at", { ascending: true })
+        .limit(1000);
+      setAttendance((data || []).filter(r => r.user_id) as Array<{ user_id: string; action: string; created_at: string }>);
+    })();
+  }, [merchant]);
+
+  const fmtTime = (iso: string) =>
+    new Date(iso).toLocaleTimeString(isRTL ? "ar-SA" : "en-US", { hour: "2-digit", minute: "2-digit" });
+
+  // دخول/انصراف اليوم لكل موظف: أول دخول وآخر انصراف
+  const todayKey = new Date().toDateString();
+  const todayAttendance: Record<string, { in?: string; out?: string }> = {};
+  for (const r of attendance) {
+    if (new Date(r.created_at).toDateString() !== todayKey) continue;
+    const rec = todayAttendance[r.user_id] || {};
+    if (r.action === "pos_check_in" && !rec.in) rec.in = r.created_at;
+    if (r.action === "pos_check_out") rec.out = r.created_at;
+    todayAttendance[r.user_id] = rec;
+  }
+
+  // سجل آخر ٧ أيام: لكل (موظف، يوم) أول دخول وآخر انصراف
+  const historyMap: Record<string, { user_id: string; day: string; in?: string; out?: string }> = {};
+  for (const r of attendance) {
+    const day = new Date(r.created_at).toDateString();
+    const key = `${r.user_id}|${day}`;
+    const rec = historyMap[key] || { user_id: r.user_id, day };
+    if (r.action === "pos_check_in" && !rec.in) rec.in = r.created_at;
+    if (r.action === "pos_check_out") rec.out = r.created_at;
+    historyMap[key] = rec;
+  }
+  const history = Object.values(historyMap).sort((a, b) =>
+    new Date(b.in || b.out || 0).getTime() - new Date(a.in || a.out || 0).getTime()
+  );
 
   // Sales this month per employee (by created_by)
   useEffect(() => {
@@ -135,6 +183,8 @@ export default function HRPage() {
                     isRTL ? "الراتب" : "Salary",
                     isRTL ? "تاريخ التعيين" : "Hire Date",
                     isRTL ? "مبيعات الشهر" : "Month Sales",
+                    isRTL ? "دخول اليوم" : "Check-in",
+                    isRTL ? "انصراف اليوم" : "Check-out",
                     isRTL ? "الحالة" : "Status",
                     "",
                   ].map((h, i) => (
@@ -166,6 +216,12 @@ export default function HRPage() {
                       <td className="px-4 py-3 text-sm font-semibold text-foreground">{info.salary ? `${info.salary.toLocaleString()} ر.س` : "—"}</td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">{info.hireDate || new Date(u.created_at).toLocaleDateString("ar-SA")}</td>
                       <td className="px-4 py-3 text-sm font-semibold text-primary">{(monthSales[u.user_id] || 0).toLocaleString()} ر.س</td>
+                      <td className="px-4 py-3 text-sm font-semibold text-success" dir="ltr">
+                        {todayAttendance[u.user_id]?.in ? fmtTime(todayAttendance[u.user_id].in!) : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-semibold text-warning" dir="ltr">
+                        {todayAttendance[u.user_id]?.out ? fmtTime(todayAttendance[u.user_id].out!) : "—"}
+                      </td>
                       <td className="px-4 py-3">
                         <Badge variant="outline" className={u.is_active ? "bg-success/10 text-success border-success/20" : "bg-destructive/10 text-destructive border-destructive/20"}>
                           {u.is_active ? (isRTL ? "نشط" : "Active") : (isRTL ? "موقوف" : "Inactive")}
@@ -176,6 +232,52 @@ export default function HRPage() {
                           <Pencil className="w-4 h-4" />
                         </Button>
                       </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* سجل الحضور — آخر ٧ أيام */}
+      {history.length > 0 && (
+        <div className="mt-6 bg-card rounded-xl border border-border overflow-hidden">
+          <div className="px-4 py-3 border-b border-border">
+            <p className="font-bold text-sm">{isRTL ? "سجل الحضور — آخر ٧ أيام" : "Attendance Log — Last 7 Days"}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              {isRTL ? "الدخول يسجَّل تلقائياً عند فتح الكاشير نقطة البيع، والانصراف عند تسجيل الخروج" : "Check-in is recorded when the cashier opens the POS; check-out on sign-out"}
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-muted/40 border-b border-border">
+                <tr>
+                  {[isRTL ? "اليوم" : "Day", isRTL ? "الموظف" : "Employee", isRTL ? "الدخول" : "Check-in", isRTL ? "الانصراف" : "Check-out", isRTL ? "مدة الدوام" : "Duration"].map((h, i) => (
+                    <th key={i} className="px-4 py-3 text-xs font-medium text-muted-foreground text-right whitespace-nowrap">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/50">
+                {history.map(rec => {
+                  const emp = users.find(u => u.user_id === rec.user_id);
+                  const empName = emp?.profile?.full_name || (isRTL ? "موظف" : "Employee");
+                  const dur = rec.in && rec.out
+                    ? Math.max(0, new Date(rec.out).getTime() - new Date(rec.in).getTime())
+                    : null;
+                  const durText = dur !== null
+                    ? `${Math.floor(dur / 3600000)}${isRTL ? "س" : "h"} ${Math.floor((dur % 3600000) / 60000)}${isRTL ? "د" : "m"}`
+                    : "—";
+                  return (
+                    <tr key={`${rec.user_id}-${rec.day}`} className="hover:bg-muted/20">
+                      <td className="px-4 py-3 text-sm text-foreground">
+                        {new Date(rec.in || rec.out || Date.now()).toLocaleDateString(isRTL ? "ar-SA" : "en-US", { weekday: "long", day: "numeric", month: "short" })}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-medium text-foreground">{empName}</td>
+                      <td className="px-4 py-3 text-sm font-semibold text-success" dir="ltr">{rec.in ? fmtTime(rec.in) : "—"}</td>
+                      <td className="px-4 py-3 text-sm font-semibold text-warning" dir="ltr">{rec.out ? fmtTime(rec.out) : "—"}</td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground" dir="ltr">{durText}</td>
                     </tr>
                   );
                 })}

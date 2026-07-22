@@ -18,6 +18,7 @@ import {
 import { GlobalSearch } from "@/components/layout/GlobalSearch";
 import { ProfileDialog, ActivityLogDialog } from "@/components/layout/AccountDialogs";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "@/hooks/useTheme";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useLanguage } from "@/i18n";
@@ -58,7 +59,7 @@ const CASHIER_PATHS = new Set(["/pos", "/repairs", "/daily-closings", "/support"
 export function Header({ title, subtitle }: HeaderProps) {
   const { t, language, setLanguage, isRTL } = useLanguage();
   const { isDark, toggleTheme } = useTheme();
-  const { signOut, merchantUser } = useAuth();
+  const { signOut, merchantUser, merchant, user } = useAuth();
   const navigate = useNavigate();
 
   const isCashier = merchantUser?.role === "cashier";
@@ -74,6 +75,17 @@ export function Header({ title, subtitle }: HeaderProps) {
 
 
   const handleSignOut = async () => {
+    // تسجيل انصراف الكاشير لسجل الحضور في الموارد البشرية
+    if (isCashier && merchant && user) {
+      try {
+        await supabase.from('activity_logs').insert({
+          merchant_id: merchant.id,
+          user_id: user.id,
+          action: 'pos_check_out',
+          entity_type: 'attendance',
+        } as any);
+      } catch { /* لا نوقف الخروج لو فشل التسجيل */ }
+    }
     await signOut();
     navigate('/auth');
   };
