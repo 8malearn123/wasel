@@ -71,6 +71,16 @@ export interface DesignExtras {
   testimonials?: Array<{ name: string; text: string; rating?: number }>;
   // قسم خدمة العملاء
   customer_service?: { enabled?: boolean; whatsapp?: string; phone?: string; hours?: string; note?: string };
+  // البنرات العريضة كسلايدر متحرك تلقائياً بدل التكديس
+  wide_slider?: boolean;
+  // عداد تنازلي للعروض
+  countdown?: { enabled?: boolean; title?: string; ends_at?: string };
+  // الأسئلة الشائعة
+  faq?: Array<{ q: string; a: string }>;
+  // قسم فيديو (يوتيوب)
+  video?: { enabled?: boolean; url?: string; title?: string };
+  // شريط الماركات
+  brands?: Array<{ name: string; image_url?: string }>;
 }
 
 // الترتيب الافتراضي لأقسام الصفحة الرئيسية في المتجر
@@ -80,12 +90,16 @@ export const DEFAULT_HOME_SECTIONS: Array<{ key: string; visible: boolean }> = [
   { key: 'wide', visible: true },
   { key: 'feature', visible: true },
   { key: 'divider', visible: true },
+  { key: 'countdown', visible: true },
   { key: 'banners', visible: true },
+  { key: 'brands', visible: true },
   { key: 'categories', visible: true },
   { key: 'products', visible: true },
+  { key: 'video', visible: true },
   { key: 'reviews', visible: true },
   { key: 'gallery', visible: true },
   { key: 'text', visible: true },
+  { key: 'faq', visible: true },
   { key: 'support', visible: true },
 ];
 
@@ -314,10 +328,68 @@ export function useStorePages() {
 }
 
 // ===== Storage Upload Helper =====
+
+// قص وضغط تلقائي للصور قبل الرفع — كل نوع له مقاس مناسب حتى ما تطلع الصور مشوهة أو ثقيلة
+const IMAGE_SPECS: Record<string, { maxW: number; aspect?: number }> = {
+  logo: { maxW: 600 },                    // بدون قص — الشعار يبقى كامل
+  banner: { maxW: 1600, aspect: 16 / 6 },
+  hero: { maxW: 1920, aspect: 16 / 7 },
+  og: { maxW: 1200, aspect: 1200 / 630 },
+  category: { maxW: 600, aspect: 1 },
+  gallery: { maxW: 1200, aspect: 4 / 3 },
+};
+
+async function processImage(file: File, kind: string): Promise<Blob> {
+  const spec = IMAGE_SPECS[kind];
+  if (!spec || file.type === 'image/svg+xml' || file.type === 'image/gif') return file;
+  try {
+    const url = URL.createObjectURL(file);
+    const img = await new Promise<HTMLImageElement>((res, rej) => {
+      const i = new Image();
+      i.onload = () => res(i);
+      i.onerror = rej;
+      i.src = url;
+    });
+    URL.revokeObjectURL(url);
+
+    let sx = 0, sy = 0, sw = img.width, sh = img.height;
+    if (spec.aspect) {
+      // قص من المنتصف (cover) للمقاس المطلوب
+      const current = img.width / img.height;
+      if (current > spec.aspect) {
+        sw = Math.round(img.height * spec.aspect);
+        sx = Math.round((img.width - sw) / 2);
+      } else {
+        sh = Math.round(img.width / spec.aspect);
+        sy = Math.round((img.height - sh) / 2);
+      }
+    }
+    const scale = Math.min(1, spec.maxW / sw);
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(sw * scale);
+    canvas.height = Math.round(sh * scale);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return file;
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+    const hasAlpha = file.type === 'image/png' && kind === 'logo';
+    const blob = await new Promise<Blob | null>(res =>
+      canvas.toBlob(res, hasAlpha ? 'image/png' : 'image/jpeg', 0.86)
+    );
+    return blob || file;
+  } catch {
+    return file;
+  }
+}
+
 export async function uploadStoreAsset(merchantId: string, file: File, kind: 'logo' | 'banner' | 'hero' | 'og' | 'category' | 'gallery'): Promise<string | null> {
-  const ext = file.name.split('.').pop() || 'jpg';
+  const processed = await processImage(file, kind);
+  const isPng = processed.type === 'image/png';
+  const ext = processed === file ? (file.name.split('.').pop() || 'jpg') : (isPng ? 'png' : 'jpg');
   const path = `${merchantId}/${kind}-${Date.now()}.${ext}`;
-  const { error } = await supabase.storage.from('store-assets').upload(path, file, { upsert: true, cacheControl: '3600' });
+  const { error } = await supabase.storage.from('store-assets').upload(path, processed, {
+    upsert: true, cacheControl: '3600',
+    contentType: processed.type || file.type,
+  });
   if (error) { toast.error(error.message); return null; }
   const { data } = supabase.storage.from('store-assets').getPublicUrl(path);
   return data.publicUrl;

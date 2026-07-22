@@ -5,6 +5,7 @@ import {
   Loader2, Tag, Link2, Sparkles, Search, FileText, Image as ImageIcon,
   Upload, Megaphone, Type, Star, Layout, Check, ArrowRight,
   Monitor, Smartphone, RotateCcw, GripVertical, ChevronDown, ArrowUp, ArrowDown, Rocket,
+  Undo2, Wand2, ListChecks, Clock, HelpCircle, Video, Award,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -51,6 +52,40 @@ const FONT_PRESETS = [
   { id: "lalezar", name: "Lalezar", desc: "جريء للعروض", gf: "Lalezar", style: { fontFamily: '"Lalezar", system-ui, sans-serif' } },
 ];
 
+// قوالب متاجر كاملة — ضغطة وحدة تضبط كل شي (زي سلة)
+const STORE_TEMPLATES = [
+  {
+    id: 'gold', name: 'فخم ذهبي', desc: 'كلاسيكي راقي بلمسة ذهبية',
+    settings: { theme_id: 'classic', font_family: 'amiri', primary_color: '#b08a57', secondary_color: '#17120f' },
+    extras: { button_radius: 0, glitter: true, icon_shape: 'square' as const, button_color: '#b08a57' },
+  },
+  {
+    id: 'tech', name: 'تقني عصري', desc: 'أزرق حيوي للتقنية',
+    settings: { theme_id: 'modern', font_family: 'cairo', primary_color: '#2563eb', secondary_color: '#0ea5e9' },
+    extras: { button_radius: 14, glitter: false, icon_shape: 'circle' as const, button_color: undefined },
+  },
+  {
+    id: 'clean', name: 'بسيط نظيف', desc: 'أبيض هادئ يركز على المنتج',
+    settings: { theme_id: 'minimal', font_family: 'almarai', primary_color: '#111827', secondary_color: '#6b7280' },
+    extras: { button_radius: 8, glitter: false, icon_shape: 'square' as const, button_color: undefined },
+  },
+  {
+    id: 'bold', name: 'جريء ناري', desc: 'أحمر وبرتقالي للعروض القوية',
+    settings: { theme_id: 'bold', font_family: 'changa', primary_color: '#dc2626', secondary_color: '#f97316' },
+    extras: { button_radius: 999, glitter: false, icon_shape: 'circle' as const, button_color: undefined },
+  },
+  {
+    id: 'violet', name: 'أنيق بنفسجي', desc: 'عصري بلمعة مميزة',
+    settings: { theme_id: 'modern', font_family: 'elmessiri', primary_color: '#7c3aed', secondary_color: '#ec4899' },
+    extras: { button_radius: 20, glitter: true, icon_shape: 'circle' as const, button_color: undefined },
+  },
+  {
+    id: 'calm', name: 'هادئ تركواز', desc: 'تركواز مريح مع دفء خفيف',
+    settings: { theme_id: 'minimal', font_family: 'tajawal', primary_color: '#0f766e', secondary_color: '#f59e0b' },
+    extras: { button_radius: 12, glitter: false, icon_shape: 'circle' as const, button_color: undefined },
+  },
+];
+
 // أسماء أقسام الصفحة الرئيسية في محرر المتجر
 const SECTION_META: Record<string, { name: string; desc: string }> = {
   hero: { name: "البنر الرئيسي", desc: "الواجهة الترحيبية بأعلى المتجر" },
@@ -58,6 +93,10 @@ const SECTION_META: Record<string, { name: string; desc: string }> = {
   feature: { name: "الصور المميزة", desc: "صور كبيرة تبرز العروض" },
   divider: { name: "الفاصل العالي", desc: "شريط ملون بجملة تسويقية" },
   banners: { name: "البنرات الإضافية", desc: "بنرات تبويب البنرات — أطفئها من هنا" },
+  countdown: { name: "عداد العروض", desc: "عد تنازلي حي لنهاية العرض" },
+  brands: { name: "شريط الماركات", desc: "شعارات أو أسماء الماركات" },
+  video: { name: "الفيديو", desc: "فيديو يوتيوب داخل المتجر" },
+  faq: { name: "الأسئلة الشائعة", desc: "أسئلة وأجوبة تطمئن العميل" },
   gallery: { name: "معرض الصور", desc: "صور حرة مع تعليقات" },
   text: { name: "كلامك الخاص", desc: "عنوان ورسالة بأسلوبك" },
   categories: { name: "تسوّق حسب الفئة", desc: "شبكة التصنيفات" },
@@ -160,6 +199,10 @@ export default function OnlineStorePage() {
   const [openPanel, setOpenPanel] = useState<string | null>('logo');
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
   const dragIdx = useRef<number | null>(null);
+
+  // باقة ماكس (الموزع) والفترة التجريبية: استوديو التصميم الكامل — برو: محرر مبسط
+  const isMax = subscription?.plan === 'Distributor' || subscription?.plan === 'trial';
+  const isPro = subscription?.plan === 'Enterprise';
   const [extras, setExtras] = useState<DesignExtras>({ gallery: [] });
   const [extrasDirty, setExtrasDirty] = useState(false);
   const [extrasLoaded, setExtrasLoaded] = useState(false);
@@ -170,6 +213,64 @@ export default function OnlineStorePage() {
       setExtrasLoaded(true);
     }
   }, [designExtras, extrasLoaded]);
+
+  // ===== المعاينة الحقيقية: إطار يعرض المتجر الفعلي ويستقبل التعديلات لحظياً =====
+  const previewFrameRef = useRef<HTMLIFrameElement>(null);
+  const postPreview = () => {
+    try {
+      previewFrameRef.current?.contentWindow?.postMessage(
+        { type: 'wasel-preview', settings: form, extras },
+        window.location.origin
+      );
+    } catch { /* iframe not ready */ }
+  };
+  useEffect(() => {
+    if (isMax || isPro) postPreview();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form, extras]);
+  useEffect(() => {
+    const onMsg = (e: MessageEvent) => {
+      if (e.origin === window.location.origin && e.data?.type === 'wasel-preview-ready') postPreview();
+    };
+    window.addEventListener('message', onMsg);
+    return () => window.removeEventListener('message', onMsg);
+  });
+
+  // ===== تراجع (Undo): لقطات لحالة التصميم قبل كل تعديل =====
+  const histRef = useRef<Array<{ form: Record<string, any>; extras: DesignExtras }>>([]);
+  const histSkip = useRef(false);
+  const histTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const histPrev = useRef<{ form: Record<string, any>; extras: DesignExtras } | null>(null);
+  useEffect(() => {
+    if (histSkip.current) {
+      histSkip.current = false;
+      histPrev.current = { form, extras };
+      return;
+    }
+    if (!histPrev.current) {
+      histPrev.current = { form, extras };
+      return;
+    }
+    // التعديلات المتتالية خلال ٧٠٠ مللي ثانية تنحسب لقطة وحدة (مثل الكتابة)
+    if (!histTimer.current) {
+      histRef.current.push(histPrev.current);
+      if (histRef.current.length > 30) histRef.current.shift();
+      histTimer.current = setTimeout(() => { histTimer.current = null; }, 700);
+    }
+    histPrev.current = { form, extras };
+  }, [form, extras]);
+
+  const undoDesign = () => {
+    const snap = histRef.current.pop();
+    if (!snap) {
+      toast.info('ما فيه تعديلات للتراجع عنها');
+      return;
+    }
+    histSkip.current = true;
+    setForm(snap.form);
+    setExtras(snap.extras);
+    setExtrasDirty(true);
+  };
 
   // تحميل كل خطوط المعاينة مرة واحدة حتى تظهر عينات الخطوط بشكلها الحقيقي
   useEffect(() => {
@@ -310,6 +411,27 @@ export default function OnlineStorePage() {
     toast.success('✓ تم نشر تصميم متجرك بنجاح');
   };
 
+  // تطبيق قالب متجر كامل بضغطة وحدة
+  const applyTemplate = (tpl: typeof STORE_TEMPLATES[number]) => {
+    setForm(prev => ({ ...prev, ...tpl.settings }));
+    updExtras({ ...tpl.extras });
+    toast.success(`تم تطبيق قالب "${tpl.name}" — شوف المعاينة واضغط نشر إذا عجبك`);
+  };
+
+  // قائمة "أكمل متجرك" — خطوات الإعداد مع نسبة الإنجاز
+  const checklist = [
+    { key: 'logo', label: 'ارفع شعارك', done: !!settings.logo_url, open: () => setOpenPanel('logo') },
+    { key: 'name', label: 'اكتب اسم ووصف متجرك', done: !!(val('store_name') && (val('description') || val('hero_subtitle'))), open: () => setOpenPanel('logo') },
+    { key: 'colors', label: 'اختر ألوانك', done: !!val('primary_color'), open: () => setOpenPanel('colors') },
+    { key: 'hero', label: 'جهّز البنر الرئيسي', done: !!(val('hero_title') || settings.hero_image_url), open: () => setOpenPanel('banner') },
+    { key: 'perks', label: 'أضف مميزات متجرك', done: (extras.store_perks || []).filter(p => p.title).length > 0, open: () => setDesignSection('perks') },
+    { key: 'reviews', label: 'أضف آراء عملائك', done: (extras.testimonials || []).filter(t => t.text).length > 0, open: () => setDesignSection('reviews') },
+    { key: 'support', label: 'فعّل خدمة العملاء', done: !!extras.customer_service?.enabled, open: () => setDesignSection('support') },
+    { key: 'publish', label: 'انشر متجرك', done: !!settings.is_published, open: () => publishAll() },
+  ];
+  const checklistDone = checklist.filter(c => c.done).length;
+  const checklistPct = Math.round((checklistDone / checklist.length) * 100);
+
   const resetDesigner = () => {
     setForm(prev => ({
       ...prev,
@@ -335,10 +457,6 @@ export default function OnlineStorePage() {
 
   const storeUrl = `${window.location.origin}/store/${settings.slug}`;
   const dirty = Object.keys(form).length > 0;
-  // باقة ماكس (الموزع) والفترة التجريبية: استوديو التصميم الكامل
-  const isMax = subscription?.plan === 'Distributor' || subscription?.plan === 'trial';
-  // باقة برو: مصمم متجر مبسط (شعار، بانر، ألوان جاهزة)
-  const isPro = subscription?.plan === 'Enterprise';
 
   return (
     <AppLayout title="المتجر الإلكتروني" subtitle="إدارة وتخصيص احترافي لمتجرك">
@@ -444,6 +562,9 @@ export default function OnlineStorePage() {
                           <Smartphone className="w-3.5 h-3.5" /> جوال
                         </button>
                       </div>
+                      <Button variant="outline" size="sm" onClick={undoDesign} title="تراجع عن آخر تعديل">
+                        <Undo2 className="w-4 h-4 me-1" /> تراجع
+                      </Button>
                       <Button variant="outline" size="sm" onClick={resetDesigner}>
                         <RotateCcw className="w-4 h-4 me-1" /> استعادة الافتراضي
                       </Button>
@@ -454,9 +575,71 @@ export default function OnlineStorePage() {
                     </div>
                   </div>
 
+                  {/* قائمة أكمل متجرك */}
+                  {checklistPct < 100 && (
+                    <div className="bg-card rounded-xl border p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="font-bold text-sm flex items-center gap-2">
+                          <ListChecks className="w-4 h-4 text-primary" /> أكمل متجرك
+                        </p>
+                        <span className="text-xs font-bold text-primary">{checklistPct}%</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-muted overflow-hidden mb-3">
+                        <div className="h-full bg-primary transition-all duration-500" style={{ width: `${checklistPct}%` }} />
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {checklist.map(c => (
+                          <button key={c.key} type="button" onClick={c.open}
+                            className={cn(
+                              "inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all",
+                              c.done
+                                ? "bg-success/10 text-success border-success/30"
+                                : "bg-muted/40 text-muted-foreground border-border hover:border-primary/50 hover:text-foreground"
+                            )}>
+                            {c.done ? '✓' : '○'} {c.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid lg:grid-cols-[360px_minmax(0,1fr)] gap-4 items-start">
                     {/* ===== لوحة التحكم ===== */}
                     <div className="space-y-3">
+                      {/* قوالب متاجر كاملة */}
+                      <div className="bg-card rounded-xl border overflow-hidden">
+                        <button type="button" onClick={() => setOpenPanel(openPanel === 'templates' ? null : 'templates')}
+                          className="w-full flex items-center justify-between p-4 text-right">
+                          <div className="flex items-center gap-3">
+                            <Wand2 className="w-5 h-5 text-primary" />
+                            <div>
+                              <p className="font-semibold text-sm">قوالب جاهزة كاملة</p>
+                              <p className="text-[11px] text-muted-foreground">ضغطة وحدة تضبط الألوان والخط والقالب كله</p>
+                            </div>
+                          </div>
+                          <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform", openPanel === 'templates' && "rotate-180")} />
+                        </button>
+                        {openPanel === 'templates' && (
+                          <div className="px-4 pb-4 border-t pt-3 grid grid-cols-2 gap-2">
+                            {STORE_TEMPLATES.map(tpl => (
+                              <button key={tpl.id} type="button" onClick={() => applyTemplate(tpl)}
+                                className="text-right rounded-xl border-2 border-border overflow-hidden transition-all hover:border-primary/60 hover:shadow-md">
+                                <div className="h-9 flex">
+                                  <span className="flex-1" style={{ background: tpl.settings.primary_color }} />
+                                  <span className="w-1/3" style={{ background: tpl.settings.secondary_color }} />
+                                </div>
+                                <div className="p-2.5">
+                                  <p className="font-bold text-xs flex items-center gap-1">
+                                    {tpl.name} {tpl.extras.glitter && <span>✨</span>}
+                                  </p>
+                                  <p className="text-[10px] text-muted-foreground mt-0.5">{tpl.desc}</p>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
                       <p className="text-xs font-bold text-muted-foreground px-1">الهوية والشكل</p>
 
                       {/* الشعار واسم المتجر */}
@@ -812,6 +995,10 @@ export default function OnlineStorePage() {
                           { key: 'perks', icon: Check, name: 'مميزات المتجر' },
                           { key: 'reviews', icon: Star, name: 'آراء العملاء' },
                           { key: 'support', icon: Megaphone, name: 'خدمة العملاء' },
+                          { key: 'countdown', icon: Clock, name: 'عداد العروض' },
+                          { key: 'faq', icon: HelpCircle, name: 'الأسئلة الشائعة' },
+                          { key: 'video', icon: Video, name: 'الفيديو' },
+                          { key: 'brands', icon: Award, name: 'شريط الماركات' },
                           { key: 'gallery', icon: ImageIcon, name: 'معرض الصور' },
                           { key: 'text', icon: FileText, name: 'كلامك الخاص' },
                           { key: 'fonts', icon: Type, name: 'لون الخط' },
@@ -825,181 +1012,28 @@ export default function OnlineStorePage() {
                       </div>
                     </div>
 
-                    {/* ===== المعاينة الحية ===== */}
+                    {/* ===== المعاينة الحقيقية: متجرك الفعلي مباشرة ===== */}
                     <div className="bg-muted/40 rounded-xl border p-3 lg:sticky lg:top-4">
-                      <div className="flex items-center justify-between mb-2 px-1">
+                      <div className="flex items-center justify-between mb-2 px-1 flex-wrap gap-1">
                         <p className="text-[11px] text-muted-foreground font-mono" dir="ltr">{window.location.host}/store/{settings.slug}</p>
-                        <Badge variant="outline" className="text-[10px]">معاينة حية</Badge>
+                        <Badge variant="outline" className="text-[10px]">معاينة حقيقية · تعديلاتك تظهر فوراً</Badge>
                       </div>
-                      <div className={cn("bg-white rounded-lg border shadow-sm overflow-hidden transition-all mx-auto", previewDevice === 'mobile' ? "max-w-[380px]" : "w-full")}
-                        style={{ ...pvFont, color: extras.font_color || '#1f2937' }} dir="rtl">
-
-                        {/* هيدر مصغر */}
-                        <div className="flex items-center justify-between px-4 py-2.5 border-b bg-white">
-                          <div className="flex items-center gap-2">
-                            <span className={cn("w-7 h-7 flex items-center justify-center text-white text-xs font-black", (extras.icon_shape || 'circle') === 'circle' ? "rounded-full" : "rounded-md")}
-                              style={{ background: pvPrimary }}>
-                              {pvName.charAt(0)}
-                            </span>
-                            <span className="font-bold text-sm">{pvName}</span>
-                          </div>
-                          {previewDevice === 'desktop' && (
-                            <div className="flex items-center gap-3 text-[11px] text-gray-500">
-                              <span className="font-semibold" style={{ color: pvPrimary }}>الرئيسية</span>
-                              <span>الجوالات</span>
-                              <span>الإكسسوارات</span>
-                              <span>العروض</span>
-                            </div>
-                          )}
-                          <span className="relative">
-                            🛒
-                            <span className="absolute -top-1.5 -left-1.5 w-4 h-4 rounded-full text-[9px] text-white flex items-center justify-center" style={{ background: pvBtn }}>٣</span>
-                          </span>
+                      {settings.is_published ? (
+                        <div className={cn("mx-auto transition-all rounded-lg overflow-hidden border shadow-sm bg-white", previewDevice === 'mobile' ? "max-w-[390px]" : "w-full")}>
+                          <iframe
+                            ref={previewFrameRef}
+                            src={`${storeUrl}?preview=1`}
+                            title="معاينة المتجر"
+                            className="w-full h-[75vh] min-h-[560px] block"
+                            onLoad={postPreview}
+                          />
                         </div>
-
-                        {pvVisible.map(sk => {
-                          if (sk === 'hero') return (
-                            <div key={sk} className="relative overflow-hidden px-6 py-8 text-center text-white"
-                              style={{
-                                background: settings.hero_image_url
-                                  ? `linear-gradient(135deg, ${pvPrimary}d9, ${pvSecondary}d9), url(${settings.hero_image_url}) center/cover`
-                                  : `linear-gradient(135deg, ${pvPrimary}, ${pvSecondary})`,
-                              }}>
-                              {extras.glitter && <span className="absolute inset-0 glitter-overlay" />}
-                              <p className="relative z-10 text-lg font-extrabold mb-1">{val("hero_title") || `أهلاً في ${pvName}`}</p>
-                              <p className="text-[11px] opacity-90 mb-3">{val("hero_subtitle") || val("description") || 'اكتشف أحدث الأجهزة والإكسسوارات بأفضل الأسعار'}</p>
-                              <span className="inline-block bg-white text-gray-900 text-[11px] font-bold px-4 py-1.5" style={{ borderRadius: pvRadius }}>
-                                {extras.hero_button_text || 'تسوق الآن'}
-                              </span>
-                            </div>
-                          );
-                          if (sk === 'categories') return (
-                            <div key={sk} className="px-4 py-4">
-                              <p className="text-xs font-bold mb-2">تسوّق حسب الفئة</p>
-                              <div className="grid grid-cols-4 gap-2">
-                                {PV_CATS.map(c => (
-                                  <div key={c.name} className="rounded-lg border text-center py-2.5">
-                                    <p className="text-[9px] font-semibold">{c.name}</p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                          if (sk === 'wide') return (
-                            <div key={sk} className="h-16 flex items-center justify-center text-white text-xs font-extrabold"
-                              style={{ background: (extras.wide_banners?.[0]?.image_url)
-                                ? `linear-gradient(135deg, ${pvPrimary}66, ${pvSecondary}66), url(${extras.wide_banners[0].image_url}) center/cover`
-                                : `linear-gradient(135deg, ${pvPrimary}, ${pvSecondary})` }}>
-                              {extras.wide_banners?.[0]?.title || 'بنر عريض'}
-                            </div>
-                          );
-                          if (sk === 'feature') return (
-                            <div key={sk} className="px-4 py-3 grid grid-cols-2 gap-2">
-                              {[0, 1].map(fi => (
-                                <div key={fi} className="h-16 rounded-lg overflow-hidden"
-                                  style={{ background: extras.feature_images?.[fi]?.image_url
-                                    ? `url(${extras.feature_images[fi].image_url}) center/cover`
-                                    : `linear-gradient(135deg, ${pvPrimary}22, ${pvSecondary}33)` }} />
-                              ))}
-                            </div>
-                          );
-                          if (sk === 'divider') return (
-                            <div key={sk} className="relative overflow-hidden h-10 flex items-center justify-center text-white text-[11px] font-extrabold"
-                              style={{ background: `linear-gradient(90deg, ${pvPrimary}, ${pvSecondary})` }}>
-                              {extras.glitter && <span className="absolute inset-0 glitter-overlay" />}
-                              <span className="relative z-10">{extras.divider?.text || 'عروض نهاية الأسبوع — خصومات تصل إلى ٤٠٪'}</span>
-                            </div>
-                          );
-                          if (sk === 'gallery') return (
-                            <div key={sk} className="px-4 py-3 grid grid-cols-3 gap-1.5">
-                              {[0, 1, 2].map(gi => (
-                                <div key={gi} className="h-10 rounded-md"
-                                  style={{ background: extras.gallery?.[gi]?.image_url
-                                    ? `url(${extras.gallery[gi].image_url}) center/cover`
-                                    : `${pvPrimary}1a` }} />
-                              ))}
-                            </div>
-                          );
-                          if (sk === 'text') return (extras.custom_heading || extras.custom_text) ? (
-                            <div key={sk} className="px-4 py-3 text-center">
-                              {extras.custom_heading && <p className="text-sm font-extrabold" style={{ color: pvPrimary }}>{extras.custom_heading}</p>}
-                              {extras.custom_text && <p className="text-[10px] text-gray-500 mt-0.5">{extras.custom_text}</p>}
-                            </div>
-                          ) : null;
-                          if (sk === 'products') return (
-                            <div key={sk} className="px-4 py-3">
-                              <div className="flex items-center justify-between mb-2">
-                                <p className="text-xs font-bold">الأكثر مبيعاً</p>
-                                <p className="text-[10px]" style={{ color: pvPrimary }}>عرض الكل ←</p>
-                              </div>
-                              <div className="grid grid-cols-3 gap-2">
-                                {PV_PRODUCTS.map(pp => (
-                                  <div key={pp.name} className="border rounded-lg overflow-hidden">
-                                    <div className="h-12 relative" style={{ background: `${pvPrimary}14` }}>
-                                      {pp.tag && <span className="absolute top-1 right-1 text-[7px] text-white px-1 py-0.5 rounded" style={{ background: pvSecondary }}>{pp.tag}</span>}
-                                    </div>
-                                    <div className="p-1.5">
-                                      <p className="text-[9px] font-semibold truncate">{pp.name}</p>
-                                      <p className="text-[9px] font-bold mt-0.5" style={{ color: pvPrimary }}>{pp.price} ر.س</p>
-                                      <span className="block text-center text-[8px] text-white font-bold py-1 mt-1" style={{ background: pvBtn, borderRadius: Math.min(pvRadius, 10) }}>
-                                        أضف للسلة
-                                      </span>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                          if (sk === 'reviews') return (extras.testimonials?.filter(t => t.text).length ? (
-                            <div key={sk} className="px-4 py-3">
-                              <p className="text-xs font-bold mb-2 text-center">آراء عملائنا</p>
-                              <div className="grid grid-cols-3 gap-1.5">
-                                {extras.testimonials.filter(t => t.text).slice(0, 3).map((t, ti) => (
-                                  <div key={ti} className="border rounded-lg p-1.5">
-                                    <p className="text-[8px]" dir="ltr" style={{ color: '#f59e0b' }}>{'★'.repeat(t.rating || 5)}</p>
-                                    <p className="text-[8px] text-gray-600 line-clamp-2 mt-0.5">"{t.text}"</p>
-                                    <p className="text-[8px] font-bold mt-0.5" style={{ color: pvPrimary }}>— {t.name || 'عميل'}</p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          ) : null);
-                          if (sk === 'support') return (extras.customer_service?.enabled ? (
-                            <div key={sk} className="px-4 py-3">
-                              <div className="rounded-lg border text-center py-3 px-2" style={{ background: `${pvPrimary}08` }}>
-                                <p className="text-sm">🎧</p>
-                                <p className="text-[9px] font-bold">خدمة العملاء</p>
-                                <div className="flex justify-center gap-1.5 mt-1.5">
-                                  {extras.customer_service.whatsapp && <span className="text-[7px] text-white font-bold px-2 py-0.5 rounded" style={{ background: '#25D366' }}>💬 واتساب</span>}
-                                  {extras.customer_service.phone && <span className="text-[7px] text-white font-bold px-2 py-0.5 rounded" style={{ background: pvBtn }}>📞 اتصال</span>}
-                                </div>
-                              </div>
-                            </div>
-                          ) : null);
-                          if (sk === 'perks') return (
-                            <div key={sk} className="px-4 py-3 grid grid-cols-4 gap-1.5 border-t" style={{ background: `${pvPrimary}08` }}>
-                              {(extras.store_perks?.filter(pk => pk.title).length ? extras.store_perks.filter(pk => pk.title).slice(0, 4) : [
-                                { icon: '🚚', title: 'توصيل سريع' },
-                                { icon: '🛡️', title: 'ضمان موثوق' },
-                                { icon: '💳', title: 'دفع آمن' },
-                                { icon: '🎧', title: 'دعم متواصل' },
-                              ]).map((pk, pi) => (
-                                <div key={pi} className="text-center">
-                                  <p className="text-[8px] font-bold">{pk.title}</p>
-                                </div>
-                              ))}
-                            </div>
-                          );
-                          return null;
-                        })}
-
-                        {/* فوتر مصغر */}
-                        <div className="px-4 py-3 text-white" style={{ background: '#111827' }}>
-                          <p className="text-[10px] font-bold mb-1">{pvName}</p>
-                          <p className="text-[8px] opacity-70">وجهتك الأولى للجوالات والإكسسوارات الأصلية — أسعار منافسة وشحن سريع.</p>
-                          <p className="text-[8px] opacity-50 mt-2 text-center">© ٢٠٢٦ {pvName} — جميع الحقوق محفوظة</p>
+                      ) : (
+                        <div className="py-16 text-center text-sm text-muted-foreground">
+                          <p className="mb-3">المتجر غير منشور بعد — المعاينة الحقيقية تشتغل بعد أول نشر</p>
+                          <Button size="sm" onClick={publishAll} disabled={saving || savingExtras}>انشر الآن</Button>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1333,6 +1367,13 @@ export default function OnlineStorePage() {
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">بنر عريض وعالي يظهر أعلى المتجر — تقدر تضيف أكثر من واحد بزر +</p>
+                <div className="flex items-center justify-between rounded-xl border p-3 bg-muted/20">
+                  <div>
+                    <p className="text-sm font-semibold">سلايدر متحرك 🎞️</p>
+                    <p className="text-[11px] text-muted-foreground">البنرات تتبدل تلقائياً كل ٥ ثواني بدل ما تنعرض تحت بعض</p>
+                  </div>
+                  <Switch checked={!!extras.wide_slider} onCheckedChange={v => updExtras({ wide_slider: v })} />
+                </div>
                 <input ref={wideRef} type="file" accept="image/*" className="hidden"
                   onChange={e => { if (e.target.files?.[0]) handleSectionUpload(e.target.files[0], 'wide'); e.target.value = ''; }} />
                 {(extras.wide_banners || []).length === 0 ? (
@@ -1690,6 +1731,168 @@ export default function OnlineStorePage() {
               </div>
               </>)}
 
+              {designSection === 'countdown' && (<>
+              {/* عداد العروض التنازلي */}
+              <div className="bg-card rounded-xl border p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-primary" />
+                    <h3 className="font-semibold">عداد العروض التنازلي</h3>
+                  </div>
+                  <Switch
+                    checked={!!extras.countdown?.enabled}
+                    onCheckedChange={v => updExtras({ countdown: { ...extras.countdown, enabled: v } })}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">عد تنازلي حي (أيام، ساعات، دقائق، ثواني) يحمّس عملاءك قبل نهاية العرض — يختفي تلقائياً لما ينتهي الوقت</p>
+                {extras.countdown?.enabled && (
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-xs">عنوان العرض</Label>
+                      <Input value={extras.countdown?.title || ''} placeholder="مثال: تخفيضات نهاية الأسبوع تنتهي خلال"
+                        onChange={e => updExtras({ countdown: { ...extras.countdown, title: e.target.value } })}
+                        className="mt-1 h-9" />
+                    </div>
+                    <div>
+                      <Label className="text-xs">وقت انتهاء العرض</Label>
+                      <Input type="datetime-local" value={extras.countdown?.ends_at || ''} dir="ltr"
+                        onChange={e => updExtras({ countdown: { ...extras.countdown, ends_at: e.target.value } })}
+                        className="mt-1 h-9" />
+                    </div>
+                  </div>
+                )}
+              </div>
+              </>)}
+
+              {designSection === 'faq' && (<>
+              {/* الأسئلة الشائعة */}
+              <div className="bg-card rounded-xl border p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <HelpCircle className="w-5 h-5 text-primary" />
+                    <h3 className="font-semibold">الأسئلة الشائعة</h3>
+                  </div>
+                  <Button variant="outline" size="sm"
+                    onClick={() => updExtras({ faq: [...(extras.faq || []), { q: '', a: '' }] })}>
+                    <Plus className="w-4 h-4 me-1" /> إضافة سؤال
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">أسئلة وأجوبة تطمئن عملاءك (الشحن، الضمان، الإرجاع...) — تظهر بشكل قابل للطي في متجرك</p>
+                {(extras.faq || []).length === 0 ? (
+                  <button type="button"
+                    onClick={() => updExtras({ faq: [
+                      { q: 'كم يستغرق التوصيل؟', a: 'التوصيل خلال ١-٣ أيام عمل لجميع مناطق المملكة.' },
+                      { q: 'هل المنتجات أصلية وعليها ضمان؟', a: 'كل منتجاتنا أصلية ١٠٠٪ وعليها ضمان معتمد.' },
+                      { q: 'كيف أرجع منتج؟', a: 'تقدر ترجع المنتج خلال ١٤ يوم من الاستلام بحالته الأصلية.' },
+                    ] })}
+                    className="w-full border-2 border-dashed rounded-xl p-6 text-center text-sm text-muted-foreground hover:border-primary/60 hover:bg-primary/5 hover:text-primary transition-all">
+                    اضغط لإضافة ٣ أسئلة جاهزة تعدلها براحتك
+                  </button>
+                ) : (
+                  <div className="space-y-3">
+                    {(extras.faq || []).map((f, i) => (
+                      <div key={i} className="rounded-xl border p-4 space-y-2 bg-muted/20">
+                        <div className="flex items-center gap-2">
+                          <Input value={f.q} placeholder="السؤال" className="h-9 flex-1 font-semibold"
+                            onChange={e => {
+                              const faq = [...(extras.faq || [])];
+                              faq[i] = { ...faq[i], q: e.target.value };
+                              updExtras({ faq });
+                            }} />
+                          <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive shrink-0"
+                            onClick={() => updExtras({ faq: (extras.faq || []).filter((_, j) => j !== i) })}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <Textarea value={f.a} placeholder="الجواب..." rows={2}
+                          onChange={e => {
+                            const faq = [...(extras.faq || [])];
+                            faq[i] = { ...faq[i], a: e.target.value };
+                            updExtras({ faq });
+                          }} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              </>)}
+
+              {designSection === 'video' && (<>
+              {/* الفيديو */}
+              <div className="bg-card rounded-xl border p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Video className="w-5 h-5 text-primary" />
+                    <h3 className="font-semibold">فيديو المتجر</h3>
+                  </div>
+                  <Switch
+                    checked={!!extras.video?.enabled}
+                    onCheckedChange={v => updExtras({ video: { ...extras.video, enabled: v } })}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">حط رابط فيديو يوتيوب (إعلان، جولة في المحل، شرح منتج) ويظهر داخل متجرك</p>
+                {extras.video?.enabled && (
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-xs">رابط اليوتيوب</Label>
+                      <Input value={extras.video?.url || ''} dir="ltr" placeholder="https://youtube.com/watch?v=..."
+                        onChange={e => updExtras({ video: { ...extras.video, url: e.target.value } })}
+                        className="mt-1 h-9 font-mono" />
+                    </div>
+                    <div>
+                      <Label className="text-xs">عنوان فوق الفيديو (اختياري)</Label>
+                      <Input value={extras.video?.title || ''} placeholder="مثال: جولة داخل متجرنا"
+                        onChange={e => updExtras({ video: { ...extras.video, title: e.target.value } })}
+                        className="mt-1 h-9" />
+                    </div>
+                  </div>
+                )}
+              </div>
+              </>)}
+
+              {designSection === 'brands' && (<>
+              {/* شريط الماركات */}
+              <div className="bg-card rounded-xl border p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Award className="w-5 h-5 text-primary" />
+                    <h3 className="font-semibold">شريط الماركات</h3>
+                  </div>
+                  <Button variant="outline" size="sm"
+                    onClick={() => updExtras({ brands: [...(extras.brands || []), { name: '' }] })}>
+                    <Plus className="w-4 h-4 me-1" /> إضافة ماركة
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">أسماء الماركات اللي تبيعها (Apple, Samsung...) تظهر كشريط أنيق يعزز الثقة</p>
+                {(extras.brands || []).length === 0 ? (
+                  <button type="button"
+                    onClick={() => updExtras({ brands: [
+                      { name: 'Apple' }, { name: 'Samsung' }, { name: 'Anker' }, { name: 'JBL' }, { name: 'Huawei' },
+                    ] })}
+                    className="w-full border-2 border-dashed rounded-xl p-6 text-center text-sm text-muted-foreground hover:border-primary/60 hover:bg-primary/5 hover:text-primary transition-all">
+                    اضغط لإضافة ٥ ماركات جاهزة تعدلها براحتك
+                  </button>
+                ) : (
+                  <div className="space-y-2">
+                    {(extras.brands || []).map((b, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <Input value={b.name} placeholder="اسم الماركة" className="h-9 flex-1" dir="ltr"
+                          onChange={e => {
+                            const brands = [...(extras.brands || [])];
+                            brands[i] = { ...brands[i], name: e.target.value };
+                            updExtras({ brands });
+                          }} />
+                        <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive shrink-0"
+                          onClick={() => updExtras({ brands: (extras.brands || []).filter((_, j) => j !== i) })}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              </>)}
+
               {/* حفظ التصميم الحر */}
               {extrasDirty && (
                 <div className="sticky bottom-4 z-30 flex items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/10 backdrop-blur p-3 shadow-lg">
@@ -1957,109 +2160,28 @@ export default function OnlineStorePage() {
                   </div>
                 </div>
 
-                {/* ===== المعاينة الحية ===== */}
+                {/* ===== المعاينة الحقيقية: متجرك الفعلي مباشرة ===== */}
                 <div className="bg-muted/40 rounded-xl border p-3 lg:sticky lg:top-4">
-                  <div className="flex items-center justify-between mb-2 px-1">
+                  <div className="flex items-center justify-between mb-2 px-1 flex-wrap gap-1">
                     <p className="text-[11px] text-muted-foreground font-mono" dir="ltr">{window.location.host}/store/{settings.slug}</p>
-                    <Badge variant="outline" className="text-[10px]">معاينة حية</Badge>
+                    <Badge variant="outline" className="text-[10px]">معاينة حقيقية · تعديلاتك تظهر فوراً</Badge>
                   </div>
-                  <div className={cn("bg-white rounded-lg border shadow-sm overflow-hidden transition-all mx-auto text-gray-800", previewDevice === 'mobile' ? "max-w-[380px]" : "w-full")} dir="rtl">
-
-                    {/* هيدر مصغر */}
-                    <div className="flex items-center justify-between px-4 py-2.5 border-b bg-white">
-                      <div className="flex items-center gap-2">
-                        {settings.logo_url ? (
-                          <img src={settings.logo_url} alt="logo" className={cn("w-7 h-7 object-cover border", (extras.icon_shape || 'circle') === 'circle' ? "rounded-full" : "rounded-md")} />
-                        ) : (
-                          <span className={cn("w-7 h-7 flex items-center justify-center text-white text-xs font-black", (extras.icon_shape || 'circle') === 'circle' ? "rounded-full" : "rounded-md")}
-                            style={{ background: pvPrimary }}>
-                            {pvName.charAt(0)}
-                          </span>
-                        )}
-                        <span className="font-bold text-sm">{pvName}</span>
-                      </div>
-                      {previewDevice === 'desktop' && (
-                        <div className="flex items-center gap-3 text-[11px] text-gray-500">
-                          <span className="font-semibold" style={{ color: pvPrimary }}>الرئيسية</span>
-                          <span>الجوالات</span>
-                          <span>الإكسسوارات</span>
-                          <span>العروض</span>
-                        </div>
-                      )}
-                      <span className="relative">
-                        🛒
-                        <span className="absolute -top-1.5 -left-1.5 w-4 h-4 rounded-full text-[9px] text-white flex items-center justify-center" style={{ background: pvPrimary }}>٣</span>
-                      </span>
+                  {settings.is_published ? (
+                    <div className={cn("mx-auto transition-all rounded-lg overflow-hidden border shadow-sm bg-white", previewDevice === 'mobile' ? "max-w-[390px]" : "w-full")}>
+                      <iframe
+                        ref={previewFrameRef}
+                        src={`${storeUrl}?preview=1`}
+                        title="معاينة المتجر"
+                        className="w-full h-[75vh] min-h-[560px] block"
+                        onLoad={postPreview}
+                      />
                     </div>
-
-                    {/* البانر */}
-                    <div className="relative px-6 py-8 text-center text-white overflow-hidden"
-                      style={{
-                        background: settings.hero_image_url
-                          ? `linear-gradient(135deg, ${pvPrimary}${(extras.hero_effect || 'none') === 'glow' ? '8c' : 'd9'}, ${pvSecondary}${(extras.hero_effect || 'none') === 'glow' ? '8c' : 'd9'}), url(${settings.hero_image_url}) center/cover`
-                          : `linear-gradient(135deg, ${pvPrimary}, ${pvSecondary})`,
-                      }}>
-                      {(extras.hero_effect || 'none') === 'dots' && (
-                        <span className="absolute inset-0 opacity-40 pointer-events-none"
-                          style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,0.35) 1.5px, transparent 1.5px)', backgroundSize: '14px 14px' }} />
-                      )}
-                      {(extras.hero_effect || 'none') === 'dark' && <span className="absolute inset-0 bg-black/40 pointer-events-none" />}
-                      {(extras.hero_effect || 'none') === 'glow' && (
-                        <span className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.35), transparent 60%)' }} />
-                      )}
-                      <div className="relative z-10">
-                        <p className="text-lg font-extrabold mb-1">{val("hero_title") || `أهلاً في ${pvName}`}</p>
-                        <p className="text-[11px] opacity-90 mb-3">{val("hero_subtitle") || val("description") || 'اكتشف أحدث الأجهزة والإكسسوارات بأفضل الأسعار'}</p>
-                        <span className="inline-block bg-white text-gray-900 text-[11px] font-bold px-4 py-1.5 rounded-lg">
-                          {extras.hero_button_text || 'تسوق الآن'}
-                        </span>
-                      </div>
+                  ) : (
+                    <div className="py-16 text-center text-sm text-muted-foreground">
+                      <p className="mb-3">المتجر غير منشور بعد — المعاينة الحقيقية تشتغل بعد أول نشر</p>
+                      <Button size="sm" onClick={publishAll} disabled={saving || savingExtras}>انشر الآن</Button>
                     </div>
-
-                    {/* الفئات */}
-                    <div className="px-4 py-4">
-                      <p className="text-xs font-bold mb-2">تسوّق حسب الفئة</p>
-                      <div className="grid grid-cols-4 gap-2">
-                        {PV_CATS.map(c => (
-                          <div key={c.name} className="rounded-lg border text-center py-2">
-                            <p className="text-base">{c.icon}</p>
-                            <p className="text-[9px] font-semibold mt-0.5">{c.name}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* الأكثر مبيعاً */}
-                    <div className="px-4 py-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-xs font-bold">الأكثر مبيعاً</p>
-                        <p className="text-[10px]" style={{ color: pvPrimary }}>عرض الكل ←</p>
-                      </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        {PV_PRODUCTS.map(pp => (
-                          <div key={pp.name} className="border rounded-lg overflow-hidden">
-                            <div className="h-12 relative" style={{ background: `${pvPrimary}14` }}>
-                              {pp.tag && <span className="absolute top-1 right-1 text-[7px] text-white px-1 py-0.5 rounded" style={{ background: pvSecondary }}>{pp.tag}</span>}
-                            </div>
-                            <div className="p-1.5">
-                              <p className="text-[9px] font-semibold truncate">{pp.name}</p>
-                              <p className="text-[9px] font-bold mt-0.5" style={{ color: pvPrimary }}>{pp.price} ر.س</p>
-                              <span className="block text-center text-[8px] text-white font-bold py-1 mt-1 rounded-md" style={{ background: pvPrimary }}>
-                                أضف للسلة
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* فوتر مصغر */}
-                    <div className="px-4 py-3 text-white" style={{ background: '#111827' }}>
-                      <p className="text-[10px] font-bold mb-1">{pvName}</p>
-                      <p className="text-[8px] opacity-70">وجهتك الأولى للجوالات والإكسسوارات الأصلية — أسعار منافسة وشحن سريع لكل مدن المملكة.</p>
-                      <p className="text-[8px] opacity-50 mt-2 text-center">© ٢٠٢٦ {pvName} — جميع الحقوق محفوظة</p>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>

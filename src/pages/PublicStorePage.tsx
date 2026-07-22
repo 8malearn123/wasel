@@ -1,6 +1,7 @@
+import { useState, useEffect } from 'react';
 import { useParams, Routes, Route, Navigate } from 'react-router-dom';
 import { Loader2, Store } from 'lucide-react';
-import { usePublicStore } from '@/hooks/useOnlineStore';
+import { usePublicStore, type DesignExtras, type StoreSettings } from '@/hooks/useOnlineStore';
 import { StoreThemeProvider } from '@/components/store/StoreTheme';
 import { StoreCartProvider } from '@/components/store/StoreCart';
 import { StoreFavoritesProvider } from '@/components/store/StoreFavorites';
@@ -19,7 +20,26 @@ import { StoreMyOrdersPage } from '@/pages/store/StoreMyOrdersPage';
 
 export default function PublicStorePage() {
   const { slug } = useParams<{ slug: string }>();
-  const { store, devices, accessories, categories, pages, designExtras, merchantLegal, loading, error, placeOrder } = usePublicStore(slug || '');
+  const { store: dbStore, devices, accessories, categories, pages, designExtras: dbExtras, merchantLegal, loading, error, placeOrder } = usePublicStore(slug || '');
+
+  // وضع المعاينة الحية: محرر المتجر يرسل التعديلات غير المحفوظة عبر postMessage
+  const isPreview = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('preview') === '1';
+  const [draft, setDraft] = useState<{ settings?: Partial<StoreSettings>; extras?: DesignExtras } | null>(null);
+  useEffect(() => {
+    if (!isPreview) return;
+    const onMsg = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin) return;
+      if (e.data?.type === 'wasel-preview') {
+        setDraft({ settings: e.data.settings || {}, extras: e.data.extras });
+      }
+    };
+    window.addEventListener('message', onMsg);
+    try { window.parent?.postMessage({ type: 'wasel-preview-ready' }, window.location.origin); } catch { /* ignore */ }
+    return () => window.removeEventListener('message', onMsg);
+  }, [isPreview]);
+
+  const store = dbStore ? ({ ...dbStore, ...(draft?.settings || {}) } as StoreSettings) : dbStore;
+  const designExtras = draft?.extras ?? dbExtras;
 
   if (loading) {
     return (

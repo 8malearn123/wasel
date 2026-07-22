@@ -1,5 +1,5 @@
-import { ReactNode } from 'react';
-import { motion } from 'framer-motion';
+import { ReactNode, useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,96 @@ const DEFAULT_PERKS = [
   { icon: '💳', title: 'دفع آمن', desc: 'مدى · Apple Pay · تحويل' },
   { icon: '↩️', title: 'إرجاع سهل', desc: 'خلال ١٤ يومًا' },
 ];
+
+// عداد تنازلي حي للعروض
+function OfferCountdown({ endsAt, title, glitter }: { endsAt: string; title?: string; glitter?: boolean }) {
+  const calc = () => Math.max(0, new Date(endsAt).getTime() - Date.now());
+  const [left, setLeft] = useState(calc);
+  useEffect(() => {
+    const t = setInterval(() => setLeft(calc()), 1000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [endsAt]);
+  if (left <= 0) return null;
+  const d = Math.floor(left / 86400000);
+  const h = Math.floor((left % 86400000) / 3600000);
+  const m = Math.floor((left % 3600000) / 60000);
+  const s = Math.floor((left % 60000) / 1000);
+  const units = [
+    { v: d, l: 'يوم' },
+    { v: h, l: 'ساعة' },
+    { v: m, l: 'دقيقة' },
+    { v: s, l: 'ثانية' },
+  ];
+  return (
+    <section className="relative w-full overflow-hidden my-6"
+      style={{ background: `linear-gradient(90deg, hsl(var(--store-secondary)), hsl(var(--store-primary)))` }}>
+      {glitter && <div className="glitter-overlay" />}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 py-10 text-center text-white">
+        <p className="text-[10px] font-bold tracking-[0.3em] uppercase opacity-85 mb-2" dir="ltr">Limited Offer</p>
+        <h3 className="text-2xl md:text-3xl font-extrabold mb-6 drop-shadow">{title || 'العرض ينتهي خلال'}</h3>
+        <div className="flex items-center justify-center gap-3" dir="rtl">
+          {units.map(u => (
+            <div key={u.l} className="bg-white/15 backdrop-blur rounded-2xl px-4 py-3 min-w-[72px]">
+              <p className="text-3xl md:text-4xl font-black tabular-nums" dir="ltr">{String(u.v).padStart(2, '0')}</p>
+              <p className="text-[11px] font-semibold opacity-85 mt-1">{u.l}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// سلايدر البنرات العريضة — يتنقل تلقائياً كل ٥ ثواني
+function WideSlider({ banners, glitter }: { banners: Array<{ image_url?: string; title?: string; subtitle?: string }>; glitter?: boolean }) {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setIdx(i => (i + 1) % banners.length), 5000);
+    return () => clearInterval(t);
+  }, [banners.length]);
+  const b = banners[idx] || banners[0];
+  return (
+    <section className="relative w-full h-64 md:h-96 overflow-hidden">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={idx}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.6 }}
+          className="absolute inset-0 flex items-center justify-center"
+          style={{
+            background: b.image_url
+              ? `linear-gradient(135deg, hsl(var(--store-primary) / 0.35), hsl(var(--store-secondary) / 0.35)), url(${b.image_url}) center/cover`
+              : `linear-gradient(135deg, hsl(var(--store-primary)), hsl(var(--store-secondary)))`,
+          }}
+        >
+          {(b.title || b.subtitle) && (
+            <div className="text-center text-white px-4">
+              {b.title && <h2 className="text-2xl md:text-5xl font-extrabold mb-3 drop-shadow-lg">{b.title}</h2>}
+              {b.subtitle && <p className="text-base md:text-xl opacity-95 drop-shadow max-w-2xl mx-auto">{b.subtitle}</p>}
+            </div>
+          )}
+        </motion.div>
+      </AnimatePresence>
+      {glitter && <div className="glitter-overlay" />}
+      {/* نقاط التنقل */}
+      <div className="absolute bottom-4 inset-x-0 flex justify-center gap-2 z-10">
+        {banners.map((_, i) => (
+          <button key={i} type="button" onClick={() => setIdx(i)}
+            className={`h-2 rounded-full transition-all ${i === idx ? 'w-6 bg-white' : 'w-2 bg-white/50'}`} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// استخراج معرف فيديو يوتيوب من أي صيغة رابط
+function youtubeId(url: string): string | null {
+  const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
+  return m ? m[1] : null;
+}
 
 // ترويسة قسم بأسلوب احترافي: رقم + عنوان إنجليزي صغير + عنوان عربي
 function SectionHead({ num, en, ar, action }: { num?: string; en: string; ar: string; action?: ReactNode }) {
@@ -142,6 +232,9 @@ export function StoreHomePage({ store, devices, accessories, categories, designE
     ),
 
     wide: (designExtras?.wide_banners || []).length > 0 ? (
+      designExtras?.wide_slider && (designExtras.wide_banners || []).length > 1 ? (
+        <WideSlider key="wide" banners={designExtras.wide_banners!} glitter={glitter} />
+      ) : (
       <div key="wide">
         {(designExtras?.wide_banners || []).map((b, i) => (
           <motion.section
@@ -166,6 +259,66 @@ export function StoreHomePage({ store, devices, accessories, categories, designE
           </motion.section>
         ))}
       </div>
+      )
+    ) : null,
+
+    countdown: designExtras?.countdown?.enabled && designExtras.countdown.ends_at ? (
+      <OfferCountdown key="countdown" endsAt={designExtras.countdown.ends_at} title={designExtras.countdown.title} glitter={glitter} />
+    ) : null,
+
+    brands: designExtras?.brands && designExtras.brands.filter(b => b.name || b.image_url).length > 0 ? (
+      <section key="brands" className="border-y bg-card/50">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <p className="text-[10px] font-bold tracking-[0.3em] uppercase text-center text-muted-foreground mb-5" dir="ltr">Our Brands</p>
+          <div className="flex items-center justify-center gap-8 flex-wrap">
+            {designExtras.brands.filter(b => b.name || b.image_url).map((b, i) => (
+              <motion.div key={i} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}>
+                {b.image_url ? (
+                  <img src={b.image_url} alt={b.name} className="h-10 object-contain opacity-70 hover:opacity-100 transition-opacity" />
+                ) : (
+                  <span className="text-lg font-extrabold text-muted-foreground/60 hover:text-foreground transition-colors">{b.name}</span>
+                )}
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+    ) : null,
+
+    video: designExtras?.video?.enabled && designExtras.video.url && youtubeId(designExtras.video.url) ? (
+      <section key="video" className="max-w-5xl mx-auto px-4 py-12">
+        {designExtras.video.title && (
+          <SectionHead en="Watch" ar={designExtras.video.title} />
+        )}
+        <div className="rounded-3xl overflow-hidden border shadow-lg aspect-video">
+          <iframe
+            src={`https://www.youtube.com/embed/${youtubeId(designExtras.video.url)}`}
+            title={designExtras.video.title || 'فيديو المتجر'}
+            className="w-full h-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      </section>
+    ) : null,
+
+    faq: designExtras?.faq && designExtras.faq.filter(f => f.q && f.a).length > 0 ? (
+      <section key="faq" className="max-w-3xl mx-auto px-4 py-12">
+        <SectionHead en="FAQ" ar="الأسئلة الشائعة" />
+        <div className="space-y-3">
+          {designExtras.faq.filter(f => f.q && f.a).map((f, i) => (
+            <motion.details key={i}
+              initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}
+              className="group bg-card rounded-2xl border px-5 py-4">
+              <summary className="cursor-pointer list-none flex items-center justify-between gap-3 font-bold text-sm">
+                {f.q}
+                <span className="text-lg transition-transform group-open:rotate-45 shrink-0" style={{ color: 'hsl(var(--store-primary))' }}>+</span>
+              </summary>
+              <p className="text-sm text-muted-foreground leading-relaxed mt-3 whitespace-pre-wrap">{f.a}</p>
+            </motion.details>
+          ))}
+        </div>
+      </section>
     ) : null,
 
     feature: designExtras?.feature_images && designExtras.feature_images.length > 0 ? (
