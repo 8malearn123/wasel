@@ -104,6 +104,43 @@ function youtubeId(url: string): string | null {
   return m ? m[1] : null;
 }
 
+// غلاف نظيف للفيديو: صورة مصغرة + زر تشغيل بلون المتجر بدون أي شعارات،
+// ومشغل يوتيوب ما يتحمل إلا عند الضغط
+function VideoFacade({ id, title }: { id: string; title?: string }) {
+  const [playing, setPlaying] = useState(false);
+  const [thumbFallback, setThumbFallback] = useState(false);
+  if (playing) {
+    return (
+      <iframe
+        src={`https://www.youtube.com/embed/${id}?autoplay=1&rel=0&iv_load_policy=3&playsinline=1&modestbranding=1`}
+        title={title || 'فيديو المتجر'}
+        className="w-full h-full"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+      />
+    );
+  }
+  return (
+    <button type="button" onClick={() => setPlaying(true)} className="relative w-full h-full group block" aria-label="تشغيل الفيديو">
+      <img
+        src={thumbFallback
+          ? `https://img.youtube.com/vi/${id}/hqdefault.jpg`
+          : `https://img.youtube.com/vi/${id}/maxresdefault.jpg`}
+        onError={() => setThumbFallback(true)}
+        alt={title || 'فيديو المتجر'}
+        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+      />
+      <span className="absolute inset-0 bg-black/25 group-hover:bg-black/35 transition-colors" />
+      <span
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full flex items-center justify-center shadow-2xl transition-transform group-hover:scale-110"
+        style={{ background: `hsl(var(--store-primary))` }}
+      >
+        <span className="text-white text-3xl" style={{ marginInlineStart: '4px' }} dir="ltr">▶</span>
+      </span>
+    </button>
+  );
+}
+
 // ترويسة قسم بأسلوب احترافي: رقم + عنوان إنجليزي صغير + عنوان عربي
 function SectionHead({ num, en, ar, action }: { num?: string; en: string; ar: string; action?: ReactNode }) {
   return (
@@ -283,13 +320,7 @@ export function StoreHomePage({ store, devices, accessories, categories, designE
           <SectionHead en="Watch" ar={designExtras.video.title} />
         )}
         <div className="rounded-3xl overflow-hidden border shadow-lg aspect-video">
-          <iframe
-            src={`https://www.youtube.com/embed/${youtubeId(designExtras.video.url)}`}
-            title={designExtras.video.title || 'فيديو المتجر'}
-            className="w-full h-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
+          <VideoFacade id={youtubeId(designExtras.video.url)!} title={designExtras.video.title} />
         </div>
       </section>
     ) : null,
