@@ -83,6 +83,13 @@ export interface DesignExtras {
   brands?: Array<{ name: string; image_url?: string }>;
   // نصوص أسفل المتجر (الفوتر)
   footer?: { about?: string; note?: string; copyright?: string };
+  // حسابات التواصل الاجتماعي الإضافية
+  socials?: {
+    snapchat?: string; tiktok?: string; youtube?: string; linkedin?: string;
+    facebook?: string; email?: string; phone?: string; website?: string; maps?: string;
+  };
+  // إخفاء شارة "صنع بواسطة وصل" — متاح لباقة ماكس فقط
+  hide_wasel_badge?: boolean;
 }
 
 // الترتيب الافتراضي لأقسام الصفحة الرئيسية في المتجر

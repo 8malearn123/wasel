@@ -128,17 +128,50 @@ export function StoreLayout({ store, pages = [], merchantLegal, designExtras, ch
           </div>
           <div>
             <h4 className="font-semibold mb-3">تواصل معنا</h4>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 flex-wrap">
               {store.whatsapp_number && (
-                <a href={`https://wa.me/${store.whatsapp_number.replace(/\D/g, '')}`} target="_blank" rel="noopener" className="hover:text-foreground text-muted-foreground"><Phone className="w-4 h-4" /></a>
+                <a href={`https://wa.me/${store.whatsapp_number.replace(/\D/g, '')}`} target="_blank" rel="noopener" title="واتساب" className="hover:text-foreground text-muted-foreground"><Phone className="w-4 h-4" /></a>
               )}
               {store.instagram_url && (
-                <a href={store.instagram_url} target="_blank" rel="noopener" className="hover:text-foreground text-muted-foreground"><Instagram className="w-4 h-4" /></a>
+                <a href={store.instagram_url} target="_blank" rel="noopener" title="إنستقرام" className="hover:text-foreground text-muted-foreground"><Instagram className="w-4 h-4" /></a>
               )}
               {store.twitter_url && (
-                <a href={store.twitter_url} target="_blank" rel="noopener" className="hover:text-foreground text-muted-foreground"><Twitter className="w-4 h-4" /></a>
+                <a href={store.twitter_url} target="_blank" rel="noopener" title="إكس" className="hover:text-foreground text-muted-foreground"><Twitter className="w-4 h-4" /></a>
+              )}
+              {/* حسابات إضافية من محرر المتجر */}
+              {([
+                { k: 'snapchat', label: 'سناب شات', icon: '👻' },
+                { k: 'tiktok', label: 'تيك توك', icon: '🎵' },
+                { k: 'youtube', label: 'يوتيوب', icon: '▶️' },
+                { k: 'facebook', label: 'فيسبوك', icon: 'f' },
+                { k: 'linkedin', label: 'لينكدإن', icon: 'in' },
+                { k: 'website', label: 'الموقع', icon: '🌐' },
+                { k: 'maps', label: 'موقعنا على الخريطة', icon: '📍' },
+              ] as const).map(sn => {
+                const url = designExtras?.socials?.[sn.k];
+                if (!url) return null;
+                return (
+                  <a key={sn.k} href={url} target="_blank" rel="noopener" title={sn.label}
+                    className="w-7 h-7 rounded-full border flex items-center justify-center text-xs hover:border-foreground/40 hover:text-foreground text-muted-foreground transition-colors">
+                    {sn.icon}
+                  </a>
+                );
+              })}
+              {designExtras?.socials?.email && (
+                <a href={`mailto:${designExtras.socials.email}`} title="البريد الإلكتروني"
+                  className="w-7 h-7 rounded-full border flex items-center justify-center text-xs hover:border-foreground/40 hover:text-foreground text-muted-foreground transition-colors">@</a>
+              )}
+              {designExtras?.socials?.phone && (
+                <a href={`tel:${designExtras.socials.phone}`} title="اتصال"
+                  className="w-7 h-7 rounded-full border flex items-center justify-center text-xs hover:border-foreground/40 hover:text-foreground text-muted-foreground transition-colors">📞</a>
               )}
             </div>
+            {(designExtras?.socials?.phone || designExtras?.socials?.email) && (
+              <div className="mt-2 space-y-0.5 text-xs text-muted-foreground">
+                {designExtras.socials.phone && <p dir="ltr" className="font-mono">{designExtras.socials.phone}</p>}
+                {designExtras.socials.email && <p dir="ltr" className="font-mono">{designExtras.socials.email}</p>}
+              </div>
+            )}
             <p className="text-xs text-muted-foreground mt-3 whitespace-pre-wrap">
               {designExtras?.footer?.note
                 || (store.show_vat_status !== false && merchantLegal?.vat_enabled
@@ -180,8 +213,18 @@ export function StoreLayout({ store, pages = [], merchantLegal, designExtras, ch
           </div>
         )}
 
-        <div className="border-t py-4 text-center text-xs text-muted-foreground">
-          {designExtras?.footer?.copyright || `© ${new Date().getFullYear()} ${store.store_name}`}
+        <div className="border-t py-4 text-center text-xs text-muted-foreground space-y-1.5">
+          <p>{designExtras?.footer?.copyright || `© ${new Date().getFullYear()} ${store.store_name}`}</p>
+          {!designExtras?.hide_wasel_badge && (
+            <p className="flex items-center justify-center gap-1.5 text-[11px]">
+              <span>صُنع بواسطة</span>
+              <a href="https://wasel-alpha.vercel.app" target="_blank" rel="noopener"
+                className="inline-flex items-center gap-1 font-bold text-foreground/80 hover:text-foreground transition-colors">
+                <img src="/brand/app-icon.svg" alt="وصل" className="w-3.5 h-3.5" />
+                منصة وصل
+              </a>
+            </p>
+          )}
         </div>
       </footer>
     </div>

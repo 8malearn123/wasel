@@ -931,6 +931,63 @@ export default function OnlineStorePage() {
                         )}
                       </div>
 
+                      {/* حسابات التواصل + شارة وصل */}
+                      <div className="bg-card rounded-xl border overflow-hidden">
+                        <button type="button" onClick={() => setOpenPanel(openPanel === 'socials' ? null : 'socials')}
+                          className="w-full flex items-center justify-between p-4 text-right">
+                          <div className="flex items-center gap-3">
+                            <Link2 className="w-5 h-5 text-primary" />
+                            <div>
+                              <p className="font-semibold text-sm">حسابات التواصل</p>
+                              <p className="text-[11px] text-muted-foreground">تظهر لعملائك أسفل المتجر</p>
+                            </div>
+                          </div>
+                          <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform", openPanel === 'socials' && "rotate-180")} />
+                        </button>
+                        {openPanel === 'socials' && (
+                          <div className="px-4 pb-4 border-t pt-3 space-y-3">
+                            {([
+                              { field: 'whatsapp_number', label: 'واتساب', ph: '9665xxxxxxxx' },
+                              { field: 'instagram_url', label: 'إنستقرام', ph: 'https://instagram.com/...' },
+                              { field: 'twitter_url', label: 'إكس (تويتر)', ph: 'https://x.com/...' },
+                            ] as const).map(f => (
+                              <div key={f.field}>
+                                <Label className="text-xs">{f.label}</Label>
+                                <Input value={val(f.field)} onChange={e => set(f.field, e.target.value)}
+                                  className="mt-1 h-9 font-mono text-xs" dir="ltr" placeholder={f.ph} />
+                              </div>
+                            ))}
+                            {([
+                              { k: 'snapchat', label: 'سناب شات', ph: 'https://snapchat.com/add/...' },
+                              { k: 'tiktok', label: 'تيك توك', ph: 'https://tiktok.com/@...' },
+                              { k: 'youtube', label: 'يوتيوب', ph: 'https://youtube.com/@...' },
+                              { k: 'facebook', label: 'فيسبوك', ph: 'https://facebook.com/...' },
+                              { k: 'linkedin', label: 'لينكدإن', ph: 'https://linkedin.com/company/...' },
+                              { k: 'website', label: 'الموقع الإلكتروني', ph: 'https://...' },
+                              { k: 'maps', label: 'الموقع على الخريطة', ph: 'https://maps.google.com/...' },
+                              { k: 'phone', label: 'رقم الاتصال', ph: '0512345678' },
+                              { k: 'email', label: 'البريد الإلكتروني', ph: 'store@example.com' },
+                            ] as const).map(f => (
+                              <div key={f.k}>
+                                <Label className="text-xs">{f.label}</Label>
+                                <Input value={extras.socials?.[f.k] || ''}
+                                  onChange={e => updExtras({ socials: { ...extras.socials, [f.k]: e.target.value || undefined } })}
+                                  className="mt-1 h-9 font-mono text-xs" dir="ltr" placeholder={f.ph} />
+                              </div>
+                            ))}
+                            {/* حصري لماكس: إخفاء شارة وصل */}
+                            <div className="flex items-center justify-between rounded-xl border p-3 bg-muted/20 mt-2">
+                              <div>
+                                <p className="text-sm font-semibold">إخفاء "صُنع بواسطة وصل"</p>
+                                <p className="text-[11px] text-muted-foreground">ميزة حصرية لباقة ماكس — متجرك بهويتك بالكامل</p>
+                              </div>
+                              <Switch checked={!!extras.hide_wasel_badge}
+                                onCheckedChange={v => updExtras({ hide_wasel_badge: v })} />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
                       <p className="text-xs font-bold text-muted-foreground px-1 pt-2">أقسام الصفحة الرئيسية</p>
                       <p className="text-[11px] text-muted-foreground px-1 -mt-2">اسحب لإعادة الترتيب · زر + يضيف نسخة ثانية · بدّل لإخفاء القسم</p>
 
@@ -2228,6 +2285,54 @@ export default function OnlineStorePage() {
                           <Input value={extras.hero_button_text || ''} onChange={e => updExtras({ hero_button_text: e.target.value || undefined })}
                             className="mt-1 h-9" placeholder="تسوق الآن" />
                         </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* حسابات التواصل */}
+                  <div className="bg-card rounded-xl border overflow-hidden">
+                    <button type="button" onClick={() => setOpenPanel(openPanel === 'socials' ? null : 'socials')}
+                      className="w-full flex items-center justify-between p-4 text-right">
+                      <div className="flex items-center gap-3">
+                        <Link2 className="w-5 h-5 text-primary" />
+                        <div>
+                          <p className="font-semibold text-sm">حسابات التواصل</p>
+                          <p className="text-[11px] text-muted-foreground">كل حساباتك تظهر لعملائك أسفل المتجر</p>
+                        </div>
+                      </div>
+                      <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform", openPanel === 'socials' && "rotate-180")} />
+                    </button>
+                    {openPanel === 'socials' && (
+                      <div className="px-4 pb-4 border-t pt-3 space-y-3">
+                        {([
+                          { field: 'whatsapp_number', label: 'واتساب', ph: '9665xxxxxxxx', store: true },
+                          { field: 'instagram_url', label: 'إنستقرام', ph: 'https://instagram.com/...', store: true },
+                          { field: 'twitter_url', label: 'إكس (تويتر)', ph: 'https://x.com/...', store: true },
+                        ] as const).map(f => (
+                          <div key={f.field}>
+                            <Label className="text-xs">{f.label}</Label>
+                            <Input value={val(f.field)} onChange={e => set(f.field, e.target.value)}
+                              className="mt-1 h-9 font-mono text-xs" dir="ltr" placeholder={f.ph} />
+                          </div>
+                        ))}
+                        {([
+                          { k: 'snapchat', label: 'سناب شات', ph: 'https://snapchat.com/add/...' },
+                          { k: 'tiktok', label: 'تيك توك', ph: 'https://tiktok.com/@...' },
+                          { k: 'youtube', label: 'يوتيوب', ph: 'https://youtube.com/@...' },
+                          { k: 'facebook', label: 'فيسبوك', ph: 'https://facebook.com/...' },
+                          { k: 'linkedin', label: 'لينكدإن', ph: 'https://linkedin.com/company/...' },
+                          { k: 'website', label: 'الموقع الإلكتروني', ph: 'https://...' },
+                          { k: 'maps', label: 'الموقع على الخريطة', ph: 'https://maps.google.com/...' },
+                          { k: 'phone', label: 'رقم الاتصال', ph: '0512345678' },
+                          { k: 'email', label: 'البريد الإلكتروني', ph: 'store@example.com' },
+                        ] as const).map(f => (
+                          <div key={f.k}>
+                            <Label className="text-xs">{f.label}</Label>
+                            <Input value={extras.socials?.[f.k] || ''}
+                              onChange={e => updExtras({ socials: { ...extras.socials, [f.k]: e.target.value || undefined } })}
+                              className="mt-1 h-9 font-mono text-xs" dir="ltr" placeholder={f.ph} />
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>

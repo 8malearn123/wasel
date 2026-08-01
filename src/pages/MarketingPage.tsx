@@ -5,9 +5,10 @@ import { useMarketing, Coupon, Campaign } from "@/hooks/useMarketing";
 import { useDevices, useAccessories } from "@/hooks/useInventory";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UrlTabs } from '@/components/common/UrlTabs';
+import { useAuth } from '@/hooks/useAuth';
 import { SearchableSelect } from '@/components/common/SearchableSelect';
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Ticket, Megaphone, Trash2, Pencil, Copy, Zap, Package, Tag, PercentIcon } from "lucide-react";
+import { Plus, Ticket, Megaphone, Trash2, Pencil, Copy, Zap, Package, Tag, PercentIcon , Sparkles } from "lucide-react";
 import { format } from "date-fns";
 
 export default function MarketingPage() {
@@ -44,6 +45,9 @@ export default function MarketingPage() {
     createCampaign, updateCampaign, deleteCampaign, toggleCampaign,
   } = useMarketing();
 
+  const { subscription } = useAuth();
+  const isMax = subscription?.plan === 'Distributor' || subscription?.plan === 'trial';
+
   const [couponDialog, setCouponDialog] = useState(false);
   const [campaignDialog, setCampaignDialog] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
@@ -57,6 +61,29 @@ export default function MarketingPage() {
     starts_at: new Date().toISOString().slice(0, 16),
     expires_at: '' as string, applies_to: 'all' as 'all' | 'devices' | 'accessories',
   });
+
+  // مكتبة أفكار تسويقية جاهزة — باقة ماكس
+  const MARKETING_IDEAS = [
+    { icon: '🎉', title: 'خصم افتتاح', desc: 'خصم ترحيبي لأول أسبوع يجذب أول عملائك',
+      apply: { name: 'عرض الافتتاح', campaign_type: 'discount' as const, discount_type: 'percentage' as const, discount_value: 15, apply_scope: 'all' as const } },
+    { icon: '⚡', title: 'تخفيض سريع ٢٤ ساعة', desc: 'عرض ينتهي بسرعة يخلق إحساس بالاستعجال',
+      apply: { name: 'تخفيض ٢٤ ساعة', campaign_type: 'flash_sale' as const, discount_type: 'percentage' as const, discount_value: 25 } },
+    { icon: '🎁', title: 'اشترِ جوال واحصل على إكسسوار',
+      desc: 'ارفع قيمة الفاتورة وصرّف الإكسسوارات الراكدة',
+      apply: { name: 'جوال + هدية', campaign_type: 'buy_x_get_y' as const, buy_quantity: 1, get_quantity: 1 } },
+    { icon: '📦', title: 'حزمة الطالب', desc: 'جوال + سماعة + شاحن بسعر واحد مغري',
+      apply: { name: 'حزمة الطالب', campaign_type: 'bundle' as const, discount_type: 'fixed' as const } },
+    { icon: '🌙', title: 'عرض المناسبات', desc: 'خصم موسمي (رمضان، العيد، اليوم الوطني، الجمعة البيضاء)',
+      apply: { name: 'عرض المناسبة', campaign_type: 'discount' as const, discount_type: 'percentage' as const, discount_value: 20, apply_scope: 'all' as const } },
+    { icon: '🔁', title: 'عرض الاستبدال', desc: 'خصم عند استبدال الجهاز القديم بجديد',
+      apply: { name: 'استبدل واربح', campaign_type: 'discount' as const, discount_type: 'fixed' as const, discount_value: 200, apply_scope: 'all' as const } },
+    { icon: '👥', title: 'صديق يجيب صديق', desc: 'خصم للعميل ولصديقه عند أول عملية شراء',
+      apply: { name: 'صديق يجيب صديق', campaign_type: 'discount' as const, discount_type: 'percentage' as const, discount_value: 10, apply_scope: 'all' as const } },
+    { icon: '🛠️', title: 'صيانة مجانية', desc: 'فحص أو تركيب حماية مجاناً مع كل جهاز',
+      apply: { name: 'صيانة مجانية مع الجهاز', campaign_type: 'buy_x_get_y' as const, buy_quantity: 1, get_quantity: 1 } },
+    { icon: '💎', title: 'عرض العملاء المميزين', desc: 'خصم خاص لعملاء نقاط الولاء الذهبيين',
+      apply: { name: 'عرض العملاء المميزين', campaign_type: 'discount' as const, discount_type: 'percentage' as const, discount_value: 12, apply_scope: 'all' as const } },
+  ];
 
   // Campaign form state
   const [campaignForm, setCampaignForm] = useState({
@@ -385,6 +412,38 @@ export default function MarketingPage() {
 
           {/* CAMPAIGNS TAB */}
           <TabsContent value="campaigns" className="space-y-4">
+            {/* مكتبة أفكار تسويقية — باقة ماكس */}
+            {isMax && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-primary" /> أفكار تسويقية جاهزة
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    اضغط أي فكرة وتنفتح لك حملة جاهزة بالبيانات — عدّلها واحفظها
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {MARKETING_IDEAS.map(idea => (
+                    <button
+                      key={idea.title}
+                      type="button"
+                      onClick={() => {
+                        resetCampaignForm();
+                        setCampaignForm(prev => ({ ...prev, ...idea.apply, description: idea.desc }));
+                        setCampaignDialog(true);
+                      }}
+                      className="text-right p-3 rounded-xl border-2 border-border hover:border-primary/60 hover:shadow-sm transition-all"
+                    >
+                      <div className="text-xl mb-1">{idea.icon}</div>
+                      <p className="font-semibold text-sm">{idea.title}</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{idea.desc}</p>
+                    </button>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-semibold">{mk.campaignsTab}</h2>
               <Button onClick={() => { resetCampaignForm(); setCampaignDialog(true); }}>

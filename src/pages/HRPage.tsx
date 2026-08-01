@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Briefcase, Users, Wallet, TrendingUp, Loader2, Pencil, Phone, CalendarDays,
-  Target, Percent, Save,
+  Target, Percent, Save, Printer, FileSpreadsheet,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -59,6 +59,8 @@ export default function HRPage() {
   const [monthProfit, setMonthProfit] = useState<Record<string, number>>({});
   const [dailyProfit, setDailyProfit] = useState<Record<string, number>>({});
   const { settings: hrSettings, save: saveHRSettings } = useHRSettings();
+  const [showAttendanceReport, setShowAttendanceReport] = useState(false);
+  const [showPayroll, setShowPayroll] = useState(false);
   const isMax = subscription?.plan === 'Distributor' || subscription?.plan === 'trial';
   // سجل الحضور: دخول/انصراف الكاشير من نقطة البيع (آخر ٧ أيام)
   const [attendance, setAttendance] = useState<Array<{ user_id: string; action: string; created_at: string }>>([]);
@@ -342,6 +344,20 @@ export default function HRPage() {
         </div>
       )}
 
+      {/* أزرار الطباعة — كشف الحضور ومسير الرواتب */}
+      {isMax && users.length > 0 && (
+        <div className="mt-6 flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => setShowAttendanceReport(true)}>
+            <Printer className="w-4 h-4 me-2" />
+            {isRTL ? "طباعة كشف حضور موظف" : "Print attendance sheet"}
+          </Button>
+          <Button variant="outline" onClick={() => setShowPayroll(true)}>
+            <FileSpreadsheet className="w-4 h-4 me-2" />
+            {isRTL ? "طباعة مسير الرواتب الشهري" : "Print monthly payroll"}
+          </Button>
+        </div>
+      )}
+
       {/* سجل الحضور — آخر ٧ أيام */}
       {history.length > 0 && (
         <div className="mt-6 bg-card rounded-xl border border-border overflow-hidden">
@@ -388,6 +404,26 @@ export default function HRPage() {
         </div>
       )}
 
+      <AttendanceReportDialog
+        open={showAttendanceReport}
+        onClose={() => setShowAttendanceReport(false)}
+        users={users}
+        merchantId={merchant?.id}
+        merchantName={merchant?.name || ""}
+        isRTL={isRTL}
+      />
+
+      <PayrollDialog
+        open={showPayroll}
+        onClose={() => setShowPayroll(false)}
+        users={users}
+        hr={hr}
+        hrSettings={hrSettings}
+        merchantId={merchant?.id}
+        merchantName={merchant?.name || ""}
+        isRTL={isRTL}
+      />
+
       <EditHRDialog
         user={editing}
         info={editing ? hr[editing.id] || {} : {}}
@@ -396,6 +432,264 @@ export default function HRPage() {
         isRTL={isRTL}
       />
     </AppLayout>
+  );
+}
+
+// فتح نافذة طباعة بمحتوى HTML جاهز (عربي RTL)
+function printHTML(title: string, body: string) {
+  const win = window.open("", "_blank", "width=900,height=700");
+  if (!win) { toast.error("المتصفح منع فتح نافذة الطباعة"); return; }
+  win.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:'IBM Plex Sans Arabic',Tahoma,sans-serif;padding:28px;color:#111}
+      h1{font-size:20px;margin:0 0 4px}
+      .sub{color:#666;font-size:12px;margin-bottom:18px}
+      table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}
+      th,td{border:1px solid #ddd;padding:8px;text-align:right}
+      th{background:#f5f5f5;font-weight:700}
+      tfoot td{font-weight:800;background:#fafafa}
+      .sign{margin-top:44px;display:flex;justify-content:space-between;font-size:13px}
+      .sign div{width:45%;border-top:1px solid #999;padding-top:6px;text-align:center}
+      @media print{body{padding:0}}
+    </style></head><body>${body}</body></html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(() => win.print(), 400);
+}
+
+// كشف حضور وانصراف موظف خلال فترة محددة
+function AttendanceReportDialog({ open, onClose, users, merchantId, merchantName, isRTL }: {
+  open: boolean; onClose: () => void; users: MerchantUser[];
+  merchantId?: string; merchantName: string; isRTL: boolean;
+}) {
+  const today = new Date().toISOString().slice(0, 10);
+  const monthAgo = new Date(Date.now() - 29 * 86400000).toISOString().slice(0, 10);
+  const [userId, setUserId] = useState("all");
+  const [from, setFrom] = useState(monthAgo);
+  const [to, setTo] = useState(today);
+  const [busy, setBusy] = useState(false);
+
+  const run = async () => {
+    if (!merchantId) return;
+    setBusy(true);
+    try {
+      const start = new Date(from); start.setHours(0, 0, 0, 0);
+      const end = new Date(to); end.setHours(23, 59, 59, 999);
+      let q = supabase
+        .from("activity_logs")
+        .select("user_id, action, created_at")
+        .eq("merchant_id", merchantId)
+        .in("action", ["pos_check_in", "pos_check_out"])
+        .gte("created_at", start.toISOString())
+        .lte("created_at", end.toISOString())
+        .order("created_at", { ascending: true })
+        .limit(5000);
+      if (userId !== "all") {
+        const u = users.find(x => x.id === userId);
+        if (u) q = q.eq("user_id", u.user_id);
+      }
+      const { data } = await q;
+
+      const map: Record<string, { user_id: string; day: string; in?: string; out?: string }> = {};
+      for (const r of data || []) {
+        if (!r.user_id) continue;
+        const day = new Date(r.created_at).toDateString();
+        const k = `${r.user_id}|${day}`;
+        const rec = map[k] || { user_id: r.user_id, day };
+        if (r.action === "pos_check_in" && !rec.in) rec.in = r.created_at;
+        if (r.action === "pos_check_out") rec.out = r.created_at;
+        map[k] = rec;
+      }
+      const rows = Object.values(map).sort((a, b) =>
+        new Date(a.in || a.day).getTime() - new Date(b.in || b.day).getTime());
+
+      if (rows.length === 0) { toast.info("ما فيه سجلات حضور في هذه الفترة"); setBusy(false); return; }
+
+      const fmt = (iso?: string) => iso ? new Date(iso).toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" }) : "—";
+      let totalMs = 0;
+      const trs = rows.map(r => {
+        const name = users.find(u => u.user_id === r.user_id)?.profile?.full_name || "موظف";
+        const ms = r.in && r.out ? Math.max(0, new Date(r.out).getTime() - new Date(r.in).getTime()) : 0;
+        totalMs += ms;
+        const dur = r.in && r.out ? `${Math.floor(ms / 3600000)}س ${Math.floor((ms % 3600000) / 60000)}د` : "—";
+        return `<tr><td>${new Date(r.in || r.day).toLocaleDateString("ar-SA", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</td>
+          <td>${name}</td><td>${fmt(r.in)}</td><td>${fmt(r.out)}</td><td>${dur}</td></tr>`;
+      }).join("");
+
+      const empLabel = userId === "all" ? "جميع الموظفين" : (users.find(u => u.id === userId)?.profile?.full_name || "موظف");
+      printHTML("كشف الحضور والانصراف", `
+        <h1>${merchantName} — كشف الحضور والانصراف</h1>
+        <p class="sub">الموظف: ${empLabel} · الفترة: من ${new Date(from).toLocaleDateString("ar-SA")} إلى ${new Date(to).toLocaleDateString("ar-SA")} · تاريخ الطباعة: ${new Date().toLocaleDateString("ar-SA")}</p>
+        <table>
+          <thead><tr><th>اليوم</th><th>الموظف</th><th>الدخول</th><th>الانصراف</th><th>مدة الدوام</th></tr></thead>
+          <tbody>${trs}</tbody>
+          <tfoot><tr><td colspan="4">إجمالي ساعات الدوام</td><td>${Math.floor(totalMs / 3600000)}س ${Math.floor((totalMs % 3600000) / 60000)}د</td></tr></tfoot>
+        </table>
+        <div class="sign"><div>توقيع الموظف</div><div>توقيع المدير</div></div>
+      `);
+      onClose();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="sm:max-w-[480px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Printer className="w-5 h-5 text-primary" />
+            {isRTL ? "طباعة كشف الحضور والانصراف" : "Print attendance sheet"}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div>
+            <Label className="text-xs">{isRTL ? "الموظف" : "Employee"}</Label>
+            <Select value={userId} onValueChange={setUserId}>
+              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{isRTL ? "جميع الموظفين" : "All employees"}</SelectItem>
+                {users.map(u => (
+                  <SelectItem key={u.id} value={u.id}>{u.profile?.full_name || (isRTL ? "موظف" : "Employee")}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">{isRTL ? "من تاريخ" : "From"}</Label>
+              <Input type="date" className="mt-1" value={from} onChange={e => setFrom(e.target.value)} dir="ltr" />
+            </div>
+            <div>
+              <Label className="text-xs">{isRTL ? "إلى تاريخ" : "To"}</Label>
+              <Input type="date" className="mt-1" value={to} onChange={e => setTo(e.target.value)} dir="ltr" />
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>{isRTL ? "إلغاء" : "Cancel"}</Button>
+          <Button onClick={run} disabled={busy}>
+            {busy ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : <Printer className="w-4 h-4 me-1" />}
+            {isRTL ? "طباعة الكشف" : "Print"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// مسير الرواتب الشهري: الراتب + العمولة لكل موظف
+function PayrollDialog({ open, onClose, users, hr, hrSettings, merchantId, merchantName, isRTL }: {
+  open: boolean; onClose: () => void; users: MerchantUser[];
+  hr: Record<string, HRInfo>; hrSettings: HRSettings;
+  merchantId?: string; merchantName: string; isRTL: boolean;
+}) {
+  const now = new Date();
+  const [month, setMonth] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
+  const [busy, setBusy] = useState(false);
+
+  const run = async () => {
+    if (!merchantId) return;
+    setBusy(true);
+    try {
+      const [y, m] = month.split("-").map(Number);
+      const start = new Date(y, m - 1, 1, 0, 0, 0, 0);
+      const end = new Date(y, m, 0, 23, 59, 59, 999);
+
+      const { data: salesRows } = await supabase
+        .from("sales")
+        .select("id, sold_by, total_amount")
+        .eq("merchant_id", merchantId)
+        .gte("sale_date", start.toISOString())
+        .lte("sale_date", end.toISOString())
+        .limit(5000);
+
+      const sales: Record<string, number> = {};
+      const owner: Record<string, string> = {};
+      for (const s of salesRows || []) {
+        if (!s.sold_by) continue;
+        sales[s.sold_by] = (sales[s.sold_by] || 0) + Number(s.total_amount || 0);
+        owner[s.id] = s.sold_by;
+      }
+
+      const profit: Record<string, number> = {};
+      const ids = Object.keys(owner);
+      for (let i = 0; i < ids.length; i += 200) {
+        const { data: items } = await supabase
+          .from("sale_items")
+          .select("sale_id, quantity, unit_price, cost_at_sale")
+          .in("sale_id", ids.slice(i, i + 200));
+        for (const it of items || []) {
+          const by = owner[it.sale_id];
+          if (!by) continue;
+          profit[by] = (profit[by] || 0) + (Number(it.unit_price || 0) - Number(it.cost_at_sale || 0)) * Number(it.quantity || 0);
+        }
+      }
+
+      let totalSalary = 0, totalComm = 0;
+      const trs = users.map(u => {
+        const info = hr[u.id] || {};
+        const salary = Number(info.salary || 0);
+        const base = hrSettings.commission.basis === "profit" ? (profit[u.user_id] || 0) : (sales[u.user_id] || 0);
+        const comm = commissionFor(hrSettings, u.user_id, base);
+        totalSalary += salary;
+        totalComm += comm.value;
+        return `<tr>
+          <td>${u.profile?.full_name || "موظف"}</td>
+          <td>${info.jobTitle || "—"}</td>
+          <td>${salary ? salary.toLocaleString() : "—"}</td>
+          <td>${(sales[u.user_id] || 0).toLocaleString()}</td>
+          <td>${comm.enabled ? `${Math.round(comm.value).toLocaleString()} (${comm.rate}%)` : "—"}</td>
+          <td>${Math.round(salary + comm.value).toLocaleString()}</td>
+        </tr>`;
+      }).join("");
+
+      const monthLabel = start.toLocaleDateString("ar-SA", { month: "long", year: "numeric" });
+      printHTML("مسير الرواتب", `
+        <h1>${merchantName} — مسير الرواتب</h1>
+        <p class="sub">الشهر: ${monthLabel} · العمولة محسوبة من ${hrSettings.commission.basis === "profit" ? "الأرباح" : "المبيعات"} · تاريخ الطباعة: ${new Date().toLocaleDateString("ar-SA")}</p>
+        <table>
+          <thead><tr><th>الموظف</th><th>المسمى الوظيفي</th><th>الراتب الأساسي</th><th>مبيعات الشهر</th><th>العمولة</th><th>الإجمالي المستحق</th></tr></thead>
+          <tbody>${trs}</tbody>
+          <tfoot><tr><td colspan="2">الإجمالي</td><td>${totalSalary.toLocaleString()}</td><td>—</td><td>${Math.round(totalComm).toLocaleString()}</td><td>${Math.round(totalSalary + totalComm).toLocaleString()} ر.س</td></tr></tfoot>
+        </table>
+        <div class="sign"><div>توقيع المحاسب</div><div>توقيع المدير</div></div>
+      `);
+      onClose();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="sm:max-w-[420px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FileSpreadsheet className="w-5 h-5 text-primary" />
+            {isRTL ? "طباعة مسير الرواتب" : "Print payroll"}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 py-2">
+          <div>
+            <Label className="text-xs">{isRTL ? "الشهر" : "Month"}</Label>
+            <Input type="month" className="mt-1" value={month} onChange={e => setMonth(e.target.value)} dir="ltr" />
+          </div>
+          <p className="text-[11px] text-muted-foreground bg-muted/30 rounded-lg p-2.5">
+            {isRTL
+              ? "المسير يشمل الراتب الأساسي لكل موظف + عمولته المحسوبة من مبيعات/أرباح الشهر، مع خانات توقيع."
+              : "Includes base salary plus commission with signature lines."}
+          </p>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>{isRTL ? "إلغاء" : "Cancel"}</Button>
+          <Button onClick={run} disabled={busy}>
+            {busy ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : <Printer className="w-4 h-4 me-1" />}
+            {isRTL ? "طباعة المسير" : "Print"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
