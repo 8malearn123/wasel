@@ -397,8 +397,20 @@ export default function OnlineStorePage() {
     updExtras({ home_sections: list });
   };
 
-  const toggleHomeSection = (key: string) =>
-    updExtras({ home_sections: homeSections.map(s => s.key === key ? { ...s, visible: s.visible === false } : s) });
+  // التبديل بالموضع (مو بالنوع) حتى النسخ المكررة تشتغل كل وحدة لحالها
+  const toggleHomeSection = (index: number) =>
+    updExtras({ home_sections: homeSections.map((s, i) => i === index ? { ...s, visible: s.visible === false } : s) });
+
+  // تكرار القسم: نسخة جديدة تحت الأصل مباشرة
+  const duplicateSection = (index: number) => {
+    const list = [...homeSections];
+    list.splice(index + 1, 0, { ...list[index], visible: true });
+    updExtras({ home_sections: list });
+    toast.success(`تمت إضافة نسخة من "${SECTION_META[list[index].key]?.name || list[index].key}"`);
+  };
+
+  const removeSection = (index: number) =>
+    updExtras({ home_sections: homeSections.filter((_, i) => i !== index) });
 
   const publishAll = async () => {
     setSaving(true);
@@ -918,29 +930,42 @@ export default function OnlineStorePage() {
                       </div>
 
                       <p className="text-xs font-bold text-muted-foreground px-1 pt-2">أقسام الصفحة الرئيسية</p>
-                      <p className="text-[11px] text-muted-foreground px-1 -mt-2">اسحب لإعادة الترتيب · بدّل لإخفاء القسم</p>
+                      <p className="text-[11px] text-muted-foreground px-1 -mt-2">اسحب لإعادة الترتيب · زر + يضيف نسخة ثانية · بدّل لإخفاء القسم</p>
 
-                      {/* ترتيب وإظهار الأقسام */}
+                      {/* ترتيب وإظهار وتكرار الأقسام */}
                       <div className="bg-card rounded-xl border divide-y">
-                        {homeSections.map((s, i) => (
-                          <div key={s.key}
-                            draggable
-                            onDragStart={() => { dragIdx.current = i; }}
-                            onDragOver={e => e.preventDefault()}
-                            onDrop={() => { if (dragIdx.current !== null) reorderSections(dragIdx.current, i); dragIdx.current = null; }}
-                            className={cn("flex items-center gap-2 p-3", s.visible === false && "opacity-50")}>
-                            <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-semibold truncate">{SECTION_META[s.key]?.name || s.key}</p>
-                              <p className="text-[10px] text-muted-foreground truncate">{SECTION_META[s.key]?.desc}</p>
+                        {homeSections.map((s, i) => {
+                          const copies = homeSections.filter(x => x.key === s.key).length;
+                          const copyNo = homeSections.slice(0, i + 1).filter(x => x.key === s.key).length;
+                          return (
+                            <div key={`${s.key}-${i}`}
+                              draggable
+                              onDragStart={() => { dragIdx.current = i; }}
+                              onDragOver={e => e.preventDefault()}
+                              onDrop={() => { if (dragIdx.current !== null) reorderSections(dragIdx.current, i); dragIdx.current = null; }}
+                              className={cn("flex items-center gap-1.5 p-3", s.visible === false && "opacity-50")}>
+                              <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold truncate">
+                                  {SECTION_META[s.key]?.name || s.key}
+                                  {copies > 1 && <span className="text-[10px] font-normal text-primary ms-1.5">نسخة {copyNo}</span>}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground truncate">{SECTION_META[s.key]?.desc}</p>
+                              </div>
+                              <button type="button" onClick={() => duplicateSection(i)} title="إضافة نسخة من هذا القسم"
+                                className="p-1 rounded text-primary hover:bg-primary/10"><Plus className="w-4 h-4" /></button>
+                              {copies > 1 && (
+                                <button type="button" onClick={() => removeSection(i)} title="حذف هذه النسخة"
+                                  className="p-1 rounded text-destructive hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5" /></button>
+                              )}
+                              <button type="button" onClick={() => reorderSections(i, i - 1)} disabled={i === 0}
+                                className="p-1 rounded hover:bg-muted disabled:opacity-30"><ArrowUp className="w-3.5 h-3.5" /></button>
+                              <button type="button" onClick={() => reorderSections(i, i + 1)} disabled={i === homeSections.length - 1}
+                                className="p-1 rounded hover:bg-muted disabled:opacity-30"><ArrowDown className="w-3.5 h-3.5" /></button>
+                              <Switch checked={s.visible !== false} onCheckedChange={() => toggleHomeSection(i)} />
                             </div>
-                            <button type="button" onClick={() => reorderSections(i, i - 1)} disabled={i === 0}
-                              className="p-1 rounded hover:bg-muted disabled:opacity-30"><ArrowUp className="w-3.5 h-3.5" /></button>
-                            <button type="button" onClick={() => reorderSections(i, i + 1)} disabled={i === homeSections.length - 1}
-                              className="p-1 rounded hover:bg-muted disabled:opacity-30"><ArrowDown className="w-3.5 h-3.5" /></button>
-                            <Switch checked={s.visible !== false} onCheckedChange={() => toggleHomeSection(s.key)} />
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
 
                       {/* تعديل البنر */}

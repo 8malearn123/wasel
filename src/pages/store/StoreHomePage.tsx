@@ -134,6 +134,7 @@ export function StoreHomePage({ store, devices, accessories, categories, designE
 
   // ترتيب وإظهار الأقسام حسب محرر المتجر مع الافتراضي كنسخة احتياطية
   const savedSections = designExtras?.home_sections;
+  // تسمح بتكرار نفس القسم أكثر من مرة (النسخ المضافة من المحرر)
   const sectionOrder = (savedSections && savedSections.length > 0
     ? [
         ...savedSections,
@@ -148,7 +149,7 @@ export function StoreHomePage({ store, devices, accessories, categories, designE
   const numMap: Record<string, string> = {};
   let counter = 0;
   sectionOrder.forEach(k => {
-    if (numberedKeys.includes(k)) {
+    if (numberedKeys.includes(k) && !numMap[k]) {
       counter += 1;
       numMap[k] = '٠' + AR_DIGITS[counter];
     }
@@ -578,10 +579,10 @@ export function StoreHomePage({ store, devices, accessories, categories, designE
 
   return (
     <div>
-      {sectionOrder.map(key => {
+      {sectionOrder.map((key, i) => {
         const node = sections[key];
         if (!node) return null;
-        return <div key={key}>{node}</div>;
+        return <div key={`${key}-${i}`}>{node}</div>;
       })}
     </div>
   );
