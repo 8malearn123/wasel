@@ -33,6 +33,8 @@ interface InvoiceData {
   merchantName: string;
   branchName: string;
   date: string;
+  // تاريخ التسليم — يعتمد عليه بداية الضمان
+  deliveryDate?: string;
 }
 
 interface InvoiceDialogProps {
@@ -118,6 +120,8 @@ function buildReceiptHTML(data: InvoiceData, vatNumber: string): string {
       <p style="margin-top:4px;font-weight:600">فاتورة ضريبية مبسطة</p>
       <p style="font-weight:600">${data.invoiceNumber}</p>
       <p>${data.date}</p>
+      <p style="font-weight:600">تاريخ التسليم: ${data.deliveryDate || data.date}</p>
+      <p style="font-size:9px">يبدأ الضمان من تاريخ التسليم</p>
     </div>
     ${data.customerName || data.customerPhone ? `<div style="margin-bottom:6px">${data.customerName ? `<p>العميل: ${data.customerName}</p>` : ''}${data.customerPhone ? `<p>الهاتف: ${data.customerPhone}</p>` : ''}</div><hr class="separator"/>` : ''}
     <table><thead><tr><th>الصنف</th><th class="center">الكمية</th><th class="left">المبلغ</th></tr></thead><tbody>${itemsRows}</tbody></table>
@@ -370,6 +374,8 @@ export function InvoiceDialog({ data, onClose, onPrinted }: InvoiceDialogProps) 
             <p className="text-sm mt-2 font-semibold text-primary">فاتورة ضريبية مبسطة</p>
             <p className="text-sm font-semibold text-foreground">{data.invoiceNumber}</p>
             <p className="text-xs text-muted-foreground">{data.date}</p>
+            <p className="text-xs font-semibold text-foreground mt-1">تاريخ التسليم: {data.deliveryDate || data.date}</p>
+            <p className="text-[10px] text-muted-foreground">يبدأ الضمان من تاريخ التسليم</p>
           </div>
 
           {(data.customerName || data.customerPhone) && (

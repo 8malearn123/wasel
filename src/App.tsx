@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -131,6 +132,7 @@ function HomeRoute() {
 function AppRoutes() {
   useVersionCheck();
   return (
+    <ErrorBoundary>
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -179,6 +181,7 @@ function AppRoutes() {
       <Route path="*" element={<NotFound />} />
     </Routes>
     </Suspense>
+    </ErrorBoundary>
   );
 }
 

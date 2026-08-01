@@ -270,7 +270,9 @@ export function usePurchaseOrders() {
   // Receive purchase and add to inventory
   const receivePurchase = async (
     orderId: string,
-    items: PurchaseItem[]
+    items: PurchaseItem[],
+    // استلام جزئي: نضيف المستلم للمخزون ونترك الطلب مفتوحاً للباقي
+    opts?: { markReceived?: boolean; note?: string }
   ) => {
     if (!merchant || !currentBranch) {
       return { error: new Error('Missing merchant or branch') };
@@ -344,9 +346,17 @@ export function usePurchaseOrders() {
       }
     }
 
-    // Update order status
-    await updateOrderStatus(orderId, 'received');
-    
+    // استلام كامل → الطلب مستلم · استلام جزئي → يظل مفتوحاً مع ملاحظة بالباقي
+    if (opts?.markReceived === false) {
+      if (opts?.note) {
+        const prev = order.notes ? `${order.notes}\n` : '';
+        await supabase.from('purchase_orders').update({ notes: `${prev}${opts.note}` } as any).eq('id', orderId);
+      }
+      await fetchOrders();
+    } else {
+      await updateOrderStatus(orderId, 'received');
+    }
+
     return { error: null };
   };
 

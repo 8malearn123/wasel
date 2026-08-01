@@ -574,7 +574,7 @@ function CreatePODialog({ open, onOpenChange, suppliers, devices, accessories, o
 }
 
 // --- Receive & Inspect Dialog ---
-function ReceiveDialog({ open, onOpenChange, order, onReceive, isRTL }: { open: boolean; onOpenChange: (o: boolean) => void; order: PurchaseOrder | null; onReceive: (orderId: string, items: any[]) => Promise<any>; isRTL: boolean }) {
+function ReceiveDialog({ open, onOpenChange, order, onReceive, isRTL }: { open: boolean; onOpenChange: (o: boolean) => void; order: PurchaseOrder | null; onReceive: (orderId: string, items: any[], opts?: { markReceived?: boolean; note?: string }) => Promise<any>; isRTL: boolean }) {
   const [loading, setLoading] = useState(false);
   const [receiveItems, setReceiveItems] = useState<Array<{ type: 'device' | 'accessory'; accessoryId?: string; imei: string; model: string; brand: string; color: string; storage: string; quantity: number; unitCost: number; price: number; checked: boolean }>>([]);
 
@@ -613,6 +613,40 @@ function ReceiveDialog({ open, onOpenChange, order, onReceive, isRTL }: { open: 
             {isRTL ? `طلب شراء ${order?.order_number} - تحقق من كل منتج عند الاستلام` : `PO ${order?.order_number} - Verify each item on receipt`}
           </DialogDescription>
         </DialogHeader>
+
+        {/* ملخص الطلب: المطلوب · تم جرده · المتبقي — زي عملية الجرد */}
+        {receiveItems.length > 0 && (() => {
+          const ordered = receiveItems.reduce((sum, it) => sum + (Number(it.quantity) || 0), 0);
+          const done = receiveItems.filter(it => it.checked).reduce((sum, it) => sum + (Number(it.quantity) || 0), 0);
+          const remaining = Math.max(0, ordered - done);
+          const pct = ordered > 0 ? Math.round((done / ordered) * 100) : 0;
+          return (
+            <div className="rounded-xl border p-4 bg-muted/20 space-y-3">
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div>
+                  <p className="text-2xl font-extrabold text-foreground">{ordered}</p>
+                  <p className="text-[11px] text-muted-foreground">{isRTL ? 'المطلوب' : 'Ordered'}</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-extrabold text-green-600">{done}</p>
+                  <p className="text-[11px] text-muted-foreground">{isRTL ? 'تم استلامه' : 'Received'}</p>
+                </div>
+                <div>
+                  <p className={`text-2xl font-extrabold ${remaining > 0 ? 'text-warning' : 'text-muted-foreground'}`}>{remaining}</p>
+                  <p className="text-[11px] text-muted-foreground">{isRTL ? 'المتبقي' : 'Remaining'}</p>
+                </div>
+              </div>
+              <div className="h-2 rounded-full bg-muted overflow-hidden">
+                <div className="h-full bg-green-600 transition-all duration-500" style={{ width: `${pct}%` }} />
+              </div>
+              <p className="text-[11px] text-muted-foreground text-center">
+                {remaining > 0
+                  ? (isRTL ? `باقي ${remaining} قطعة لم تُستلم — تقدر تستلم الموجود الآن والباقي لاحقاً` : `${remaining} pieces still pending — receive what arrived now`)
+                  : (isRTL ? 'اكتمل جرد كل المنتجات ✓' : 'All items verified ✓')}
+              </p>
+            </div>
+          );
+        })()}
 
         {receiveItems.length === 0 ? (
           <div className="py-8 text-center text-muted-foreground">
@@ -672,21 +706,31 @@ function ReceiveDialog({ open, onOpenChange, order, onReceive, isRTL }: { open: 
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>{isRTL ? 'إلغاء' : 'Cancel'}</Button>
-          <Button disabled={loading || !allChecked} className="bg-green-600 hover:bg-green-700" onClick={async () => {
+          <Button disabled={loading || receiveItems.filter(it => it.checked).length === 0}
+            className="bg-green-600 hover:bg-green-700" onClick={async () => {
             if (!order) return;
             setLoading(true);
-            const items = receiveItems.map(it => ({
+            const verified = receiveItems.filter(it => it.checked);
+            const items = verified.map(it => ({
               type: it.type, quantity: it.quantity, unitCost: it.unitCost,
               accessoryId: it.accessoryId, imei: it.imei || undefined, model: it.model, brand: it.brand,
               color: it.color || undefined, storage: it.storage || undefined, price: it.price || undefined,
             }));
-            await onReceive(order.id, items);
+            const full = verified.length === receiveItems.length;
+            const note = full ? undefined
+              : `استلام جزئي بتاريخ ${new Date().toLocaleDateString()}: تم استلام ${verified.length} من ${receiveItems.length} صنف`;
+            await onReceive(order.id, items, { markReceived: full, note });
+            toast.success(full
+              ? (isRTL ? 'تم استلام الطلب كامل وإدخاله للمخزون' : 'Order fully received')
+              : (isRTL ? `تم استلام ${verified.length} صنف — الطلب يظل مفتوحاً للباقي` : `Received ${verified.length} items — order stays open`));
             setLoading(false);
             onOpenChange(false);
           }}>
             {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             <PackageCheck className="w-4 h-4 mr-1" />
-            {isRTL ? 'تأكيد الاستلام وإدخال المخزون' : 'Confirm & Add to Inventory'}
+            {allChecked
+              ? (isRTL ? 'تأكيد الاستلام الكامل' : 'Confirm Full Receipt')
+              : (isRTL ? 'استلام المجرود فقط' : 'Receive Verified Only')}
           </Button>
         </DialogFooter>
       </DialogContent>

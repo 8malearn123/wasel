@@ -1309,6 +1309,9 @@ export const AR_EN: Record<string, string> = {
 const ATTRS = ["placeholder", "title", "aria-label", "alt"] as const;
 
 function translateTextNode(node: Text) {
+  // لا نلمس محتوى الحقول القابلة للتحرير حتى ما نفسد كتابة المستخدم
+  const parent = node.parentElement;
+  if (parent && (parent.isContentEditable || parent.closest('[contenteditable="true"]'))) return;
   const raw = node.nodeValue;
   if (!raw) return;
   const trimmed = raw.trim();
@@ -1354,13 +1357,21 @@ let observer: MutationObserver | null = null;
 
 export function startAutoTranslate() {
   if (observer) return;
-  walk(document.body);
+  // أي خطأ في الترجمة يجب ألا يكسر الصفحة — نغلفها كلها بحماية
+  try { walk(document.body); } catch (e) { console.warn("[autoTranslate] initial walk failed", e); }
   observer = new MutationObserver((mutations) => {
-    for (const m of mutations) {
-      if (m.type === "characterData" && m.target.nodeType === Node.TEXT_NODE) {
-        translateTextNode(m.target as Text);
+    try {
+      for (const m of mutations) {
+        if (m.type === "characterData" && m.target.nodeType === Node.TEXT_NODE) {
+          translateTextNode(m.target as Text);
+        }
+        m.addedNodes.forEach((n) => {
+          // العقد المفصولة عن الصفحة (أزالها React) تُتجاهل
+          if (n.isConnected) walk(n);
+        });
       }
-      m.addedNodes.forEach((n) => walk(n));
+    } catch (e) {
+      console.warn("[autoTranslate] mutation walk failed", e);
     }
   });
   observer.observe(document.body, { childList: true, subtree: true, characterData: true });

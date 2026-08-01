@@ -8,7 +8,8 @@ import {
   X,
   Truck,
   Package,
-  Smartphone
+  Smartphone,
+  ScanLine
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import { useLanguage } from "@/i18n";
 import { useTransfers } from "@/hooks/useTransfers";
 import { useDevices, useAccessories } from "@/hooks/useInventory";
@@ -280,6 +282,40 @@ function CreateTransferDialog({
   const availableDevices = devices.filter(d => d.branch_id === fromBranch);
   const availableAccessories = accessories.filter(a => a.branch_id === fromBranch && a.quantity > 0);
 
+  // مسح الباركود / IMEI / رقم المنتج لإضافته للتحويل مباشرة
+  const [scan, setScan] = useState('');
+  const handleScan = (raw: string) => {
+    const code = raw.trim();
+    if (!code) return;
+    if (!fromBranch) { toast.error('اختر الفرع المصدر أولاً'); return; }
+
+    const dev = availableDevices.find(d => (d.imei || '').toLowerCase() === code.toLowerCase());
+    if (dev) {
+      if (selectedDevices.includes(dev.id)) toast.info(`${dev.model} مضاف مسبقاً`);
+      else { setSelectedDevices(prev => [...prev, dev.id]); toast.success(`تمت إضافة ${dev.model}`); }
+      setScan('');
+      return;
+    }
+
+    const acc = availableAccessories.find(a => (a.sku || '').toLowerCase() === code.toLowerCase());
+    if (acc) {
+      setSelectedAccessories(prev => {
+        const cur = prev.find(s => s.id === acc.id);
+        if (cur) {
+          if (cur.quantity >= acc.quantity) { toast.error(`الكمية المتاحة من ${acc.name} هي ${acc.quantity} فقط`); return prev; }
+          toast.success(`${acc.name} — الكمية ${cur.quantity + 1}`);
+          return prev.map(s => s.id === acc.id ? { ...s, quantity: s.quantity + 1 } : s);
+        }
+        toast.success(`تمت إضافة ${acc.name}`);
+        return [...prev, { id: acc.id, quantity: 1 }];
+      });
+      setScan('');
+      return;
+    }
+
+    toast.error('ما لقينا منتج بهذا الرقم في الفرع المصدر');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fromBranch || !toBranch || fromBranch === toBranch) return;
@@ -342,6 +378,30 @@ function CreateTransferDialog({
 
             {fromBranch && (
               <>
+                {/* مسح الباركود / IMEI */}
+                <div className="space-y-2">
+                  <Label>مسح الباركود أو رقم المنتج</Label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <ScanLine className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
+                      <Input
+                        value={scan}
+                        onChange={(e) => setScan(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') { e.preventDefault(); handleScan(scan); }
+                        }}
+                        placeholder="امسح الباركود أو اكتب IMEI / SKU ثم Enter"
+                        className="pr-9 font-mono"
+                        autoFocus
+                      />
+                    </div>
+                    <Button type="button" variant="outline" onClick={() => handleScan(scan)}>إضافة</Button>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    قارئ الباركود يضيف المنتج تلقائياً · الأجهزة بالـ IMEI والإكسسوارات بالـ SKU
+                  </p>
+                </div>
+
                 <div className="space-y-2">
                   <Label>Select Devices</Label>
                   <div className="max-h-32 overflow-y-auto border rounded-lg p-2 space-y-1">

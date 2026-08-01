@@ -30,6 +30,7 @@ interface InvoiceData {
   merchantName: string;
   branchName: string;
   date: string;
+  deliveryDate?: string;
 }
 
 export default function POSPage() {
@@ -188,6 +189,7 @@ export default function POSPage() {
           merchantName: merchant?.name || "Store",
           branchName: currentBranch?.name || "Main",
           date: new Date().toLocaleString(),
+          deliveryDate: new Date().toLocaleDateString(),
         });
 
         setCart([]);
