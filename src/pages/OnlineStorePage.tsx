@@ -16,6 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UrlTabs } from '@/components/common/UrlTabs';
+import { useTabParam } from '@/hooks/useTabParam';
 import { ColorWheel } from '@/components/common/ColorWheel';
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -196,6 +197,7 @@ export default function OnlineStorePage() {
   const [designSection, setDesignSection] = useState<string | null>(null);
   const [colorTarget, setColorTarget] = useState<'primary_color' | 'secondary_color'>('primary_color');
   // محرر المتجر (ماكس)
+  const [, setStoreTab] = useTabParam('general');
   const [openPanel, setOpenPanel] = useState<string | null>('logo');
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
   // المعاينة الحقيقية شغالة دائماً
@@ -1017,6 +1019,19 @@ export default function OnlineStorePage() {
 
                       <p className="text-xs font-bold text-muted-foreground px-1 pt-2">محتوى الأقسام</p>
                       <div className="grid grid-cols-2 gap-2">
+                        {/* أقسام تُعدَّل من مكان آخر — نوصّلك لها مباشرة */}
+                        {[
+                          { icon: Megaphone, name: 'البنر الرئيسي', go: () => setOpenPanel('banner') },
+                          { icon: ImageIcon, name: 'البنرات الإضافية', go: () => setStoreTab('banners') },
+                          { icon: Tag, name: 'تسوّق حسب الفئة', go: () => setStoreTab('categories') },
+                          { icon: Star, name: 'الأكثر مبيعاً', go: () => setStoreTab('hero') },
+                        ].map(it => (
+                          <button key={it.name} type="button" onClick={it.go}
+                            className="flex items-center gap-2 bg-card rounded-lg border p-2.5 text-xs font-semibold hover:border-primary/60 hover:shadow-sm transition-all">
+                            <it.icon className="w-4 h-4 text-primary shrink-0" />
+                            <span className="truncate">{it.name}</span>
+                          </button>
+                        ))}
                         {[
                           { key: 'wide', icon: Megaphone, name: 'البنرات العريضة' },
                           { key: 'feature', icon: Star, name: 'الصور المميزة' },
