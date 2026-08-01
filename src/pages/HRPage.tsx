@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Briefcase, Users, Wallet, TrendingUp, Loader2, Pencil, Phone, CalendarDays,
+  Target, Percent, Save,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,11 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { useMerchantUsers } from "@/hooks/useBranches";
+import { useHRSettings, commissionFor, type HRSettings } from "@/hooks/useHRSettings";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n";
@@ -44,11 +50,16 @@ const ROLE_LABELS: Record<string, { ar: string; en: string; cls: string }> = {
 
 export default function HRPage() {
   const { isRTL } = useLanguage();
-  const { merchant } = useAuth();
+  const { merchant, subscription } = useAuth();
   const { users, loading } = useMerchantUsers();
   const [hr, setHr] = useState<Record<string, HRInfo>>(loadHR);
   const [editing, setEditing] = useState<MerchantUser | null>(null);
   const [monthSales, setMonthSales] = useState<Record<string, number>>({});
+  const [dailySales, setDailySales] = useState<Record<string, number>>({});
+  const [monthProfit, setMonthProfit] = useState<Record<string, number>>({});
+  const [dailyProfit, setDailyProfit] = useState<Record<string, number>>({});
+  const { settings: hrSettings, save: saveHRSettings } = useHRSettings();
+  const isMax = subscription?.plan === 'Distributor' || subscription?.plan === 'trial';
   // سجل الحضور: دخول/انصراف الكاشير من نقطة البيع (آخر ٧ أيام)
   const [attendance, setAttendance] = useState<Array<{ user_id: string; action: string; created_at: string }>>([]);
 
@@ -98,27 +109,65 @@ export default function HRPage() {
     new Date(b.in || b.out || 0).getTime() - new Date(a.in || a.out || 0).getTime()
   );
 
-  // Sales this month per employee (by created_by)
+  // مبيعات وأرباح كل موظف — لهذا الشهر ولليوم (تُستخدم للأهداف والعمولات)
   useEffect(() => {
     if (!merchant) return;
     (async () => {
       const start = new Date();
       start.setDate(1);
       start.setHours(0, 0, 0, 0);
-      const { data } = await supabase
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const { data: salesRows } = await supabase
         .from("sales")
-        .select("sold_by, total_amount")
+        .select("id, sold_by, total_amount, sale_date")
         .eq("merchant_id", merchant.id)
         .gte("sale_date", start.toISOString())
-        .limit(2000);
-      const totals: Record<string, number> = {};
-      for (const s of data || []) {
+        .limit(3000);
+
+      const mSales: Record<string, number> = {};
+      const dSales: Record<string, number> = {};
+      const saleOwner: Record<string, { by: string; today: boolean }> = {};
+      for (const s of salesRows || []) {
         if (!s.sold_by) continue;
-        totals[s.sold_by] = (totals[s.sold_by] || 0) + Number(s.total_amount || 0);
+        const isToday = new Date(s.sale_date) >= today;
+        mSales[s.sold_by] = (mSales[s.sold_by] || 0) + Number(s.total_amount || 0);
+        if (isToday) dSales[s.sold_by] = (dSales[s.sold_by] || 0) + Number(s.total_amount || 0);
+        saleOwner[s.id] = { by: s.sold_by, today: isToday };
       }
-      setMonthSales(totals);
+      setMonthSales(mSales);
+      setDailySales(dSales);
+
+      // الأرباح = (سعر البيع - التكلفة) × الكمية من بنود الفواتير
+      const ids = Object.keys(saleOwner);
+      const mProfit: Record<string, number> = {};
+      const dProfit: Record<string, number> = {};
+      for (let i = 0; i < ids.length; i += 200) {
+        const chunk = ids.slice(i, i + 200);
+        const { data: items } = await supabase
+          .from("sale_items")
+          .select("sale_id, quantity, unit_price, cost_at_sale")
+          .in("sale_id", chunk);
+        for (const it of items || []) {
+          const owner = saleOwner[it.sale_id];
+          if (!owner) continue;
+          const profit = (Number(it.unit_price || 0) - Number(it.cost_at_sale || 0)) * Number(it.quantity || 0);
+          mProfit[owner.by] = (mProfit[owner.by] || 0) + profit;
+          if (owner.today) dProfit[owner.by] = (dProfit[owner.by] || 0) + profit;
+        }
+      }
+      setMonthProfit(mProfit);
+      setDailyProfit(dProfit);
     })();
   }, [merchant]);
+
+  // أساس احتساب العمولة حسب الإعدادات (يومي/شهري × مبيعات/أرباح)
+  const commissionBase = (userId: string) => {
+    const { period, basis } = hrSettings.commission;
+    if (period === 'daily') return basis === 'profit' ? (dailyProfit[userId] || 0) : (dailySales[userId] || 0);
+    return basis === 'profit' ? (monthProfit[userId] || 0) : (monthSales[userId] || 0);
+  };
 
   const saveHR = (muId: string, info: HRInfo) => {
     const next = { ...hr, [muId]: info };
@@ -159,6 +208,17 @@ export default function HRPage() {
         ))}
       </div>
 
+      {/* أهداف المبيعات والعمولات — باقة ماكس */}
+      {isMax && (
+        <TargetsAndCommissions
+          settings={hrSettings}
+          onSave={saveHRSettings}
+          teamDaily={users.reduce((s, u) => s + (dailySales[u.user_id] || 0), 0)}
+          teamMonthly={teamMonthSales}
+          isRTL={isRTL}
+        />
+      )}
+
       {/* Employees table */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
@@ -183,6 +243,10 @@ export default function HRPage() {
                     isRTL ? "الراتب" : "Salary",
                     isRTL ? "تاريخ التعيين" : "Hire Date",
                     isRTL ? "مبيعات الشهر" : "Month Sales",
+                    ...(isMax ? [
+                      isRTL ? "الهدف" : "Target",
+                      isRTL ? "العمولة" : "Commission",
+                    ] : []),
                     isRTL ? "دخول اليوم" : "Check-in",
                     isRTL ? "انصراف اليوم" : "Check-out",
                     isRTL ? "الحالة" : "Status",
@@ -216,6 +280,43 @@ export default function HRPage() {
                       <td className="px-4 py-3 text-sm font-semibold text-foreground">{info.salary ? `${info.salary.toLocaleString()} ر.س` : "—"}</td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">{info.hireDate || new Date(u.created_at).toLocaleDateString("ar-SA")}</td>
                       <td className="px-4 py-3 text-sm font-semibold text-primary">{(monthSales[u.user_id] || 0).toLocaleString()} ر.س</td>
+                      {isMax && (() => {
+                        const isDaily = hrSettings.commission.period === 'daily';
+                        const perT = hrSettings.targets.perEmployee?.[u.user_id];
+                        const target = isDaily
+                          ? (perT?.daily ?? hrSettings.targets.daily)
+                          : (perT?.monthly ?? hrSettings.targets.monthly);
+                        const achieved = isDaily ? (dailySales[u.user_id] || 0) : (monthSales[u.user_id] || 0);
+                        const pct = target > 0 ? Math.min(100, Math.round((achieved / target) * 100)) : 0;
+                        const comm = commissionFor(hrSettings, u.user_id, commissionBase(u.user_id));
+                        return (
+                          <>
+                            <td className="px-4 py-3">
+                              {target > 0 ? (
+                                <div className="min-w-[110px]">
+                                  <div className="flex items-center justify-between text-[11px] mb-1">
+                                    <span className={pct >= 100 ? "text-success font-bold" : "text-muted-foreground"}>{pct}%</span>
+                                    <span className="text-muted-foreground">{target.toLocaleString()}</span>
+                                  </div>
+                                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                                    <div className={pct >= 100 ? "h-full bg-success" : "h-full bg-primary"} style={{ width: `${pct}%` }} />
+                                  </div>
+                                </div>
+                              ) : <span className="text-sm text-muted-foreground">—</span>}
+                            </td>
+                            <td className="px-4 py-3">
+                              {comm.enabled ? (
+                                <div>
+                                  <p className="text-sm font-bold text-success">{Math.round(comm.value).toLocaleString()} ر.س</p>
+                                  <p className="text-[10px] text-muted-foreground">
+                                    {comm.rate}% {hrSettings.commission.basis === 'profit' ? (isRTL ? 'من الأرباح' : 'of profit') : (isRTL ? 'من المبيعات' : 'of sales')}
+                                  </p>
+                                </div>
+                              ) : <span className="text-sm text-muted-foreground">—</span>}
+                            </td>
+                          </>
+                        );
+                      })()}
                       <td className="px-4 py-3 text-sm font-semibold text-success" dir="ltr">
                         {todayAttendance[u.user_id]?.in ? fmtTime(todayAttendance[u.user_id].in!) : "—"}
                       </td>
@@ -295,6 +396,138 @@ export default function HRPage() {
         isRTL={isRTL}
       />
     </AppLayout>
+  );
+}
+
+// أهداف المبيعات (يومي/شهري) وإعدادات عمولة الموظفين — باقة ماكس
+function TargetsAndCommissions({ settings, onSave, teamDaily, teamMonthly, isRTL }: {
+  settings: HRSettings;
+  onSave: (s: HRSettings) => Promise<void> | void;
+  teamDaily: number;
+  teamMonthly: number;
+  isRTL: boolean;
+}) {
+  const [form, setForm] = useState<HRSettings>(settings);
+  const [saving, setSaving] = useState(false);
+  useEffect(() => { setForm(settings); }, [settings]);
+
+  const dirty = JSON.stringify(form) !== JSON.stringify(settings);
+  const dayPct = form.targets.daily > 0 ? Math.min(100, Math.round((teamDaily / form.targets.daily) * 100)) : 0;
+  const monPct = form.targets.monthly > 0 ? Math.min(100, Math.round((teamMonthly / form.targets.monthly) * 100)) : 0;
+
+  const setTarget = (k: 'daily' | 'monthly', v: number) =>
+    setForm(f => ({ ...f, targets: { ...f.targets, [k]: v } }));
+  const setComm = (patch: Partial<HRSettings['commission']>) =>
+    setForm(f => ({ ...f, commission: { ...f.commission, ...patch } }));
+
+  return (
+    <div className="mb-6 grid gap-4 lg:grid-cols-2">
+      {/* الأهداف */}
+      <div className="bg-card rounded-xl border border-border p-5 space-y-4">
+        <div className="flex items-center gap-2">
+          <span className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+            <Target className="w-[18px] h-[18px]" />
+          </span>
+          <div>
+            <h3 className="font-bold text-sm">{isRTL ? 'أهداف المبيعات' : 'Sales Targets'}</h3>
+            <p className="text-[11px] text-muted-foreground">{isRTL ? 'حدد هدف الفريق اليومي والشهري' : 'Set daily and monthly team targets'}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label className="text-xs">{isRTL ? 'الهدف اليومي (ر.س)' : 'Daily target'}</Label>
+            <Input type="number" min={0} className="mt-1 h-9" value={form.targets.daily || ''}
+              onChange={e => setTarget('daily', Number(e.target.value) || 0)} placeholder="5000" />
+          </div>
+          <div>
+            <Label className="text-xs">{isRTL ? 'الهدف الشهري (ر.س)' : 'Monthly target'}</Label>
+            <Input type="number" min={0} className="mt-1 h-9" value={form.targets.monthly || ''}
+              onChange={e => setTarget('monthly', Number(e.target.value) || 0)} placeholder="150000" />
+          </div>
+        </div>
+
+        {/* تقدم الفريق */}
+        {[
+          { label: isRTL ? 'إنجاز اليوم' : 'Today', pct: dayPct, val: teamDaily, target: form.targets.daily },
+          { label: isRTL ? 'إنجاز الشهر' : 'This month', pct: monPct, val: teamMonthly, target: form.targets.monthly },
+        ].filter(r => r.target > 0).map(r => (
+          <div key={r.label}>
+            <div className="flex items-center justify-between text-xs mb-1">
+              <span className="text-muted-foreground">{r.label}</span>
+              <span className={r.pct >= 100 ? 'font-bold text-success' : 'font-semibold text-foreground'}>
+                {r.val.toLocaleString()} / {r.target.toLocaleString()} ر.س ({r.pct}%)
+              </span>
+            </div>
+            <div className="h-2 rounded-full bg-muted overflow-hidden">
+              <div className={r.pct >= 100 ? 'h-full bg-success' : 'h-full bg-primary'} style={{ width: `${r.pct}%` }} />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* العمولات */}
+      <div className="bg-card rounded-xl border border-border p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="w-9 h-9 rounded-lg bg-success/10 text-success flex items-center justify-center">
+              <Percent className="w-[18px] h-[18px]" />
+            </span>
+            <div>
+              <h3 className="font-bold text-sm">{isRTL ? 'عمولات الموظفين' : 'Employee Commissions'}</h3>
+              <p className="text-[11px] text-muted-foreground">{isRTL ? 'النسبة والفترة وأساس الاحتساب' : 'Rate, period and basis'}</p>
+            </div>
+          </div>
+          <Switch checked={form.commission.enabled} onCheckedChange={v => setComm({ enabled: v })} />
+        </div>
+
+        {form.commission.enabled && (
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">{isRTL ? 'نسبة العمولة (%)' : 'Commission rate (%)'}</Label>
+              <Input type="number" min={0} max={100} step={0.5} className="mt-1 h-9"
+                value={form.commission.rate}
+                onChange={e => setComm({ rate: Number(e.target.value) || 0 })} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">{isRTL ? 'فترة الاحتساب' : 'Period'}</Label>
+                <Select value={form.commission.period} onValueChange={(v: any) => setComm({ period: v })}>
+                  <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">{isRTL ? 'يومية' : 'Daily'}</SelectItem>
+                    <SelectItem value="monthly">{isRTL ? 'شهرية' : 'Monthly'}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">{isRTL ? 'تُحتسب من' : 'Based on'}</Label>
+                <Select value={form.commission.basis} onValueChange={(v: any) => setComm({ basis: v })}>
+                  <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sales">{isRTL ? 'المبيعات' : 'Sales'}</SelectItem>
+                    <SelectItem value="profit">{isRTL ? 'الأرباح' : 'Profit'}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <p className="text-[11px] text-muted-foreground bg-muted/30 rounded-lg p-2.5">
+              {isRTL
+                ? `كل موظف ياخذ ${form.commission.rate}% من ${form.commission.basis === 'profit' ? 'أرباح' : 'مبيعات'} ${form.commission.period === 'daily' ? 'اليوم' : 'الشهر'} — تظهر محسوبة في جدول الموظفين تحت`
+                : `Each employee earns ${form.commission.rate}% of ${form.commission.basis} for the ${form.commission.period === 'daily' ? 'day' : 'month'}`}
+            </p>
+          </div>
+        )}
+
+        {dirty && (
+          <Button size="sm" className="w-full" disabled={saving}
+            onClick={async () => { setSaving(true); await onSave(form); setSaving(false); }}>
+            {saving ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : <Save className="w-4 h-4 me-1" />}
+            {isRTL ? 'حفظ الأهداف والعمولات' : 'Save targets & commissions'}
+          </Button>
+        )}
+      </div>
+    </div>
   );
 }
 
