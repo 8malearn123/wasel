@@ -37,7 +37,7 @@ export function StoreFavoritesPage({ store, devices, accessories }: Props) {
         <div className="text-center py-20">
           <Heart className="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" />
           <p className="text-lg font-medium mb-1">ما فيه شيء في المفضلة بعد</p>
-          <p className="text-sm text-muted-foreground mb-6">اضغط على القلب ❤️ في أي منتج يعجبك وراح تلاقيه هنا</p>
+          <p className="text-sm text-muted-foreground mb-6">اضغط على القلب في أي منتج يعجبك وراح تلاقيه هنا</p>
           <Button asChild style={{ background: `hsl(var(--store-primary))` }} className="text-white">
             <Link to={`/store/${slug}/products`}>تصفح المنتجات</Link>
           </Button>

@@ -99,7 +99,7 @@ export function StoreCheckoutPage({ store, placeOrder }: Props) {
         });
         if (lr?.awarded) {
           loyaltyAwarded = { points: lr.points, total_points: lr.total_points, tier: lr.tier };
-          toast.success(`حصلت على ${lr.points} نقطة ولاء! 🎉`);
+          toast.success(`حصلت على ${lr.points} نقطة ولاء!`);
         }
       } catch {
         /* loyalty is optional */
@@ -162,8 +162,7 @@ export function StoreCheckoutPage({ store, placeOrder }: Props) {
                 <span className="font-medium flex items-center gap-2">
                   <span className="inline-flex items-center gap-1 bg-black text-white text-sm font-semibold px-2.5 py-1 rounded-lg" dir="ltr">
                      Pay
-                  </span>
-                  أبل باي
+                  </span> أبل باي
                 </span>
               </label>
               <label className="flex items-center gap-3 p-4 border rounded-xl cursor-pointer hover:bg-muted/30">
@@ -174,8 +173,7 @@ export function StoreCheckoutPage({ store, placeOrder }: Props) {
               </label>
             </RadioGroup>
             {payment === 'apple_pay' && (
-              <p className="text-xs text-muted-foreground bg-muted/30 rounded-lg p-3">
-                بعد تأكيد الطلب بيتواصل معك المتجر بطلب الدفع عبر أبل باي لإتمام العملية.
+              <p className="text-xs text-muted-foreground bg-muted/30 rounded-lg p-3"> بعد تأكيد الطلب بيتواصل معك المتجر بطلب الدفع عبر أبل باي لإتمام العملية.
               </p>
             )}
           </div>
@@ -202,8 +200,7 @@ export function StoreCheckoutPage({ store, placeOrder }: Props) {
         <div className="flex justify-between mt-6">
           <Button variant="ghost" onClick={() => setStep((s) => Math.max(1, s - 1))} disabled={step === 1}>السابق</Button>
           {step < 4 ? (
-            <Button onClick={next} className="text-white" style={{ background: `hsl(var(--store-primary))` }}>
-              التالي <ArrowRight className="w-4 h-4 mr-1" />
+            <Button onClick={next} className="text-white" style={{ background: `hsl(var(--store-primary))` }}> التالي <ArrowRight className="w-4 h-4 mr-1" />
             </Button>
           ) : (
             <Button onClick={submit} disabled={submitting} className="text-white" style={{ background: `hsl(var(--store-primary))` }}>

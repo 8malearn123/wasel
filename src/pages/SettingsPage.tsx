@@ -604,7 +604,7 @@ function AccountingAPISection({ isRTL }: { isRTL: boolean }) {
 
         <div className="mt-4 p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
           <p className="text-xs text-muted-foreground">
-            💡 {isRTL 
+             {isRTL 
               ? "للحصول على JWT token، سجل دخول عبر التطبيق واستخدم supabase.auth.getSession() للحصول على access_token."
               : "To get a JWT token, sign in via the app and use supabase.auth.getSession() to get the access_token."}
           </p>

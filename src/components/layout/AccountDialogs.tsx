@@ -143,8 +143,7 @@ export function ActivityLogDialog({ open, onOpenChange }: { open: boolean; onOpe
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
             </div>
           ) : rows.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-8">
-              لا يوجد نشاط مسجّل بعد — ستظهر هنا عملياتك (بيع، تعديل مخزون، طلبات ترقية...)
+            <p className="text-center text-sm text-muted-foreground py-8"> لا يوجد نشاط مسجّل بعد — ستظهر هنا عملياتك (بيع، تعديل مخزون، طلبات ترقية...)
             </p>
           ) : (
             <div className="max-h-[50vh] overflow-y-auto space-y-2">

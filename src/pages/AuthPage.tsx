@@ -185,8 +185,7 @@ export default function AuthPage() {
                       </InputOTPGroup>
                     </InputOTP>
                   </div>
-                  <p className="text-xs text-muted-foreground text-center">
-                    أدخل الكود اللي أعطاك إياه المدير
+                  <p className="text-xs text-muted-foreground text-center"> أدخل الكود اللي أعطاك إياه المدير
                   </p>
                 </div>
 
@@ -270,14 +269,13 @@ export default function AuthPage() {
         </div>
 
         {!isLogin && (
-          <p className="text-center text-xs text-muted-foreground mt-4">
-            تحصل على فترة تجريبية 14 يوم مع جميع المميزات.
+          <p className="text-center text-xs text-muted-foreground mt-4"> تحصل على فترة تجريبية 14 يوم مع جميع المميزات.
           </p>
         )}
 
         {/* Demo Accounts Section */}
         <div className="mt-6 bg-card/50 rounded-xl border border-dashed border-primary/30 p-4">
-          <p className="text-xs font-semibold text-primary text-center mb-3">🎯 حسابات تجريبية للديمو</p>
+          <p className="text-xs font-semibold text-primary text-center mb-3"> حسابات تجريبية للديمو</p>
           <div className="space-y-2">
             {/* كاشير */}
             <button
@@ -344,7 +342,7 @@ export default function AuthPage() {
               dir="rtl"
             >
               <div className="flex items-center gap-2">
-                <span className="w-8 h-8 rounded-full bg-destructive/10 text-destructive flex items-center justify-center text-xs font-bold">🛡</span>
+                <span className="w-8 h-8 rounded-full bg-destructive/10 text-destructive flex items-center justify-center text-xs font-bold"></span>
                 <div className="text-right">
                   <span className="font-medium text-foreground">مبارك (مدير المنصة)</span>
                   <span className="block text-xs text-muted-foreground">Super Admin • إدارة شاملة</span>

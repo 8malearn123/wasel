@@ -159,8 +159,7 @@ export default function SubscriptionPage() {
             <h3 className="font-bold text-foreground mb-1">
               {isTrialExpired ? 'انتهت الفترة التجريبية' : isSubscriptionExpired ? 'انتهى الاشتراك' : 'الاشتراك ينتهي قريباً'}
             </h3>
-            <p className="text-sm text-muted-foreground">
-              قم بترقية باقتك للاستمرار في استخدام النظام
+            <p className="text-sm text-muted-foreground"> قم بترقية باقتك للاستمرار في استخدام النظام
             </p>
           </motion.div>
         )}
@@ -188,13 +187,11 @@ export default function SubscriptionPage() {
                   isCurrent && 'ring-2 ring-primary/30'
                 )}>
                 {plan.sort_order === 2 && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-primary text-primary-foreground rounded-full text-xs font-medium">
-                    الأكثر طلباً
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-primary text-primary-foreground rounded-full text-xs font-medium"> الأكثر طلباً
                   </div>
                 )}
                 {isCurrent && (
-                  <Badge className="absolute top-3 left-3 bg-success/15 text-success border-success/20">
-                    باقتك الحالية
+                  <Badge className="absolute top-3 left-3 bg-success/15 text-success border-success/20"> باقتك الحالية
                   </Badge>
                 )}
 
@@ -244,8 +241,7 @@ export default function SubscriptionPage() {
                 })()}
 
                 {isCurrent ? (
-                  <Button className="w-full" disabled variant="outline">
-                    باقتك الحالية
+                  <Button className="w-full" disabled variant="outline"> باقتك الحالية
                   </Button>
                 ) : (
                   <Button
@@ -257,8 +253,7 @@ export default function SubscriptionPage() {
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       <>
-                        <Zap className="w-4 h-4 ml-1" />
-                        طلب ترقية
+                        <Zap className="w-4 h-4 ml-1" /> طلب ترقية
                       </>
                     )}
                   </Button>

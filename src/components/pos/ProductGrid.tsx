@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n";
-import { Loader2 } from "lucide-react";
+import { Loader2, Smartphone, Package } from "lucide-react";
 import { useCategories } from "@/hooks/useCategories";
 import type { Device, Accessory } from "@/types/database";
 
@@ -16,12 +16,12 @@ interface ProductGridProps {
 
 // Product photo shown when /products/<SKU>.jpg exists in public/,
 // falling back to the category icon when it doesn't
-function ProductImage({ sku, fallback, tint }: { sku: string; fallback: string; tint: string }) {
+function ProductImage({ sku, icon: Icon, tint }: { sku: string; icon: any; tint: string }) {
   const [failed, setFailed] = useState(false);
   if (failed) {
     return (
       <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center mb-3", tint)}>
-        <span className="text-lg">{fallback}</span>
+        <Icon className="w-5 h-5 opacity-60" />
       </div>
     );
   }
@@ -126,7 +126,7 @@ export function ProductGrid({ devices, accessories, loading, onAddDevice, onAddA
                 onClick={() => onAddDevice(device)}
                 className="p-4 rounded-xl border text-start transition-all hover:shadow-md hover:scale-[1.02] active:scale-[0.98] bg-primary/5 border-primary/20 hover:border-primary/40"
               >
-                <ProductImage sku={device.imei} fallback="📱" tint="bg-primary/10" />
+                <ProductImage sku={device.imei} icon={Smartphone} tint="bg-primary/10" />
                 <p className="font-medium text-foreground text-sm truncate">
                   {device.brand ? `${device.brand} ` : ''}{device.model}
                 </p>
@@ -161,7 +161,7 @@ export function ProductGrid({ devices, accessories, loading, onAddDevice, onAddA
                 onClick={() => onAddAccessory(acc)}
                 className="p-4 rounded-xl border text-start transition-all hover:shadow-md hover:scale-[1.02] active:scale-[0.98] bg-accent/5 border-accent/20 hover:border-accent/40"
               >
-                <ProductImage sku={acc.sku} fallback="🎧" tint="bg-accent/10" />
+                <ProductImage sku={acc.sku} icon={Package} tint="bg-accent/10" />
                 <p className="font-medium text-foreground text-sm truncate">{acc.name}</p>
                 <p className="text-xs text-muted-foreground font-mono mt-0.5">{acc.sku}</p>
                 <div className="mt-2 flex items-center justify-between">

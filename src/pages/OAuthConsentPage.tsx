@@ -93,8 +93,7 @@ export default function OAuthConsentPage() {
           <ShieldCheck className="w-7 h-7 text-white" />
         </div>
         <h1 className="text-xl font-bold text-center mb-2">ربط {clientName} بحسابك</h1>
-        <p className="text-sm text-muted-foreground text-center mb-6">
-          سيتمكن {clientName} من قراءة بيانات متجرك (المبيعات، المخزون، الصيانة) نيابةً عنك عبر بروتوكول MCP.
+        <p className="text-sm text-muted-foreground text-center mb-6"> سيتمكن {clientName} من قراءة بيانات متجرك (المبيعات، المخزون، الصيانة) نيابةً عنك عبر بروتوكول MCP.
         </p>
         <div className="flex gap-2">
           <Button
@@ -102,8 +101,7 @@ export default function OAuthConsentPage() {
             className="flex-1"
             disabled={busy}
             onClick={() => decide(false)}
-          >
-            رفض
+          > رفض
           </Button>
           <Button
             className="flex-1 bg-gradient-primary hover:opacity-90"

@@ -35,8 +35,8 @@ export default function MarketingPage() {
       models.add(`${d.brand ? d.brand + ' ' : ''}${d.model}${d.storage ? ' ' + d.storage : ''}`.trim());
     }
     return [
-      ...[...models].map(m => ({ value: `جهاز: ${m}`, label: `📱 ${m}` })),
-      ...accessories.map(a => ({ value: `إكسسوار: ${a.name}`, label: `🎧 ${a.name}` })),
+      ...[...models].map(m => ({ value: `جهاز: ${m}`, label: ` ${m}` })),
+      ...accessories.map(a => ({ value: `إكسسوار: ${a.name}`, label: ` ${a.name}` })),
     ];
   }, [devices, accessories]);
   const {
@@ -64,24 +64,24 @@ export default function MarketingPage() {
 
   // مكتبة أفكار تسويقية جاهزة — باقة ماكس
   const MARKETING_IDEAS = [
-    { icon: '🎉', title: 'خصم افتتاح', desc: 'خصم ترحيبي لأول أسبوع يجذب أول عملائك',
+    { icon: '', title: 'خصم افتتاح', desc: 'خصم ترحيبي لأول أسبوع يجذب أول عملائك',
       apply: { name: 'عرض الافتتاح', campaign_type: 'discount' as const, discount_type: 'percentage' as const, discount_value: 15, apply_scope: 'all' as const } },
-    { icon: '⚡', title: 'تخفيض سريع ٢٤ ساعة', desc: 'عرض ينتهي بسرعة يخلق إحساس بالاستعجال',
+    { icon: '', title: 'تخفيض سريع ٢٤ ساعة', desc: 'عرض ينتهي بسرعة يخلق إحساس بالاستعجال',
       apply: { name: 'تخفيض ٢٤ ساعة', campaign_type: 'flash_sale' as const, discount_type: 'percentage' as const, discount_value: 25 } },
-    { icon: '🎁', title: 'اشترِ جوال واحصل على إكسسوار',
+    { icon: '', title: 'اشترِ جوال واحصل على إكسسوار',
       desc: 'ارفع قيمة الفاتورة وصرّف الإكسسوارات الراكدة',
       apply: { name: 'جوال + هدية', campaign_type: 'buy_x_get_y' as const, buy_quantity: 1, get_quantity: 1 } },
-    { icon: '📦', title: 'حزمة الطالب', desc: 'جوال + سماعة + شاحن بسعر واحد مغري',
+    { icon: '', title: 'حزمة الطالب', desc: 'جوال + سماعة + شاحن بسعر واحد مغري',
       apply: { name: 'حزمة الطالب', campaign_type: 'bundle' as const, discount_type: 'fixed' as const } },
-    { icon: '🌙', title: 'عرض المناسبات', desc: 'خصم موسمي (رمضان، العيد، اليوم الوطني، الجمعة البيضاء)',
+    { icon: '', title: 'عرض المناسبات', desc: 'خصم موسمي (رمضان، العيد، اليوم الوطني، الجمعة البيضاء)',
       apply: { name: 'عرض المناسبة', campaign_type: 'discount' as const, discount_type: 'percentage' as const, discount_value: 20, apply_scope: 'all' as const } },
-    { icon: '🔁', title: 'عرض الاستبدال', desc: 'خصم عند استبدال الجهاز القديم بجديد',
+    { icon: '', title: 'عرض الاستبدال', desc: 'خصم عند استبدال الجهاز القديم بجديد',
       apply: { name: 'استبدل واربح', campaign_type: 'discount' as const, discount_type: 'fixed' as const, discount_value: 200, apply_scope: 'all' as const } },
-    { icon: '👥', title: 'صديق يجيب صديق', desc: 'خصم للعميل ولصديقه عند أول عملية شراء',
+    { icon: '', title: 'صديق يجيب صديق', desc: 'خصم للعميل ولصديقه عند أول عملية شراء',
       apply: { name: 'صديق يجيب صديق', campaign_type: 'discount' as const, discount_type: 'percentage' as const, discount_value: 10, apply_scope: 'all' as const } },
-    { icon: '🛠️', title: 'صيانة مجانية', desc: 'فحص أو تركيب حماية مجاناً مع كل جهاز',
+    { icon: '', title: 'صيانة مجانية', desc: 'فحص أو تركيب حماية مجاناً مع كل جهاز',
       apply: { name: 'صيانة مجانية مع الجهاز', campaign_type: 'buy_x_get_y' as const, buy_quantity: 1, get_quantity: 1 } },
-    { icon: '💎', title: 'عرض العملاء المميزين', desc: 'خصم خاص لعملاء نقاط الولاء الذهبيين',
+    { icon: '', title: 'عرض العملاء المميزين', desc: 'خصم خاص لعملاء نقاط الولاء الذهبيين',
       apply: { name: 'عرض العملاء المميزين', campaign_type: 'discount' as const, discount_type: 'percentage' as const, discount_value: 12, apply_scope: 'all' as const } },
   ];
 
@@ -419,8 +419,7 @@ export default function MarketingPage() {
                   <CardTitle className="text-base flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-primary" /> أفكار تسويقية جاهزة
                   </CardTitle>
-                  <CardDescription className="text-xs">
-                    اضغط أي فكرة وتنفتح لك حملة جاهزة بالبيانات — عدّلها واحفظها
+                  <CardDescription className="text-xs"> اضغط أي فكرة وتنفتح لك حملة جاهزة بالبيانات — عدّلها واحفظها
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">

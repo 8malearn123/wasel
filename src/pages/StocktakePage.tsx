@@ -154,7 +154,7 @@ function printStocktakeReport(stocktake: Stocktake, items: StocktakeItem[]) {
 </div>
 
 ${discrepancies.length > 0 ? `
-<h3 style="margin-bottom:8px;color:#b45309;">⚠ التباينات المكتشفة (${discrepancies.length})</h3>
+<h3 style="margin-bottom:8px;color:#b45309;"> التباينات المكتشفة (${discrepancies.length})</h3>
 <table>
   <thead><tr><th>العنصر</th><th>SKU</th><th>النوع</th><th class="text-center">النظام</th><th class="text-center">الفعلي</th><th class="text-center">الفرق</th></tr></thead>
   <tbody>${discrepancies.map(d => {
@@ -173,8 +173,7 @@ ${discrepancies.length > 0 ? `
   }).join('')}</tbody>
 </table>
 
-<div class="footer">
-  تم الطباعة بواسطة النظام | ${format(new Date(), 'dd/MM/yyyy HH:mm:ss')}
+<div class="footer"> تم الطباعة بواسطة النظام | ${format(new Date(), 'dd/MM/yyyy HH:mm:ss')}
 </div>
 </body></html>`;
 
@@ -277,12 +276,10 @@ export default function StocktakePage() {
           </SelectContent>
         </Select>
         <Button variant="outline" onClick={() => setShowSchedule(true)}>
-          <CalendarPlus className="w-4 h-4 mr-2" />
-          جدولة جرد
+          <CalendarPlus className="w-4 h-4 mr-2" /> جدولة جرد
         </Button>
         <Button onClick={() => setShowCreate(true)} className="bg-primary shrink-0">
-          <Plus className="w-4 h-4 mr-2" />
-          جرد جديد
+          <Plus className="w-4 h-4 mr-2" /> جرد جديد
         </Button>
       </div>
 
@@ -404,8 +401,7 @@ export default function StocktakePage() {
                             const items = await getStocktakeItems(stocktake.id);
                             printStocktakeReport(stocktake, items);
                           }}>
-                            <Printer className="w-4 h-4 mr-2" />
-                            طباعة التقرير
+                            <Printer className="w-4 h-4 mr-2" /> طباعة التقرير
                           </DropdownMenuItem>
                           {stocktake.status === 'in_progress' && (
                             <>
@@ -572,8 +568,7 @@ function ScheduleDialog({ open, onOpenChange, branches }: {
       <DialogContent className="max-w-lg" dir="rtl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <CalendarPlus className="w-5 h-5 text-primary" />
-            جدولة الجرد الدوري
+            <CalendarPlus className="w-5 h-5 text-primary" /> جدولة الجرد الدوري
           </DialogTitle>
           <DialogDescription>أنشئ جدولة دورية للتذكير بعمليات الجرد</DialogDescription>
         </DialogHeader>
@@ -600,8 +595,7 @@ function ScheduleDialog({ open, onOpenChange, branches }: {
                       })}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      الموعد القادم: {format(new Date(s.nextDate), 'dd MMM yyyy', { locale: ar })}
+                      <Calendar className="w-3 h-3" /> الموعد القادم: {format(new Date(s.nextDate), 'dd MMM yyyy', { locale: ar })}
                     </p>
                   </div>
                   <Button variant="ghost" size="icon" className="shrink-0 text-destructive hover:text-destructive" onClick={() => removeSchedule(s.id)}>
@@ -739,9 +733,9 @@ function StocktakeDetailDialog({ stocktake, open, onOpenChange, getItems, update
       const newQty = (found.counted_quantity ?? 0) + 1;
       setItems(prev => prev.map(i => i.id === found.id ? { ...i, counted_quantity: newQty } : i));
       await updateCount(found.id, newQty);
-      toast.success(`✅ ${found.item_name} — الكمية: ${newQty}`);
+      toast.success(` ${found.item_name} — الكمية: ${newQty}`);
     } else {
-      toast.error(`❌ لم يتم العثور على عنصر بالرمز: ${code}`);
+      toast.error(` لم يتم العثور على عنصر بالرمز: ${code}`);
     }
     setScannerInput("");
     scannerRef.current?.focus();
@@ -831,8 +825,7 @@ function StocktakeDetailDialog({ stocktake, open, onOpenChange, getItems, update
                   <Search className="w-4 h-4 mr-1" /> بحث
                 </Button>
               </form>
-              <p className="text-xs text-muted-foreground mt-2 text-center">
-                امسح الباركود وسيتم إضافة +1 للكمية الفعلية تلقائياً
+              <p className="text-xs text-muted-foreground mt-2 text-center"> امسح الباركود وسيتم إضافة +1 للكمية الفعلية تلقائياً
               </p>
             </motion.div>
           )}
@@ -860,13 +853,11 @@ function StocktakeDetailDialog({ stocktake, open, onOpenChange, getItems, update
             </Select>
             {isEditable && (
               <Button variant={scannerMode ? "default" : "outline"} size="sm" className="h-9" onClick={() => setScannerMode(!scannerMode)}>
-                <ScanBarcode className="w-4 h-4 mr-1" />
-                باركود
+                <ScanBarcode className="w-4 h-4 mr-1" /> باركود
               </Button>
             )}
             <Button variant="outline" size="sm" className="h-9" onClick={() => printStocktakeReport(stocktake, items)}>
-              <Printer className="w-4 h-4 mr-1" />
-              طباعة
+              <Printer className="w-4 h-4 mr-1" /> طباعة
             </Button>
           </div>
 
@@ -969,8 +960,7 @@ function StocktakeDetailDialog({ stocktake, open, onOpenChange, getItems, update
         <DialogContent className="max-w-md" dir="rtl">
           <DialogHeader>
             <DialogTitle>إنهاء عملية الجرد</DialogTitle>
-            <DialogDescription>
-              تم جرد {countedItems} من {totalItems} عنصر.
+            <DialogDescription> تم جرد {countedItems} من {totalItems} عنصر.
               {discrepancies.length > 0 && ` تم اكتشاف ${discrepancies.length} تباين.`}
             </DialogDescription>
           </DialogHeader>

@@ -157,8 +157,7 @@ export default function OnlineOrdersPage() {
                             target="_blank" rel="noopener"
                             onClick={e => e.stopPropagation()}
                             className="inline-flex items-center gap-1 text-xs text-primary hover:underline ms-2"
-                          >
-                            تتبع الشحنة ↗
+                          > تتبع الشحنة ↗
                           </a>
                         )}
                         {order.tracking_number && (
@@ -282,7 +281,7 @@ export default function OnlineOrdersPage() {
                 <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {CARRIERS.map(c => (
-                    <SelectItem key={c.id} value={c.id}>{c.icon} {c.name}</SelectItem>
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                   ))}
                   <SelectItem value="other">أخرى</SelectItem>
                 </SelectContent>

@@ -147,7 +147,7 @@ export function StoreMyOrdersPage({ store }: { store: StoreSettings }) {
                             {o.tracking_number}
                             {trackingUrl((o as any).shipping_provider, o.tracking_number) && (
                               <a href={trackingUrl((o as any).shipping_provider, o.tracking_number)!}
-                                target="_blank" rel="noopener" className="ms-2 text-primary hover:underline font-sans">تتبع ↗</a>
+                                target="_blank" rel="noopener" className="ms-2 text-primary hover:underline font-sans">تتبع الشحنة</a>
                             )}
                           </p>
                         </>
@@ -187,8 +187,7 @@ export function StoreMyOrdersPage({ store }: { store: StoreSettings }) {
                       onClick={() => handleRemove(o.order_number)}
                       className="text-destructive hover:text-destructive"
                     >
-                      <Trash2 className="w-3.5 h-3.5 ml-1" />
-                      حذف من السجل
+                      <Trash2 className="w-3.5 h-3.5 ml-1" /> حذف من السجل
                     </Button>
                   </div>
                 </div>

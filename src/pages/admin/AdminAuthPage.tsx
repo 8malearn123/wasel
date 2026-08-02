@@ -166,12 +166,10 @@ export default function AdminAuthPage() {
           type="button"
           onClick={() => { setEmail('demo-admin@craftphone.app'); setPassword('demo@2026'); }}
           className="w-full mt-4 py-2 px-4 rounded-lg border border-dashed border-amber-500/30 text-amber-400/70 text-sm hover:bg-amber-500/10 hover:text-amber-400 transition-colors"
-        >
-          🔑 تجربة حساب ديمو
+        > تجربة حساب ديمو
         </button>
 
-        <p className="text-center text-xs text-gray-600 mt-4">
-          هذه الصفحة مخصصة لمسؤولي المنصة فقط
+        <p className="text-center text-xs text-gray-600 mt-4"> هذه الصفحة مخصصة لمسؤولي المنصة فقط
         </p>
       </motion.div>
     </div>

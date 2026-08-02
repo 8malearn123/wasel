@@ -397,8 +397,7 @@ function CreateTransferDialog({
                     </div>
                     <Button type="button" variant="outline" onClick={() => handleScan(scan)}>إضافة</Button>
                   </div>
-                  <p className="text-[11px] text-muted-foreground">
-                    قارئ الباركود يضيف المنتج تلقائياً · الأجهزة بالـ IMEI والإكسسوارات بالـ SKU
+                  <p className="text-[11px] text-muted-foreground"> قارئ الباركود يضيف المنتج تلقائياً · الأجهزة بالـ IMEI والإكسسوارات بالـ SKU
                   </p>
                 </div>
 

@@ -329,8 +329,8 @@ export function InvoiceDialog({ data, onClose, onPrinted }: InvoiceDialogProps) 
 
                 <p className="text-[11px] text-muted-foreground leading-relaxed">
                   {config.type === 'epson' 
-                    ? '💡 يدعم طابعات Epson TM-T20/T82/T88 المتصلة بالشبكة. تأكد من تفعيل ePOS على الطابعة.'
-                    : '💡 يدعم طابعات Star TSP100/TSP650 المتصلة بالشبكة. تأكد من تفعيل WebPRNT.'}
+                    ? ' يدعم طابعات Epson TM-T20/T82/T88 المتصلة بالشبكة. تأكد من تفعيل ePOS على الطابعة.'
+                    : ' يدعم طابعات Star TSP100/TSP650 المتصلة بالشبكة. تأكد من تفعيل WebPRNT.'}
                 </p>
               </div>
             )}

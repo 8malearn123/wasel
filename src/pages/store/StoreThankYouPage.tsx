@@ -82,11 +82,10 @@ export function StoreThankYouPage({ store }: { store: StoreSettings }) {
         <div className="mb-6 print:hidden rounded-2xl border-2 p-5 flex items-center gap-4"
           style={{ borderColor: `hsl(var(--store-primary) / 0.4)`, background: `hsl(var(--store-primary) / 0.06)` }}>
           <div className="w-12 h-12 rounded-full flex items-center justify-center text-white text-2xl shrink-0"
-            style={{ background: `hsl(var(--store-primary))` }}>🎁</div>
+            style={{ background: `hsl(var(--store-primary))` }}></div>
           <div className="flex-1">
             <p className="font-bold text-lg">حصلت على {loyalty.points} نقطة ولاء!</p>
-            <p className="text-sm text-muted-foreground">
-              رصيدك الحالي: <span className="font-semibold text-foreground">{loyalty.total_points} نقطة</span>
+            <p className="text-sm text-muted-foreground"> رصيدك الحالي: <span className="font-semibold text-foreground">{loyalty.total_points} نقطة</span>
               {' • '}مستواك: <span className="font-semibold text-foreground">
                 {loyalty.tier === 'platinum' ? 'بلاتيني' : loyalty.tier === 'gold' ? 'ذهبي' : loyalty.tier === 'silver' ? 'فضي' : 'برونزي'}
               </span>

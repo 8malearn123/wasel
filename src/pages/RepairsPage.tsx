@@ -225,8 +225,7 @@ export default function RepairsPage() {
           </SelectContent>
         </Select>
         <Button onClick={() => setShowCreate(true)} className="bg-primary shrink-0">
-          <Plus className="w-4 h-4 mr-2" />
-          طلب إصلاح جديد
+          <Plus className="w-4 h-4 mr-2" /> طلب إصلاح جديد
         </Button>
       </div>
 
@@ -419,8 +418,7 @@ function RepairRow({
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => onStatusChange(nextStatus)}>
-                    <ArrowRight className="w-4 h-4 mr-2" />
-                    نقل إلى: {statusConfig[nextStatus].label}
+                    <ArrowRight className="w-4 h-4 mr-2" /> نقل إلى: {statusConfig[nextStatus].label}
                   </DropdownMenuItem>
                 </>
               )}
@@ -538,8 +536,7 @@ function CreateRepairDialog({
       <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Wrench className="w-5 h-5" />
-            طلب إصلاح جديد
+            <Wrench className="w-5 h-5" /> طلب إصلاح جديد
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
@@ -597,8 +594,7 @@ function CreateRepairDialog({
                               </button>
                             ))
                           ) : (
-                            <div className="px-3 py-2.5 text-xs text-muted-foreground">
-                              العميل غير مسجل — أكمل كتابة اسمه وسيُسجَّل الطلب بهذا الاسم ✍️
+                            <div className="px-3 py-2.5 text-xs text-muted-foreground"> العميل غير مسجل — أكمل كتابة اسمه وسيُسجَّل الطلب بهذا الاسم 
                             </div>
                           )}
                         </div>
@@ -743,8 +739,7 @@ function CreateRepairDialog({
               {/* Repair parts from stock */}
               <div className="space-y-2 p-3 rounded-lg border border-border bg-muted/20">
                 <Label className="flex items-center gap-2">
-                  <Package className="w-4 h-4 text-primary" />
-                  قطع الصيانة من المخزون
+                  <Package className="w-4 h-4 text-primary" /> قطع الصيانة من المخزون
                 </Label>
 
                 {availableParts.length === 0 ? (
@@ -819,8 +814,7 @@ function CreateRepairDialog({
               {/* Warranty Days */}
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-green-600" />
-                  مدة الضمان (بالأيام)
+                  <Shield className="w-4 h-4 text-green-600" /> مدة الضمان (بالأيام)
                 </Label>
                 <div className="flex gap-2">
                   {[0, 7, 14, 30, 60, 90].map(d => (
@@ -924,8 +918,7 @@ function RepairDetailsDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span className="flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              تفاصيل طلب الإصلاح
+              <FileText className="w-5 h-5" /> تفاصيل طلب الإصلاح
             </span>
             <Badge variant="outline" className={cn("flex items-center gap-1", status.color)}>
               {status.icon} {status.label}
@@ -1187,8 +1180,7 @@ function RepairDetailsDialog({
 
         <DialogFooter className="gap-2 flex-wrap">
           <Button variant="outline" size="sm" onClick={() => onPrintInvoice(repair, usedParts)}>
-            <Printer className="w-4 h-4 mr-2" />
-            طباعة الفاتورة
+            <Printer className="w-4 h-4 mr-2" /> طباعة الفاتورة
           </Button>
           <Button variant="outline" onClick={handleSaveDetails} disabled={saving}>
             {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
@@ -1196,8 +1188,7 @@ function RepairDetailsDialog({
           </Button>
           {nextStatus && !['cancelled', 'warranty_expired'].includes(repair.status) && (
             <Button onClick={() => { onStatusChange(repair.id, nextStatus); onOpenChange(false); }}>
-              <ArrowRight className="w-4 h-4 mr-2" />
-              نقل إلى: {statusConfig[nextStatus].label}
+              <ArrowRight className="w-4 h-4 mr-2" /> نقل إلى: {statusConfig[nextStatus].label}
             </Button>
           )}
         </DialogFooter>

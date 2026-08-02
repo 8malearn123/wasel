@@ -149,8 +149,7 @@ export default function BranchesPage() {
           <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold text-foreground">تم الوصول للحد الأقصى للفروع</p>
-            <p className="text-sm text-muted-foreground">
-              باقتك الحالية تسمح بـ {branchLimit} فرع فقط. يمكنك طلب إضافة فرع جديد أو ترقية باقتك.
+            <p className="text-sm text-muted-foreground"> باقتك الحالية تسمح بـ {branchLimit} فرع فقط. يمكنك طلب إضافة فرع جديد أو ترقية باقتك.
             </p>
           </div>
         </motion.div>
@@ -163,8 +162,7 @@ export default function BranchesPage() {
             className="gap-2 bg-gradient-primary hover:opacity-90"
             onClick={() => setShowRequestDialog(true)}
           >
-            <Send className="w-4 h-4" />
-            طلب إضافة فرع جديد
+            <Send className="w-4 h-4" /> طلب إضافة فرع جديد
           </Button>
         )}
       </div>

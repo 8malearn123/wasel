@@ -133,7 +133,7 @@ export default function MerchantDetailPage() {
                 </div>
                 {(merchant.bank_name || merchant.iban) && (
                   <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                    {merchant.bank_name && <span>🏦 {merchant.bank_name}</span>}
+                    {merchant.bank_name && <span> {merchant.bank_name}</span>}
                     {merchant.iban && <span className="font-mono">{merchant.iban}</span>}
                   </div>
                 )}

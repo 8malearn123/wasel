@@ -513,12 +513,10 @@ export default function PlatformAdminPage() {
                           {payout.status === 'pending' && (
                             <div className="flex gap-1">
                               <Button size="sm" variant="outline" className="h-7 text-xs"
-                                onClick={() => setActionDialog({ type: 'payout_complete', target: payout })}>
-                                تأكيد
+                                onClick={() => setActionDialog({ type: 'payout_complete', target: payout })}> تأكيد
                               </Button>
                               <Button size="sm" variant="ghost" className="h-7 text-xs text-destructive"
-                                onClick={() => setActionDialog({ type: 'payout_reject', target: payout })}>
-                                رفض
+                                onClick={() => setActionDialog({ type: 'payout_reject', target: payout })}> رفض
                               </Button>
                             </div>
                           )}
@@ -658,13 +656,11 @@ export default function PlatformAdminPage() {
                       </div>
                       <div className="flex gap-1 flex-shrink-0">
                         {ticket.status === 'open' && (
-                          <Button size="sm" variant="outline" onClick={() => updateTicketStatus(ticket.id, 'in_progress')}>
-                            قيد المعالجة
+                          <Button size="sm" variant="outline" onClick={() => updateTicketStatus(ticket.id, 'in_progress')}> قيد المعالجة
                           </Button>
                         )}
                         {ticket.status !== 'closed' && (
-                          <Button size="sm" variant="outline" onClick={() => updateTicketStatus(ticket.id, 'closed')}>
-                            إغلاق
+                          <Button size="sm" variant="outline" onClick={() => updateTicketStatus(ticket.id, 'closed')}> إغلاق
                           </Button>
                         )}
                       </div>
@@ -693,8 +689,7 @@ export default function PlatformAdminPage() {
                           }}>
                             <Send className="w-3 h-3" /> إرسال وحل
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => { setReplyingTicketId(null); setTicketReply(''); }}>
-                            إلغاء
+                          <Button size="sm" variant="outline" onClick={() => { setReplyingTicketId(null); setTicketReply(''); }}> إلغاء
                           </Button>
                         </div>
                       </div>

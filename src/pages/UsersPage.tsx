@@ -93,8 +93,7 @@ export default function UsersPage() {
       {/* Add User Button */}
       <div className="flex justify-end mb-4">
         <Button onClick={() => setShowAddUser(true)} className="bg-primary">
-          <UserPlus className="w-4 h-4 mr-2" />
-          إضافة مستخدم جديد
+          <UserPlus className="w-4 h-4 mr-2" /> إضافة مستخدم جديد
         </Button>
       </div>
 
@@ -455,8 +454,7 @@ function ResetPasswordDialog({
       <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <KeyRound className="w-5 h-5" />
-            إعادة تعيين كلمة المرور
+            <KeyRound className="w-5 h-5" /> إعادة تعيين كلمة المرور
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
@@ -494,8 +492,7 @@ function ResetPasswordDialog({
             )}
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              إلغاء
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}> إلغاء
             </Button>
             <Button type="submit" disabled={loading}>
               {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
@@ -581,8 +578,7 @@ function RegenerateCodeDialog({
       <DialogContent className="sm:max-w-[420px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <KeyRound className="w-5 h-5" />
-            تعيين كود دخول جديد
+            <KeyRound className="w-5 h-5" /> تعيين كود دخول جديد
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
@@ -659,8 +655,7 @@ function RegenerateCodeDialog({
                 </div>
               )}
 
-              <p className="text-xs text-muted-foreground text-center">
-                الكود القديم لن يعمل بعد التعيين
+              <p className="text-xs text-muted-foreground text-center"> الكود القديم لن يعمل بعد التعيين
               </p>
             </div>
           )}
@@ -798,13 +793,11 @@ function AddUserDialog({
         <DialogContent className="sm:max-w-[420px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-green-600">
-              <Check className="w-5 h-5" />
-              تم إنشاء المستخدم بنجاح
+              <Check className="w-5 h-5" /> تم إنشاء المستخدم بنجاح
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <p className="text-sm text-muted-foreground">
-              احفظ بيانات الدخول التالية وأرسلها للمستخدم:
+            <p className="text-sm text-muted-foreground"> احفظ بيانات الدخول التالية وأرسلها للمستخدم:
             </p>
             {createdUser.loginCode && (
               <div className="bg-primary/5 rounded-lg p-4 border-2 border-primary/20 text-center">
@@ -845,8 +838,7 @@ function AddUserDialog({
       <DialogContent className="sm:max-w-[450px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <UserPlus className="w-5 h-5" />
-            إضافة مستخدم جديد
+            <UserPlus className="w-5 h-5" /> إضافة مستخدم جديد
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
@@ -886,8 +878,7 @@ function AddUserDialog({
                   dir="ltr"
                   className="font-mono"
                 />
-                <Button type="button" variant="outline" size="sm" onClick={generatePassword} className="shrink-0">
-                  توليد
+                <Button type="button" variant="outline" size="sm" onClick={generatePassword} className="shrink-0"> توليد
                 </Button>
               </div>
             </div>
@@ -924,8 +915,7 @@ function AddUserDialog({
             )}
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleClose}>
-              إلغاء
+            <Button type="button" variant="outline" onClick={handleClose}> إلغاء
             </Button>
             <Button type="submit" disabled={loading}>
               {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}

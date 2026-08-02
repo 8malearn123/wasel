@@ -216,7 +216,7 @@ export default function CustomersPage() {
               </div>
               <div className="text-xs text-muted-foreground">
                 <p>{t ? 'مستويات الولاء:' : 'Loyalty Tiers:'}</p>
-                <p>🥉 {t ? 'برونزي: 0-499' : 'Bronze: 0-499'} | 🥈 {t ? 'فضي: 500-1999' : 'Silver: 500-1999'} | 🥇 {t ? 'ذهبي: 2000-4999' : 'Gold: 2000-4999'} | 💎 {t ? 'بلاتيني: 5000+' : 'Platinum: 5000+'}</p>
+                <p> {t ? 'برونزي: 0-499' : 'Bronze: 0-499'} |  {t ? 'فضي: 500-1999' : 'Silver: 500-1999'} |  {t ? 'ذهبي: 2000-4999' : 'Gold: 2000-4999'} |  {t ? 'بلاتيني: 5000+' : 'Platinum: 5000+'}</p>
               </div>
             </div>
           </DialogContent>

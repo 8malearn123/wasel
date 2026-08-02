@@ -27,25 +27,21 @@ export class ErrorBoundary extends Component<Props, State> {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-6" dir="rtl">
         <div className="max-w-md w-full bg-card border rounded-2xl shadow-lg p-8 text-center">
-          <div className="text-4xl mb-3">⚠️</div>
           <h1 className="text-xl font-bold text-foreground mb-2">صار خطأ في عرض هذه الصفحة</h1>
-          <p className="text-sm text-muted-foreground mb-6">
-            جرّب تحديث الصفحة، وإذا تكررت المشكلة ارجع للوحة التحكم وتواصل مع الدعم الفني.
+          <p className="text-sm text-muted-foreground mb-6"> جرّب تحديث الصفحة، وإذا تكررت المشكلة ارجع للوحة التحكم وتواصل مع الدعم الفني.
           </p>
           <div className="flex gap-2 justify-center flex-wrap">
             <button
               type="button"
               onClick={() => window.location.reload()}
               className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity"
-            >
-              تحديث الصفحة
+            > تحديث الصفحة
             </button>
             <button
               type="button"
               onClick={() => { window.location.href = "/"; }}
               className="px-5 py-2.5 rounded-xl border font-semibold text-sm hover:bg-muted transition-colors"
-            >
-              لوحة التحكم
+            > لوحة التحكم
             </button>
           </div>
           <p className="text-[11px] text-muted-foreground/70 mt-5 font-mono break-words" dir="ltr">

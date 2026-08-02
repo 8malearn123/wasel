@@ -138,30 +138,30 @@ export function StoreLayout({ store, pages = [], merchantLegal, designExtras, ch
               )}
               {/* حسابات إضافية من محرر المتجر */}
               {([
-                { k: 'snapchat', label: 'سناب شات', icon: '👻' },
-                { k: 'tiktok', label: 'تيك توك', icon: '🎵' },
-                { k: 'youtube', label: 'يوتيوب', icon: '▶️' },
-                { k: 'facebook', label: 'فيسبوك', icon: 'f' },
-                { k: 'linkedin', label: 'لينكدإن', icon: 'in' },
-                { k: 'website', label: 'الموقع', icon: '🌐' },
-                { k: 'maps', label: 'موقعنا على الخريطة', icon: '📍' },
+                { k: 'snapchat', label: 'سناب شات' },
+                { k: 'tiktok', label: 'تيك توك' },
+                { k: 'youtube', label: 'يوتيوب' },
+                { k: 'facebook', label: 'فيسبوك' },
+                { k: 'linkedin', label: 'لينكدإن' },
+                { k: 'website', label: 'الموقع' },
+                { k: 'maps', label: 'الموقع على الخريطة' },
               ] as const).map(sn => {
                 const url = designExtras?.socials?.[sn.k];
                 if (!url) return null;
                 return (
-                  <a key={sn.k} href={url} target="_blank" rel="noopener" title={sn.label}
-                    className="w-7 h-7 rounded-full border flex items-center justify-center text-xs hover:border-foreground/40 hover:text-foreground text-muted-foreground transition-colors">
-                    {sn.icon}
+                  <a key={sn.k} href={url} target="_blank" rel="noopener"
+                    className="px-2.5 py-1 rounded-lg border text-[11px] hover:border-foreground/40 hover:text-foreground text-muted-foreground transition-colors">
+                    {sn.label}
                   </a>
                 );
               })}
               {designExtras?.socials?.email && (
-                <a href={`mailto:${designExtras.socials.email}`} title="البريد الإلكتروني"
-                  className="w-7 h-7 rounded-full border flex items-center justify-center text-xs hover:border-foreground/40 hover:text-foreground text-muted-foreground transition-colors">@</a>
+                <a href={`mailto:${designExtras.socials.email}`}
+                  className="px-2.5 py-1 rounded-lg border text-[11px] hover:border-foreground/40 hover:text-foreground text-muted-foreground transition-colors">البريد الإلكتروني</a>
               )}
               {designExtras?.socials?.phone && (
-                <a href={`tel:${designExtras.socials.phone}`} title="اتصال"
-                  className="w-7 h-7 rounded-full border flex items-center justify-center text-xs hover:border-foreground/40 hover:text-foreground text-muted-foreground transition-colors">📞</a>
+                <a href={`tel:${designExtras.socials.phone}`}
+                  className="px-2.5 py-1 rounded-lg border text-[11px] hover:border-foreground/40 hover:text-foreground text-muted-foreground transition-colors">اتصال</a>
               )}
             </div>
             {(designExtras?.socials?.phone || designExtras?.socials?.email) && (
@@ -218,8 +218,7 @@ export function StoreLayout({ store, pages = [], merchantLegal, designExtras, ch
               <span>صُنع بواسطة</span>
               <a href="https://wasel-alpha.vercel.app" target="_blank" rel="noopener"
                 className="inline-flex items-center gap-1 font-bold text-foreground/80 hover:text-foreground transition-colors">
-                <img src="/brand/app-icon.svg" alt="وصل" className="w-3.5 h-3.5" />
-                منصة وصل
+                <img src="/brand/app-icon.svg" alt="وصل" className="w-3.5 h-3.5" /> منصة وصل
               </a>
             </p>
           )}

@@ -68,8 +68,7 @@ export function ProductCard({ product, currency = 'ر.س' }: { product: StorePro
             <Heart className={cn('w-5 h-5', fav && 'fill-red-500')} />
           </button>
           {isNew && (
-            <span className="absolute top-2 right-2 z-10 text-[11px] font-bold px-2 py-1 rounded-full bg-emerald-500 text-white shadow-sm">
-              وصل حديثاً
+            <span className="absolute top-2 right-2 z-10 text-[11px] font-bold px-2 py-1 rounded-full bg-emerald-500 text-white shadow-sm"> وصل حديثاً
             </span>
           )}
           {product.image ? (
@@ -95,8 +94,7 @@ export function ProductCard({ product, currency = 'ر.س' }: { product: StorePro
             className="w-full mt-2 text-white"
             style={{ background: `hsl(var(--store-primary))` }}
             size="sm"
-          >
-            أضف للسلة
+          > أضف للسلة
           </Button>
         </div>
       </Link>

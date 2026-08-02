@@ -32,7 +32,7 @@ export function StoreFavoritesProvider({ slug, children }: { slug: string; child
         toast.info('أُزيل من المفضلة');
         return prev.filter((x) => x !== id);
       }
-      toast.success('أُضيف إلى المفضلة ❤️');
+      toast.success('أُضيف إلى المفضلة');
       return [...prev, id];
     });
   }, []);

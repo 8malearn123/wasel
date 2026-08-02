@@ -116,8 +116,7 @@ export default function AdminDashboardPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-primary" />
-              أعلى الشركات مبيعاً
+              <DollarSign className="w-4 h-4 text-primary" /> أعلى الشركات مبيعاً
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -141,8 +140,7 @@ export default function AdminDashboardPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <CreditCard className="w-4 h-4 text-primary" />
-              توزيع الاشتراكات
+              <CreditCard className="w-4 h-4 text-primary" /> توزيع الاشتراكات
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -172,8 +170,7 @@ export default function AdminDashboardPage() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-warning" />
-                طلبات فروع معلقة
+                <AlertTriangle className="w-4 h-4 text-warning" /> طلبات فروع معلقة
               </CardTitle>
               {pendingBranch.length > 0 && <Badge variant="destructive">{pendingBranch.length}</Badge>}
             </div>
@@ -193,8 +190,7 @@ export default function AdminDashboardPage() {
                   </div>
                 ))}
                 {pendingBranch.length > 3 && (
-                  <Button variant="ghost" size="sm" className="w-full" onClick={() => navigate('/admin/branch-requests')}>
-                    عرض الكل ({pendingBranch.length})
+                  <Button variant="ghost" size="sm" className="w-full" onClick={() => navigate('/admin/branch-requests')}> عرض الكل ({pendingBranch.length})
                     <ArrowUpRight className="w-3 h-3 mr-1" />
                   </Button>
                 )}
@@ -208,8 +204,7 @@ export default function AdminDashboardPage() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <LifeBuoy className="w-4 h-4 text-primary" />
-                تذاكر مفتوحة
+                <LifeBuoy className="w-4 h-4 text-primary" /> تذاكر مفتوحة
               </CardTitle>
               {openTickets.length > 0 && <Badge variant="destructive">{openTickets.length}</Badge>}
             </div>
@@ -234,8 +229,7 @@ export default function AdminDashboardPage() {
                   </div>
                 ))}
                 {openTickets.length > 3 && (
-                  <Button variant="ghost" size="sm" className="w-full" onClick={() => navigate('/admin/tickets')}>
-                    عرض الكل ({openTickets.length})
+                  <Button variant="ghost" size="sm" className="w-full" onClick={() => navigate('/admin/tickets')}> عرض الكل ({openTickets.length})
                     <ArrowUpRight className="w-3 h-3 mr-1" />
                   </Button>
                 )}
@@ -249,8 +243,7 @@ export default function AdminDashboardPage() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-success" />
-                مدفوعات معلقة
+                <DollarSign className="w-4 h-4 text-success" /> مدفوعات معلقة
               </CardTitle>
               {pendingPayoutsList.length > 0 && <Badge variant="destructive">{pendingPayoutsList.length}</Badge>}
             </div>
@@ -270,8 +263,7 @@ export default function AdminDashboardPage() {
                   </div>
                 ))}
                 {pendingPayoutsList.length > 3 && (
-                  <Button variant="ghost" size="sm" className="w-full" onClick={() => navigate('/admin/payouts')}>
-                    عرض الكل ({pendingPayoutsList.length})
+                  <Button variant="ghost" size="sm" className="w-full" onClick={() => navigate('/admin/payouts')}> عرض الكل ({pendingPayoutsList.length})
                     <ArrowUpRight className="w-3 h-3 mr-1" />
                   </Button>
                 )}
@@ -287,8 +279,7 @@ export default function AdminDashboardPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-primary" />
-              آخر الشركات المسجلة
+              <Building2 className="w-4 h-4 text-primary" /> آخر الشركات المسجلة
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -326,8 +317,7 @@ export default function AdminDashboardPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Activity className="w-4 h-4 text-primary" />
-              آخر النشاطات
+              <Activity className="w-4 h-4 text-primary" /> آخر النشاطات
             </CardTitle>
           </CardHeader>
           <CardContent>

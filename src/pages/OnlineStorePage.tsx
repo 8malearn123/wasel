@@ -5,7 +5,7 @@ import {
   Loader2, Tag, Link2, Sparkles, Search, FileText, Image as ImageIcon,
   Upload, Megaphone, Type, Star, Layout, Check, ArrowRight,
   Monitor, Smartphone, RotateCcw, GripVertical, ChevronDown, ArrowUp, ArrowDown, Rocket,
-  Undo2, Wand2, ListChecks, Clock, HelpCircle, Video, Award, MessageCircle, PhoneCall, Headphones,
+  Undo2, Wand2, ListChecks, Clock, HelpCircle, Video, Award,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -115,10 +115,7 @@ const PV_PRODUCTS = [
   { name: "شاحن متنقل 20K", price: "149", tag: "الأكثر مبيعاً" },
 ];
 const PV_CATS = [
-  { icon: "📱", name: "الجوالات" },
-  { icon: "🎧", name: "السماعات" },
-  { icon: "🔌", name: "الشواحن" },
-  { icon: "⌚", name: "الساعات" },
+  { name: "الجوالات" }, { name: "السماعات" }, { name: "الشواحن" }, { name: "الساعات" },
 ];
 
 // ألوان جاهزة للمصمم المبسط (باقة برو)
@@ -159,19 +156,19 @@ const FONT_COLORS = [
 // كل قالب معه إعدادات معاينة مصغرة تحاكي روح التصميم
 const THEMES = [
   {
-    id: "modern", name: "عصري", desc: "تصميم نظيف بأقواس ناعمة وظلال خفيفة", emoji: "✨",
+    id: "modern", name: "عصري", desc: "تصميم نظيف بأقواس ناعمة وظلال خفيفة", emoji: "",
     pv: { bg: "#eef2ff", hero: "linear-gradient(135deg,#6366f1,#a855f7)", tile: "#ffffff", bar: "#c7d2fe", dot: "#6366f1", radius: 14, tileRadius: 8, border: "transparent" },
   },
   {
-    id: "minimal", name: "بسيط", desc: "أبيض، تباعد واسع، خطوط دقيقة", emoji: "◯",
+    id: "minimal", name: "بسيط", desc: "أبيض، تباعد واسع، خطوط دقيقة", emoji: "",
     pv: { bg: "#ffffff", hero: "#f4f4f5", tile: "#fafafa", bar: "#e4e4e7", dot: "#18181b", radius: 4, tileRadius: 3, border: "#e4e4e7" },
   },
   {
-    id: "bold", name: "جريء", desc: "ألوان قوية، خطوط ثقيلة، تباين عالي", emoji: "⚡",
+    id: "bold", name: "جريء", desc: "ألوان قوية، خطوط ثقيلة، تباين عالي", emoji: "",
     pv: { bg: "#0f172a", hero: "linear-gradient(120deg,#f97316,#ef4444)", tile: "#1e293b", bar: "#f97316", dot: "#facc15", radius: 8, tileRadius: 6, border: "transparent" },
   },
   {
-    id: "classic", name: "كلاسيكي", desc: "زوايا حادة، تصميم تقليدي راقي", emoji: "♛",
+    id: "classic", name: "كلاسيكي", desc: "زوايا حادة، تصميم تقليدي راقي", emoji: "",
     pv: { bg: "#faf6ee", hero: "#1e2a4a", tile: "#ffffff", bar: "#d4af37", dot: "#d4af37", radius: 0, tileRadius: 0, border: "#e6dcc3" },
   },
 ];
@@ -319,8 +316,7 @@ export default function OnlineStorePage() {
         <div className="flex flex-col items-center justify-center py-20">
           <Store className="w-16 h-16 text-muted-foreground mb-4" />
           <h2 className="text-xl font-bold text-foreground mb-2">لم يتم إنشاء متجر بعد</h2>
-          <p className="text-muted-foreground mb-6 text-center max-w-md">
-            أنشئ متجرك الإلكتروني لتتمكن من تخصيصه احترافياً ونشره لعملائك
+          <p className="text-muted-foreground mb-6 text-center max-w-md"> أنشئ متجرك الإلكتروني لتتمكن من تخصيصه احترافياً ونشره لعملائك
           </p>
           <Button onClick={initStore} size="lg">
             <Store className="w-5 h-5 me-2" /> إنشاء المتجر الإلكتروني
@@ -378,10 +374,10 @@ export default function OnlineStorePage() {
   };
 
   const READY_PERKS = [
-    { icon: '🚚', title: 'توصيل سريع', desc: 'نوصل طلبك لباب بيتك بأسرع وقت' },
-    { icon: '🛡️', title: 'ضمان موثوق', desc: 'كل منتجاتنا أصلية وعليها ضمان' },
-    { icon: '💳', title: 'دفع آمن', desc: 'طرق دفع متعددة ومحمية بالكامل' },
-    { icon: '🎧', title: 'دعم متواصل', desc: 'فريقنا جاهز يخدمك في أي وقت' },
+    { icon: '', title: 'توصيل سريع', desc: 'نوصل طلبك لباب بيتك بأسرع وقت' },
+    { icon: '', title: 'ضمان موثوق', desc: 'كل منتجاتنا أصلية وعليها ضمان' },
+    { icon: '', title: 'دفع آمن', desc: 'طرق دفع متعددة ومحمية بالكامل' },
+    { icon: '', title: 'دعم متواصل', desc: 'فريقنا جاهز يخدمك في أي وقت' },
   ];
 
   // ===== محرر المتجر (ماكس): أقسام الصفحة وحفظ ونشر =====
@@ -428,7 +424,7 @@ export default function OnlineStorePage() {
       setExtrasDirty(false);
     }
     setSaving(false);
-    toast.success('✓ تم نشر تصميم متجرك بنجاح');
+    toast.success('تم نشر تصميم متجرك بنجاح');
   };
 
   // تطبيق قالب متجر كامل بضغطة وحدة
@@ -650,7 +646,7 @@ export default function OnlineStorePage() {
                                 </div>
                                 <div className="p-2.5">
                                   <p className="font-bold text-xs flex items-center gap-1">
-                                    {tpl.name} {tpl.extras.glitter && <span>✨</span>}
+                                    {tpl.name}{tpl.extras.glitter && <span className="text-[9px] font-normal text-primary ms-1">قليتر</span>}
                                   </p>
                                   <p className="text-[10px] text-muted-foreground mt-0.5">{tpl.desc}</p>
                                 </div>
@@ -720,8 +716,7 @@ export default function OnlineStorePage() {
                                 {uploading === 'logo_url' ? 'جاري الرفع...' : 'اسحب صورة الشعار هنا أو'}
                                 {' '}
                                 <button type="button" className="text-primary font-semibold underline-offset-2 hover:underline"
-                                  onClick={() => logoRef.current?.click()} disabled={uploading === 'logo_url'}>
-                                  تصفّح الملفات
+                                  onClick={() => logoRef.current?.click()} disabled={uploading === 'logo_url'}> تصفّح الملفات
                                 </button>
                               </p>
                             </div>
@@ -794,7 +789,7 @@ export default function OnlineStorePage() {
                               </div>
                             </div>
                             <div>
-                              <Label className="text-xs">لوحات جاهزة — مع قليتر ✨</Label>
+                              <Label className="text-xs">لوحات جاهزة — مع قليتر</Label>
                               <div className="flex flex-wrap gap-2 mt-1.5">
                                 {COLOR_PRESETS.map(cp => (
                                   <button key={`g-${cp.name}`} type="button" title={`${cp.name} — قليتر`}
@@ -821,7 +816,7 @@ export default function OnlineStorePage() {
                               </div>
                             </div>
                             <div>
-                              <Label className="text-xs">ألوان أساسية — مع قليتر ✨</Label>
+                              <Label className="text-xs">ألوان أساسية — مع قليتر</Label>
                               <div className="flex flex-wrap gap-1.5 mt-1.5">
                                 {PRO_BASIC_COLORS.map(c => (
                                   <button key={`g-${c.hex}`} type="button" title={`${c.name} — قليتر`}
@@ -881,7 +876,7 @@ export default function OnlineStorePage() {
                                 <button key={t.id} type="button" onClick={() => set("theme_id", t.id)}
                                   className={cn("text-right p-3 rounded-lg border-2 transition-all",
                                     active ? "border-primary bg-primary/5" : "border-border hover:border-primary/40")}>
-                                  <p className="font-semibold text-sm">{t.emoji} {t.name}</p>
+                                  <p className="font-semibold text-sm">{t.name}</p>
                                   <p className="text-[10px] text-muted-foreground mt-0.5">{t.desc}</p>
                                 </button>
                               );
@@ -1219,7 +1214,7 @@ export default function OnlineStorePage() {
                         {/* اسم القالب */}
                         <div className="flex items-center justify-between px-4 py-3 bg-card border-t">
                           <div>
-                            <p className="font-bold flex items-center gap-1.5">{t.emoji} {t.name}</p>
+                            <p className="font-bold">{t.name}</p>
                             <p className="text-xs text-muted-foreground mt-0.5">{t.desc}</p>
                           </div>
                           <div className={cn(
@@ -1291,8 +1286,7 @@ export default function OnlineStorePage() {
                     {/* معاينة حية */}
                     <div className="rounded-xl overflow-hidden border">
                       <div className="h-14 flex items-center justify-center text-white font-bold drop-shadow"
-                        style={{ background: `linear-gradient(135deg, ${val("primary_color") || '#0d9488'}, ${val("secondary_color") || '#f59e0b'})` }}>
-                        هكذا بتظهر ألوان متجرك
+                        style={{ background: `linear-gradient(135deg, ${val("primary_color") || '#0d9488'}, ${val("secondary_color") || '#f59e0b'})` }}> هكذا بتظهر ألوان متجرك
                       </div>
                       <div className="p-3 flex gap-2 bg-muted/30">
                         <span className="px-4 py-1.5 rounded-lg text-white text-sm font-semibold" style={{ background: val("primary_color") || '#0d9488' }}>زر أساسي</span>
@@ -1357,8 +1351,7 @@ export default function OnlineStorePage() {
                       className={cn(
                         "px-3 h-9 rounded-full border-2 text-xs font-semibold transition-all",
                         !extras.font_color ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
-                      )}>
-                      تلقائي
+                      )}> تلقائي
                     </button>
                     {FONT_COLORS.map(c => (
                       <button key={c.hex} type="button" title={c.name}
@@ -1384,8 +1377,7 @@ export default function OnlineStorePage() {
                         {val("store_name") || "متجرك"}
                       </p>
                       <p className="text-sm leading-relaxed"
-                        style={{ ...(FONT_PRESETS.find(f => f.id === (val("font_family") || "cairo"))?.style || {}), color: extras.font_color || undefined }}>
-                        تسوّق أحدث الأجهزة والإكسسوارات بأفضل الأسعار — توصيل سريع لجميع المدن
+                        style={{ ...(FONT_PRESETS.find(f => f.id === (val("font_family") || "cairo"))?.style || {}), color: extras.font_color || undefined }}> تسوّق أحدث الأجهزة والإكسسوارات بأفضل الأسعار — توصيل سريع لجميع المدن
                       </p>
                     </div>
                   </div>
@@ -1410,8 +1402,7 @@ export default function OnlineStorePage() {
                 <input ref={galleryRef} type="file" accept="image/*" className="hidden"
                   onChange={e => { if (e.target.files?.[0]) handleGalleryUpload(e.target.files[0]); e.target.value = ''; }} />
                 {(extras.gallery || []).length === 0 ? (
-                  <div className="border border-dashed rounded-xl p-8 text-center text-sm text-muted-foreground">
-                    ما فيه صور بعد — اضغط "إضافة صورة" وارفع أي صورة تبغاها تظهر في متجرك
+                  <div className="border border-dashed rounded-xl p-8 text-center text-sm text-muted-foreground"> ما فيه صور بعد — اضغط "إضافة صورة" وارفع أي صورة تبغاها تظهر في متجرك
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -1478,7 +1469,7 @@ export default function OnlineStorePage() {
                 <p className="text-xs text-muted-foreground">بنر عريض وعالي يظهر أعلى المتجر — تقدر تضيف أكثر من واحد بزر +</p>
                 <div className="flex items-center justify-between rounded-xl border p-3 bg-muted/20">
                   <div>
-                    <p className="text-sm font-semibold">سلايدر متحرك 🎞️</p>
+                    <p className="text-sm font-semibold">سلايدر متحرك</p>
                     <p className="text-[11px] text-muted-foreground">البنرات تتبدل تلقائياً كل ٥ ثواني بدل ما تنعرض تحت بعض</p>
                   </div>
                   <Switch checked={!!extras.wide_slider} onCheckedChange={v => updExtras({ wide_slider: v })} />
@@ -1490,8 +1481,7 @@ export default function OnlineStorePage() {
                     className="w-full border-2 border-dashed rounded-xl p-8 text-center text-sm text-muted-foreground hover:border-primary/60 hover:bg-primary/5 hover:text-primary transition-all flex flex-col items-center gap-2">
                     <span className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center">
                       {uploading === 'wide' ? <Loader2 className="w-6 h-6 animate-spin" /> : <Plus className="w-6 h-6" />}
-                    </span>
-                    اضغط هنا وارفع أول بنر عريض
+                    </span> اضغط هنا وارفع أول بنر عريض
                   </button>
                 ) : (
                   <div className="space-y-3">
@@ -1527,8 +1517,7 @@ export default function OnlineStorePage() {
                       className="w-full border-2 border-dashed rounded-xl p-5 text-center text-sm text-muted-foreground hover:border-primary/60 hover:bg-primary/5 hover:text-primary transition-all flex items-center justify-center gap-2">
                       <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
                         {uploading === 'wide' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                      </span>
-                      إضافة بنر آخر
+                      </span> إضافة بنر آخر
                     </button>
                   </div>
                 )}
@@ -1556,8 +1545,7 @@ export default function OnlineStorePage() {
                     className="w-full border-2 border-dashed rounded-xl p-8 text-center text-sm text-muted-foreground hover:border-primary/60 hover:bg-primary/5 hover:text-primary transition-all flex flex-col items-center gap-2">
                     <span className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center">
                       {uploading === 'feature' ? <Loader2 className="w-6 h-6 animate-spin" /> : <Plus className="w-6 h-6" />}
-                    </span>
-                    اضغط هنا وارفع أول صورة مميزة
+                    </span> اضغط هنا وارفع أول صورة مميزة
                   </button>
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -1583,8 +1571,7 @@ export default function OnlineStorePage() {
                       className="border-2 border-dashed rounded-xl min-h-[176px] text-sm text-muted-foreground hover:border-primary/60 hover:bg-primary/5 hover:text-primary transition-all flex flex-col items-center justify-center gap-2">
                       <span className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
                         {uploading === 'feature' ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
-                      </span>
-                      إضافة صورة
+                      </span> إضافة صورة
                     </button>
                   </div>
                 )}
@@ -1607,7 +1594,7 @@ export default function OnlineStorePage() {
                 <p className="text-xs text-muted-foreground">شريط ملون عالي بألوان متجرك يفصل بين الأقسام، مع كلمة أو جملة بالنص</p>
                 {extras.divider?.enabled && (
                   <>
-                    <Input value={extras.divider?.text || ''} placeholder="النص داخل الفاصل (اختياري) — مثال: عروض لا تفوتك 🔥"
+                    <Input value={extras.divider?.text || ''} placeholder="النص داخل الفاصل (اختياري) — مثال: عروض لا تفوتك"
                       onChange={e => updExtras({ divider: { ...extras.divider, text: e.target.value } })} />
                     <div className="h-16 rounded-xl flex items-center justify-center text-white font-extrabold text-lg"
                       style={{ background: `linear-gradient(90deg, ${val("primary_color") || '#0d9488'}, ${val("secondary_color") || '#f59e0b'})` }}>
@@ -1628,9 +1615,9 @@ export default function OnlineStorePage() {
                 <p className="text-xs text-muted-foreground">خلّ منتجاتك تتحرك في الصفحة الرئيسية وتلفت نظر العملاء</p>
                 <div className="grid sm:grid-cols-3 gap-3">
                   {([
-                    { id: 'none', name: 'بدون حركة', desc: 'عرض ثابت وهادئ', emoji: '⏸️' },
-                    { id: 'float', name: 'حركة عائمة', desc: 'المنتجات تطفو بلطف فوق وتحت', emoji: '🎈' },
-                    { id: 'marquee', name: 'شريط متحرك', desc: 'المنتجات تمشي تلقائياً بشكل مستمر', emoji: '🎬' },
+                    { id: 'none', name: 'بدون حركة', desc: 'عرض ثابت وهادئ' },
+                    { id: 'float', name: 'حركة عائمة', desc: 'المنتجات تطفو بلطف فوق وتحت' },
+                    { id: 'marquee', name: 'شريط متحرك', desc: 'المنتجات تمشي تلقائياً بشكل مستمر' },
                   ] as const).map(m => {
                     const active = (extras.product_motion || 'none') === m.id;
                     return (
@@ -1641,8 +1628,7 @@ export default function OnlineStorePage() {
                           active ? "border-primary bg-primary/5" : "border-border bg-background"
                         )}>
                         {active && <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center"><Check className="w-3 h-3" /></div>}
-                        <div className="text-2xl mb-2">{m.emoji}</div>
-                        <p className="font-semibold">{m.name}</p>
+                                                <p className="font-semibold">{m.name}</p>
                         <p className="text-xs text-muted-foreground mt-1">{m.desc}</p>
                       </button>
                     );
@@ -1667,26 +1653,19 @@ export default function OnlineStorePage() {
                       </Button>
                     )}
                     <Button variant="outline" size="sm"
-                      onClick={() => updExtras({ store_perks: [...(extras.store_perks || []), { icon: '⭐', title: '' }] })}>
+                      onClick={() => updExtras({ store_perks: [...(extras.store_perks || []), { icon: '', title: '' }] })}>
                       <Plus className="w-4 h-4 me-1" /> إضافة ميزة
                     </Button>
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">مميزات تظهر أسفل المتجر تكسب ثقة العميل (توصيل سريع، ضمان، دفع آمن...) — الرمز مجرد إيموجي تقدر تغيره</p>
                 {(extras.store_perks || []).length === 0 ? (
-                  <div className="border border-dashed rounded-xl p-6 text-center text-sm text-muted-foreground">
-                    اضغط "المميزات الجاهزة" لإضافة 4 مميزات بضغطة وحدة، أو أضف مميزاتك بنفسك
+                  <div className="border border-dashed rounded-xl p-6 text-center text-sm text-muted-foreground"> اضغط "المميزات الجاهزة" لإضافة 4 مميزات بضغطة وحدة، أو أضف مميزاتك بنفسك
                   </div>
                 ) : (
                   <div className="space-y-2">
                     {(extras.store_perks || []).map((perk, i) => (
                       <div key={i} className="flex items-center gap-2">
-                        <Input value={perk.icon} className="w-16 text-center text-lg h-9"
-                          onChange={e => {
-                            const store_perks = [...(extras.store_perks || [])];
-                            store_perks[i] = { ...store_perks[i], icon: e.target.value };
-                            updExtras({ store_perks });
-                          }} />
                         <Input value={perk.title} placeholder="عنوان الميزة" className="h-9 flex-1"
                           onChange={e => {
                             const store_perks = [...(extras.store_perks || [])];
@@ -1730,8 +1709,7 @@ export default function OnlineStorePage() {
                     className="w-full border-2 border-dashed rounded-xl p-8 text-center text-sm text-muted-foreground hover:border-primary/60 hover:bg-primary/5 hover:text-primary transition-all flex flex-col items-center gap-2">
                     <span className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center">
                       <Plus className="w-6 h-6" />
-                    </span>
-                    اضغط هنا وأضف أول رأي عميل
+                    </span> اضغط هنا وأضف أول رأي عميل
                   </button>
                 ) : (
                   <div className="space-y-3">
@@ -1822,18 +1800,18 @@ export default function OnlineStorePage() {
                     </div>
                     {/* معاينة */}
                     <div className="rounded-xl border p-5 text-center bg-muted/20">
-                      <Headphones className="w-7 h-7 mx-auto mb-1 text-primary" />
+                      <p className="text-[11px] font-bold">خدمة العملاء</p>
                       <p className="font-bold text-sm mb-1">خدمة العملاء</p>
                       <p className="text-xs text-muted-foreground mb-3">{extras.customer_service?.note || 'فريقنا جاهز يخدمك ويجاوب على استفساراتك في أي وقت'}</p>
                       <div className="flex justify-center gap-2">
                         {extras.customer_service?.whatsapp && (
-                          <span className="inline-flex items-center gap-1 text-[11px] text-white font-bold px-3 py-1.5 rounded-lg" style={{ background: '#25D366' }}><MessageCircle className="w-3 h-3" /> واتساب</span>
+                          <span className="text-[11px] text-white font-bold px-3 py-1.5 rounded-lg" style={{ background: '#25D366' }}>واتساب</span>
                         )}
                         {extras.customer_service?.phone && (
-                          <span className="inline-flex items-center gap-1 text-[11px] text-white font-bold px-3 py-1.5 rounded-lg bg-primary"><PhoneCall className="w-3 h-3" /> {extras.customer_service.phone}</span>
+                          <span className="text-[11px] text-white font-bold px-3 py-1.5 rounded-lg bg-primary">{extras.customer_service.phone}</span>
                         )}
                       </div>
-                      {extras.customer_service?.hours && <p className="text-[11px] text-muted-foreground mt-3 flex items-center justify-center gap-1"><Clock className="w-3 h-3" /> {extras.customer_service.hours}</p>}
+                      {extras.customer_service?.hours && <p className="text-[11px] text-muted-foreground mt-3">{extras.customer_service.hours}</p>}
                     </div>
                   </div>
                 )}
@@ -1894,8 +1872,7 @@ export default function OnlineStorePage() {
                       { q: 'هل المنتجات أصلية وعليها ضمان؟', a: 'كل منتجاتنا أصلية ١٠٠٪ وعليها ضمان معتمد.' },
                       { q: 'كيف أرجع منتج؟', a: 'تقدر ترجع المنتج خلال ١٤ يوم من الاستلام بحالته الأصلية.' },
                     ] })}
-                    className="w-full border-2 border-dashed rounded-xl p-6 text-center text-sm text-muted-foreground hover:border-primary/60 hover:bg-primary/5 hover:text-primary transition-all">
-                    اضغط لإضافة ٣ أسئلة جاهزة تعدلها براحتك
+                    className="w-full border-2 border-dashed rounded-xl p-6 text-center text-sm text-muted-foreground hover:border-primary/60 hover:bg-primary/5 hover:text-primary transition-all"> اضغط لإضافة ٣ أسئلة جاهزة تعدلها براحتك
                   </button>
                 ) : (
                   <div className="space-y-3">
@@ -1978,8 +1955,7 @@ export default function OnlineStorePage() {
                     onClick={() => updExtras({ brands: [
                       { name: 'Apple' }, { name: 'Samsung' }, { name: 'Anker' }, { name: 'JBL' }, { name: 'Huawei' },
                     ] })}
-                    className="w-full border-2 border-dashed rounded-xl p-6 text-center text-sm text-muted-foreground hover:border-primary/60 hover:bg-primary/5 hover:text-primary transition-all">
-                    اضغط لإضافة ٥ ماركات جاهزة تعدلها براحتك
+                    className="w-full border-2 border-dashed rounded-xl p-6 text-center text-sm text-muted-foreground hover:border-primary/60 hover:bg-primary/5 hover:text-primary transition-all"> اضغط لإضافة ٥ ماركات جاهزة تعدلها براحتك
                   </button>
                 ) : (
                   <div className="space-y-2">
@@ -2126,8 +2102,7 @@ export default function OnlineStorePage() {
                             {uploading === 'logo_url' ? 'جاري الرفع...' : 'اسحب صورة الشعار هنا أو'}
                             {' '}
                             <button type="button" className="text-primary font-semibold underline-offset-2 hover:underline"
-                              onClick={() => logoRef.current?.click()} disabled={uploading === 'logo_url'}>
-                              تصفّح الملفات
+                              onClick={() => logoRef.current?.click()} disabled={uploading === 'logo_url'}> تصفّح الملفات
                             </button>
                           </p>
                         </div>
@@ -2343,8 +2318,7 @@ export default function OnlineStorePage() {
                     <Sparkles className="w-5 h-5 text-primary mt-0.5 shrink-0" />
                     <div>
                       <p className="font-semibold text-sm text-foreground mb-1">تبغى استوديو التصميم الكامل؟</p>
-                      <p className="text-xs text-muted-foreground mb-2.5">
-                        باقة ماكس تفتح لك: قوالب التصميم، عجلة الألوان الكاملة، ١٠ خطوط مع لون الخط، البنرات العريضة، الصور المميزة، الفاصل، المنتجات المتحركة، ومميزات المتجر.
+                      <p className="text-xs text-muted-foreground mb-2.5"> باقة ماكس تفتح لك: قوالب التصميم، عجلة الألوان الكاملة، ١٠ خطوط مع لون الخط، البنرات العريضة، الصور المميزة، الفاصل، المنتجات المتحركة، ومميزات المتجر.
                       </p>
                       <Button size="sm" asChild>
                         <a href="/subscription">الترقية إلى باقة ماكس</a>
@@ -2387,8 +2361,7 @@ export default function OnlineStorePage() {
             <div className="bg-card rounded-xl border p-10 flex flex-col items-center text-center">
               <Sparkles className="w-10 h-10 text-primary mb-3" />
               <h3 className="font-bold text-lg mb-1">استوديو تصميم المتجر — حصري لباقة ماكس</h3>
-              <p className="text-sm text-muted-foreground max-w-md mb-4">
-                قوالب تصميم جاهزة، تحكم كامل بالألوان، واختيار الخطوط — رقّ لباقة ماكس وصمّم متجرك بنفسك.
+              <p className="text-sm text-muted-foreground max-w-md mb-4"> قوالب تصميم جاهزة، تحكم كامل بالألوان، واختيار الخطوط — رقّ لباقة ماكس وصمّم متجرك بنفسك.
               </p>
               <Button asChild size="sm"><a href="/subscription">ترقية الباقة</a></Button>
             </div>
@@ -2461,7 +2434,7 @@ export default function OnlineStorePage() {
             <Input
               value={val("announcement_bar_text")}
               onChange={e => set("announcement_bar_text", e.target.value)}
-              placeholder="🎉 شحن مجاني للطلبات فوق 500 ر.س"
+              placeholder="شحن مجاني للطلبات فوق 500 ر.س"
               disabled={!val("announcement_bar_enabled")}
             />
           </div>
@@ -2614,8 +2587,7 @@ export default function OnlineStorePage() {
               <h3 className="font-semibold flex items-center gap-2">
                 <FileText className="w-5 h-5 text-primary" /> البيانات القانونية
               </h3>
-              <p className="text-sm text-muted-foreground">
-                البيانات تُحدّث من <span className="font-medium">الإعدادات → المتجر</span>. هنا تتحكم فقط بإظهارها داخل متجرك الإلكتروني.
+              <p className="text-sm text-muted-foreground"> البيانات تُحدّث من <span className="font-medium">الإعدادات → المتجر</span>. هنا تتحكم فقط بإظهارها داخل متجرك الإلكتروني.
               </p>
               <div className="grid sm:grid-cols-3 gap-3 pt-2">
                 <div className="rounded-lg border bg-muted/30 p-3">
@@ -2845,7 +2817,6 @@ export default function OnlineStorePage() {
                   <div key={c.id} className={cn("rounded-xl border p-3 transition-colors", on && "border-primary/40 bg-primary/5")}>
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="text-xl shrink-0">{c.icon}</span>
                         <div className="min-w-0">
                           <p className="text-sm font-semibold truncate">{c.name}</p>
                           <p className="text-[10px] text-muted-foreground font-mono truncate" dir="ltr">{c.nameEn}</p>
@@ -2884,8 +2855,7 @@ export default function OnlineStorePage() {
               </Button>
             )}
 
-            <p className="text-[11px] text-muted-foreground bg-muted/30 rounded-lg p-2.5">
-              عند شحن أي طلب تختار الشركة وتدخل رقم التتبع، والعميل يلقى زر "تتبع الشحنة" يوديه لصفحة التتبع الرسمية للشركة مباشرة.
+            <p className="text-[11px] text-muted-foreground bg-muted/30 rounded-lg p-2.5"> عند شحن أي طلب تختار الشركة وتدخل رقم التتبع، والعميل يلقى زر "تتبع الشحنة" يوديه لصفحة التتبع الرسمية للشركة مباشرة.
             </p>
           </div>
         </TabsContent>
@@ -2930,7 +2900,7 @@ export default function OnlineStorePage() {
                   <Badge variant="outline" className={extras.custom_domain.status === 'active'
                     ? 'bg-success/10 text-success border-success/30'
                     : 'bg-warning/10 text-warning border-warning/30'}>
-                    {extras.custom_domain.status === 'active' ? '✓ الدومين مفعّل' : '⏳ بانتظار تفعيل الدومين'}
+                    {extras.custom_domain.status === 'active' ? 'الدومين مفعّل' : 'بانتظار تفعيل الدومين'}
                   </Badge>
                   <a href={`https://${extras.custom_domain.domain}`} target="_blank" rel="noopener"
                     className="text-xs text-primary hover:underline font-mono" dir="ltr">
@@ -2967,8 +2937,7 @@ export default function OnlineStorePage() {
                             <td className="px-3 py-2 font-mono" dir="ltr">{r.value}</td>
                             <td className="px-3 py-2">
                               <Button variant="ghost" size="sm" className="h-7 text-[11px]"
-                                onClick={() => { navigator.clipboard?.writeText(r.value); toast.success('تم نسخ القيمة'); }}>
-                                نسخ
+                                onClick={() => { navigator.clipboard?.writeText(r.value); toast.success('تم نسخ القيمة'); }}> نسخ
                               </Button>
                             </td>
                           </tr>

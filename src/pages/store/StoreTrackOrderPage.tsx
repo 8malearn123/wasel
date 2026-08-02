@@ -77,15 +77,13 @@ export function StoreTrackOrderPage({ store }: { store: StoreSettings }) {
 
           {order.tracking_number && (
             <div className="bg-muted/30 rounded-lg p-3 text-sm">
-              <p className="text-xs text-muted-foreground">
-                رقم الشحنة{carrierById(order.shipping_provider) ? ` · ${carrierById(order.shipping_provider)!.name}` : ''}
+              <p className="text-xs text-muted-foreground"> رقم الشحنة{carrierById(order.shipping_provider) ? ` · ${carrierById(order.shipping_provider)!.name}` : ''}
               </p>
               <p className="font-mono font-bold">{order.tracking_number}</p>
               {trackingUrl(order.shipping_provider, order.tracking_number) && (
                 <a href={trackingUrl(order.shipping_provider, order.tracking_number)!} target="_blank" rel="noopener"
                   className="inline-flex items-center gap-1 mt-2 px-4 py-2 rounded-lg text-white text-xs font-bold"
-                  style={{ background: 'hsl(var(--store-primary))' }}>
-                  🚚 تتبع الشحنة لدى شركة الشحن ↗
+                  style={{ background: 'hsl(var(--store-primary))' }}> تتبع الشحنة لدى شركة الشحن
                 </a>
               )}
             </div>

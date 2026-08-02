@@ -65,17 +65,14 @@ export default function SupportPage() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="flex gap-2">
-            <Badge variant="outline" className="bg-blue-500/10 text-blue-700">
-              مفتوحة: {openCount}
+            <Badge variant="outline" className="bg-blue-500/10 text-blue-700"> مفتوحة: {openCount}
             </Badge>
-            <Badge variant="outline">
-              الكل: {tickets.length}
+            <Badge variant="outline"> الكل: {tickets.length}
             </Badge>
           </div>
         </div>
         <Button onClick={() => setShowCreate(true)} className="gap-2">
-          <Plus className="w-4 h-4" />
-          تذكرة جديدة
+          <Plus className="w-4 h-4" /> تذكرة جديدة
         </Button>
       </div>
 

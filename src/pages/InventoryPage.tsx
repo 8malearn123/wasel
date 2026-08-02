@@ -126,7 +126,7 @@ export default function InventoryPage() {
   );
   const BestSellerBadge = () => (
     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-warning/15 text-warning whitespace-nowrap">
-      {isRTL ? "الأكثر مبيعاً 🔥" : "Best Seller 🔥"}
+      {isRTL ? "الأكثر مبيعاً " : "Best Seller "}
     </span>
   );
   const { parts: repairParts, loading: partsLoading, addPart, updatePart, deletePart } = useRepairParts();
