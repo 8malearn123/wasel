@@ -5,7 +5,7 @@ import {
   Loader2, Tag, Link2, Sparkles, Search, FileText, Image as ImageIcon,
   Upload, Megaphone, Type, Star, Layout, Check, ArrowRight,
   Monitor, Smartphone, RotateCcw, GripVertical, ChevronDown, ArrowUp, ArrowDown, Rocket,
-  Undo2, Wand2, ListChecks, Clock, HelpCircle, Video, Award,
+  Undo2, Wand2, ListChecks, Clock, HelpCircle, Video, Award, MessageCircle, PhoneCall, Headphones,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -1822,18 +1822,18 @@ export default function OnlineStorePage() {
                     </div>
                     {/* معاينة */}
                     <div className="rounded-xl border p-5 text-center bg-muted/20">
-                      <p className="text-2xl mb-1">🎧</p>
+                      <Headphones className="w-7 h-7 mx-auto mb-1 text-primary" />
                       <p className="font-bold text-sm mb-1">خدمة العملاء</p>
                       <p className="text-xs text-muted-foreground mb-3">{extras.customer_service?.note || 'فريقنا جاهز يخدمك ويجاوب على استفساراتك في أي وقت'}</p>
                       <div className="flex justify-center gap-2">
                         {extras.customer_service?.whatsapp && (
-                          <span className="text-[11px] text-white font-bold px-3 py-1.5 rounded-lg" style={{ background: '#25D366' }}>💬 واتساب</span>
+                          <span className="inline-flex items-center gap-1 text-[11px] text-white font-bold px-3 py-1.5 rounded-lg" style={{ background: '#25D366' }}><MessageCircle className="w-3 h-3" /> واتساب</span>
                         )}
                         {extras.customer_service?.phone && (
-                          <span className="text-[11px] text-white font-bold px-3 py-1.5 rounded-lg bg-primary">📞 {extras.customer_service.phone}</span>
+                          <span className="inline-flex items-center gap-1 text-[11px] text-white font-bold px-3 py-1.5 rounded-lg bg-primary"><PhoneCall className="w-3 h-3" /> {extras.customer_service.phone}</span>
                         )}
                       </div>
-                      {extras.customer_service?.hours && <p className="text-[11px] text-muted-foreground mt-3">🕐 {extras.customer_service.hours}</p>}
+                      {extras.customer_service?.hours && <p className="text-[11px] text-muted-foreground mt-3 flex items-center justify-center gap-1"><Clock className="w-3 h-3" /> {extras.customer_service.hours}</p>}
                     </div>
                   </div>
                 )}

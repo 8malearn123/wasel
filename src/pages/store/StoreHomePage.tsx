@@ -1,7 +1,7 @@
 import { ReactNode, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, MessageCircle, PhoneCall, Clock, Headphones } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ProductCard, type StoreProduct } from '@/components/store/ProductCard';
 import { DEFAULT_HOME_SECTIONS, type StoreSettings, type StoreCategory, type DesignExtras } from '@/hooks/useOnlineStore';
@@ -547,13 +547,22 @@ export function StoreHomePage({ store, devices, accessories, categories, designE
           </div>
           <div className="p-8 md:p-10 space-y-3 bg-card">
             {designExtras.customer_service.whatsapp && (
-              <p className="text-sm font-semibold flex items-center gap-2">💬 واتساب: <span dir="ltr" className="font-mono">{designExtras.customer_service.whatsapp}</span></p>
+              <p className="text-sm font-semibold flex items-center gap-2">
+                <MessageCircle className="w-4 h-4 shrink-0" style={{ color: '#25D366' }} />
+                واتساب: <span dir="ltr" className="font-mono">{designExtras.customer_service.whatsapp}</span>
+              </p>
             )}
             {designExtras.customer_service.phone && (
-              <p className="text-sm font-semibold flex items-center gap-2">📞 اتصال: <span dir="ltr" className="font-mono">{designExtras.customer_service.phone}</span></p>
+              <p className="text-sm font-semibold flex items-center gap-2">
+                <PhoneCall className="w-4 h-4 shrink-0" style={{ color: 'hsl(var(--store-primary))' }} />
+                اتصال: <span dir="ltr" className="font-mono">{designExtras.customer_service.phone}</span>
+              </p>
             )}
             {designExtras.customer_service.hours && (
-              <p className="text-sm text-muted-foreground flex items-center gap-2">🕐 {designExtras.customer_service.hours}</p>
+              <p className="text-sm text-muted-foreground flex items-center gap-2">
+                <Clock className="w-4 h-4 shrink-0" />
+                {designExtras.customer_service.hours}
+              </p>
             )}
             <div className="pt-2 flex gap-2 flex-wrap">
               {designExtras.customer_service.whatsapp && (
