@@ -90,6 +90,10 @@ export interface DesignExtras {
   };
   // إخفاء شارة "صنع بواسطة وصل" — متاح لباقة ماكس فقط
   hide_wasel_badge?: boolean;
+  // دومين خاص للمتجر
+  custom_domain?: { domain?: string; status?: 'pending' | 'active'; added_at?: string };
+  // إعدادات شركات الشحن المفعّلة لدى التاجر
+  carriers?: Array<{ id: string; enabled: boolean; account?: string; cost?: number; days?: string }>;
 }
 
 // الترتيب الافتراضي لأقسام الصفحة الرئيسية في المتجر

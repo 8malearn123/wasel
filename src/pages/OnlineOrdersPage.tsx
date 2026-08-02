@@ -19,6 +19,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { CARRIERS, trackingUrl } from "@/lib/shipping";
 import { useOnlineOrders, OnlineOrder, OnlineOrderItem } from "@/hooks/useOnlineStore";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -150,6 +151,16 @@ export default function OnlineOrdersPage() {
                           <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{order.customer_phone}</span>
                           <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{order.shipping_city}</span>
                         </div>
+                        {order.tracking_number && trackingUrl(order.shipping_provider, order.tracking_number) && (
+                          <a
+                            href={trackingUrl(order.shipping_provider, order.tracking_number)!}
+                            target="_blank" rel="noopener"
+                            onClick={e => e.stopPropagation()}
+                            className="inline-flex items-center gap-1 text-xs text-primary hover:underline ms-2"
+                          >
+                            تتبع الشحنة ↗
+                          </a>
+                        )}
                         {order.tracking_number && (
                           <p className="text-xs text-primary mt-1 flex items-center gap-1">
                             <Truck className="w-3 h-3" /> {order.shipping_provider?.toUpperCase()} - {order.tracking_number}
@@ -270,8 +281,9 @@ export default function OnlineOrdersPage() {
               <Select value={shippingProvider} onValueChange={setShippingProvider}>
                 <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="aramex">🚚 أرامكس Aramex</SelectItem>
-                  <SelectItem value="smsa">📦 SMSA Express</SelectItem>
+                  {CARRIERS.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.icon} {c.name}</SelectItem>
+                  ))}
                   <SelectItem value="other">أخرى</SelectItem>
                 </SelectContent>
               </Select>

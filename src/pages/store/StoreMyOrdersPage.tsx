@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { trackingUrl } from '@/lib/shipping';
 import { Link, useParams } from 'react-router-dom';
 import { Package, ChevronDown, ChevronUp, ShoppingBag, Trash2, Truck, CheckCircle2, Clock, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ interface OrderWithStatus extends SavedOrder {
   status?: string;
   payment_status?: string;
   tracking_number?: string | null;
+  shipping_provider?: string | null;
 }
 
 const STATUS_META: Record<string, { label: string; icon: any; cls: string }> = {
@@ -45,6 +47,7 @@ export function StoreMyOrdersPage({ store }: { store: StoreSettings }) {
               status: (res.order as any).status,
               payment_status: (res.order as any).payment_status,
               tracking_number: (res.order as any).tracking_number,
+              shipping_provider: (res.order as any).shipping_provider,
             };
           }
           return o;
@@ -140,7 +143,13 @@ export function StoreMyOrdersPage({ store }: { store: StoreSettings }) {
                       {o.tracking_number && (
                         <>
                           <p className="text-muted-foreground">رقم الشحنة</p>
-                          <p className="font-mono">{o.tracking_number}</p>
+                          <p className="font-mono">
+                            {o.tracking_number}
+                            {trackingUrl((o as any).shipping_provider, o.tracking_number) && (
+                              <a href={trackingUrl((o as any).shipping_provider, o.tracking_number)!}
+                                target="_blank" rel="noopener" className="ms-2 text-primary hover:underline font-sans">تتبع ↗</a>
+                            )}
+                          </p>
                         </>
                       )}
                     </div>

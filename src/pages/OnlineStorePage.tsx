@@ -18,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UrlTabs } from '@/components/common/UrlTabs';
 import { useTabParam } from '@/hooks/useTabParam';
 import { ColorWheel } from '@/components/common/ColorWheel';
+import { CARRIERS } from '@/lib/shipping';
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useStoreSettings, useStorePages, uploadStoreAsset, DEFAULT_HOME_SECTIONS, type StorePage, type DesignExtras } from "@/hooks/useOnlineStore";
@@ -2805,11 +2806,11 @@ export default function OnlineStorePage() {
         </TabsContent>
 
         {/* SHIPPING */}
-        <TabsContent value="shipping">
+        <TabsContent value="shipping" className="space-y-6">
           <div className="bg-card rounded-xl border p-6 space-y-5">
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
-                <Label>تكلفة الشحن (ر.س)</Label>
+                <Label>تكلفة الشحن الافتراضية (ر.س)</Label>
                 <Input type="number" value={val("shipping_cost")} onChange={e => set("shipping_cost", parseFloat(e.target.value) || 0)} className="mt-1" />
               </div>
               <div>
@@ -2817,19 +2818,186 @@ export default function OnlineStorePage() {
                 <Input type="number" value={val("free_shipping_threshold") || ""} onChange={e => set("free_shipping_threshold", parseFloat(e.target.value) || null)} className="mt-1" placeholder="مثال: 500" />
               </div>
             </div>
-            <div className="p-4 rounded-lg bg-muted/30 border">
-              <p className="text-sm font-medium mb-2">شركات الشحن المدعومة</p>
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="outline">🚚 أرامكس</Badge>
-                <Badge variant="outline">📦 SMSA Express</Badge>
+          </div>
+
+          {/* ربط شركات الشحن */}
+          <div className="bg-card rounded-xl border p-6 space-y-4">
+            <div className="flex items-center gap-2">
+              <Truck className="w-5 h-5 text-primary" />
+              <div>
+                <h3 className="font-semibold">شركات الشحن</h3>
+                <p className="text-[11px] text-muted-foreground">فعّل الشركات اللي تتعامل معها — تظهر لك عند شحن الطلبات، وعميلك يتتبع شحنته بضغطة</p>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">يمكنك إضافة رقم التتبع يدوياً لكل طلب من صفحة الطلبات.</p>
             </div>
+
+            <div className="space-y-2">
+              {CARRIERS.map(c => {
+                const cfg = (extras.carriers || []).find(x => x.id === c.id);
+                const on = !!cfg?.enabled;
+                const upd = (patch: Partial<{ enabled: boolean; account: string; cost: number; days: string }>) => {
+                  const list = [...(extras.carriers || [])];
+                  const i = list.findIndex(x => x.id === c.id);
+                  if (i >= 0) list[i] = { ...list[i], ...patch };
+                  else list.push({ id: c.id, enabled: false, ...patch });
+                  updExtras({ carriers: list });
+                };
+                return (
+                  <div key={c.id} className={cn("rounded-xl border p-3 transition-colors", on && "border-primary/40 bg-primary/5")}>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="text-xl shrink-0">{c.icon}</span>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold truncate">{c.name}</p>
+                          <p className="text-[10px] text-muted-foreground font-mono truncate" dir="ltr">{c.nameEn}</p>
+                        </div>
+                      </div>
+                      <Switch checked={on} onCheckedChange={v => upd({ enabled: v })} />
+                    </div>
+                    {on && (
+                      <div className="grid sm:grid-cols-3 gap-2 mt-3 pt-3 border-t">
+                        <div>
+                          <Label className="text-[11px]">رقم الحساب لدى الشركة</Label>
+                          <Input value={cfg?.account || ''} onChange={e => upd({ account: e.target.value })}
+                            className="mt-1 h-8 text-xs font-mono" dir="ltr" placeholder="اختياري" />
+                        </div>
+                        <div>
+                          <Label className="text-[11px]">تكلفة الشحن (ر.س)</Label>
+                          <Input type="number" min={0} value={cfg?.cost ?? ''} onChange={e => upd({ cost: Number(e.target.value) || 0 })}
+                            className="mt-1 h-8 text-xs" placeholder="25" />
+                        </div>
+                        <div>
+                          <Label className="text-[11px]">مدة التوصيل</Label>
+                          <Input value={cfg?.days || ''} onChange={e => upd({ days: e.target.value })}
+                            className="mt-1 h-8 text-xs" placeholder="١-٣ أيام" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {extrasDirty && (
+              <Button size="sm" onClick={saveExtras} disabled={savingExtras} className="w-full">
+                {savingExtras ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : <Save className="w-4 h-4 me-1" />}
+                حفظ شركات الشحن
+              </Button>
+            )}
+
+            <p className="text-[11px] text-muted-foreground bg-muted/30 rounded-lg p-2.5">
+              عند شحن أي طلب تختار الشركة وتدخل رقم التتبع، والعميل يلقى زر "تتبع الشحنة" يوديه لصفحة التتبع الرسمية للشركة مباشرة.
+            </p>
           </div>
         </TabsContent>
 
         {/* LINKS */}
-        <TabsContent value="links">
+        <TabsContent value="links" className="space-y-6">
+          {/* الدومين الخاص */}
+          <div className="bg-card rounded-xl border p-6 space-y-4">
+            <div className="flex items-center gap-2">
+              <Link2 className="w-5 h-5 text-primary" />
+              <div>
+                <h3 className="font-semibold">الدومين الخاص (Custom Domain)</h3>
+                <p className="text-[11px] text-muted-foreground">اربط متجرك بدومينك الخاص بدل الرابط الفرعي</p>
+              </div>
+            </div>
+
+            <div className="rounded-lg border p-3 bg-muted/20">
+              <p className="text-[11px] text-muted-foreground mb-1">الرابط الحالي لمتجرك</p>
+              <p className="font-mono text-sm" dir="ltr">{window.location.host}/store/{settings.slug}</p>
+            </div>
+
+            <div>
+              <Label>دومينك الخاص</Label>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  value={extras.custom_domain?.domain || ''}
+                  onChange={e => updExtras({ custom_domain: { ...extras.custom_domain, domain: e.target.value.trim().replace(/^https?:\/\//, '').replace(/\/$/, '') } })}
+                  className="font-mono" dir="ltr" placeholder="store.example.sa"
+                />
+                <Button variant="outline" onClick={() => {
+                  const d = extras.custom_domain?.domain;
+                  if (!d || !/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(d)) { toast.error('اكتب دومين صحيح مثل store.example.sa'); return; }
+                  updExtras({ custom_domain: { domain: d, status: 'pending', added_at: new Date().toISOString() } });
+                  toast.success('تم حفظ الدومين — أضف سجلات DNS ثم راجعنا للتفعيل');
+                }}>حفظ الدومين</Button>
+              </div>
+            </div>
+
+            {extras.custom_domain?.domain && (
+              <>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className={extras.custom_domain.status === 'active'
+                    ? 'bg-success/10 text-success border-success/30'
+                    : 'bg-warning/10 text-warning border-warning/30'}>
+                    {extras.custom_domain.status === 'active' ? '✓ الدومين مفعّل' : '⏳ بانتظار تفعيل الدومين'}
+                  </Badge>
+                  <a href={`https://${extras.custom_domain.domain}`} target="_blank" rel="noopener"
+                    className="text-xs text-primary hover:underline font-mono" dir="ltr">
+                    {extras.custom_domain.domain}
+                  </a>
+                </div>
+
+                {/* سجلات DNS المطلوبة */}
+                <div className="rounded-xl border overflow-hidden">
+                  <div className="px-4 py-2.5 bg-muted/40 border-b">
+                    <p className="text-sm font-bold">سجلات DNS المطلوبة</p>
+                    <p className="text-[11px] text-muted-foreground">أضفها عند مزود الدومين (GoDaddy، Namecheap، Cloudflare...)</p>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead className="bg-muted/20">
+                        <tr>
+                          {['النوع', 'الاسم', 'القيمة', ''].map(h => (
+                            <th key={h} className="px-3 py-2 text-right font-semibold text-muted-foreground">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {(extras.custom_domain.domain.split('.').length > 2
+                          ? [{ type: 'CNAME', name: extras.custom_domain.domain.split('.')[0], value: 'cname.vercel-dns.com' }]
+                          : [
+                              { type: 'A', name: '@', value: '76.76.21.21' },
+                              { type: 'CNAME', name: 'www', value: 'cname.vercel-dns.com' },
+                            ]
+                        ).map(r => (
+                          <tr key={r.type + r.name}>
+                            <td className="px-3 py-2 font-mono font-bold">{r.type}</td>
+                            <td className="px-3 py-2 font-mono" dir="ltr">{r.name}</td>
+                            <td className="px-3 py-2 font-mono" dir="ltr">{r.value}</td>
+                            <td className="px-3 py-2">
+                              <Button variant="ghost" size="sm" className="h-7 text-[11px]"
+                                onClick={() => { navigator.clipboard?.writeText(r.value); toast.success('تم نسخ القيمة'); }}>
+                                نسخ
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div className="rounded-lg bg-muted/30 p-3 space-y-1.5">
+                  <p className="text-[11px] font-semibold">الخطوات:</p>
+                  <ol className="text-[11px] text-muted-foreground space-y-1 list-decimal pr-4">
+                    <li>ادخل لوحة تحكم الدومين عند المزود اللي شريت منه</li>
+                    <li>أضف السجلات الموضحة فوق بالضبط</li>
+                    <li>انتظر من ١٠ دقائق حتى ٢٤ ساعة حتى تنتشر السجلات</li>
+                    <li>راسلنا من الدعم الفني بالدومين وننشّطه لك ونصدر شهادة SSL مجانية</li>
+                  </ol>
+                </div>
+              </>
+            )}
+
+            {extrasDirty && (
+              <Button size="sm" onClick={saveExtras} disabled={savingExtras} className="w-full">
+                {savingExtras ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : <Save className="w-4 h-4 me-1" />}
+                حفظ الإعدادات
+              </Button>
+            )}
+          </div>
+
           <div className="bg-card rounded-xl border p-6 space-y-4">
             <div>
               <Label>رقم واتساب</Label>
