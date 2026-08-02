@@ -56,12 +56,10 @@ export function StoreLayout({ store, pages = [], merchantLegal, designExtras, ch
             </div>
           </Link>
 
+          {/* القائمة العلوية ثابتة — الصفحات التعريفية تظهر أسفل المتجر فقط */}
           <nav className="hidden md:flex items-center gap-1">
             <NavItem to={base} label="الرئيسية" />
             <NavItem to={`${base}/products`} label="المنتجات" />
-            {pages.slice(0, 3).map((p) => (
-              <NavItem key={p.id} to={`${base}/page/${p.slug}`} label={p.title} />
-            ))}
           </nav>
 
           <div className="flex items-center gap-2">
