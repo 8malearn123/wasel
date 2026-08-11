@@ -34,6 +34,14 @@ interface HRInfo {
   notes?: string;
 }
 
+// الهدف والعمولة الخاصة بموظف واحد — تُحفظ في إعدادات الموارد البشرية (على السيرفر)
+interface PerEmployeeHR {
+  daily?: number;
+  monthly?: number;
+  rate?: number;
+  commEnabled?: boolean;
+}
+
 const HR_KEY = "hr-records";
 
 function loadHR(): Record<string, HRInfo> {
@@ -178,6 +186,32 @@ export default function HRPage() {
     toast.success(isRTL ? "تم حفظ بيانات الموظف" : "Employee info saved");
   };
 
+  // حفظ هدف/عمولة خاصة بموظف — القيمة الفارغة تعني اتباع إعداد الفريق العام
+  const savePerEmployee = async (userId: string, p: PerEmployeeHR) => {
+    const targetsPer = { ...(hrSettings.targets.perEmployee || {}) };
+    const commPer = { ...(hrSettings.commission.perEmployee || {}) };
+
+    const t: { daily?: number; monthly?: number } = {};
+    if (p.daily !== undefined) t.daily = p.daily;
+    if (p.monthly !== undefined) t.monthly = p.monthly;
+    if (Object.keys(t).length) targetsPer[userId] = t; else delete targetsPer[userId];
+
+    const c: { rate?: number; enabled?: boolean } = {};
+    if (p.rate !== undefined) c.rate = p.rate;
+    if (p.commEnabled !== undefined) c.enabled = p.commEnabled;
+    if (Object.keys(c).length) commPer[userId] = c; else delete commPer[userId];
+
+    const unchanged =
+      JSON.stringify(hrSettings.targets.perEmployee?.[userId] ?? null) === JSON.stringify(targetsPer[userId] ?? null) &&
+      JSON.stringify(hrSettings.commission.perEmployee?.[userId] ?? null) === JSON.stringify(commPer[userId] ?? null);
+    if (unchanged) return;
+
+    await saveHRSettings({
+      targets: { ...hrSettings.targets, perEmployee: targetsPer },
+      commission: { ...hrSettings.commission, perEmployee: commPer },
+    });
+  };
+
   const activeUsers = users.filter(u => u.is_active);
   const totalSalaries = users.reduce((s, u) => s + (hr[u.id]?.salary || 0), 0);
   const teamMonthSales = users.reduce((s, u) => s + (monthSales[u.user_id] || 0), 0);
@@ -295,10 +329,10 @@ export default function HRPage() {
                           <>
                             <td className="px-4 py-3">
                               {target > 0 ? (
-                                <div className="min-w-[110px]">
+                                <div className="min-w-[110px]" title={perT ? (isRTL ? "هدف خاص بهذا الموظف" : "Custom target for this employee") : undefined}>
                                   <div className="flex items-center justify-between text-[11px] mb-1">
                                     <span className={pct >= 100 ? "text-success font-bold" : "text-muted-foreground"}>{pct}%</span>
-                                    <span className="text-muted-foreground">{target.toLocaleString()}</span>
+                                    <span className={perT ? "text-primary font-semibold" : "text-muted-foreground"}>{target.toLocaleString()}</span>
                                   </div>
                                   <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                                     <div className={pct >= 100 ? "h-full bg-success" : "h-full bg-primary"} style={{ width: `${pct}%` }} />
@@ -427,8 +461,15 @@ export default function HRPage() {
       <EditHRDialog
         user={editing}
         info={editing ? hr[editing.id] || {} : {}}
+        settings={hrSettings}
+        isMax={isMax}
         onClose={() => setEditing(null)}
-        onSave={(info) => { if (editing) { saveHR(editing.id, info); setEditing(null); } }}
+        onSave={(info, per) => {
+          if (!editing) return;
+          saveHR(editing.id, info);
+          if (isMax) savePerEmployee(editing.user_id, per);
+          setEditing(null);
+        }}
         isRTL={isRTL}
       />
     </AppLayout>
@@ -825,19 +866,44 @@ function TargetsAndCommissions({ settings, onSave, teamDaily, teamMonthly, isRTL
   );
 }
 
-function EditHRDialog({ user, info, onClose, onSave, isRTL }: {
+function EditHRDialog({ user, info, settings, isMax, onClose, onSave, isRTL }: {
   user: MerchantUser | null;
   info: HRInfo;
+  settings: HRSettings;
+  isMax: boolean;
   onClose: () => void;
-  onSave: (info: HRInfo) => void;
+  onSave: (info: HRInfo, per: PerEmployeeHR) => void;
   isRTL: boolean;
 }) {
   const [form, setForm] = useState<HRInfo>(info);
-  useEffect(() => { setForm(info); }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [per, setPer] = useState<PerEmployeeHR>({});
+  useEffect(() => {
+    setForm(info);
+    if (!user) return;
+    const t = settings.targets.perEmployee?.[user.user_id];
+    const c = settings.commission.perEmployee?.[user.user_id];
+    setPer({
+      daily: t?.daily,
+      monthly: t?.monthly,
+      rate: c?.rate,
+      commEnabled: c?.enabled ?? settings.commission.enabled,
+    });
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // رقم فارغ = اتبع إعداد الفريق العام
+  const num = (v: string) => (v === "" ? undefined : Math.max(0, Number(v) || 0));
+
+  const submit = () => onSave(form, {
+    daily: per.daily,
+    monthly: per.monthly,
+    // النسبة والتفعيل يُحفظان فقط إذا اختلفا عن الإعداد العام
+    rate: per.rate,
+    commEnabled: per.commEnabled === settings.commission.enabled ? undefined : per.commEnabled,
+  });
 
   return (
     <Dialog open={!!user} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="sm:max-w-[480px] max-h-[88vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Briefcase className="w-5 h-5 text-primary" />
@@ -867,10 +933,72 @@ function EditHRDialog({ user, info, onClose, onSave, isRTL }: {
             <Label>{isRTL ? "ملاحظات" : "Notes"}</Label>
             <Textarea rows={2} placeholder={isRTL ? "ملاحظات إدارية عن الموظف..." : "Notes about the employee..."} value={form.notes || ""} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
           </div>
+
+          {/* الهدف والعمولة الخاصة بالموظف — باقة ماكس */}
+          {isMax && (
+            <div className="rounded-xl border border-border bg-muted/20 p-3 space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                  <Target className="w-4 h-4" />
+                </span>
+                <div>
+                  <p className="font-bold text-xs">{isRTL ? "الهدف والعمولة الخاصة بالموظف" : "Employee target & commission"}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {isRTL ? "اتركه فارغاً ليتبع إعداد الفريق العام" : "Leave empty to follow the team defaults"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">{isRTL ? "الهدف اليومي (ر.س)" : "Daily target (SAR)"}</Label>
+                  <Input type="number" min={0} dir="ltr" className="h-9"
+                    placeholder={settings.targets.daily ? String(settings.targets.daily) : (isRTL ? "بدون هدف" : "no target")}
+                    value={per.daily ?? ""}
+                    onChange={e => setPer(p => ({ ...p, daily: num(e.target.value) }))} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">{isRTL ? "الهدف الشهري (ر.س)" : "Monthly target (SAR)"}</Label>
+                  <Input type="number" min={0} dir="ltr" className="h-9"
+                    placeholder={settings.targets.monthly ? String(settings.targets.monthly) : (isRTL ? "بدون هدف" : "no target")}
+                    value={per.monthly ?? ""}
+                    onChange={e => setPer(p => ({ ...p, monthly: num(e.target.value) }))} />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 pt-1">
+                <div>
+                  <Label className="text-xs">{isRTL ? "احتساب عمولة لهذا الموظف" : "Commission for this employee"}</Label>
+                  <p className="text-[11px] text-muted-foreground">
+                    {settings.commission.enabled
+                      ? (isRTL ? `العام: مفعّلة ${settings.commission.rate}%` : `Team default: on ${settings.commission.rate}%`)
+                      : (isRTL ? "العام: موقوفة" : "Team default: off")}
+                  </p>
+                </div>
+                <Switch checked={!!per.commEnabled}
+                  onCheckedChange={v => setPer(p => ({ ...p, commEnabled: v, rate: v ? p.rate : undefined }))} />
+              </div>
+
+              {per.commEnabled && (
+                <div className="space-y-1">
+                  <Label className="text-xs">{isRTL ? "نسبة العمولة (%)" : "Commission rate (%)"}</Label>
+                  <Input type="number" min={0} max={100} step={0.5} dir="ltr" className="h-9"
+                    placeholder={String(settings.commission.rate)}
+                    value={per.rate ?? ""}
+                    onChange={e => setPer(p => ({ ...p, rate: num(e.target.value) }))} />
+                  <p className="text-[11px] text-muted-foreground">
+                    {isRTL
+                      ? `تُحتسب من ${settings.commission.basis === "profit" ? "الأرباح" : "المبيعات"} ${settings.commission.period === "daily" ? "اليومية" : "الشهرية"} — فارغ = النسبة العامة (${settings.commission.rate}%)`
+                      : `Based on ${settings.commission.period} ${settings.commission.basis} — empty = team rate (${settings.commission.rate}%)`}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>{isRTL ? "إلغاء" : "Cancel"}</Button>
-          <Button onClick={() => onSave(form)}>{isRTL ? "حفظ" : "Save"}</Button>
+          <Button onClick={submit}>{isRTL ? "حفظ" : "Save"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

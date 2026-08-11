@@ -21,6 +21,7 @@ export interface HRSettings {
     period: 'daily' | 'monthly';     // تُحتسب يومياً أو شهرياً
     basis: 'sales' | 'profit';       // من المبيعات أو من الأرباح
     // نسبة مخصصة لموظف معيّن تتجاوز النسبة العامة
+    // enabled = true/false يتجاوز الإعداد العام، و undefined يعني اتبع العام
     perEmployee?: Record<string, { rate?: number; enabled?: boolean }>;
   };
 }
@@ -83,7 +84,8 @@ export function commissionFor(
   amount: number,
 ): { rate: number; value: number; enabled: boolean } {
   const per = settings.commission.perEmployee?.[userId];
-  const enabled = settings.commission.enabled && per?.enabled !== false;
+  // إعداد الموظف الخاص يتجاوز الإعداد العام (تفعيل أو إيقاف)
+  const enabled = per?.enabled ?? settings.commission.enabled;
   const rate = per?.rate ?? settings.commission.rate;
   return { rate, enabled, value: enabled ? (amount * rate) / 100 : 0 };
 }
