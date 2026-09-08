@@ -469,7 +469,7 @@ export default function DailyClosingsPage() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium truncate">{p.name}</p>
-                            <p className="text-xs text-muted-foreground">{p.quantity} × {p.type === 'device' ? (isRTL ? 'جهاز' : 'Device') : (isRTL ? 'إكسسوار' : 'Accessory')}</p>
+                            <p className="text-xs text-muted-foreground">{p.quantity} × {p.type === 'device' ? (isRTL ? 'جهاز' : 'Device') : p.type === 'warranty' ? (isRTL ? 'ضمان' : 'Warranty') : (isRTL ? 'إكسسوار' : 'Accessory')}</p>
                           </div>
                           <p className="font-bold text-primary">{formatCurrency(p.total)}</p>
                         </div>
@@ -505,7 +505,7 @@ export default function DailyClosingsPage() {
                             <TableCell className="font-medium">{item.name}</TableCell>
                             <TableCell>
                               <Badge variant="outline" className="text-xs">
-                                {item.type === 'device' ? (isRTL ? 'جهاز' : 'Device') : (isRTL ? 'إكسسوار' : 'Accessory')}
+                                {item.type === 'device' ? (isRTL ? 'جهاز' : 'Device') : item.type === 'warranty' ? (isRTL ? 'ضمان' : 'Warranty') : (isRTL ? 'إكسسوار' : 'Accessory')}
                               </Badge>
                             </TableCell>
                             <TableCell>{item.quantity}</TableCell>
