@@ -1,8 +1,7 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  FileText, Edit2, Printer, Lock, Search, Trash2, ChevronDown, Receipt,
-  Banknote, CreditCard, LogIn, LogOut, Activity,
+  FileText, Edit2, Printer, Lock, Search, Trash2, ChevronDown, LogIn, LogOut, Activity,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -126,16 +125,6 @@ export function CashierSalesHistory({
     return entries.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
   }, [view, filteredSales, filteredActivity]);
 
-  const summary = useMemo(() => {
-    const total = filteredSales.reduce((sum, sale) => sum + Number(sale.total_amount), 0);
-    const byMethod = (method: PaymentMethod) =>
-      filteredSales
-        .filter(sale => sale.payment_method === method)
-        .reduce((sum, sale) => sum + Number(sale.total_amount), 0);
-
-    return { count: filteredSales.length, total, cash: byMethod("cash"), card: byMethod("card") };
-  }, [filteredSales]);
-
   const openEdit = (sale: Sale) => {
     if ((sale as any).is_printed && isCashier) return; // a printed invoice is locked for cashiers
     setEditSale(sale);
@@ -217,32 +206,8 @@ export function CashierSalesHistory({
     return Activity;
   };
 
-  const summaryTiles = [
-    { icon: Receipt, label: isRTL ? "عدد الفواتير" : "Invoices", value: summary.count.toLocaleString() },
-    { icon: FileText, label: isRTL ? "الإجمالي" : "Total", value: `${summary.total.toLocaleString()} ر.س` },
-    { icon: Banknote, label: isRTL ? "نقداً" : "Cash", value: `${summary.cash.toLocaleString()} ر.س` },
-    { icon: CreditCard, label: isRTL ? "بطاقة" : "Card", value: `${summary.card.toLocaleString()} ر.س` },
-  ];
-
   return (
     <div className="space-y-4">
-      {/* Summary for whatever the filters are showing */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {summaryTiles.map(tile => (
-          <Card key={tile.label}>
-            <CardContent className="p-3 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                <tile.icon className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] text-muted-foreground">{tile.label}</p>
-                <p className="font-bold text-foreground truncate">{tile.value}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[220px]">
