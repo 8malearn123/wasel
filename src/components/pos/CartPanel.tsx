@@ -172,21 +172,20 @@ export function CartPanel({
                 </div>
 
                 <div className="mt-2 flex items-center justify-between">
-                  {item.type === "accessory" ? (
-                    <div className="flex items-center gap-1.5">
-                      <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => onUpdateQuantity(item.id, -1)}>
-                        <Minus className="w-3 h-3" />
-                      </Button>
-                      <span className="w-6 text-center text-sm font-medium">{item.quantity}</span>
-                      <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => onUpdateQuantity(item.id, 1)}>
-                        <Plus className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <span className="text-[11px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
-                      {isRTL ? "جهاز" : "Device"}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-1.5">
+                    {item.type === "device" && (
+                      <span className="text-[11px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                        {isRTL ? "جهاز" : "Device"}
+                      </span>
+                    )}
+                    <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => onUpdateQuantity(item.id, -1)}>
+                      <Minus className="w-3 h-3" />
+                    </Button>
+                    <span className="w-6 text-center text-sm font-medium">{item.quantity}</span>
+                    <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => onUpdateQuantity(item.id, 1)}>
+                      <Plus className="w-3 h-3" />
+                    </Button>
+                  </div>
                   <span className="font-bold text-foreground">
                     {(item.price * item.quantity).toLocaleString()} <span className="text-xs text-muted-foreground">ر.س</span>
                   </span>

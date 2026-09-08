@@ -77,9 +77,18 @@ export default function POSPage() {
   const isCashier = merchantUser?.role === 'cashier';
 
   const addDeviceToCart = (device: Device) => {
-    const alreadyInCart = cart.find(item => item.deviceId === device.id);
-    if (alreadyInCart) {
-      toast.error("This device is already in cart");
+    const existing = cart.find(item => item.deviceId === device.id);
+    if (existing) {
+      // Raising the count on a device already in the cart — the cashier decides
+      // how many units of this model go on the invoice
+      setCart(prev =>
+        prev.map(item =>
+          item.deviceId === device.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        )
+      );
+      toast.success(`Added ${`${device.brand || ''} ${device.model}`.trim()}`);
       return;
     }
     const newItem: POSCartItem = {

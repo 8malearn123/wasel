@@ -217,11 +217,11 @@ export function ProductGrid({
                       )}
                     </div>
                   </button>
-                  {/* A device is a single serialised unit, so it can only be in the cart once */}
+                  {/* Devices carry no stock count of their own, so the cashier sets the quantity */}
                   <QuantityStepper
                     tone="primary"
                     quantity={inCart}
-                    canIncrease={inCart < 1}
+                    canIncrease
                     onIncrease={() => onAddDevice(device)}
                     onDecrease={() => onRemoveDevice(device)}
                   />
