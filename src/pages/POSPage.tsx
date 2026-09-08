@@ -156,20 +156,36 @@ export default function POSPage() {
     }
   };
 
+  const addWarrantyToCart = (warranty: POSCartItem) => {
+    if (cart.some(item => item.id === warranty.id)) return;
+    setCart(prev => [...prev, warranty]);
+    toast.success(`Added ${warranty.identifier}`);
+  };
+
+  // A warranty is only worth anything while the device it covers is still being sold
+  const dropOrphanWarranties = (items: POSCartItem[]) =>
+    items.filter(
+      item =>
+        item.type !== "warranty" ||
+        items.some(device => device.deviceId && device.deviceId === item.coversDeviceId)
+    );
+
   const updateQuantity = (id: string, delta: number) => {
     setCart(prev =>
-      prev.map(item => {
-        if (item.id === id) {
-          const newQty = item.quantity + delta;
-          return newQty > 0 ? { ...item, quantity: newQty } : item;
-        }
-        return item;
-      }).filter(item => item.quantity > 0)
+      dropOrphanWarranties(
+        prev.map(item => {
+          if (item.id === id) {
+            const newQty = item.quantity + delta;
+            return newQty > 0 ? { ...item, quantity: newQty } : item;
+          }
+          return item;
+        }).filter(item => item.quantity > 0)
+      )
     );
   };
 
   const removeFromCart = (id: string) => {
-    setCart(prev => prev.filter(item => item.id !== id));
+    setCart(prev => dropOrphanWarranties(prev.filter(item => item.id !== id)));
   };
 
   const handleCompleteSale = async (customerName: string, customerPhone: string, discount: number) => {
@@ -255,6 +271,7 @@ export default function POSPage() {
               onSelectPayment={setSelectedPayment}
               onUpdateQuantity={updateQuantity}
               onRemoveItem={removeFromCart}
+              onAddWarranty={addWarrantyToCart}
               onClearCart={() => setCart([])}
               onCompleteSale={handleCompleteSale}
               isProcessing={isProcessing}
