@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n";
-import { Loader2, Smartphone, Package } from "lucide-react";
+import { Loader2, Smartphone, Package, Plus } from "lucide-react";
 import { useCategories } from "@/hooks/useCategories";
 import type { Device, Accessory } from "@/types/database";
 
@@ -32,6 +32,24 @@ function ProductImage({ sku, icon: Icon, tint }: { sku: string; icon: any; tint:
       className="w-14 h-14 rounded-lg object-cover mb-3 bg-muted/30"
       onError={() => setFailed(true)}
     />
+  );
+}
+
+// "+" badge shown on every product card so it reads as "tap to add to cart"
+function AddBadge({ tone }: { tone: "primary" | "accent" }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "absolute top-2 end-2 w-6 h-6 rounded-full flex items-center justify-center border transition-all",
+        "group-hover:scale-110",
+        tone === "primary"
+          ? "bg-primary/10 border-primary/30 text-primary group-hover:bg-primary group-hover:text-primary-foreground"
+          : "bg-accent/10 border-accent/30 text-accent group-hover:bg-accent group-hover:text-accent-foreground"
+      )}
+    >
+      <Plus className="w-3.5 h-3.5" strokeWidth={3} />
+    </span>
   );
 }
 
@@ -124,8 +142,9 @@ export function ProductGrid({ devices, accessories, loading, onAddDevice, onAddA
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.02 }}
                 onClick={() => onAddDevice(device)}
-                className="p-4 rounded-xl border text-start transition-all hover:shadow-md hover:scale-[1.02] active:scale-[0.98] bg-primary/5 border-primary/20 hover:border-primary/40"
+                className="group relative p-4 rounded-xl border text-start transition-all hover:shadow-md hover:scale-[1.02] active:scale-[0.98] bg-primary/5 border-primary/20 hover:border-primary/40"
               >
+                <AddBadge tone="primary" />
                 <ProductImage sku={device.imei} icon={Smartphone} tint="bg-primary/10" />
                 <p className="font-medium text-foreground text-sm truncate">
                   {device.brand ? `${device.brand} ` : ''}{device.model}
@@ -159,8 +178,9 @@ export function ProductGrid({ devices, accessories, loading, onAddDevice, onAddA
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.02 }}
                 onClick={() => onAddAccessory(acc)}
-                className="p-4 rounded-xl border text-start transition-all hover:shadow-md hover:scale-[1.02] active:scale-[0.98] bg-accent/5 border-accent/20 hover:border-accent/40"
+                className="group relative p-4 rounded-xl border text-start transition-all hover:shadow-md hover:scale-[1.02] active:scale-[0.98] bg-accent/5 border-accent/20 hover:border-accent/40"
               >
+                <AddBadge tone="accent" />
                 <ProductImage sku={acc.sku} icon={Package} tint="bg-accent/10" />
                 <p className="font-medium text-foreground text-sm truncate">{acc.name}</p>
                 <p className="text-xs text-muted-foreground font-mono mt-0.5">{acc.sku}</p>
