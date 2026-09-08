@@ -137,6 +137,30 @@ export function useSales() {
     return { data: sale, error: null };
   };
 
+  // Every POS action worth seeing in the sales log. Best effort: a log that
+  // fails must never take the sale down with it.
+  const logSaleActivity = async (
+    action: 'sale_edited' | 'sale_deleted' | 'sale_printed',
+    sale: Pick<Sale, 'id' | 'invoice_number' | 'total_amount'>,
+    details: Record<string, unknown> = {}
+  ) => {
+    if (!merchant || !user) return;
+    try {
+      await supabase.from('activity_logs').insert({
+        merchant_id: merchant.id,
+        user_id: user.id,
+        action: `pos_${action}`,
+        entity_type: 'sale',
+        entity_id: sale.id,
+        new_data: {
+          invoice_number: sale.invoice_number,
+          total_amount: Number(sale.total_amount),
+          ...details,
+        },
+      } as any);
+    } catch { /* السجل اختياري */ }
+  };
+
   const markAsPrinted = async (saleId: string) => {
     const { error } = await supabase
       .from('sales')
@@ -145,17 +169,39 @@ export function useSales() {
     if (error) {
       console.error('Error marking as printed:', error);
     }
+    const sale = sales.find(s => s.id === saleId);
+    if (!error && sale) await logSaleActivity('sale_printed', sale);
     await fetchSales();
   };
 
-  const updateSale = async (saleId: string, updates: { customer_name?: string; customer_phone?: string; discount_amount?: number; notes?: string }) => {
+  const updateSale = async (
+    saleId: string,
+    updates: {
+      customer_name?: string;
+      customer_phone?: string;
+      discount_amount?: number;
+      payment_method?: PaymentMethod;
+      notes?: string;
+    }
+  ) => {
     // Check if sale is printed - only owner/admin can edit printed sales
     const sale = sales.find(s => s.id === saleId);
     if (!sale) return { error: new Error('Sale not found') };
 
+    const patch: typeof updates & { total_amount?: number } = { ...updates };
+
+    // A changed discount has to carry through to the invoice total, or the
+    // stored total stops matching its own lines
+    if (updates.discount_amount !== undefined) {
+      const beforeDiscount = Number(sale.subtotal) + Number(sale.tax_amount);
+      const discount = Math.min(Math.max(updates.discount_amount, 0), beforeDiscount);
+      patch.discount_amount = discount;
+      patch.total_amount = beforeDiscount - discount;
+    }
+
     const { error } = await supabase
       .from('sales')
-      .update(updates)
+      .update(patch)
       .eq('id', saleId);
 
     if (error) {
@@ -163,8 +209,60 @@ export function useSales() {
       return { error };
     }
 
+    await logSaleActivity('sale_edited', sale, { changed: Object.keys(updates) });
     await fetchSales();
     toast.success('تم تحديث الفاتورة');
+    return { error: null };
+  };
+
+  const deleteSale = async (saleId: string) => {
+    const sale = sales.find(s => s.id === saleId);
+    if (!sale) return { error: new Error('Sale not found') };
+
+    // Put the stock back before the invoice goes
+    const { data: items, error: itemsError } = await supabase
+      .from('sale_items')
+      .select('device_id, accessory_id, quantity')
+      .eq('sale_id', saleId);
+
+    if (itemsError) {
+      toast.error(itemsError.message);
+      return { error: itemsError };
+    }
+
+    for (const item of items || []) {
+      if (item.device_id) {
+        await supabase
+          .from('devices')
+          .update({ status: 'available' })
+          .eq('id', item.device_id);
+      } else if (item.accessory_id) {
+        const { data: accessory } = await supabase
+          .from('accessories')
+          .select('quantity')
+          .eq('id', item.accessory_id)
+          .single();
+
+        if (accessory) {
+          await supabase
+            .from('accessories')
+            .update({ quantity: accessory.quantity + item.quantity })
+            .eq('id', item.accessory_id);
+        }
+      }
+    }
+
+    // sale_items are removed with the sale by the cascade on the foreign key
+    const { error } = await supabase.from('sales').delete().eq('id', saleId);
+
+    if (error) {
+      toast.error(error.message);
+      return { error };
+    }
+
+    await logSaleActivity('sale_deleted', sale, { items: items?.length ?? 0 });
+    await fetchSales();
+    toast.success('تم حذف الفاتورة وإرجاع الأصناف للمخزون');
     return { error: null };
   };
 
@@ -196,6 +294,7 @@ export function useSales() {
     createSale,
     markAsPrinted,
     updateSale,
+    deleteSale,
     getStats
   };
 }

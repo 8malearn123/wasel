@@ -5,6 +5,7 @@ import { useLanguage } from "@/i18n";
 import { useAuth } from "@/hooks/useAuth";
 import { usePOSInventory } from "@/hooks/usePOSInventory";
 import { useSales } from "@/hooks/useSales";
+import { usePOSActivity } from "@/hooks/usePOSActivity";
 import { ScannerSection } from "@/components/pos/ScannerSection";
 import { ProductGrid } from "@/components/pos/ProductGrid";
 import { CartPanel, POSCartItem } from "@/components/pos/CartPanel";
@@ -72,7 +73,8 @@ export default function POSPage() {
   }, [merchant?.id, user?.id, merchantUser?.role]);
 
   const { devices, accessories, loading, refetch, searchByIMEI, searchBySkuOrName } = usePOSInventory();
-  const { createSale, markAsPrinted, sales, loading: salesLoading, updateSale, refetch: refetchSales } = useSales();
+  const { createSale, markAsPrinted, sales, loading: salesLoading, updateSale, deleteSale, refetch: refetchSales } = useSales();
+  const { activity, loading: activityLoading, refetch: refetchActivity } = usePOSActivity();
 
   const isCashier = merchantUser?.role === 'cashier';
 
@@ -284,10 +286,16 @@ export default function POSPage() {
         <TabsContent value="history" className="h-[calc(100%-60px)] overflow-auto">
           <CashierSalesHistory
             sales={cashierSales}
-            loading={salesLoading}
+            activity={activity}
+            loading={salesLoading || activityLoading}
             isCashier={isCashier}
             onUpdateSale={updateSale}
-            onRefresh={refetchSales}
+            onDeleteSale={deleteSale}
+            onRefresh={() => {
+              refetchSales();
+              refetchActivity();
+              refetch();
+            }}
             merchantName={merchant?.name || "Store"}
             branchName={currentBranch?.name || "Main"}
           />
