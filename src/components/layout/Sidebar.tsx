@@ -67,7 +67,7 @@ const navSections: NavSection[] = [
     title: "Daily Operations", titleAr: "العمليات اليومية",
     items: [
       { icon: ShoppingCart, label: "Point of Sale", labelAr: "نقطة البيع", path: "/pos", children: [
-        { key: "pos", label: "Point of Sale", labelAr: "نقطة البيع" },
+        { key: "pos", label: "Sales Screen", labelAr: "شاشة البيع" },
         { key: "history", label: "Sales History", labelAr: "سجل المبيعات" },
       ] },
       { icon: Calculator, label: "Daily Closings", labelAr: "الإغلاق اليومي", path: "/daily-closings" },
