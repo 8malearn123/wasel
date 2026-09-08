@@ -16,7 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n";
 import { CouponApply } from "./CouponApply";
-import { suggestAccessories } from "@/lib/accessorySuggestions";
+import { pickAccessoryKinds, suggestAccessories } from "@/lib/accessorySuggestions";
 import type { Accessory, PaymentMethod } from "@/types/database";
 
 export interface POSCartItem {
@@ -92,18 +92,30 @@ export function CartPanel({
   // What the customer just picked up decides what else to offer
   const lastDevice = [...cart].reverse().find(item => item.type === "device");
 
+  const inCartAccessoryIds = cart.map(item => item.accessoryId).filter(Boolean) as string[];
+
+  // The three add-ons every phone buyer is asked about by name
+  const quickAddOns = useMemo(() => {
+    if (!lastDevice) return [];
+    return pickAccessoryKinds(lastDevice.name, accessories, { exclude: inCartAccessoryIds });
+  }, [lastDevice, accessories, cart]);
+
+  // Anything else that fits the device, minus what the named options already cover
   const suggestedAccessories = useMemo(() => {
     if (!lastDevice) return [];
     return suggestAccessories(lastDevice.name, accessories, {
-      exclude: cart.map(item => item.accessoryId).filter(Boolean) as string[],
-      limit: 4,
+      exclude: [
+        ...inCartAccessoryIds,
+        ...(quickAddOns.map(option => option.accessory?.id).filter(Boolean) as string[]),
+      ],
+      limit: 2,
     });
-  }, [lastDevice, accessories, cart]);
+  }, [lastDevice, accessories, cart, quickAddOns]);
 
   const showAddOns = Boolean(
-    suggestedAccessories.length > 0 &&
-      lastDevice?.deviceId &&
-      !dismissedAddOns.includes(lastDevice.deviceId)
+    lastDevice?.deviceId &&
+      !dismissedAddOns.includes(lastDevice.deviceId) &&
+      (quickAddOns.some(option => option.accessory) || suggestedAccessories.length > 0)
   );
 
   // Offer a warranty for the first device that doesn't have one yet, unless the
@@ -359,7 +371,30 @@ export function CartPanel({
                 <X className="w-3.5 h-3.5" />
               </Button>
             </div>
-            <div className="mt-2 space-y-1.5">
+            <div className="mt-2 grid grid-cols-3 gap-1.5">
+              {quickAddOns.map(({ kind, accessory }) => (
+                <button
+                  key={kind.key}
+                  type="button"
+                  disabled={!accessory}
+                  onClick={() => accessory && onAddAccessory(accessory)}
+                  title={accessory?.name}
+                  className="rounded-lg border border-accent/30 bg-background px-2 py-1.5 text-center transition-colors hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-accent/30 disabled:hover:bg-background"
+                >
+                  <span className="block text-[11px] font-medium text-foreground leading-tight">
+                    {isRTL ? kind.labelAr : kind.labelEn}
+                  </span>
+                  <span className="block text-[10px] text-muted-foreground">
+                    {accessory
+                      ? `+${Number(accessory.price).toLocaleString()} ر.س`
+                      : isRTL
+                        ? "غير متوفر"
+                        : "Out of stock"}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <div className="mt-1.5 space-y-1.5">
               {suggestedAccessories.map(accessory => (
                 <button
                   key={accessory.id}
