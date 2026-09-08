@@ -43,10 +43,111 @@ const brandKeysIn = (text: string): string[] => {
     .map(([key]) => key);
 };
 
+// The add-ons a phone buyer is offered by name, whatever else is in stock.
+// Order matters: an accessory is claimed by the first kind it matches, so a
+// "كابل شاحن" lands under the cable rather than the charger.
+export const ACCESSORY_KINDS = [
+  {
+    key: "screen",
+    labelAr: "حماية شاشة",
+    labelEn: "Screen protector",
+    keywords: ["شاشه", "screen", "protector", "زجاج", "glass", "لاصق", "tempered"],
+  },
+  {
+    key: "cable",
+    labelAr: "كابل شاحن",
+    labelEn: "Charging cable",
+    keywords: ["كابل", "كيبل", "cable", "سلك", "وصله", "type-c", "typec", "lightning", "usb"],
+  },
+  {
+    key: "charger",
+    labelAr: "شاحن",
+    labelEn: "Charger",
+    keywords: ["شاحن", "charger", "محول", "adapter", "شحن", "wireless"],
+  },
+] as const;
+
+export type AccessoryKind = (typeof ACCESSORY_KINDS)[number];
+
 interface SuggestOptions {
   /** Accessory ids already in the cart */
   exclude?: string[];
   limit?: number;
+}
+
+interface ScoredAccessory {
+  accessory: Accessory;
+  score: number;
+  text: string;
+}
+
+// Every accessory that could go with this device, best fit first
+function scoreAccessories(
+  deviceLabel: string,
+  accessories: Accessory[],
+  exclude: string[]
+): ScoredAccessory[] {
+  const deviceBrands = brandKeysIn(deviceLabel);
+  const modelTokens = normalize(deviceLabel)
+    .split(/\s+/)
+    .filter(token => token.length >= 2);
+  const excluded = new Set(exclude);
+
+  return accessories
+    .flatMap(accessory => {
+      if (accessory.quantity <= 0 || excluded.has(accessory.id)) return [];
+
+      const text = normalize(
+        `${accessory.name} ${accessory.brand || ""} ${accessory.category || ""}`
+      );
+      const accessoryBrands = brandKeysIn(text);
+
+      // Made for another device family — never a fit
+      if (
+        accessoryBrands.length > 0 &&
+        !accessoryBrands.some(brand => deviceBrands.includes(brand))
+      ) {
+        return [];
+      }
+
+      let score = 0;
+      if (accessoryBrands.length > 0) {
+        score += 50;
+        // Same family and the exact model named — the closest match there is
+        if (modelTokens.some(token => text.includes(token))) score += 100;
+      }
+      if (COMPANION_KEYWORDS.some(keyword => text.includes(keyword))) score += 25;
+
+      return score > 0 ? [{ accessory, score, text }] : [];
+    })
+    .sort(
+      (a, b) =>
+        b.score - a.score || Number(a.accessory.price) - Number(b.accessory.price)
+    );
+}
+
+/**
+ * The named add-ons — screen protector, charging cable, charger — each paired
+ * with the best accessory in stock that fits the device, or null when the
+ * branch carries nothing for it.
+ */
+export function pickAccessoryKinds(
+  deviceLabel: string,
+  accessories: Accessory[],
+  { exclude = [] }: Pick<SuggestOptions, "exclude"> = {}
+): { kind: AccessoryKind; accessory: Accessory | null }[] {
+  const scored = scoreAccessories(deviceLabel, accessories, exclude);
+  const taken = new Set<string>();
+
+  return ACCESSORY_KINDS.map(kind => {
+    const match = scored.find(
+      entry =>
+        !taken.has(entry.accessory.id) &&
+        kind.keywords.some(keyword => entry.text.includes(keyword))
+    );
+    if (match) taken.add(match.accessory.id);
+    return { kind, accessory: match?.accessory ?? null };
+  });
 }
 
 /**
@@ -60,44 +161,7 @@ export function suggestAccessories(
   accessories: Accessory[],
   { exclude = [], limit = 4 }: SuggestOptions = {}
 ): Accessory[] {
-  const deviceBrands = brandKeysIn(deviceLabel);
-  const modelTokens = normalize(deviceLabel)
-    .split(/\s+/)
-    .filter(token => token.length >= 2);
-  const excluded = new Set(exclude);
-
-  const scored = accessories.flatMap(accessory => {
-    if (accessory.quantity <= 0 || excluded.has(accessory.id)) return [];
-
-    const text = normalize(
-      `${accessory.name} ${accessory.brand || ""} ${accessory.category || ""}`
-    );
-    const accessoryBrands = brandKeysIn(text);
-
-    // Made for another device family — never a fit
-    if (
-      accessoryBrands.length > 0 &&
-      !accessoryBrands.some(brand => deviceBrands.includes(brand))
-    ) {
-      return [];
-    }
-
-    let score = 0;
-    if (accessoryBrands.length > 0) {
-      score += 50;
-      // Same family and the exact model named — the closest match there is
-      if (modelTokens.some(token => text.includes(token))) score += 100;
-    }
-    if (COMPANION_KEYWORDS.some(keyword => text.includes(keyword))) score += 25;
-
-    return score > 0 ? [{ accessory, score }] : [];
-  });
-
-  return scored
-    .sort(
-      (a, b) =>
-        b.score - a.score || Number(a.accessory.price) - Number(b.accessory.price)
-    )
+  return scoreAccessories(deviceLabel, accessories, exclude)
     .slice(0, limit)
     .map(entry => entry.accessory);
 }

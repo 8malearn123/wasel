@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { suggestAccessories } from "@/lib/accessorySuggestions";
+import { pickAccessoryKinds, suggestAccessories } from "@/lib/accessorySuggestions";
 import type { Accessory } from "@/types/database";
 
 const accessory = (partial: Partial<Accessory> & { id: string; name: string }): Accessory => ({
@@ -69,5 +69,34 @@ describe("suggestAccessories", () => {
 
   it("returns nothing when there is nothing sensible to offer", () => {
     expect(suggestAccessories("Canon EOS R50", [deskLamp, galaxyBattery])).toEqual([]);
+  });
+});
+
+describe("pickAccessoryKinds", () => {
+  const chargingCable = accessory({ id: "9", name: "كابل شاحن Type-C", price: 35 });
+  const stock = [...catalogue, chargingCable];
+
+  it("offers a screen protector, a cable and a charger in that order", () => {
+    const picks = pickAccessoryKinds("Apple iPhone 13", stock);
+    expect(picks.map(p => p.kind.key)).toEqual(["screen", "cable", "charger"]);
+    expect(picks[0].accessory?.id).toBe(iphoneGlass.id);
+  });
+
+  it("gives a cable to the cable option, not to the charger", () => {
+    const picks = pickAccessoryKinds("Apple iPhone 13", stock);
+    const byKind = Object.fromEntries(picks.map(p => [p.kind.key, p.accessory?.id]));
+    expect(byKind.cable).toBe(chargingCable.id);
+    expect(byKind.charger).toBe(genericCharger.id);
+  });
+
+  it("reports an option the branch cannot cover", () => {
+    const picks = pickAccessoryKinds("Apple iPhone 13", [iphoneCover]);
+    expect(picks.every(p => p.accessory === null)).toBe(true);
+  });
+
+  it("skips an accessory already in the cart", () => {
+    const picks = pickAccessoryKinds("Apple iPhone 13", stock, { exclude: [chargingCable.id] });
+    const cable = picks.find(p => p.kind.key === "cable");
+    expect(cable?.accessory).toBeNull();
   });
 });
