@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useLanguage } from "@/i18n";
@@ -159,6 +159,22 @@ export default function POSPage() {
     );
   };
 
+  // Quantities already in the cart, so the product grid can show a live count
+  // next to its -/+ controls
+  const cartQuantities = useMemo(() => {
+    const devices: Record<string, number> = {};
+    const accessories: Record<string, number> = {};
+    for (const item of cart) {
+      if (item.deviceId) devices[item.deviceId] = item.quantity;
+      if (item.accessoryId) accessories[item.accessoryId] = item.quantity;
+    }
+    return { devices, accessories };
+  }, [cart]);
+
+  const removeDeviceFromCart = (device: Device) => updateQuantity(`dev-${device.id}`, -1);
+
+  const removeAccessoryFromCart = (accessory: Accessory) => updateQuantity(`acc-${accessory.id}`, -1);
+
   const removeFromCart = (id: string) => {
     setCart(prev => prev.filter(item => item.id !== id));
   };
@@ -237,6 +253,10 @@ export default function POSPage() {
                 loading={loading}
                 onAddDevice={addDeviceToCart}
                 onAddAccessory={addAccessoryToCart}
+                onRemoveDevice={removeDeviceFromCart}
+                onRemoveAccessory={removeAccessoryFromCart}
+                deviceQuantities={cartQuantities.devices}
+                accessoryQuantities={cartQuantities.accessories}
               />
             </div>
 
