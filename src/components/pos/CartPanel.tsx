@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ShoppingCart, X, Minus, Plus, CreditCard, Banknote, Building2, Percent, Receipt, User, Phone, ShieldCheck
+  ShoppingCart, X, Minus, Plus, CreditCard, Banknote, Building2, Percent, Receipt, User, Phone, ShieldCheck, Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n";
 import { CouponApply } from "./CouponApply";
-import type { PaymentMethod } from "@/types/database";
+import { suggestAccessories } from "@/lib/accessorySuggestions";
+import type { Accessory, PaymentMethod } from "@/types/database";
 
 export interface POSCartItem {
   id: string;
@@ -56,6 +57,9 @@ interface CartPanelProps {
   onUpdateQuantity: (id: string, delta: number) => void;
   onRemoveItem: (id: string) => void;
   onAddWarranty: (item: POSCartItem) => void;
+  onAddAccessory: (accessory: Accessory) => void;
+  /** Branch stock, used to suggest what goes with a device in the cart */
+  accessories: Accessory[];
   onClearCart: () => void;
   onCompleteSale: (customerName: string, customerPhone: string, discount: number) => void;
   isProcessing: boolean;
@@ -68,6 +72,8 @@ export function CartPanel({
   onUpdateQuantity,
   onRemoveItem,
   onAddWarranty,
+  onAddAccessory,
+  accessories,
   onClearCart,
   onCompleteSale,
   isProcessing,
@@ -81,6 +87,24 @@ export function CartPanel({
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
   const [dismissedWarranties, setDismissedWarranties] = useState<string[]>([]);
+  const [dismissedAddOns, setDismissedAddOns] = useState<string[]>([]);
+
+  // What the customer just picked up decides what else to offer
+  const lastDevice = [...cart].reverse().find(item => item.type === "device");
+
+  const suggestedAccessories = useMemo(() => {
+    if (!lastDevice) return [];
+    return suggestAccessories(lastDevice.name, accessories, {
+      exclude: cart.map(item => item.accessoryId).filter(Boolean) as string[],
+      limit: 4,
+    });
+  }, [lastDevice, accessories, cart]);
+
+  const showAddOns = Boolean(
+    suggestedAccessories.length > 0 &&
+      lastDevice?.deviceId &&
+      !dismissedAddOns.includes(lastDevice.deviceId)
+  );
 
   // Offer a warranty for the first device that doesn't have one yet, unless the
   // customer has already turned it down
@@ -301,6 +325,62 @@ export function CartPanel({
                   </button>
                 );
               })}
+            </div>
+          </motion.div>
+        )}
+
+        {/* What goes with the device the customer is buying */}
+        {showAddOns && (
+          <motion.div
+            layout
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-3 rounded-lg border border-dashed border-accent/40 bg-accent/5"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <Sparkles className="w-4 h-4 text-accent shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground">
+                    {isRTL ? "قد يحتاج العميل أيضاً" : "The customer may also need"}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground truncate">
+                    {isRTL ? `مناسبة لـ ${lastDevice!.name}` : `Goes with ${lastDevice!.name}`}
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-muted-foreground shrink-0"
+                aria-label={isRTL ? "إخفاء الاقتراحات" : "Hide suggestions"}
+                onClick={() => setDismissedAddOns(prev => [...prev, lastDevice!.deviceId!])}
+              >
+                <X className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+            <div className="mt-2 space-y-1.5">
+              {suggestedAccessories.map(accessory => (
+                <button
+                  key={accessory.id}
+                  type="button"
+                  onClick={() => onAddAccessory(accessory)}
+                  className="w-full flex items-center justify-between gap-2 rounded-lg border border-accent/30 bg-background px-2 py-1.5 text-start transition-colors hover:border-accent hover:bg-accent/10"
+                >
+                  <span className="min-w-0">
+                    <span className="block text-[11px] font-medium text-foreground truncate">
+                      {accessory.name}
+                    </span>
+                    <span className="block text-[10px] text-muted-foreground font-mono">
+                      {accessory.sku}
+                    </span>
+                  </span>
+                  <span className="flex items-center gap-1 shrink-0 text-[11px] font-medium text-foreground">
+                    +{Number(accessory.price).toLocaleString()} ر.س
+                    <Plus className="w-3 h-3 text-accent" />
+                  </span>
+                </button>
+              ))}
             </div>
           </motion.div>
         )}
