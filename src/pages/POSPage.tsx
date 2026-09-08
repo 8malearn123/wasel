@@ -272,6 +272,8 @@ export default function POSPage() {
               onUpdateQuantity={updateQuantity}
               onRemoveItem={removeFromCart}
               onAddWarranty={addWarrantyToCart}
+              onAddAccessory={addAccessoryToCart}
+              accessories={accessories}
               onClearCart={() => setCart([])}
               onCompleteSale={handleCompleteSale}
               isProcessing={isProcessing}
