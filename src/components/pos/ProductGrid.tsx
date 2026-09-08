@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n";
-import { Loader2, Smartphone, Package, Plus, Minus } from "lucide-react";
+import { Loader2, Smartphone, Package } from "lucide-react";
 import { useCategories } from "@/hooks/useCategories";
 import type { Device, Accessory } from "@/types/database";
 
@@ -12,12 +12,6 @@ interface ProductGridProps {
   loading: boolean;
   onAddDevice: (device: Device) => void;
   onAddAccessory: (accessory: Accessory) => void;
-  onRemoveDevice: (device: Device) => void;
-  onRemoveAccessory: (accessory: Accessory) => void;
-  /** How many of each device is already in the cart, keyed by device id */
-  deviceQuantities: Record<string, number>;
-  /** How many of each accessory is already in the cart, keyed by accessory id */
-  accessoryQuantities: Record<string, number>;
 }
 
 // Product photo shown when /products/<SKU>.jpg exists in public/,
@@ -41,72 +35,7 @@ function ProductImage({ sku, icon: Icon, tint }: { sku: string; icon: any; tint:
   );
 }
 
-// "-" / "+" controls on every product card, so the cashier can raise or lower
-// how many of the product go in the cart without leaving the grid
-function QuantityStepper({
-  tone,
-  quantity,
-  canIncrease,
-  onIncrease,
-  onDecrease,
-}: {
-  tone: "primary" | "accent";
-  quantity: number;
-  canIncrease: boolean;
-  onIncrease: () => void;
-  onDecrease: () => void;
-}) {
-  const { isRTL } = useLanguage();
-  const accent = tone === "primary" ? "text-primary" : "text-accent";
-
-  const buttonClass = (enabled: boolean) =>
-    cn(
-      "w-6 h-6 rounded-full flex items-center justify-center transition-colors",
-      enabled
-        ? cn(accent, "hover:bg-muted")
-        : "text-muted-foreground/40 cursor-not-allowed"
-    );
-
-  return (
-    <div className="absolute top-2 end-2 flex items-center gap-0.5 rounded-full border border-border bg-background/90 p-0.5 shadow-sm backdrop-blur-sm">
-      <button
-        type="button"
-        disabled={quantity === 0}
-        onClick={onDecrease}
-        aria-label={isRTL ? "إنقاص الكمية" : "Decrease quantity"}
-        className={buttonClass(quantity > 0)}
-      >
-        <Minus className="w-3.5 h-3.5" strokeWidth={3} />
-      </button>
-      {quantity > 0 && (
-        <span className={cn("min-w-[1rem] text-center text-xs font-bold tabular-nums", accent)}>
-          {quantity}
-        </span>
-      )}
-      <button
-        type="button"
-        disabled={!canIncrease}
-        onClick={onIncrease}
-        aria-label={isRTL ? "زيادة الكمية" : "Increase quantity"}
-        className={buttonClass(canIncrease)}
-      >
-        <Plus className="w-3.5 h-3.5" strokeWidth={3} />
-      </button>
-    </div>
-  );
-}
-
-export function ProductGrid({
-  devices,
-  accessories,
-  loading,
-  onAddDevice,
-  onAddAccessory,
-  onRemoveDevice,
-  onRemoveAccessory,
-  deviceQuantities,
-  accessoryQuantities,
-}: ProductGridProps) {
+export function ProductGrid({ devices, accessories, loading, onAddDevice, onAddAccessory }: ProductGridProps) {
   const { t, isRTL } = useLanguage();
   const { categories } = useCategories();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -188,46 +117,30 @@ export function ProductGrid({
             {t.pos.devices} ({filteredDevices.length})
           </h3>
           <div className="pos-grid">
-            {filteredDevices.map((device, index) => {
-              const inCart = deviceQuantities[device.id] ?? 0;
-              return (
-                <motion.div
-                  key={device.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.02 }}
-                  className="relative"
-                >
-                  <button
-                    type="button"
-                    onClick={() => onAddDevice(device)}
-                    className="w-full p-4 rounded-xl border text-start transition-all hover:shadow-md hover:scale-[1.02] active:scale-[0.98] bg-primary/5 border-primary/20 hover:border-primary/40"
-                  >
-                    <ProductImage sku={device.imei} icon={Smartphone} tint="bg-primary/10" />
-                    <p className="font-medium text-foreground text-sm truncate">
-                      {device.brand ? `${device.brand} ` : ''}{device.model}
-                    </p>
-                    <p className="text-xs text-muted-foreground font-mono mt-0.5 truncate">{device.imei}</p>
-                    <div className="mt-2 flex items-center justify-between">
-                      <span className="text-lg font-bold text-foreground">
-                        {Number(device.price).toLocaleString()} ر.س
-                      </span>
-                      {device.storage && (
-                        <span className="text-xs text-muted-foreground">{device.storage}</span>
-                      )}
-                    </div>
-                  </button>
-                  {/* Devices carry no stock count of their own, so the cashier sets the quantity */}
-                  <QuantityStepper
-                    tone="primary"
-                    quantity={inCart}
-                    canIncrease
-                    onIncrease={() => onAddDevice(device)}
-                    onDecrease={() => onRemoveDevice(device)}
-                  />
-                </motion.div>
-              );
-            })}
+            {filteredDevices.map((device, index) => (
+              <motion.button
+                key={device.id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: index * 0.02 }}
+                onClick={() => onAddDevice(device)}
+                className="p-4 rounded-xl border text-start transition-all hover:shadow-md hover:scale-[1.02] active:scale-[0.98] bg-primary/5 border-primary/20 hover:border-primary/40"
+              >
+                <ProductImage sku={device.imei} icon={Smartphone} tint="bg-primary/10" />
+                <p className="font-medium text-foreground text-sm truncate">
+                  {device.brand ? `${device.brand} ` : ''}{device.model}
+                </p>
+                <p className="text-xs text-muted-foreground font-mono mt-0.5 truncate">{device.imei}</p>
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-lg font-bold text-foreground">
+                    {Number(device.price).toLocaleString()} ر.س
+                  </span>
+                  {device.storage && (
+                    <span className="text-xs text-muted-foreground">{device.storage}</span>
+                  )}
+                </div>
+              </motion.button>
+            ))}
           </div>
         </div>
       )}
@@ -239,42 +152,26 @@ export function ProductGrid({
             {t.pos.accessories} ({filteredAccessories.length})
           </h3>
           <div className="pos-grid">
-            {filteredAccessories.map((acc, index) => {
-              const inCart = accessoryQuantities[acc.id] ?? 0;
-              return (
-                <motion.div
-                  key={acc.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.02 }}
-                  className="relative"
-                >
-                  <button
-                    type="button"
-                    onClick={() => onAddAccessory(acc)}
-                    className="w-full p-4 rounded-xl border text-start transition-all hover:shadow-md hover:scale-[1.02] active:scale-[0.98] bg-accent/5 border-accent/20 hover:border-accent/40"
-                  >
-                    <ProductImage sku={acc.sku} icon={Package} tint="bg-accent/10" />
-                    <p className="font-medium text-foreground text-sm truncate">{acc.name}</p>
-                    <p className="text-xs text-muted-foreground font-mono mt-0.5">{acc.sku}</p>
-                    <div className="mt-2 flex items-center justify-between">
-                      <span className="text-lg font-bold text-foreground">
-                        {Number(acc.price).toLocaleString()} ر.س
-                      </span>
-                      <span className="text-xs text-muted-foreground">{acc.quantity} in stock</span>
-                    </div>
-                  </button>
-                  {/* Can't put more in the cart than the branch actually holds */}
-                  <QuantityStepper
-                    tone="accent"
-                    quantity={inCart}
-                    canIncrease={inCart < acc.quantity}
-                    onIncrease={() => onAddAccessory(acc)}
-                    onDecrease={() => onRemoveAccessory(acc)}
-                  />
-                </motion.div>
-              );
-            })}
+            {filteredAccessories.map((acc, index) => (
+              <motion.button
+                key={acc.id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: index * 0.02 }}
+                onClick={() => onAddAccessory(acc)}
+                className="p-4 rounded-xl border text-start transition-all hover:shadow-md hover:scale-[1.02] active:scale-[0.98] bg-accent/5 border-accent/20 hover:border-accent/40"
+              >
+                <ProductImage sku={acc.sku} icon={Package} tint="bg-accent/10" />
+                <p className="font-medium text-foreground text-sm truncate">{acc.name}</p>
+                <p className="text-xs text-muted-foreground font-mono mt-0.5">{acc.sku}</p>
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-lg font-bold text-foreground">
+                    {Number(acc.price).toLocaleString()} ر.س
+                  </span>
+                  <span className="text-xs text-muted-foreground">{acc.quantity} in stock</span>
+                </div>
+              </motion.button>
+            ))}
           </div>
         </div>
       )}
