@@ -66,7 +66,7 @@ const navSections: NavSection[] = [
   {
     title: "Daily Operations", titleAr: "العمليات اليومية",
     items: [
-      { icon: ShoppingCart, label: "Point of Sale", labelAr: "نقطة البيع", path: "/pos", children: [
+      { icon: ShoppingCart, label: "Products", labelAr: "المنتجات", path: "/pos", children: [
         { key: "pos", label: "Products", labelAr: "المنتجات" },
         { key: "history", label: "Sales History", labelAr: "سجل المبيعات" },
       ] },
