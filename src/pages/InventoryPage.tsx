@@ -50,6 +50,13 @@ import {
 } from "@/components/ui/select";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { cn } from "@/lib/utils";
+import {
+  DEVICE_COLORS,
+  STORAGE_OPTIONS,
+  COMMON_BRANDS,
+  brandFromModel,
+  findSimilarDevice,
+} from "@/lib/deviceSuggestions";
 import { useLanguage } from "@/i18n";
 import { useDevices, useAccessories } from "@/hooks/useInventory";
 import { useRepairParts, RepairPart } from "@/hooks/useRepairParts";
@@ -702,6 +709,7 @@ export default function InventoryPage() {
         onOpenChange={setShowAddDevice}
         branches={branches}
         categories={deviceCategories}
+        knownDevices={devices}
         onSave={addDevice}
       />
 
@@ -761,6 +769,7 @@ function DeviceDialog({
   device, 
   branches,
   categories,
+  knownDevices = [],
   onSave 
 }: { 
   open: boolean;
@@ -768,9 +777,12 @@ function DeviceDialog({
   device?: Device | null;
   branches: { id: string; name: string }[];
   categories: { id: string; name: string; name_ar?: string | null }[];
+  /** Stock already on the shelves, used to fill the form from a similar device */
+  knownDevices?: Device[];
   onSave: (data: any) => Promise<any>;
 }) {
   const [loading, setLoading] = useState(false);
+  const [filledFrom, setFilledFrom] = useState<string | null>(null);
   const { t, isRTL } = useLanguage();
   const [formData, setFormData] = useState({
     imei: '',
@@ -804,6 +816,46 @@ function DeviceDialog({
     }
   });
 
+  // Fill whatever the shop hasn't typed yet from a device just like this one.
+  // Anything already entered is left exactly as it is.
+  const fillFromSimilar = (next: { imei?: string; model?: string }) => {
+    if (device) return; // editing an existing device — never overwrite it
+    const match = findSimilarDevice(knownDevices, next);
+    if (!match) return;
+
+    setFormData(prev => ({
+      ...prev,
+      model: prev.model || match.model,
+      brand: prev.brand || match.brand || '',
+      color: prev.color || match.color || '',
+      storage: prev.storage || match.storage || '',
+      cost: prev.cost || String(match.cost),
+      price: prev.price || String(match.price),
+      category: prev.category || match.category || '',
+    }));
+    setFilledFrom(`${match.brand || ''} ${match.model}`.trim());
+  };
+
+  const handleModelBlur = () => {
+    if (device || !formData.model) return;
+    fillFromSimilar({ model: formData.model });
+    const brand = brandFromModel(formData.model);
+    if (brand) setFormData(prev => (prev.brand ? prev : { ...prev, brand }));
+  };
+
+  const handleImeiChange = (value: string) => {
+    setFormData(prev => ({ ...prev, imei: value }));
+    if (value.replace(/\D/g, '').length >= 8) fillFromSimilar({ imei: value });
+  };
+
+  // The shop's own brands first, then the usual suspects
+  const brandChoices = Array.from(
+    new Set([
+      ...knownDevices.map(d => d.brand).filter(Boolean) as string[],
+      ...COMMON_BRANDS,
+    ])
+  ).slice(0, 6);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -824,6 +876,7 @@ function DeviceDialog({
     
     setLoading(false);
     onOpenChange(false);
+    setFilledFrom(null);
     setFormData({
       imei: '', model: '', brand: '', color: '', storage: '',
       cost: '', price: '', status: 'available', branch_id: '', condition: 'new', category: ''
@@ -857,7 +910,7 @@ function DeviceDialog({
                 <Input 
                   id="imei" 
                   value={formData.imei}
-                  onChange={(e) => setFormData({ ...formData, imei: e.target.value })}
+                  onChange={(e) => handleImeiChange(e.target.value)}
                   placeholder="353845110987456"
                   required
                 />
@@ -868,11 +921,19 @@ function DeviceDialog({
                   id="model"
                   value={formData.model}
                   onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+                  onBlur={handleModelBlur}
                   placeholder="iPhone 15 Pro"
                   required
                 />
               </div>
             </div>
+            {filledFrom && (
+              <p className="text-[11px] text-primary bg-primary/5 border border-primary/20 rounded-lg px-2.5 py-1.5">
+                {isRTL
+                  ? `تم تعبئة الحقول الفارغة من جهاز مشابه في المخزون: ${filledFrom} — عدّل ما تشاء`
+                  : `Empty fields filled from a similar device in stock: ${filledFrom} — change anything you like`}
+              </p>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="brand">{t.inventory.brand}</Label>
@@ -882,6 +943,23 @@ function DeviceDialog({
                   onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
                   placeholder="Apple"
                 />
+                <div className="flex flex-wrap gap-1">
+                  {brandChoices.map(brand => (
+                    <button
+                      key={brand}
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, brand }))}
+                      className={cn(
+                        "px-2 py-0.5 rounded-full border text-[11px] transition-colors",
+                        formData.brand === brand
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-muted/40 border-border hover:border-primary/50"
+                      )}
+                    >
+                      {brand}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="storage">{t.inventory.storage}</Label>
@@ -891,6 +969,23 @@ function DeviceDialog({
                   onChange={(e) => setFormData({ ...formData, storage: e.target.value })}
                   placeholder="256GB"
                 />
+                <div className="flex flex-wrap gap-1">
+                  {STORAGE_OPTIONS.map(size => (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, storage: size }))}
+                      className={cn(
+                        "px-2 py-0.5 rounded-full border text-[11px] transition-colors",
+                        formData.storage === size
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-muted/40 border-border hover:border-primary/50"
+                      )}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -900,8 +995,28 @@ function DeviceDialog({
                   id="color"
                   value={formData.color}
                   onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                  placeholder="Natural Titanium"
+                  placeholder={isRTL ? "اختر لوناً أو اكتبه" : "Pick a colour or type one"}
                 />
+                <div className="flex flex-wrap gap-1.5">
+                  {DEVICE_COLORS.map(option => {
+                    const name = isRTL ? option.nameAr : option.nameEn;
+                    const selected = formData.color === name;
+                    return (
+                      <button
+                        key={option.nameEn}
+                        type="button"
+                        title={name}
+                        aria-label={name}
+                        onClick={() => setFormData(prev => ({ ...prev, color: name }))}
+                        className={cn(
+                          "w-6 h-6 rounded-full border transition-transform hover:scale-110",
+                          selected ? "ring-2 ring-primary ring-offset-1 border-primary" : "border-border"
+                        )}
+                        style={{ backgroundColor: option.hex }}
+                      />
+                    );
+                  })}
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="branch">{t.inventory.branch}</Label>
