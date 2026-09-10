@@ -66,10 +66,22 @@ import { ProductThumb } from "@/components/common/ProductThumb";
 import { useAuth } from "@/hooks/useAuth";
 import type { Device, Accessory, DeviceStatus } from "@/types/database";
 
+type StockKind = "all" | "devices" | "accessories" | "repair_parts";
+
 export default function InventoryPage() {
   const [searchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
-  const [activeTab, setActiveTab] = useTabParam("devices");
+  const [activeTab, setActiveTab] = useTabParam("all");
+  // Devices, accessories and repair parts share one page; this narrows it to one kind
+  const [typeFilter, setTypeFilter] = useState<StockKind>("all");
+
+  // Links from before the three lists merged still point at one of them
+  useEffect(() => {
+    if (activeTab === "devices" || activeTab === "accessories" || activeTab === "repair_parts") {
+      setTypeFilter(activeTab);
+      setActiveTab("all");
+    }
+  }, [activeTab, setActiveTab]);
 
   // Sync when a global-search result is opened while already on this page
   useEffect(() => {
@@ -212,11 +224,34 @@ export default function InventoryPage() {
     (!showFavsOnly || favIds.includes(a.id))
   );
 
+  const kindOptions: { key: StockKind; labelAr: string; labelEn: string }[] = [
+    { key: "all", labelAr: "الكل", labelEn: "All" },
+    { key: "devices", labelAr: "الأجهزة", labelEn: "Devices" },
+    { key: "accessories", labelAr: "الإكسسوارات", labelEn: "Accessories" },
+    { key: "repair_parts", labelAr: "قطع الصيانة", labelEn: "Repair parts" },
+  ];
+
   const filteredRepairParts = repairParts.filter(p =>
     p.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.brand?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // In the merged view a kind with nothing to show is simply left out; picking a
+  // single kind shows it on its own, empty state and all
+  const showSection = (kind: Exclude<StockKind, "all">) => {
+    if (typeFilter !== "all") return typeFilter === kind;
+    if (kind === "devices") return devicesLoading || filteredDevices.length > 0;
+    if (kind === "accessories") return accessoriesLoading || filteredAccessories.length > 0;
+    return partsLoading || filteredRepairParts.length > 0;
+  };
+
+  const nothingInStock =
+    typeFilter === "all" &&
+    !devicesLoading && !accessoriesLoading && !partsLoading &&
+    filteredDevices.length === 0 &&
+    filteredAccessories.length === 0 &&
+    filteredRepairParts.length === 0;
 
   const deviceStats = {
     total: devices.length,
@@ -314,7 +349,24 @@ export default function InventoryPage() {
         className="bg-card rounded-xl border border-border shadow-md overflow-hidden"
       >
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <div className="px-6 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-end gap-4">
+          <div className="px-6 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {kindOptions.map(option => (
+                <button
+                  key={option.key}
+                  type="button"
+                  onClick={() => setTypeFilter(option.key)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                    typeFilter === option.key
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-muted/40 text-muted-foreground border-border hover:border-primary/50"
+                  )}
+                >
+                  {isRTL ? option.labelAr : option.labelEn}
+                </button>
+              ))}
+            </div>
             <div className="flex items-center gap-3">
               <div className="relative">
                 <Search className={cn(
@@ -322,7 +374,7 @@ export default function InventoryPage() {
                   isRTL ? "right-3" : "left-3"
                 )} />
                 <Input
-                  placeholder={activeTab === "devices" ? t.inventory.searchDevices : t.inventory.searchAccessories}
+                  placeholder={isRTL ? "ابحث في المخزون..." : "Search the stock..."}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className={cn("w-64", isRTL ? "pr-9" : "pl-9")}
@@ -337,22 +389,39 @@ export default function InventoryPage() {
                 {isRTL ? "المفضلة" : "Favorites"}
                 {favIds.length > 0 && <span className="text-xs">({favIds.length})</span>}
               </Button>
-              <Button
-                className="gap-2 bg-gradient-primary hover:opacity-90"
-                onClick={() => {
-                  if (activeTab === "devices") setShowAddDevice(true);
-                  else if (activeTab === "accessories") setShowAddAccessory(true);
-                  else setShowAddRepairPart(true);
-                }}
-              >
-                <Plus className="w-4 h-4" />
-                {activeTab === "devices" ? t.inventory.addDevice : activeTab === "accessories" ? t.inventory.addAccessory : t.inventory.addRepairPart}
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button className="gap-2 bg-gradient-primary hover:opacity-90">
+                    <Plus className="w-4 h-4" />
+                    {isRTL ? "إضافة" : "Add"}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setShowAddDevice(true)}>
+                    <Smartphone className="w-4 h-4 me-2" /> {t.inventory.addDevice}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowAddAccessory(true)}>
+                    <Package className="w-4 h-4 me-2" /> {t.inventory.addAccessory}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowAddRepairPart(true)}>
+                    <Wrench className="w-4 h-4 me-2" /> {t.inventory.addRepairPart}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
 
           {/* Devices Tab */}
-          <TabsContent value="devices" className="m-0">
+          <TabsContent value="all" className="m-0 divide-y divide-border">
+            {nothingInStock && (
+              <div className="text-center py-20">
+                <Package className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">
+                  {isRTL ? "لا توجد أصناف مطابقة في المخزون" : "No matching items in stock"}
+                </p>
+              </div>
+            )}
+            {showSection("devices") && (<>
             {devicesLoading ? (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -491,10 +560,9 @@ export default function InventoryPage() {
                 )}
               </div>
             )}
-          </TabsContent>
+            </>)}
 
-          {/* Accessories Tab */}
-          <TabsContent value="accessories" className="m-0">
+            {showSection("accessories") && (<>
             {accessoriesLoading ? (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -605,10 +673,9 @@ export default function InventoryPage() {
                 </table>
               </div>
             )}
-          </TabsContent>
+            </>)}
 
-          {/* Repair Parts Tab */}
-          <TabsContent value="repair_parts" className="m-0">
+            {showSection("repair_parts") && (<>
             {partsLoading ? (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -694,6 +761,7 @@ export default function InventoryPage() {
                 </table>
               </div>
             )}
+            </>)}
           </TabsContent>
 
           {/* Categories Tab */}
