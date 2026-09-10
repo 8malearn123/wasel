@@ -452,11 +452,11 @@ export default function InventoryPage() {
                   <thead className="bg-muted/30">
                     <tr>
                       <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.model}</th>
-                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.imei}</th>
-                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.status}</th>
-                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.location}</th>
-                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.cost}</th>
-                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.price}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">{t.inventory.imei}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">{t.inventory.status}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">{t.inventory.location}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">{t.inventory.cost}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">{t.inventory.price}</th>
                       <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-end">{t.inventory.actions}</th>
                     </tr>
                   </thead>
@@ -490,15 +490,15 @@ export default function InventoryPage() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-4 text-center">
                           <code className="text-sm font-mono bg-muted px-2 py-1 rounded">{device.imei}</code>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-4 text-center">
                           <StatusBadge status={device.status} />
                         </td>
-                        <td className="px-6 py-4 text-sm text-muted-foreground">{device.branch?.name || t.inventory.unassigned}</td>
-                        <td className="px-6 py-4 text-sm text-muted-foreground">{Number(device.cost).toLocaleString()} ر.س</td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-4 text-center text-sm text-muted-foreground">{device.branch?.name || t.inventory.unassigned}</td>
+                        <td className="px-6 py-4 text-center text-sm text-muted-foreground">{Number(device.cost).toLocaleString()} ر.س</td>
+                        <td className="px-6 py-4 text-center">
                           <span className="text-base font-extrabold text-foreground">{Number(device.price).toLocaleString()}</span>
                           <span className="text-[10px] font-semibold text-muted-foreground ms-1">ر.س</span>
                         </td>
@@ -584,11 +584,11 @@ export default function InventoryPage() {
                   <thead className="bg-muted/30">
                     <tr>
                       <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.product}</th>
-                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.sku}</th>
-                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.category}</th>
-                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.quantity}</th>
-                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.cost}</th>
-                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.price}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">{t.inventory.sku}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">{t.inventory.category}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">{t.inventory.quantity}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">{t.inventory.cost}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">{t.inventory.price}</th>
                       <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-end">{t.inventory.actions}</th>
                     </tr>
                   </thead>
@@ -625,11 +625,11 @@ export default function InventoryPage() {
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-6 py-4 text-center">
                             <code className="text-sm font-mono bg-muted px-2 py-1 rounded">{accessory.sku}</code>
                           </td>
-                          <td className="px-6 py-4 text-sm text-muted-foreground">{accessory.category || '-'}</td>
-                          <td className="px-6 py-4">
+                          <td className="px-6 py-4 text-center text-sm text-muted-foreground">{accessory.category || '-'}</td>
+                          <td className="px-6 py-4 text-center">
                             <span className={cn(
                               "font-medium",
                               isLowStock ? "text-destructive" : "text-foreground"
@@ -640,8 +640,8 @@ export default function InventoryPage() {
                               )}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-sm text-muted-foreground">{Number(accessory.cost).toLocaleString()} ر.س</td>
-                          <td className="px-6 py-4 font-semibold text-foreground">{Number(accessory.price).toLocaleString()} ر.س</td>
+                          <td className="px-6 py-4 text-center text-sm text-muted-foreground">{Number(accessory.cost).toLocaleString()} ر.س</td>
+                          <td className="px-6 py-4 text-center font-semibold text-foreground">{Number(accessory.price).toLocaleString()} ر.س</td>
                           <td className="px-6 py-4 text-end">
                             <div className="flex items-center gap-0.5 justify-end">
                             <FavButton id={accessory.id} />
@@ -694,11 +694,11 @@ export default function InventoryPage() {
                   <thead className="bg-muted/30">
                     <tr>
                       <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.product}</th>
-                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.sku}</th>
-                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.category}</th>
-                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.quantity}</th>
-                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.cost}</th>
-                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.price}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">{t.inventory.sku}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">{t.inventory.category}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">{t.inventory.quantity}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">{t.inventory.cost}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">{t.inventory.price}</th>
                       <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-end">{t.inventory.actions}</th>
                     </tr>
                   </thead>
@@ -724,18 +724,18 @@ export default function InventoryPage() {
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-6 py-4 text-center">
                             <code className="text-sm font-mono bg-muted px-2 py-1 rounded">{part.sku}</code>
                           </td>
-                          <td className="px-6 py-4 text-sm text-muted-foreground">{part.category || '-'}</td>
-                          <td className="px-6 py-4">
+                          <td className="px-6 py-4 text-center text-sm text-muted-foreground">{part.category || '-'}</td>
+                          <td className="px-6 py-4 text-center">
                             <span className={cn("font-medium", isLowStock ? "text-destructive" : "text-foreground")}>
                               {part.quantity}
                               {isLowStock && <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/10 text-destructive mr-2">{t.inventory.low}</span>}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-sm text-muted-foreground">{Number(part.cost).toLocaleString()} ر.س</td>
-                          <td className="px-6 py-4 font-semibold text-foreground">{Number(part.price).toLocaleString()} ر.س</td>
+                          <td className="px-6 py-4 text-center text-sm text-muted-foreground">{Number(part.cost).toLocaleString()} ر.س</td>
+                          <td className="px-6 py-4 text-center font-semibold text-foreground">{Number(part.price).toLocaleString()} ر.س</td>
                           <td className="px-6 py-4 text-end">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
