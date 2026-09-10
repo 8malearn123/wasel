@@ -382,13 +382,13 @@ export default function InventoryPage() {
                 <table className="w-full">
                   <thead className="bg-muted/30">
                     <tr>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.model}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.imei}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.status}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.location}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.cost}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.price}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-left" : "text-right")}>{t.inventory.actions}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.model}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.imei}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.status}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.location}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.cost}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.price}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-end">{t.inventory.actions}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -433,7 +433,7 @@ export default function InventoryPage() {
                           <span className="text-base font-extrabold text-foreground">{Number(device.price).toLocaleString()}</span>
                           <span className="text-[10px] font-semibold text-muted-foreground ms-1">ر.س</span>
                         </td>
-                        <td className={cn("px-6 py-4", isRTL ? "text-left" : "text-right")}>
+                        <td className="px-6 py-4 text-end">
                           <div className="flex items-center gap-0.5 justify-end">
                           <FavButton id={device.id} />
                           <DropdownMenu>
@@ -515,13 +515,13 @@ export default function InventoryPage() {
                 <table className="w-full">
                   <thead className="bg-muted/30">
                     <tr>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.product}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.sku}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.category}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.quantity}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.cost}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.price}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-left" : "text-right")}>{t.inventory.actions}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.product}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.sku}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.category}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.quantity}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.cost}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.price}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-end">{t.inventory.actions}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -574,7 +574,7 @@ export default function InventoryPage() {
                           </td>
                           <td className="px-6 py-4 text-sm text-muted-foreground">{Number(accessory.cost).toLocaleString()} ر.س</td>
                           <td className="px-6 py-4 font-semibold text-foreground">{Number(accessory.price).toLocaleString()} ر.س</td>
-                          <td className={cn("px-6 py-4", isRTL ? "text-left" : "text-right")}>
+                          <td className="px-6 py-4 text-end">
                             <div className="flex items-center gap-0.5 justify-end">
                             <FavButton id={accessory.id} />
                             <DropdownMenu>
@@ -626,13 +626,13 @@ export default function InventoryPage() {
                 <table className="w-full">
                   <thead className="bg-muted/30">
                     <tr>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.product}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.sku}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.category}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.quantity}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.cost}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.price}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-left" : "text-right")}>{t.inventory.actions}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.product}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.sku}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.category}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.quantity}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.cost}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.price}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-end">{t.inventory.actions}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -669,7 +669,7 @@ export default function InventoryPage() {
                           </td>
                           <td className="px-6 py-4 text-sm text-muted-foreground">{Number(part.cost).toLocaleString()} ر.س</td>
                           <td className="px-6 py-4 font-semibold text-foreground">{Number(part.price).toLocaleString()} ر.س</td>
-                          <td className={cn("px-6 py-4", isRTL ? "text-left" : "text-right")}>
+                          <td className="px-6 py-4 text-end">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon">
