@@ -224,8 +224,9 @@ export default function InventoryPage() {
     (!showFavsOnly || favIds.includes(a.id))
   );
 
-  const kindOptions: { key: StockKind; labelAr: string; labelEn: string }[] = [
-    { key: "all", labelAr: "الكل", labelEn: "All" },
+  // No "all" button: nothing selected already means the whole page, and pressing
+  // the selected kind again goes back to it
+  const kindOptions: { key: Exclude<StockKind, "all">; labelAr: string; labelEn: string }[] = [
     { key: "devices", labelAr: "الأجهزة", labelEn: "Devices" },
     { key: "accessories", labelAr: "الإكسسوارات", labelEn: "Accessories" },
     { key: "repair_parts", labelAr: "قطع الصيانة", labelEn: "Repair parts" },
@@ -355,7 +356,7 @@ export default function InventoryPage() {
                 <button
                   key={option.key}
                   type="button"
-                  onClick={() => setTypeFilter(option.key)}
+                  onClick={() => setTypeFilter(prev => (prev === option.key ? "all" : option.key))}
                   className={cn(
                     "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
                     typeFilter === option.key
