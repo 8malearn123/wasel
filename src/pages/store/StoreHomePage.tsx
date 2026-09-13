@@ -14,6 +14,9 @@ interface Props {
   designExtras?: DesignExtras | null;
 }
 
+// الأخضر الرسمي لعلامة واتساب — خارج لوحة وصل عمداً حتى يبقى الزر معروفاً لعملاء التاجر
+const WHATSAPP_GREEN = '#25D366'; // brand-allow-color
+
 // عداد تنازلي حي للعروض
 function OfferCountdown({ endsAt, title, glitter }: { endsAt: string; title?: string; glitter?: boolean }) {
   const calc = () => Math.max(0, new Date(endsAt).getTime() - Date.now());
@@ -559,7 +562,7 @@ export function StoreHomePage({ store, devices, accessories, categories, designE
               {designExtras.customer_service.whatsapp && (
                 <a href={`https://wa.me/${designExtras.customer_service.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener"
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white font-bold text-sm shadow hover:opacity-90 transition-opacity"
-                  style={{ background: 'hsl(var(--primary))' }}> تواصل عبر واتساب
+                  style={{ background: WHATSAPP_GREEN }}> تواصل عبر واتساب
                 </a>
               )}
               {designExtras.customer_service.phone && (

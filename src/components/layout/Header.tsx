@@ -91,15 +91,15 @@ export function Header({ title, subtitle }: HeaderProps) {
   };
 
   return (
-    <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6 sticky top-0 z-40">
-      <div className="flex flex-col">
+    <header className="min-h-16 bg-card border-b border-border flex items-center justify-between gap-4 px-6 py-2 sticky top-0 z-40">
+      <div className="flex flex-col min-w-0">
         <h1 className="text-lg font-semibold text-foreground">{title}</h1>
         {subtitle && (
           <p className="text-sm text-muted-foreground">{subtitle}</p>
         )}
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 shrink-0">
         {/* Browse Sections */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
