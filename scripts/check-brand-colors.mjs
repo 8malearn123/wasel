@@ -18,6 +18,9 @@ const DATA_FILES = new Set([
   'pages/OnlineStorePage.tsx',      // منتقي ألوان المتجر — الألوان هنا خيارات معروضة للتاجر
   'components/store/StoreTheme.tsx',// يطبّق لون التاجر المختار
   'components/common/ColorWheel.tsx',
+  // ألوان الأجهزة نفسها (أسود/ذهبي/تيتانيوم…) تُعرض كعيّنات في منتقي لون الجوال،
+  // فيجب أن تبقى مطابقة للون الجهاز الحقيقي لا للوحة وصل
+  'lib/deviceSuggestions.ts',
   // القيم هنا محدِّدات CSS تطابق افتراضيات recharts، وليست ألواناً تُرسم
   'components/ui/chart.tsx',
 ]);
