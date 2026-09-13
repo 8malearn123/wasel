@@ -57,9 +57,9 @@ export default function SuppliersPage() {
   const [showPayment, setShowPayment] = useState<PurchaseOrder | null>(null);
   const [showPODetails, setShowPODetails] = useState<PurchaseOrder | null>(null);
   // The debts view folded into the orders table as two filters
-  const [unpaidOnly, setUnpaidOnly] = useState(false);
-  const [requestsOnly, setRequestsOnly] = useState(false);
-  const [debtSupplier, setDebtSupplier] = useState<string | null>(null);
+  // One filter at a time: each chip answers its own question, so they never
+  // narrow each other down to nothing
+  const [orderFilter, setOrderFilter] = useState<string | null>(null);
   const { t, isRTL } = useLanguage();
   const { suppliers, loading: suppliersLoading, addSupplier, updateSupplier, deleteSupplier } = useSuppliers();
   const { orders, loading: ordersLoading, createPurchaseOrder, updateOrderStatus, recordPayment, receivePurchase } = usePurchaseOrders();
@@ -87,7 +87,7 @@ export default function SuppliersPage() {
   // Links to the old debts tab land on the orders, showing what is still owed
   useEffect(() => {
     if (activeTab === 'debts') {
-      setUnpaidOnly(true);
+      setOrderFilter('unpaid');
       setActiveTab('orders');
     }
   }, [activeTab, setActiveTab]);
@@ -104,10 +104,10 @@ export default function SuppliersPage() {
     order.status === 'draft' || order.status === 'pending';
 
   const filteredOrders = orders.filter(order => {
-    if (requestsOnly && !isRequest(order)) return false;
-    if (unpaidOnly && !isUnsettled(order)) return false;
-    if (debtSupplier && order.supplier_id !== debtSupplier) return false;
-    return true;
+    if (!orderFilter) return true;
+    if (orderFilter === 'requests') return isRequest(order);
+    if (orderFilter === 'unpaid') return isUnsettled(order);
+    return order.supplier_id === orderFilter.replace('supplier:', '');
   });
 
   // Suppliers we still owe, most owed first — the old debts table, as chips
@@ -230,14 +230,14 @@ export default function SuppliersPage() {
           )}
 
           {/* The debts list, now filters over the orders themselves */}
-          {(owedSuppliers.length > 0 || unpaidOnly || requestsOnly || orders.some(isRequest)) && (
+          {(owedSuppliers.length > 0 || orders.some(isRequest)) && (
             <div className="mb-4 flex items-center gap-1.5 flex-wrap">
               <button
                 type="button"
-                onClick={() => setRequestsOnly(v => !v)}
+                onClick={() => setOrderFilter(prev => (prev === 'requests' ? null : 'requests'))}
                 className={cn(
                   "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
-                  requestsOnly
+                  orderFilter === 'requests'
                     ? "bg-primary text-primary-foreground border-primary"
                     : "bg-muted/40 text-muted-foreground border-border hover:border-primary/50"
                 )}
@@ -247,10 +247,10 @@ export default function SuppliersPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setUnpaidOnly(v => !v)}
+                onClick={() => setOrderFilter(prev => (prev === 'unpaid' ? null : 'unpaid'))}
                 className={cn(
                   "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
-                  unpaidOnly
+                  orderFilter === 'unpaid'
                     ? "bg-destructive text-destructive-foreground border-destructive"
                     : "bg-muted/40 text-muted-foreground border-border hover:border-destructive/50"
                 )}
@@ -261,10 +261,12 @@ export default function SuppliersPage() {
                 <button
                   key={supplier.id}
                   type="button"
-                  onClick={() => setDebtSupplier(prev => (prev === supplier.id ? null : supplier.id))}
+                  onClick={() =>
+                    setOrderFilter(prev => (prev === `supplier:${supplier.id}` ? null : `supplier:${supplier.id}`))
+                  }
                   className={cn(
                     "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
-                    debtSupplier === supplier.id
+                    orderFilter === `supplier:${supplier.id}`
                       ? "bg-primary text-primary-foreground border-primary"
                       : "bg-muted/40 text-muted-foreground border-border hover:border-primary/50"
                   )}
@@ -281,7 +283,7 @@ export default function SuppliersPage() {
             <div className="text-center py-20 bg-card rounded-xl border border-border">
               <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-muted-foreground">
-                {unpaidOnly || debtSupplier || requestsOnly
+                {orderFilter
                   ? (isRTL ? 'لا توجد طلبات مطابقة' : 'No matching orders')
                   : (isRTL ? 'لا توجد أوامر شراء' : 'No purchase orders yet')}
               </p>
