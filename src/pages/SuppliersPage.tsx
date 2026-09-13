@@ -191,7 +191,8 @@ export default function SuppliersPage({ mode = 'suppliers' }: { mode?: 'supplier
             </div>
           ) : (
             <div className="bg-card rounded-xl border border-border overflow-hidden">
-              <Table>
+              {/* Numbers and badges read better centred, and the header sits over them */}
+              <Table className="[&_th]:text-center [&_td]:text-center">
                 <TableHeader>
                   <TableRow>
                     <TableHead>{isRTL ? 'رقم الطلب' : 'Order #'}</TableHead>
