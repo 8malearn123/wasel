@@ -1,9 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import { 
   Truck, Plus, Loader2, MoreHorizontal, Edit, Trash2, Phone, Mail,
   DollarSign, FileText, Package, CheckCircle2, Clock, Send, Eye,
-  AlertTriangle, ArrowRight, CreditCard, PackageCheck, Printer
+  AlertTriangle, CreditCard, PackageCheck, Printer
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n";
 import { useAuth } from "@/hooks/useAuth";
 import { useSuppliers, usePurchaseOrders } from "@/hooks/useSuppliers";
@@ -55,6 +56,9 @@ export default function SuppliersPage() {
   const [showReceive, setShowReceive] = useState<PurchaseOrder | null>(null);
   const [showPayment, setShowPayment] = useState<PurchaseOrder | null>(null);
   const [showPODetails, setShowPODetails] = useState<PurchaseOrder | null>(null);
+  // The debts view folded into the orders table as two filters
+  const [unpaidOnly, setUnpaidOnly] = useState(false);
+  const [debtSupplier, setDebtSupplier] = useState<string | null>(null);
   const { t, isRTL } = useLanguage();
   const { suppliers, loading: suppliersLoading, addSupplier, updateSupplier, deleteSupplier } = useSuppliers();
   const { orders, loading: ordersLoading, createPurchaseOrder, updateOrderStatus, recordPayment, receivePurchase } = usePurchaseOrders();
@@ -79,9 +83,31 @@ export default function SuppliersPage() {
     return debts;
   }, [orders]);
 
+  // Links to the old debts tab land on the orders, showing what is still owed
+  useEffect(() => {
+    if (activeTab === 'debts') {
+      setUnpaidOnly(true);
+      setActiveTab('orders');
+    }
+  }, [activeTab, setActiveTab]);
+
   const totalOwed = Object.values(supplierDebts).reduce((s, d) => s + d.totalOwed, 0);
   const unpaidOrdersCount = orders.filter(o => o.payment_status !== 'paid' && o.status !== 'cancelled').length;
   const pendingReceiveCount = orders.filter(o => o.status === 'approved' || o.status === 'pending').length;
+
+  const isUnsettled = (order: PurchaseOrder) =>
+    order.payment_status !== 'paid' && order.status !== 'cancelled';
+
+  const filteredOrders = orders.filter(order => {
+    if (unpaidOnly && !isUnsettled(order)) return false;
+    if (debtSupplier && order.supplier_id !== debtSupplier) return false;
+    return true;
+  });
+
+  // Suppliers we still owe, most owed first — the old debts table, as chips
+  const owedSuppliers = activeSuppliers
+    .filter(s => supplierDebts[s.id]?.totalOwed > 0)
+    .sort((a, b) => (supplierDebts[b.id]?.totalOwed || 0) - (supplierDebts[a.id]?.totalOwed || 0));
 
   const filteredSuppliers = activeSuppliers.filter(s =>
     s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -178,12 +204,68 @@ export default function SuppliersPage() {
             </Button>
           </div>
 
+          {totalOwed > 0 && (
+            <div className="mb-4 p-3 rounded-xl bg-destructive/5 border border-destructive/20 flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
+                <div>
+                  <p className="font-semibold text-foreground text-sm">
+                    {isRTL ? 'مستحق للموردين' : 'Owed to suppliers'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {unpaidOrdersCount} {isRTL ? 'طلب غير مسدد' : 'unpaid orders'}
+                  </p>
+                </div>
+              </div>
+              <p className="text-xl font-bold text-destructive">
+                {totalOwed.toLocaleString()} {isRTL ? 'ر.س' : 'SAR'}
+              </p>
+            </div>
+          )}
+
+          {/* The debts list, now filters over the orders themselves */}
+          {(owedSuppliers.length > 0 || unpaidOnly) && (
+            <div className="mb-4 flex items-center gap-1.5 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setUnpaidOnly(v => !v)}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                  unpaidOnly
+                    ? "bg-destructive text-destructive-foreground border-destructive"
+                    : "bg-muted/40 text-muted-foreground border-border hover:border-destructive/50"
+                )}
+              >
+                {isRTL ? 'غير المسددة فقط' : 'Unsettled only'}
+              </button>
+              {owedSuppliers.map(supplier => (
+                <button
+                  key={supplier.id}
+                  type="button"
+                  onClick={() => setDebtSupplier(prev => (prev === supplier.id ? null : supplier.id))}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                    debtSupplier === supplier.id
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-muted/40 text-muted-foreground border-border hover:border-primary/50"
+                  )}
+                >
+                  {supplier.name} · {supplierDebts[supplier.id].totalOwed.toLocaleString()}
+                </button>
+              ))}
+            </div>
+          )}
+
           {ordersLoading ? (
             <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
-          ) : orders.length === 0 ? (
+          ) : filteredOrders.length === 0 ? (
             <div className="text-center py-20 bg-card rounded-xl border border-border">
               <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">{isRTL ? 'لا توجد أوامر شراء' : 'No purchase orders yet'}</p>
+              <p className="text-muted-foreground">
+                {unpaidOnly || debtSupplier
+                  ? (isRTL ? 'لا توجد طلبات مطابقة' : 'No matching orders')
+                  : (isRTL ? 'لا توجد أوامر شراء' : 'No purchase orders yet')}
+              </p>
             </div>
           ) : (
             <div className="bg-card rounded-xl border border-border overflow-hidden">
@@ -203,7 +285,7 @@ export default function SuppliersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {orders.map(order => {
+                  {filteredOrders.map(order => {
                     const remaining = Number(order.total_amount) - Number(order.paid_amount);
                     const sc = statusConfig[order.status] || statusConfig.draft;
                     const pc = paymentStatusConfig[order.payment_status] || paymentStatusConfig.unpaid;
@@ -259,71 +341,6 @@ export default function SuppliersPage() {
           )}
         </TabsContent>
 
-        {/* Debts Tab */}
-        <TabsContent value="debts">
-          <div className="space-y-4">
-            <div className="p-4 rounded-xl bg-destructive/5 border border-destructive/20 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="w-6 h-6 text-destructive" />
-                <div>
-                  <p className="font-semibold text-foreground">{isRTL ? 'إجمالي المبالغ المستحقة للموردين' : 'Total Amounts Owed to Suppliers'}</p>
-                  <p className="text-sm text-muted-foreground">{unpaidOrdersCount} {isRTL ? 'طلب غير مسدد' : 'unpaid orders'}</p>
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-destructive">{totalOwed.toLocaleString()} {isRTL ? 'ر.س' : 'SAR'}</p>
-            </div>
-
-            {activeSuppliers.filter(s => supplierDebts[s.id]?.totalOwed > 0).length === 0 ? (
-              <div className="text-center py-16 bg-card rounded-xl border border-border">
-                <CheckCircle2 className="w-12 h-12 mx-auto text-success mb-4" />
-                <p className="text-muted-foreground">{isRTL ? 'لا توجد مديونيات مستحقة' : 'No outstanding debts'}</p>
-              </div>
-            ) : (
-              <div className="bg-card rounded-xl border border-border overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{isRTL ? 'المورد' : 'Supplier'}</TableHead>
-                      <TableHead>{isRTL ? 'عدد الطلبات' : 'Orders'}</TableHead>
-                      <TableHead>{isRTL ? 'المبلغ المستحق' : 'Amount Owed'}</TableHead>
-                      <TableHead></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {activeSuppliers
-                      .filter(s => supplierDebts[s.id]?.totalOwed > 0)
-                      .sort((a, b) => (supplierDebts[b.id]?.totalOwed || 0) - (supplierDebts[a.id]?.totalOwed || 0))
-                      .map(supplier => {
-                        const debt = supplierDebts[supplier.id];
-                        return (
-                          <TableRow key={supplier.id}>
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                                  <Truck className="w-4 h-4 text-primary" />
-                                </div>
-                                <div>
-                                  <p className="font-medium">{supplier.name}</p>
-                                  {supplier.phone && <p className="text-xs text-muted-foreground">{supplier.phone}</p>}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell><Badge variant="outline">{debt.ordersCount}</Badge></TableCell>
-                            <TableCell className="text-destructive font-bold text-lg">{debt.totalOwed.toLocaleString()} {isRTL ? 'ر.س' : 'SAR'}</TableCell>
-                            <TableCell>
-                              <Button variant="outline" size="sm" onClick={() => { setActiveTab('orders'); }}>
-                                <Eye className="w-4 h-4 mr-1" /> {isRTL ? 'عرض الطلبات' : 'View Orders'}
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </div>
-        </TabsContent>
       </Tabs>
 
       {/* Dialogs */}

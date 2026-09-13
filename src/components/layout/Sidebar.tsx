@@ -86,7 +86,6 @@ const navSections: NavSection[] = [
       { icon: Truck, label: "Suppliers", labelAr: "الموردين", path: "/suppliers", requireFeature: 'suppliers', children: [
         { key: "suppliers", label: "Suppliers", labelAr: "الموردين" },
         { key: "orders", label: "Purchase Orders", labelAr: "أوامر الشراء" },
-        { key: "debts", label: "Debts", labelAr: "المديونيات" },
       ] },
       { icon: Barcode, label: "Verification Codes", labelAr: "أكواد التحقق", path: "/labels", children: [
         { key: "all", label: "All", labelAr: "الكل" },
