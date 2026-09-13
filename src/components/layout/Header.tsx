@@ -198,7 +198,7 @@ export function Header({ title, subtitle }: HeaderProps) {
               {notifications.length > 0 && (
                 <span className={cn(
                   "absolute -top-0.5 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center",
-                  urgentCount > 0 ? "bg-destructive text-white" : "bg-accent text-accent-foreground",
+                  urgentCount > 0 ? "bg-destructive text-destructive-foreground" : "bg-accent text-accent-foreground",
                   isRTL ? "-left-0.5" : "-right-0.5"
                 )}>
                   {notifications.length > 99 ? "99+" : notifications.length}

@@ -68,17 +68,17 @@ import { format, differenceInDays, differenceInHours, differenceInMinutes } from
 import { ar } from "date-fns/locale";
 
 // Simplified flow: older statuses (received/diagnosing/waiting_parts) display as "جاري الإصلاح"
-const inProgressConfig = { label: "جاري الإصلاح", color: "bg-cyan-500/10 text-cyan-600 border-cyan-500/20", icon: <Wrench className="w-3.5 h-3.5" /> };
+const inProgressConfig = { label: "جاري الإصلاح", color: "bg-primary/10 text-primary border-primary/20", icon: <Wrench className="w-3.5 h-3.5" /> };
 
 const statusConfig: Record<RepairStatus, { label: string; color: string; icon: React.ReactNode }> = {
   received: inProgressConfig,
   diagnosing: inProgressConfig,
   waiting_parts: inProgressConfig,
   in_progress: inProgressConfig,
-  completed: { label: "مكتمل", color: "bg-green-500/10 text-green-600 border-green-500/20", icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
-  delivered: { label: "تم التسليم", color: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20", icon: <Truck className="w-3.5 h-3.5" /> },
-  warranty_expired: { label: "انتهى الضمان", color: "bg-gray-500/10 text-gray-600 border-gray-500/20", icon: <ShieldOff className="w-3.5 h-3.5" /> },
-  cancelled: { label: "ملغي", color: "bg-red-500/10 text-red-600 border-red-500/20", icon: <XCircle className="w-3.5 h-3.5" /> },
+  completed: { label: "مكتمل", color: "bg-success/10 text-success border-success/20", icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
+  delivered: { label: "تم التسليم", color: "bg-success/10 text-success border-success/20", icon: <Truck className="w-3.5 h-3.5" /> },
+  warranty_expired: { label: "انتهى الضمان", color: "bg-muted-foreground/10 text-muted-foreground border-border", icon: <ShieldOff className="w-3.5 h-3.5" /> },
+  cancelled: { label: "ملغي", color: "bg-destructive/10 text-destructive border-destructive/20", icon: <XCircle className="w-3.5 h-3.5" /> },
 };
 
 const statusFlow: RepairStatus[] = ['in_progress', 'completed', 'delivered'];
@@ -162,8 +162,8 @@ export default function RepairsPage() {
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="p-4 rounded-xl bg-card border border-border shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center">
-              <Clock className="w-5 h-5 text-cyan-600" />
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Clock className="w-5 h-5 text-primary" />
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">{activeCount}</p>
@@ -174,8 +174,8 @@ export default function RepairsPage() {
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="p-4 rounded-xl bg-card border border-border shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-              <Shield className="w-5 h-5 text-green-600" />
+            <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
+              <Shield className="w-5 h-5 text-success" />
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">{underWarranty}</p>
@@ -186,8 +186,8 @@ export default function RepairsPage() {
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="p-4 rounded-xl bg-card border border-border shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-              <DollarSign className="w-5 h-5 text-amber-600" />
+            <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
+              <DollarSign className="w-5 h-5 text-warning" />
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">{totalRevenue.toLocaleString()} ر.س</p>
@@ -352,7 +352,7 @@ function RepairRow({
                 <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
               )}
               {repair.priority === 'high' && (
-                <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                <AlertTriangle className="w-4 h-4 text-warning shrink-0" />
               )}
             </div>
             <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
@@ -371,14 +371,14 @@ function RepairRow({
             {/* Warranty countdown */}
             {repair.status === 'delivered' && warranty && !warranty.expired && (
               <div className="flex items-center gap-2 mt-1.5">
-                <div className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-600 border border-green-500/20">
+                <div className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-success/10 text-success border border-success/20">
                   <Shield className="w-3 h-3" />
                   <span>ضمان: {warranty.text}</span>
                 </div>
               </div>
             )}
             {repair.status === 'warranty_expired' && (
-              <div className="flex items-center gap-1 mt-1.5 text-xs px-2 py-0.5 rounded-full bg-gray-500/10 text-gray-500 border border-gray-500/20 w-fit">
+              <div className="flex items-center gap-1 mt-1.5 text-xs px-2 py-0.5 rounded-full bg-muted-foreground/10 text-muted-foreground border border-border w-fit">
                 <ShieldOff className="w-3 h-3" />
                 <span>انتهت فترة الضمان</span>
               </div>
@@ -814,7 +814,7 @@ function CreateRepairDialog({
               {/* Warranty Days */}
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-green-600" /> مدة الضمان (بالأيام)
+                  <Shield className="w-4 h-4 text-success" /> مدة الضمان (بالأيام)
                 </Label>
                 <div className="flex gap-2">
                   {[0, 7, 14, 30, 60, 90].map(d => (
@@ -946,16 +946,16 @@ function RepairDetailsDialog({
             <div className={cn(
               "rounded-xl p-4 border flex items-center gap-3",
               warranty?.expired
-                ? "bg-gray-500/5 border-gray-500/20"
-                : "bg-green-500/5 border-green-500/20"
+                ? "bg-muted-foreground/5 border-border"
+                : "bg-success/5 border-success/20"
             )}>
               {warranty?.expired ? (
-                <ShieldOff className="w-6 h-6 text-gray-500 shrink-0" />
+                <ShieldOff className="w-6 h-6 text-muted-foreground shrink-0" />
               ) : (
-                <Shield className="w-6 h-6 text-green-600 shrink-0" />
+                <Shield className="w-6 h-6 text-success shrink-0" />
               )}
               <div className="flex-1">
-                <p className={cn("font-semibold text-sm", warranty?.expired ? "text-gray-600" : "text-green-700")}>
+                <p className={cn("font-semibold text-sm", warranty?.expired ? "text-muted-foreground" : "text-success")}>
                   {warranty?.expired ? "انتهت فترة الضمان" : "الجهاز تحت الضمان"}
                 </p>
                 <p className="text-xs text-muted-foreground">
@@ -966,7 +966,7 @@ function RepairDetailsDialog({
                 </p>
               </div>
               {!warranty?.expired && (
-                <div className="flex items-center gap-1 text-green-600">
+                <div className="flex items-center gap-1 text-success">
                   <Timer className="w-4 h-4" />
                   <span className="text-sm font-bold">{warranty?.days || '<1'}d</span>
                 </div>
@@ -1076,7 +1076,7 @@ function RepairDetailsDialog({
                 {usedParts.map((up) => (
                   <div key={up.id} className="flex items-center justify-between bg-muted/30 rounded-lg p-3 border border-border">
                     <div className="flex items-center gap-2">
-                      <Wrench className="w-4 h-4 text-amber-600" />
+                      <Wrench className="w-4 h-4 text-warning" />
                       <div>
                         <p className="text-sm font-medium text-foreground">{(up.repair_part as any)?.name || 'قطعة'}</p>
                         <p className="text-xs text-muted-foreground">SKU: {(up.repair_part as any)?.sku}</p>

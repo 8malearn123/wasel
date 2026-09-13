@@ -32,7 +32,7 @@ export default function AdminTicketsPage() {
   };
 
   const statusColors: Record<string, string> = {
-    open: 'bg-blue-500/10 text-blue-700', in_progress: 'bg-warning/10 text-warning',
+    open: 'bg-primary/10 text-primary', in_progress: 'bg-warning/10 text-warning',
     resolved: 'bg-success/10 text-success', closed: 'bg-muted text-muted-foreground',
   };
   const statusLabels: Record<string, string> = { open: 'مفتوحة', in_progress: 'قيد المعالجة', resolved: 'تم الحل', closed: 'مغلقة' };

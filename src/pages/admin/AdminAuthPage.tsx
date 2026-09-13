@@ -51,8 +51,8 @@ export default function AdminAuthPage() {
 
   if (adminStatus === 'checking') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[hsl(220,30%,6%)]">
-        <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -91,7 +91,7 @@ export default function AdminAuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[hsl(220,30%,6%)] via-[hsl(220,25%,10%)] to-[hsl(35,80%,10%)] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/10 flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -99,43 +99,43 @@ export default function AdminAuthPage() {
       >
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/20">
-            <Shield className="w-8 h-8 text-white" />
+          <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/20">
+            <Shield className="w-8 h-8 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold text-white">لوحة إدارة المنصة</h1>
-          <p className="text-gray-400 mt-1 text-sm">تسجيل دخول المسؤولين فقط</p>
+          <h1 className="text-2xl font-bold text-foreground">لوحة إدارة المنصة</h1>
+          <p className="text-muted-foreground mt-1 text-sm">تسجيل دخول المسؤولين فقط</p>
         </div>
 
         {/* Form Card */}
-        <div className="bg-[hsl(220,25%,12%)] rounded-xl border border-[hsl(220,20%,18%)] shadow-2xl p-6">
+        <div className="bg-card rounded-xl border border-border shadow-2xl p-6">
           <form onSubmit={handleSubmit} className="space-y-5" dir="rtl">
             <div className="space-y-2">
-              <Label htmlFor="admin-email" className="text-gray-300">البريد الإلكتروني</Label>
+              <Label htmlFor="admin-email" className="text-muted-foreground">البريد الإلكتروني</Label>
               <div className="relative">
-                <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   id="admin-email"
                   type="email"
                   placeholder="admin@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pr-10 bg-[hsl(220,25%,8%)] border-[hsl(220,20%,20%)] text-white placeholder:text-gray-600 focus-visible:ring-amber-500/50"
+                  className="pr-10 bg-background border-input text-foreground placeholder:text-muted-foreground focus-visible:ring-primary/50"
                   disabled={loading}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="admin-password" className="text-gray-300">كلمة المرور</Label>
+              <Label htmlFor="admin-password" className="text-muted-foreground">كلمة المرور</Label>
               <div className="relative">
-                <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   id="admin-password"
                   type="password"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pr-10 bg-[hsl(220,25%,8%)] border-[hsl(220,20%,20%)] text-white placeholder:text-gray-600 focus-visible:ring-amber-500/50"
+                  className="pr-10 bg-background border-input text-foreground placeholder:text-muted-foreground focus-visible:ring-primary/50"
                   disabled={loading}
                 />
               </div>
@@ -145,7 +145,7 @@ export default function AdminAuthPage() {
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm"
+                className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm"
               >
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>{error}</span>
@@ -154,7 +154,7 @@ export default function AdminAuthPage() {
 
             <Button
               type="submit"
-              className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white h-12 text-base font-medium shadow-lg shadow-amber-500/20"
+              className="w-full h-12 text-base font-medium shadow-lg shadow-primary/20"
               disabled={loading}
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'تسجيل الدخول'}
@@ -165,11 +165,11 @@ export default function AdminAuthPage() {
         <button
           type="button"
           onClick={() => { setEmail('demo-admin@craftphone.app'); setPassword('demo@2026'); }}
-          className="w-full mt-4 py-2 px-4 rounded-lg border border-dashed border-amber-500/30 text-amber-400/70 text-sm hover:bg-amber-500/10 hover:text-amber-400 transition-colors"
+          className="w-full mt-4 py-2 px-4 rounded-lg border border-dashed border-primary/30 text-primary/80 text-sm hover:bg-primary/10 hover:text-primary transition-colors"
         > تجربة حساب ديمو
         </button>
 
-        <p className="text-center text-xs text-gray-600 mt-4"> هذه الصفحة مخصصة لمسؤولي المنصة فقط
+        <p className="text-center text-xs text-muted-foreground mt-4"> هذه الصفحة مخصصة لمسؤولي المنصة فقط
         </p>
       </motion.div>
     </div>

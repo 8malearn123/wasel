@@ -58,11 +58,11 @@ const roleIcons: Record<UserRole, React.ReactNode> = {
 };
 
 const roleColors: Record<UserRole, string> = {
-  owner: "bg-amber-500/10 text-amber-600 border-amber-500/20",
-  admin: "bg-purple-500/10 text-purple-600 border-purple-500/20",
-  branch_manager: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-  cashier: "bg-green-500/10 text-green-600 border-green-500/20",
-  inventory_manager: "bg-cyan-500/10 text-cyan-600 border-cyan-500/20"
+  owner: "bg-warning/10 text-warning border-warning/20",
+  admin: "bg-primary/10 text-primary border-primary/20",
+  branch_manager: "bg-primary/10 text-primary border-primary/20",
+  cashier: "bg-success/10 text-success border-success/20",
+  inventory_manager: "bg-primary/10 text-primary border-primary/20"
 };
 
 const roleLabels: Record<UserRole, string> = {
@@ -122,8 +122,8 @@ export default function UsersPage() {
           className="p-4 rounded-xl bg-card border border-border shadow-sm"
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-              <Crown className="w-5 h-5 text-amber-500" />
+            <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
+              <Crown className="w-5 h-5 text-warning" />
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">{roleCounts['owner'] || 0}</p>
@@ -139,8 +139,8 @@ export default function UsersPage() {
           className="p-4 rounded-xl bg-card border border-border shadow-sm"
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-              <ShieldCheck className="w-5 h-5 text-purple-500" />
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <ShieldCheck className="w-5 h-5 text-primary" />
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">{roleCounts['admin'] || 0}</p>
@@ -156,8 +156,8 @@ export default function UsersPage() {
           className="p-4 rounded-xl bg-card border border-border shadow-sm"
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-              <Wallet className="w-5 h-5 text-green-500" />
+            <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
+              <Wallet className="w-5 h-5 text-success" />
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">{roleCounts['cashier'] || 0}</p>
@@ -438,7 +438,7 @@ function ResetPasswordDialog({
         return;
       }
 
-      toast.success('تم تغيير كلمة المرور بنجاح');
+      toast.success('تم تغيير كلمة المرور');
       setNewPassword('');
       setConfirmPassword('');
       onOpenChange(false);
@@ -650,7 +650,7 @@ function RegenerateCodeDialog({
                     inputMode="numeric"
                   />
                   {customCode && customCode.length < 5 && (
-                    <p className="text-xs text-amber-500 text-center">يجب إدخال 5 أرقام</p>
+                    <p className="text-xs text-warning text-center">يجب إدخال 5 أرقام</p>
                   )}
                 </div>
               )}
@@ -759,7 +759,7 @@ function AddUserDialog({
 
       setCreatedUser({ email, password, name: fullName, loginCode: result.login_code });
       onSuccess();
-      toast.success('تم إنشاء المستخدم بنجاح');
+      toast.success('تم إنشاء المستخدم');
     } catch (err) {
       setError('حدث خطأ في الاتصال');
     } finally {
@@ -792,8 +792,8 @@ function AddUserDialog({
       <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className="sm:max-w-[420px]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-green-600">
-              <Check className="w-5 h-5" /> تم إنشاء المستخدم بنجاح
+            <DialogTitle className="flex items-center gap-2 text-success">
+              <Check className="w-5 h-5" /> تم إنشاء المستخدم
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">

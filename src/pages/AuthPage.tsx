@@ -298,9 +298,9 @@ export default function AuthPage() {
             </button>
             {/* حسابات الباقات */}
             {[
-              { label: 'باقة لايت (Lite)', email: 'demo-basic@wasil.demo', desc: 'تجربة باقة لايت', letter: 'L', color: 'bg-blue-500/10 text-blue-600' },
-              { label: 'باقة برو (Pro)', email: 'demo-enterprise@wasil.demo', desc: 'تجربة باقة برو', letter: 'P', color: 'bg-purple-500/10 text-purple-600' },
-              { label: 'باقة ماكس (Max)', email: 'demo-distributor@wasil.demo', desc: 'تجربة باقة ماكس B2B', letter: 'M', color: 'bg-amber-500/10 text-amber-600' },
+              { label: 'باقة لايت (Lite)', email: 'demo-basic@wasil.demo', desc: 'تجربة باقة لايت', letter: 'L', color: 'bg-primary/10 text-primary' },
+              { label: 'باقة برو (Pro)', email: 'demo-enterprise@wasil.demo', desc: 'تجربة باقة برو', letter: 'P', color: 'bg-primary/10 text-primary' },
+              { label: 'باقة ماكس (Max)', email: 'demo-distributor@wasil.demo', desc: 'تجربة باقة ماكس B2B', letter: 'M', color: 'bg-warning/10 text-warning' },
             ].map((p) => (
               <button
                 key={p.email}
@@ -326,7 +326,7 @@ export default function AuthPage() {
               dir="rtl"
             >
               <div className="flex items-center gap-2">
-                <span className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center text-xs font-bold">ع</span>
+                <span className="w-8 h-8 rounded-full bg-success/10 text-success flex items-center justify-center text-xs font-bold">ع</span>
                 <div className="text-right">
                   <span className="font-medium text-foreground">عميل (زائر المتجر)</span>
                   <span className="block text-xs text-muted-foreground">تصفّح المتجر العام • تجربة شراء</span>

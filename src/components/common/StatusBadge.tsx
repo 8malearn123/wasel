@@ -27,7 +27,7 @@ const statusConfig: Record<StatusType, { label: string; className: string }> = {
   },
   repair: {
     label: "In Repair",
-    className: "bg-purple-100 text-purple-700 border-purple-200",
+    className: "bg-primary/10 text-primary border-primary/20",
   },
 };
 

@@ -465,7 +465,7 @@ export function StoreHomePage({ store, devices, accessories, categories, designE
               >
                 <div className="flex gap-0.5 mb-3" dir="ltr">
                   {[1, 2, 3, 4, 5].map(s => (
-                    <span key={s} className="text-base" style={{ color: s <= (t.rating || 5) ? '#f59e0b' : 'hsl(var(--muted-foreground) / 0.3)' }}>★</span>
+                    <span key={s} className="text-base" style={{ color: s <= (t.rating || 5) ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground) / 0.3)' }}>★</span>
                   ))}
                 </div>
                 <p className="text-sm leading-relaxed flex-1">"{t.text}"</p>
@@ -559,7 +559,7 @@ export function StoreHomePage({ store, devices, accessories, categories, designE
               {designExtras.customer_service.whatsapp && (
                 <a href={`https://wa.me/${designExtras.customer_service.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener"
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white font-bold text-sm shadow hover:opacity-90 transition-opacity"
-                  style={{ background: '#25D366' }}> تواصل عبر واتساب
+                  style={{ background: 'hsl(var(--primary))' }}> تواصل عبر واتساب
                 </a>
               )}
               {designExtras.customer_service.phone && (

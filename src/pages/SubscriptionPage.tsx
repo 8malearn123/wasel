@@ -86,7 +86,7 @@ export default function SubscriptionPage() {
       new_data: { plan_name: plan.name_ar, plan_id: plan.id },
     });
 
-    toast.success('تم إرسال طلب الترقية بنجاح. سيتم التواصل معك قريباً.');
+    toast.success('وصلنا طلب الترقية — نتواصل معك قريباً');
     setUpgrading(null);
   };
 

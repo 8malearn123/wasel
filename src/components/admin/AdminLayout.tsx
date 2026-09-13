@@ -45,27 +45,27 @@ export function AdminLayout({ children, title, subtitle }: { children: React.Rea
         initial={false}
         animate={{ width: isCollapsed ? 80 : 260 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="fixed top-0 right-0 h-screen bg-[hsl(220,30%,8%)] z-50 flex flex-col border-l border-[hsl(220,20%,15%)]"
+        className="fixed top-0 right-0 h-screen bg-sidebar z-50 flex flex-col border-l border-sidebar-border"
       >
         {/* Logo */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-[hsl(220,20%,15%)]">
+        <div className="h-16 flex items-center justify-between px-4 border-b border-sidebar-border">
           <AnimatePresence mode="wait">
             {!isCollapsed && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg">
-                  <Shield className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-sm">
+                  <Shield className="w-5 h-5 text-primary-foreground" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-bold text-white text-sm">لوحة الإدارة</span>
-                  <span className="text-[10px] text-gray-500 tracking-wider">ADMIN PANEL</span>
+                  <span className="font-bold text-sidebar-accent-foreground text-sm">لوحة الإدارة</span>
+                  <span className="text-[10px] text-muted-foreground tracking-wider">ADMIN PANEL</span>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
           {isCollapsed && (
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg mx-auto">
-              <Shield className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-sm mx-auto">
+              <Shield className="w-5 h-5 text-primary-foreground" />
             </div>
           )}
         </div>
@@ -82,8 +82,8 @@ export function AdminLayout({ children, title, subtitle }: { children: React.Rea
                 className={cn(
                   "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group relative",
                   isActive
-                    ? "bg-amber-500/15 text-amber-400 font-medium"
-                    : "text-gray-400 hover:bg-white/5 hover:text-gray-200"
+                    ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 )}
               >
                 <Icon className="w-5 h-5 flex-shrink-0" />
@@ -105,14 +105,14 @@ export function AdminLayout({ children, title, subtitle }: { children: React.Rea
         </nav>
 
         {/* Footer */}
-        <div className="p-3 border-t border-[hsl(220,20%,15%)] space-y-1">
+        <div className="p-3 border-t border-sidebar-border space-y-1">
           <button onClick={handleSignOut}
-            className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-red-400 transition-all w-full">
+            className="flex items-center gap-3 px-4 py-3 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent hover:text-destructive transition-all w-full">
             <LogOut className="w-5 h-5 flex-shrink-0" />
             {!isCollapsed && <span className="text-sm">تسجيل الخروج</span>}
           </button>
           <button onClick={() => setIsCollapsed(!isCollapsed)}
-            className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-white/5 transition-all w-full">
+            className="flex items-center gap-3 px-4 py-3 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all w-full">
             {isCollapsed ? <ChevronLeft className="w-5 h-5 mx-auto" /> : <><ChevronRight className="w-5 h-5" /><span className="text-sm">طي</span></>}
           </button>
         </div>
@@ -128,8 +128,8 @@ export function AdminLayout({ children, title, subtitle }: { children: React.Rea
           </div>
           <div className="flex items-center gap-3">
             <span className="text-xs text-muted-foreground">{user?.email}</span>
-            <div className="w-8 h-8 rounded-full bg-amber-500/15 flex items-center justify-center">
-              <Shield className="w-4 h-4 text-amber-500" />
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <Shield className="w-4 h-4 text-primary" />
             </div>
           </div>
         </header>

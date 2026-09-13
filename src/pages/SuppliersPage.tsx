@@ -36,14 +36,14 @@ const statusConfig: Record<string, { label: string; labelAr: string; color: stri
   draft: { label: 'Draft', labelAr: 'مسودة', color: 'bg-muted text-muted-foreground' },
   pending: { label: 'Pending', labelAr: 'معلق', color: 'bg-warning/10 text-warning border-warning/30' },
   approved: { label: 'Approved', labelAr: 'معتمد', color: 'bg-primary/10 text-primary border-primary/30' },
-  received: { label: 'Received', labelAr: 'تم الاستلام', color: 'bg-green-500/10 text-green-600 border-green-500/30' },
+  received: { label: 'Received', labelAr: 'تم الاستلام', color: 'bg-success/10 text-success border-success/30' },
   cancelled: { label: 'Cancelled', labelAr: 'ملغي', color: 'bg-destructive/10 text-destructive border-destructive/30' },
 };
 
 const paymentStatusConfig: Record<string, { label: string; labelAr: string; color: string }> = {
   unpaid: { label: 'Unpaid', labelAr: 'غير مدفوع', color: 'bg-destructive/10 text-destructive' },
   partial: { label: 'Partial', labelAr: 'جزئي', color: 'bg-warning/10 text-warning' },
-  paid: { label: 'Paid', labelAr: 'مدفوع', color: 'bg-green-500/10 text-green-600' },
+  paid: { label: 'Paid', labelAr: 'مدفوع', color: 'bg-success/10 text-success' },
 };
 
 export default function SuppliersPage({ mode = 'suppliers' }: { mode?: 'suppliers' | 'purchases' }) {
@@ -216,8 +216,8 @@ export default function SuppliersPage({ mode = 'suppliers' }: { mode?: 'supplier
                         <TableCell>{order.supplier?.name || '-'}</TableCell>
                         <TableCell className="text-muted-foreground">{new Date(order.order_date).toLocaleDateString('ar-SA')}</TableCell>
                         <TableCell className="font-semibold">{Number(order.total_amount).toLocaleString()}</TableCell>
-                        <TableCell className="text-green-600">{Number(order.paid_amount).toLocaleString()}</TableCell>
-                        <TableCell className={remaining > 0 ? 'text-destructive font-semibold' : 'text-green-600'}>{remaining.toLocaleString()}</TableCell>
+                        <TableCell className="text-success">{Number(order.paid_amount).toLocaleString()}</TableCell>
+                        <TableCell className={remaining > 0 ? 'text-destructive font-semibold' : 'text-success'}>{remaining.toLocaleString()}</TableCell>
                         <TableCell><Badge variant="outline" className={sc.color}>{isRTL ? sc.labelAr : sc.label}</Badge></TableCell>
                         <TableCell><Badge variant="outline" className={pc.color}>{isRTL ? pc.labelAr : pc.label}</Badge></TableCell>
                         <TableCell>
@@ -278,7 +278,7 @@ export default function SuppliersPage({ mode = 'suppliers' }: { mode?: 'supplier
 
             {activeSuppliers.filter(s => supplierDebts[s.id]?.totalOwed > 0).length === 0 ? (
               <div className="text-center py-16 bg-card rounded-xl border border-border">
-                <CheckCircle2 className="w-12 h-12 mx-auto text-green-500 mb-4" />
+                <CheckCircle2 className="w-12 h-12 mx-auto text-success mb-4" />
                 <p className="text-muted-foreground">{isRTL ? 'لا توجد مديونيات مستحقة' : 'No outstanding debts'}</p>
               </div>
             ) : (
@@ -628,7 +628,7 @@ function ReceiveDialog({ open, onOpenChange, order, onReceive, isRTL }: { open: 
                   <p className="text-[11px] text-muted-foreground">{isRTL ? 'المطلوب' : 'Ordered'}</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-extrabold text-green-600">{done}</p>
+                  <p className="text-2xl font-extrabold text-success">{done}</p>
                   <p className="text-[11px] text-muted-foreground">{isRTL ? 'تم استلامه' : 'Received'}</p>
                 </div>
                 <div>
@@ -637,7 +637,7 @@ function ReceiveDialog({ open, onOpenChange, order, onReceive, isRTL }: { open: 
                 </div>
               </div>
               <div className="h-2 rounded-full bg-muted overflow-hidden">
-                <div className="h-full bg-green-600 transition-all duration-500" style={{ width: `${pct}%` }} />
+                <div className="h-full bg-success transition-all duration-500" style={{ width: `${pct}%` }} />
               </div>
               <p className="text-[11px] text-muted-foreground text-center">
                 {remaining > 0
@@ -661,14 +661,14 @@ function ReceiveDialog({ open, onOpenChange, order, onReceive, isRTL }: { open: 
               <Plus className="w-4 h-4 mr-1" /> {isRTL ? 'إضافة منتج' : 'Add Item'}
             </Button>
             {receiveItems.map((item, i) => (
-              <div key={i} className={`p-3 border rounded-lg transition-colors ${item.checked ? 'border-green-500/50 bg-green-500/5' : 'border-border'}`}>
+              <div key={i} className={`p-3 border rounded-lg transition-colors ${item.checked ? 'border-success/50 bg-success/5' : 'border-border'}`}>
                 <div className="flex items-center justify-between mb-2">
-                  <Badge variant="outline" className={item.checked ? 'bg-green-500/10 text-green-600' : ''}>
+                  <Badge variant="outline" className={item.checked ? 'bg-success/10 text-success' : ''}>
                     {item.checked ? (isRTL ? '✓ تم الجرد' : '✓ Verified') : (isRTL ? `منتج ${i + 1}` : `Item ${i + 1}`)}
                   </Badge>
                   <div className="flex gap-1">
                     <Button type="button" variant={item.checked ? 'default' : 'outline'} size="sm"
-                      className={item.checked ? 'bg-green-600 hover:bg-green-700' : ''}
+                      className={item.checked ? 'bg-success hover:bg-success' : ''}
                       onClick={() => { const updated = [...receiveItems]; updated[i].checked = !updated[i].checked; setReceiveItems(updated); }}>
                       <CheckCircle2 className="w-4 h-4 mr-1" /> {isRTL ? 'جرد' : 'Verify'}
                     </Button>
@@ -707,7 +707,7 @@ function ReceiveDialog({ open, onOpenChange, order, onReceive, isRTL }: { open: 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>{isRTL ? 'إلغاء' : 'Cancel'}</Button>
           <Button disabled={loading || receiveItems.filter(it => it.checked).length === 0}
-            className="bg-green-600 hover:bg-green-700" onClick={async () => {
+            className="bg-success hover:bg-success" onClick={async () => {
             if (!order) return;
             setLoading(true);
             const verified = receiveItems.filter(it => it.checked);
@@ -754,7 +754,7 @@ function PaymentDialog({ open, onOpenChange, order, onPay, isRTL }: { open: bool
         <div className="space-y-4 py-4">
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div className="p-2 bg-muted rounded-lg"><p className="text-muted-foreground">{isRTL ? 'الإجمالي' : 'Total'}</p><p className="font-bold">{Number(order?.total_amount || 0).toLocaleString()}</p></div>
-            <div className="p-2 bg-green-500/10 rounded-lg"><p className="text-muted-foreground">{isRTL ? 'المدفوع' : 'Paid'}</p><p className="font-bold text-green-600">{Number(order?.paid_amount || 0).toLocaleString()}</p></div>
+            <div className="p-2 bg-success/10 rounded-lg"><p className="text-muted-foreground">{isRTL ? 'المدفوع' : 'Paid'}</p><p className="font-bold text-success">{Number(order?.paid_amount || 0).toLocaleString()}</p></div>
           </div>
           <div className="space-y-2">
             <Label>{isRTL ? 'مبلغ الدفعة' : 'Payment Amount'}</Label>
@@ -802,14 +802,14 @@ function PODetailsDialog({ open, onOpenChange, order, isRTL }: { open: boolean; 
     win.document.write(`<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8">
       <title>${order.order_number}</title>
       <style>
-        body{font-family:'IBM Plex Sans Arabic',Arial,sans-serif;padding:24px;color:#111}
-        h1{font-size:20px;margin:0 0 4px}.muted{color:#666;font-size:12px}
-        .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #111;padding-bottom:12px}
+        body{font-family:'IBM Plex Sans Arabic',Arial,sans-serif;padding:24px;color:#12151B}
+        h1{font-size:20px;margin:0 0 4px}.muted{color:#6B7280;font-size:12px}
+        .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #12151B;padding-bottom:12px}
         table{width:100%;border-collapse:collapse;margin-top:16px}
-        th,td{border:1px solid #ddd;padding:8px;text-align:right;font-size:13px}
-        th{background:#f5f5f5}
+        th,td{border:1px solid #E6E8EB;padding:8px;text-align:right;font-size:13px}
+        th{background:#F6F7F9}
         .totals{margin-top:16px;display:flex;gap:24px}.totals div{font-size:14px}
-        .badge{display:inline-block;padding:2px 10px;border:1px solid #ccc;border-radius:99px;font-size:12px;margin-inline-start:6px}
+        .badge{display:inline-block;padding:2px 10px;border:1px solid #E6E8EB;border-radius:99px;font-size:12px;margin-inline-start:6px}
       </style></head><body>
       <div class="head">
         <div><h1>طلب شراء</h1><div class="muted">${merchant?.name || ''}</div></div>
@@ -847,7 +847,7 @@ function PODetailsDialog({ open, onOpenChange, order, isRTL }: { open: boolean; 
           <div className="flex gap-2"><Badge variant="outline" className={sc.color}>{isRTL ? sc.labelAr : sc.label}</Badge><Badge variant="outline" className={pc.color}>{isRTL ? pc.labelAr : pc.label}</Badge></div>
           <div className="grid grid-cols-3 gap-3">
             <div className="p-3 bg-muted rounded-lg text-center"><p className="text-xs text-muted-foreground">{isRTL ? 'الإجمالي' : 'Total'}</p><p className="text-lg font-bold">{Number(order.total_amount).toLocaleString()}</p></div>
-            <div className="p-3 bg-green-500/10 rounded-lg text-center"><p className="text-xs text-muted-foreground">{isRTL ? 'المدفوع' : 'Paid'}</p><p className="text-lg font-bold text-green-600">{Number(order.paid_amount).toLocaleString()}</p></div>
+            <div className="p-3 bg-success/10 rounded-lg text-center"><p className="text-xs text-muted-foreground">{isRTL ? 'المدفوع' : 'Paid'}</p><p className="text-lg font-bold text-success">{Number(order.paid_amount).toLocaleString()}</p></div>
             <div className="p-3 bg-destructive/10 rounded-lg text-center"><p className="text-xs text-muted-foreground">{isRTL ? 'المتبقي' : 'Remaining'}</p><p className="text-lg font-bold text-destructive">{remaining.toLocaleString()}</p></div>
           </div>
           {order.items && order.items.length > 0 && (

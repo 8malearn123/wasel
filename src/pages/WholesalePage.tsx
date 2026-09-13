@@ -18,11 +18,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Package, ShoppingCart, Store, Truck, Plus, Trash2, Eye, EyeOff, Send, CheckCircle, XCircle, Clock, Lock, Wallet, AlertTriangle, Banknote } from 'lucide-react';
 
 const statusColors: Record<string, string> = {
-  pending: 'bg-yellow-500/15 text-yellow-600',
-  approved: 'bg-blue-500/15 text-blue-600',
-  shipped: 'bg-purple-500/15 text-purple-600',
-  delivered: 'bg-green-500/15 text-green-600',
-  cancelled: 'bg-red-500/15 text-red-500',
+  pending: 'bg-warning/15 text-warning',
+  approved: 'bg-primary/15 text-primary',
+  shipped: 'bg-primary/15 text-primary',
+  delivered: 'bg-success/15 text-success',
+  cancelled: 'bg-destructive/15 text-destructive',
 };
 const statusLabelsAr: Record<string, string> = { pending: 'بانتظار الموافقة', approved: 'تمت الموافقة', shipped: 'تم الشحن', delivered: 'تم التسليم', cancelled: 'ملغي' };
 const creditStatusAr: Record<string, string> = { unpaid: 'غير مسدد', partial: 'مسدد جزئياً', paid: 'مسدد', returned: 'مرتجع' };
@@ -121,15 +121,15 @@ export default function WholesalePage() {
             <div><p className="text-xs text-muted-foreground">{t ? 'منتجاتي' : 'My Listings'}</p><p className="text-xl font-bold">{myListings.length}</p></div>
           </CardContent></Card>
           <Card><CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-green-500/10"><Store className="w-5 h-5 text-green-500" /></div>
+            <div className="p-2 rounded-lg bg-success/10"><Store className="w-5 h-5 text-success" /></div>
             <div><p className="text-xs text-muted-foreground">{t ? 'سوق الجملة' : 'Marketplace'}</p><p className="text-xl font-bold">{marketplace.length}</p></div>
           </CardContent></Card>
           <Card><CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-500/10"><Wallet className="w-5 h-5 text-blue-500" /></div>
+            <div className="p-2 rounded-lg bg-primary/10"><Wallet className="w-5 h-5 text-primary" /></div>
             <div><p className="text-xs text-muted-foreground">{t ? 'مديونيات لي' : 'Owed to Me'}</p><p className="text-xl font-bold">{stats.totalOwed.toLocaleString()} <span className="text-xs">{t ? 'ر.س' : 'SAR'}</span></p></div>
           </CardContent></Card>
           <Card><CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-orange-500/10"><Banknote className="w-5 h-5 text-orange-500" /></div>
+            <div className="p-2 rounded-lg bg-warning/10"><Banknote className="w-5 h-5 text-warning" /></div>
             <div><p className="text-xs text-muted-foreground">{t ? 'مديونياتي' : 'I Owe'}</p><p className="text-xl font-bold">{stats.totalOwing.toLocaleString()} <span className="text-xs">{t ? 'ر.س' : 'SAR'}</span></p></div>
           </CardContent></Card>
           {stats.overdueCount > 0 && (
@@ -196,7 +196,7 @@ export default function WholesalePage() {
                           <TableCell className="font-medium">{listing.item_type === 'device' ? `${listing.device?.brand || ''} ${listing.device?.model || ''}` : listing.accessory?.name || '—'}</TableCell>
                           <TableCell><Badge variant="outline">{listing.item_type === 'device' ? (t ? 'جهاز' : 'Device') : (t ? 'إكسسوار' : 'Accessory')}</Badge></TableCell>
                           <TableCell>{listing.wholesale_price} {t ? 'ر.س' : 'SAR'}</TableCell>
-                          <TableCell><Badge className={listing.is_active ? 'bg-green-500/15 text-green-600' : 'bg-muted text-muted-foreground'}>{listing.is_active ? (t ? 'نشط' : 'Active') : (t ? 'متوقف' : 'Off')}</Badge></TableCell>
+                          <TableCell><Badge className={listing.is_active ? 'bg-success/15 text-success' : 'bg-muted text-muted-foreground'}>{listing.is_active ? (t ? 'نشط' : 'Active') : (t ? 'متوقف' : 'Off')}</Badge></TableCell>
                           <TableCell>
                             <div className="flex gap-1">
                               <Button variant="ghost" size="sm" onClick={() => toggleListing(listing.id, !listing.is_active)}>{listing.is_active ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</Button>
@@ -307,7 +307,7 @@ export default function WholesalePage() {
                               </div>
                             )}
                             {order.status === 'approved' && <Button size="sm" onClick={() => updateOrderStatus(order.id, 'shipped')}><Truck className="w-3 h-3 me-1" />{t ? 'شحن' : 'Ship'}</Button>}
-                            {order.status === 'shipped' && <Badge className="bg-purple-500/15 text-purple-600"><Clock className="w-3 h-3 me-1" />{t ? 'بانتظار التسليم' : 'Shipping'}</Badge>}
+                            {order.status === 'shipped' && <Badge className="bg-primary/15 text-primary"><Clock className="w-3 h-3 me-1" />{t ? 'بانتظار التسليم' : 'Shipping'}</Badge>}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -343,7 +343,7 @@ export default function WholesalePage() {
                             <TableCell className="font-medium">{credit.buyer_merchant?.name || '—'}</TableCell>
                             <TableCell><Badge variant="outline">{creditTypeAr[credit.credit_type]}</Badge></TableCell>
                             <TableCell>{credit.amount.toLocaleString()} {t ? 'ر.س' : 'SAR'}</TableCell>
-                            <TableCell className="text-green-600">{credit.paid_amount.toLocaleString()}</TableCell>
+                            <TableCell className="text-success">{credit.paid_amount.toLocaleString()}</TableCell>
                             <TableCell className="font-semibold text-destructive">{credit.remaining_amount.toLocaleString()}</TableCell>
                             <TableCell className="text-sm">
                               {credit.due_date ? (
@@ -353,7 +353,7 @@ export default function WholesalePage() {
                                 </span>
                               ) : '—'}
                             </TableCell>
-                            <TableCell><Badge className={credit.status === 'paid' ? 'bg-green-500/15 text-green-600' : credit.status === 'partial' ? 'bg-yellow-500/15 text-yellow-600' : 'bg-red-500/15 text-red-500'}>{creditStatusAr[credit.status]}</Badge></TableCell>
+                            <TableCell><Badge className={credit.status === 'paid' ? 'bg-success/15 text-success' : credit.status === 'partial' ? 'bg-warning/15 text-warning' : 'bg-destructive/15 text-destructive'}>{creditStatusAr[credit.status]}</Badge></TableCell>
                             <TableCell>
                               {credit.status !== 'paid' && (
                                 <Button size="sm" variant="outline" onClick={() => { setSelectedCredit(credit); setPaymentAmount(''); setShowPaymentDialog(true); }}>
@@ -395,7 +395,7 @@ export default function WholesalePage() {
                             <TableCell className="font-medium">{credit.supplier_merchant?.name || '—'}</TableCell>
                             <TableCell><Badge variant="outline">{creditTypeAr[credit.credit_type]}</Badge></TableCell>
                             <TableCell>{credit.amount.toLocaleString()} {t ? 'ر.س' : 'SAR'}</TableCell>
-                            <TableCell className="text-green-600">{credit.paid_amount.toLocaleString()}</TableCell>
+                            <TableCell className="text-success">{credit.paid_amount.toLocaleString()}</TableCell>
                             <TableCell className="font-semibold text-destructive">{credit.remaining_amount.toLocaleString()}</TableCell>
                             <TableCell className="text-sm">
                               {credit.due_date ? (
@@ -405,7 +405,7 @@ export default function WholesalePage() {
                                 </span>
                               ) : '—'}
                             </TableCell>
-                            <TableCell><Badge className={credit.status === 'paid' ? 'bg-green-500/15 text-green-600' : credit.status === 'partial' ? 'bg-yellow-500/15 text-yellow-600' : 'bg-red-500/15 text-red-500'}>{creditStatusAr[credit.status]}</Badge></TableCell>
+                            <TableCell><Badge className={credit.status === 'paid' ? 'bg-success/15 text-success' : credit.status === 'partial' ? 'bg-warning/15 text-warning' : 'bg-destructive/15 text-destructive'}>{creditStatusAr[credit.status]}</Badge></TableCell>
                           </TableRow>
                         );
                       })}

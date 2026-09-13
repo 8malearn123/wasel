@@ -210,12 +210,12 @@ export default function LabelsPage() {
       <html><head><title>Print Labels</title>
       <style>
         body { margin: 0; padding: 10px; }
-        .label { display: inline-block; border: 1px dashed #ccc; padding: 8px; margin: 4px; text-align: center; page-break-inside: avoid; }
+        .label { display: inline-block; border: 1px dashed #E6E8EB; padding: 8px; margin: 4px; text-align: center; page-break-inside: avoid; }
         .name { font-size: 11px; font-weight: bold; margin: 0 0 2px; }
-        .brand { font-size: 9px; color: #666; margin: 0 0 2px; }
-        .price { font-size: 10px; margin: 2px 0 0; background: #f0f0f0; padding: 1px 6px; border-radius: 4px; display: inline-block; }
+        .brand { font-size: 9px; color: #6B7280; margin: 0 0 2px; }
+        .price { font-size: 10px; margin: 2px 0 0; background: #F6F7F9; padding: 1px 6px; border-radius: 4px; display: inline-block; }
         img { max-width: 100%; }
-        @media print { .label { border: 1px dashed #ccc; } }
+        @media print { .label { border: 1px dashed #E6E8EB; } }
       </style></head><body>${labelsHtml}</body></html>
     `);
     printWindow.document.close();

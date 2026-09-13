@@ -19,46 +19,46 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
 const roleLabels: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-  owner: { label: 'مالك', icon: <Crown className="w-3 h-3" />, color: 'bg-amber-500/10 text-amber-700 border-amber-500/20' },
-  admin: { label: 'مدير', icon: <ShieldCheck className="w-3 h-3" />, color: 'bg-purple-500/10 text-purple-700 border-purple-500/20' },
-  branch_manager: { label: 'مدير فرع', icon: <Store className="w-3 h-3" />, color: 'bg-blue-500/10 text-blue-700 border-blue-500/20' },
-  cashier: { label: 'كاشير', icon: <Wallet className="w-3 h-3" />, color: 'bg-green-500/10 text-green-700 border-green-500/20' },
-  inventory_manager: { label: 'مدير مخزون', icon: <KeyRound className="w-3 h-3" />, color: 'bg-cyan-500/10 text-cyan-700 border-cyan-500/20' },
+  owner: { label: 'مالك', icon: <Crown className="w-3 h-3" />, color: 'bg-warning/10 text-warning border-warning/20' },
+  admin: { label: 'مدير', icon: <ShieldCheck className="w-3 h-3" />, color: 'bg-primary/10 text-primary border-primary/20' },
+  branch_manager: { label: 'مدير فرع', icon: <Store className="w-3 h-3" />, color: 'bg-primary/10 text-primary border-primary/20' },
+  cashier: { label: 'كاشير', icon: <Wallet className="w-3 h-3" />, color: 'bg-success/10 text-success border-success/20' },
+  inventory_manager: { label: 'مدير مخزون', icon: <KeyRound className="w-3 h-3" />, color: 'bg-primary/10 text-primary border-primary/20' },
 };
 
 const deviceStatusLabels: Record<string, { label: string; color: string }> = {
-  available: { label: 'متوفر', color: 'bg-green-500/10 text-green-700' },
-  reserved: { label: 'محجوز', color: 'bg-amber-500/10 text-amber-700' },
-  sold: { label: 'مباع', color: 'bg-blue-500/10 text-blue-700' },
-  transferred: { label: 'منقول', color: 'bg-purple-500/10 text-purple-700' },
-  repair: { label: 'صيانة', color: 'bg-red-500/10 text-red-700' },
+  available: { label: 'متوفر', color: 'bg-success/10 text-success' },
+  reserved: { label: 'محجوز', color: 'bg-warning/10 text-warning' },
+  sold: { label: 'مباع', color: 'bg-primary/10 text-primary' },
+  transferred: { label: 'منقول', color: 'bg-primary/10 text-primary' },
+  repair: { label: 'صيانة', color: 'bg-destructive/10 text-destructive' },
 };
 
 const repairStatusLabels: Record<string, { label: string; color: string }> = {
-  received: { label: 'مستلم', color: 'bg-blue-500/10 text-blue-700' },
-  diagnosing: { label: 'فحص', color: 'bg-purple-500/10 text-purple-700' },
-  waiting_parts: { label: 'بانتظار قطع', color: 'bg-amber-500/10 text-amber-700' },
-  in_progress: { label: 'جاري', color: 'bg-cyan-500/10 text-cyan-700' },
-  completed: { label: 'مكتمل', color: 'bg-green-500/10 text-green-700' },
-  delivered: { label: 'مسلّم', color: 'bg-emerald-500/10 text-emerald-700' },
-  warranty_expired: { label: 'انتهى الضمان', color: 'bg-gray-500/10 text-gray-600' },
-  cancelled: { label: 'ملغي', color: 'bg-red-500/10 text-red-700' },
+  received: { label: 'مستلم', color: 'bg-primary/10 text-primary' },
+  diagnosing: { label: 'فحص', color: 'bg-primary/10 text-primary' },
+  waiting_parts: { label: 'بانتظار قطع', color: 'bg-warning/10 text-warning' },
+  in_progress: { label: 'جاري', color: 'bg-primary/10 text-primary' },
+  completed: { label: 'مكتمل', color: 'bg-success/10 text-success' },
+  delivered: { label: 'مسلّم', color: 'bg-success/10 text-success' },
+  warranty_expired: { label: 'انتهى الضمان', color: 'bg-muted-foreground/10 text-muted-foreground' },
+  cancelled: { label: 'ملغي', color: 'bg-destructive/10 text-destructive' },
 };
 
 const onlineStatusLabels: Record<string, { label: string; color: string }> = {
   pending: { label: 'معلق', color: 'bg-warning/15 text-warning' },
   confirmed: { label: 'مؤكد', color: 'bg-primary/15 text-primary' },
-  processing: { label: 'قيد التجهيز', color: 'bg-cyan-500/10 text-cyan-700' },
-  shipped: { label: 'تم الشحن', color: 'bg-blue-500/10 text-blue-700' },
-  delivered: { label: 'مسلّم', color: 'bg-green-500/10 text-green-700' },
-  cancelled: { label: 'ملغي', color: 'bg-red-500/10 text-red-700' },
+  processing: { label: 'قيد التجهيز', color: 'bg-primary/10 text-primary' },
+  shipped: { label: 'تم الشحن', color: 'bg-primary/10 text-primary' },
+  delivered: { label: 'مسلّم', color: 'bg-success/10 text-success' },
+  cancelled: { label: 'ملغي', color: 'bg-destructive/10 text-destructive' },
 };
 
 const subStatusLabels: Record<string, { label: string; color: string }> = {
-  trial: { label: 'تجريبي', color: 'bg-amber-500/10 text-amber-700' },
-  active: { label: 'نشط', color: 'bg-green-500/10 text-green-700' },
-  expired: { label: 'منتهي', color: 'bg-red-500/10 text-red-700' },
-  cancelled: { label: 'موقوف', color: 'bg-gray-500/10 text-gray-600' },
+  trial: { label: 'تجريبي', color: 'bg-warning/10 text-warning' },
+  active: { label: 'نشط', color: 'bg-success/10 text-success' },
+  expired: { label: 'منتهي', color: 'bg-destructive/10 text-destructive' },
+  cancelled: { label: 'موقوف', color: 'bg-muted-foreground/10 text-muted-foreground' },
 };
 
 const actionLabels: Record<string, string> = {
@@ -158,11 +158,11 @@ export default function MerchantDetailPage() {
       <div className="grid gap-3 grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 mb-6">
         {[
           { icon: Store, label: 'الفروع', value: branches.length, sub: `/${subscription?.max_branches || '∞'}`, color: 'text-primary' },
-          { icon: Users, label: 'المستخدمين', value: users.length, sub: `/${subscription?.max_users || '∞'}`, color: 'text-purple-600' },
-          { icon: Smartphone, label: 'الأجهزة', value: `${availableDevices}/${totalDevices}`, sub: '', color: 'text-cyan-600' },
-          { icon: DollarSign, label: 'مبيعات محلية', value: totalSalesAmount.toLocaleString(), sub: ' ر.س', color: 'text-green-600' },
+          { icon: Users, label: 'المستخدمين', value: users.length, sub: `/${subscription?.max_users || '∞'}`, color: 'text-primary' },
+          { icon: Smartphone, label: 'الأجهزة', value: `${availableDevices}/${totalDevices}`, sub: '', color: 'text-primary' },
+          { icon: DollarSign, label: 'مبيعات محلية', value: totalSalesAmount.toLocaleString(), sub: ' ر.س', color: 'text-success' },
           { icon: Globe, label: 'مبيعات أونلاين', value: totalOnlineAmount.toLocaleString(), sub: ' ر.س', color: 'text-primary' },
-          { icon: Wrench, label: 'إصلاحات نشطة', value: activeRepairs, sub: '', color: 'text-amber-600' },
+          { icon: Wrench, label: 'إصلاحات نشطة', value: activeRepairs, sub: '', color: 'text-warning' },
           { icon: TrendingUp, label: 'قيمة المخزون', value: inventoryValue.toLocaleString(), sub: ' ر.س', color: 'text-primary' },
         ].map((stat, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
@@ -218,7 +218,7 @@ export default function MerchantDetailPage() {
                         <TableCell>{sale.customer_name || '—'}</TableCell>
                         <TableCell className="font-semibold">{sale.total_amount.toLocaleString()} ر.س</TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={sale.payment_status === 'paid' ? 'bg-green-500/10 text-green-700' : 'bg-amber-500/10 text-amber-700'}>
+                          <Badge variant="outline" className={sale.payment_status === 'paid' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}>
                             {sale.payment_status === 'paid' ? 'مدفوع' : sale.payment_status === 'partial' ? 'جزئي' : 'غير مدفوع'}
                           </Badge>
                         </TableCell>
@@ -270,7 +270,7 @@ export default function MerchantDetailPage() {
                           <TableCell className="font-semibold">{Number(order.total_amount || 0).toLocaleString()} ر.س</TableCell>
                           <TableCell><Badge variant="outline" className={os.color}>{os.label}</Badge></TableCell>
                           <TableCell>
-                            <Badge variant="outline" className={order.payment_status === 'paid' ? 'bg-green-500/10 text-green-700' : 'bg-amber-500/10 text-amber-700'}>
+                            <Badge variant="outline" className={order.payment_status === 'paid' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}>
                               {order.payment_status === 'paid' ? 'مدفوع' : 'غير مدفوع'}
                             </Badge>
                           </TableCell>
@@ -412,7 +412,7 @@ export default function MerchantDetailPage() {
                           <TableCell>
                             {repair.warranty_days ? (
                               <div className="flex items-center gap-1">
-                                {warrantyActive ? <Shield className="w-3.5 h-3.5 text-green-600" /> : <ShieldOff className="w-3.5 h-3.5 text-gray-400" />}
+                                {warrantyActive ? <Shield className="w-3.5 h-3.5 text-success" /> : <ShieldOff className="w-3.5 h-3.5 text-muted-foreground" />}
                                 <span className="text-xs">{repair.warranty_days} يوم</span>
                               </div>
                             ) : '—'}
@@ -449,7 +449,7 @@ export default function MerchantDetailPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       {branch.is_warehouse && <Badge variant="outline" className="text-xs">مستودع</Badge>}
-                      {branch.is_active ? <CheckCircle className="w-4 h-4 text-green-600" /> : <XCircle className="w-4 h-4 text-destructive" />}
+                      {branch.is_active ? <CheckCircle className="w-4 h-4 text-success" /> : <XCircle className="w-4 h-4 text-destructive" />}
                     </div>
                   </div>
                 ))}

@@ -74,7 +74,7 @@ export function StoreThankYouPage({ store }: { store: StoreSettings }) {
       <div className="text-center mb-8 print:hidden">
         <CheckCircle2 className="w-20 h-20 mx-auto mb-4" style={{ color: `hsl(var(--store-primary))` }} />
         <h1 className="text-3xl font-bold mb-2">شكراً لطلبك!</h1>
-        <p className="text-muted-foreground">تم استلام طلبك بنجاح وسنتواصل معك قريباً.</p>
+        <p className="text-muted-foreground">وصلنا طلبك — نتواصل معك قريباً.</p>
       </div>
 
       {/* Loyalty award banner */}

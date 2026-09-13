@@ -62,13 +62,13 @@ export function ProductCard({ product, currency = 'ر.س' }: { product: StorePro
             aria-label={fav ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}
             className={cn(
               'absolute top-2 left-2 z-10 w-9 h-9 rounded-full flex items-center justify-center bg-background/90 backdrop-blur shadow-sm border transition-all hover:scale-110',
-              fav ? 'text-red-500 border-red-200' : 'text-muted-foreground'
+              fav ? 'text-destructive border-destructive/20' : 'text-muted-foreground'
             )}
           >
-            <Heart className={cn('w-5 h-5', fav && 'fill-red-500')} />
+            <Heart className={cn('w-5 h-5', fav && 'fill-destructive')} />
           </button>
           {isNew && (
-            <span className="absolute top-2 right-2 z-10 text-[11px] font-bold px-2 py-1 rounded-full bg-emerald-500 text-white shadow-sm"> وصل حديثاً
+            <span className="absolute top-2 right-2 z-10 text-[11px] font-bold px-2 py-1 rounded-full bg-success text-success-foreground shadow-sm"> وصل حديثاً
             </span>
           )}
           {product.image ? (

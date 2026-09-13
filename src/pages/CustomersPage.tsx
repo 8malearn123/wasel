@@ -15,10 +15,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Users, UserPlus, Star, Award, Gift, TrendingUp, Search, Plus, Minus, History } from 'lucide-react';
 
 const tierColors: Record<string, string> = {
-  bronze: 'bg-amber-700/20 text-amber-700',
-  silver: 'bg-gray-400/20 text-gray-500',
-  gold: 'bg-yellow-500/20 text-yellow-600',
-  platinum: 'bg-purple-500/20 text-purple-600',
+  bronze: 'bg-warning/20 text-warning',
+  silver: 'bg-muted-foreground/20 text-muted-foreground',
+  gold: 'bg-warning/20 text-warning',
+  platinum: 'bg-primary/20 text-primary',
 };
 
 const tierLabelsAr: Record<string, string> = { bronze: 'برونزي', silver: 'فضي', gold: 'ذهبي', platinum: 'بلاتيني' };
@@ -106,15 +106,15 @@ export default function CustomersPage() {
             <div><p className="text-xs text-muted-foreground">{t ? 'إجمالي العملاء' : 'Total Customers'}</p><p className="text-xl font-bold">{stats.total}</p></div>
           </CardContent></Card>
           <Card><CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-yellow-500/10"><Star className="w-5 h-5 text-yellow-500" /></div>
+            <div className="p-2 rounded-lg bg-warning/10"><Star className="w-5 h-5 text-warning" /></div>
             <div><p className="text-xs text-muted-foreground">{t ? 'إجمالي النقاط' : 'Total Points'}</p><p className="text-xl font-bold">{stats.totalPoints.toLocaleString()}</p></div>
           </CardContent></Card>
           <Card><CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-green-500/10"><TrendingUp className="w-5 h-5 text-green-500" /></div>
+            <div className="p-2 rounded-lg bg-success/10"><TrendingUp className="w-5 h-5 text-success" /></div>
             <div><p className="text-xs text-muted-foreground">{t ? 'إجمالي المشتريات' : 'Total Revenue'}</p><p className="text-xl font-bold">{stats.totalSpent.toLocaleString()} {t ? 'ر.س' : 'SAR'}</p></div>
           </CardContent></Card>
           <Card><CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-purple-500/10"><Award className="w-5 h-5 text-purple-500" /></div>
+            <div className="p-2 rounded-lg bg-primary/10"><Award className="w-5 h-5 text-primary" /></div>
             <div><p className="text-xs text-muted-foreground">{t ? 'عملاء بلاتينيين' : 'Platinum'}</p><p className="text-xl font-bold">{stats.platinum}</p></div>
           </CardContent></Card>
         </div>
@@ -175,7 +175,7 @@ export default function CustomersPage() {
                       <TableCell className="font-medium"><Link to={`/customers/${customer.id}`} className="hover:text-primary transition-colors">{customer.name}</Link></TableCell>
                       <TableCell>{customer.phone || '-'}</TableCell>
                       <TableCell>{customer.email || '-'}</TableCell>
-                      <TableCell><span className="font-semibold text-yellow-600">{customer.loyalty_points.toLocaleString()}</span></TableCell>
+                      <TableCell><span className="font-semibold text-warning">{customer.loyalty_points.toLocaleString()}</span></TableCell>
                       <TableCell><Badge className={tierColors[customer.loyalty_tier]}>{t ? tierLabelsAr[customer.loyalty_tier] : tierLabelsEn[customer.loyalty_tier]}</Badge></TableCell>
                       <TableCell>{Number(customer.total_spent).toLocaleString()} {t ? 'ر.س' : 'SAR'}</TableCell>
                       <TableCell>
@@ -203,7 +203,7 @@ export default function CustomersPage() {
             <div className="space-y-4">
               <div className="text-center p-4 bg-muted rounded-lg">
                 <p className="text-sm text-muted-foreground">{t ? 'الرصيد الحالي' : 'Current Balance'}</p>
-                <p className="text-3xl font-bold text-yellow-600">{selectedCustomer?.loyalty_points.toLocaleString()}</p>
+                <p className="text-3xl font-bold text-warning">{selectedCustomer?.loyalty_points.toLocaleString()}</p>
                 <Badge className={tierColors[selectedCustomer?.loyalty_tier || 'bronze']}>
                   {t ? tierLabelsAr[selectedCustomer?.loyalty_tier || 'bronze'] : tierLabelsEn[selectedCustomer?.loyalty_tier || 'bronze']}
                 </Badge>
@@ -236,7 +236,7 @@ export default function CustomersPage() {
                       <p className="text-sm font-medium">{tx.description || (tx.type === 'earn' ? (t ? 'كسب نقاط' : 'Earned') : (t ? 'استبدال' : 'Redeemed'))}</p>
                       <p className="text-xs text-muted-foreground">{new Date(tx.created_at).toLocaleDateString(t ? 'ar-SA' : 'en-US')}</p>
                     </div>
-                    <span className={`font-bold ${tx.points > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                    <span className={`font-bold ${tx.points > 0 ? 'text-success' : 'text-destructive'}`}>
                       {tx.points > 0 ? '+' : ''}{tx.points}
                     </span>
                   </div>

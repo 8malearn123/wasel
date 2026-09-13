@@ -43,7 +43,7 @@ export const ar: TranslationKeys = {
   // Dashboard
   dashboard: {
     title: "لوحة التحكم",
-    subtitle: "مرحباً بعودتك! إليك ما يحدث اليوم.",
+    subtitle: "نظرة سريعة على يومك.",
     todaysRevenue: "إيرادات اليوم",
     unitsSold: "الوحدات المباعة",
     devicesInStock: "الأجهزة في المخزون",
@@ -55,14 +55,14 @@ export const ar: TranslationKeys = {
     devices: "الأجهزة",
     accessories: "الإكسسوارات",
     recentActivity: "النشاط الأخير",
-    latestTransactions: "أحدث المعاملات في جميع الفروع",
+    latestTransactions: "آخر عمليات البيع في كل الفروع",
     branchPerformance: "أداء الفروع",
-    realTimeMetrics: "مقاييس المبيعات الفورية",
+    realTimeMetrics: "مبيعات الفروع الآن",
     revenue: "الإيرادات",
     sales: "المبيعات",
     alerts: "التنبيهات والإشعارات",
-    itemsRequiringAttention: "عناصر تتطلب الانتباه",
-    lowStockAlert: "تنبيه انخفاض المخزون",
+    itemsRequiringAttention: "أشياء تحتاج نظرة",
+    lowStockAlert: "المخزون قارب على النفاد",
     pendingTransfer: "تحويل معلق",
     unpaidInvoice: "فاتورة غير مدفوعة",
     deadStock: "مخزون راكد",
@@ -80,7 +80,7 @@ export const ar: TranslationKeys = {
     quickAdd: "إضافة سريعة",
     currentCart: "السلة الحالية",
     emptyCart: "السلة فارغة",
-    scanToAdd: "امسح منتج أو استخدم أزرار الإضافة السريعة",
+    scanToAdd: "امسح جهاز أو أضفه من الأزرار السريعة",
     subtotal: "المجموع الفرعي",
     tax: "الضريبة (15%)",
     total: "الإجمالي",
@@ -357,8 +357,8 @@ export const ar: TranslationKeys = {
     edit: "تعديل",
     delete: "حذف",
     error: "خطأ",
-    saved: "تم الحفظ بنجاح",
-    fillRequired: "يرجى ملء جميع الحقول المطلوبة",
+    saved: "تم الحفظ",
+    fillRequired: "أكمل الحقول المطلوبة",
   },
 
   // Repairs
@@ -460,7 +460,7 @@ export const ar: TranslationKeys = {
     pieces: "قطعة",
     // Export
     exportCSV: "تصدير CSV",
-    exportSuccess: "تم تصدير التقرير بنجاح",
+    exportSuccess: "تم تصدير التقرير",
     // Common
     noData: "لا توجد بيانات",
     noSalesData: "لا توجد بيانات مبيعات بعد",

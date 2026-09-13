@@ -170,7 +170,7 @@ export default function PlatformAdminPage() {
     }
 
     if (result && !result.error) {
-      toast.success('تمت العملية بنجاح');
+      toast.success('تمت العملية');
     } else if (result?.error) {
       toast.error((result.error as any).message || 'حدث خطأ');
     }
@@ -623,15 +623,15 @@ export default function PlatformAdminPage() {
             <div className="space-y-3">
               {adminTickets.map((ticket) => {
                 const statusColors: Record<string, string> = {
-                  open: 'bg-blue-500/10 text-blue-700',
-                  in_progress: 'bg-amber-500/10 text-amber-700',
-                  resolved: 'bg-green-500/10 text-green-700',
+                  open: 'bg-primary/10 text-primary',
+                  in_progress: 'bg-warning/10 text-warning',
+                  resolved: 'bg-success/10 text-success',
                   closed: 'bg-muted text-muted-foreground',
                 };
                 const priorityColors: Record<string, string> = {
                   low: 'bg-muted text-muted-foreground',
-                  normal: 'bg-blue-500/10 text-blue-700',
-                  high: 'bg-amber-500/10 text-amber-700',
+                  normal: 'bg-primary/10 text-primary',
+                  high: 'bg-warning/10 text-warning',
                   urgent: 'bg-destructive/10 text-destructive',
                 };
                 const priorityLabels: Record<string, string> = { low: 'منخفضة', normal: 'عادية', high: 'عالية', urgent: 'عاجلة' };

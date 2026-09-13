@@ -22,16 +22,16 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  open: { label: 'مفتوحة', color: 'bg-blue-500/10 text-blue-700 border-blue-500/20', icon: <AlertCircle className="w-3 h-3" /> },
-  in_progress: { label: 'قيد المعالجة', color: 'bg-amber-500/10 text-amber-700 border-amber-500/20', icon: <Clock className="w-3 h-3" /> },
-  resolved: { label: 'تم الحل', color: 'bg-green-500/10 text-green-700 border-green-500/20', icon: <CheckCircle className="w-3 h-3" /> },
+  open: { label: 'مفتوحة', color: 'bg-primary/10 text-primary border-primary/20', icon: <AlertCircle className="w-3 h-3" /> },
+  in_progress: { label: 'قيد المعالجة', color: 'bg-warning/10 text-warning border-warning/20', icon: <Clock className="w-3 h-3" /> },
+  resolved: { label: 'تم الحل', color: 'bg-success/10 text-success border-success/20', icon: <CheckCircle className="w-3 h-3" /> },
   closed: { label: 'مغلقة', color: 'bg-muted text-muted-foreground border-border', icon: <CheckCircle className="w-3 h-3" /> },
 };
 
 const priorityConfig: Record<string, { label: string; color: string }> = {
   low: { label: 'منخفضة', color: 'bg-muted text-muted-foreground' },
-  normal: { label: 'عادية', color: 'bg-blue-500/10 text-blue-700' },
-  high: { label: 'عالية', color: 'bg-amber-500/10 text-amber-700' },
+  normal: { label: 'عادية', color: 'bg-primary/10 text-primary' },
+  high: { label: 'عالية', color: 'bg-warning/10 text-warning' },
   urgent: { label: 'عاجلة', color: 'bg-destructive/10 text-destructive' },
 };
 
@@ -65,7 +65,7 @@ export default function SupportPage() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="flex gap-2">
-            <Badge variant="outline" className="bg-blue-500/10 text-blue-700"> مفتوحة: {openCount}
+            <Badge variant="outline" className="bg-primary/10 text-primary"> مفتوحة: {openCount}
             </Badge>
             <Badge variant="outline"> الكل: {tickets.length}
             </Badge>

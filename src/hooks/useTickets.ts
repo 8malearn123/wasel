@@ -61,7 +61,7 @@ export function useTickets() {
       return { error: error.message };
     }
 
-    toast.success('تم إرسال التذكرة بنجاح');
+    toast.success('تم إرسال التذكرة');
     await fetchTickets();
     return { error: null };
   };

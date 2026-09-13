@@ -13,9 +13,12 @@ export default {
       },
     },
     extend: {
+      // هوية وصل: IBM Plex Sans Arabic للنصوص · IBM Plex Mono للأرقام
       fontFamily: {
-        sans: ['IBM Plex Sans Arabic', 'Inter', 'system-ui', 'sans-serif'],
-        display: ['Cairo', 'IBM Plex Sans Arabic', 'Inter', 'system-ui', 'sans-serif'],
+        sans: ['Wasel Numerals', 'IBM Plex Sans Arabic', 'system-ui', 'sans-serif'],
+        display: ['Wasel Numerals', 'IBM Plex Sans Arabic', 'system-ui', 'sans-serif'],
+        mono: ['IBM Plex Mono', 'IBM Plex Sans Arabic', 'ui-monospace', 'monospace'],
+        numeric: ['IBM Plex Mono', 'IBM Plex Sans Arabic', 'ui-monospace', 'monospace'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -72,6 +75,24 @@ export default {
         surface: {
           elevated: "hsl(var(--surface-elevated))",
           sunken: "hsl(var(--surface-sunken))",
+        },
+        // ألوان الرسوم البيانية — من لوحة الهوية حصراً
+        chart: {
+          1: "hsl(var(--chart-1))",
+          2: "hsl(var(--chart-2))",
+          3: "hsl(var(--chart-3))",
+          4: "hsl(var(--chart-4))",
+          5: "hsl(var(--chart-5))",
+          6: "hsl(var(--chart-6))",
+        },
+        // ألوان الهوية الخام للحالات التي تحتاج اللون مباشرة
+        brand: {
+          blue: "hsl(var(--brand-blue))",
+          ink: "hsl(var(--brand-ink))",
+          grey: "hsl(var(--brand-grey))",
+          green: "hsl(var(--brand-green))",
+          surface: "hsl(var(--brand-surface))",
+          border: "hsl(var(--brand-border))",
         },
       },
       borderRadius: {

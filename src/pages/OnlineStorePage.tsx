@@ -424,7 +424,7 @@ export default function OnlineStorePage() {
       setExtrasDirty(false);
     }
     setSaving(false);
-    toast.success('تم نشر تصميم متجرك بنجاح');
+    toast.success('تم نشر تصميم متجرك');
   };
 
   // تطبيق قالب متجر كامل بضغطة وحدة
@@ -479,10 +479,10 @@ export default function OnlineStorePage() {
       {/* Status bar */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
         className={cn("p-4 rounded-xl border mb-6 flex items-center justify-between flex-wrap gap-3",
-          settings.is_published ? "bg-green-500/10 border-green-500/30" : "bg-muted/30 border-border"
+          settings.is_published ? "bg-success/10 border-success/30" : "bg-muted/30 border-border"
         )}>
         <div className="flex items-center gap-3">
-          {settings.is_published ? <Eye className="w-5 h-5 text-green-600" /> : <EyeOff className="w-5 h-5 text-muted-foreground" />}
+          {settings.is_published ? <Eye className="w-5 h-5 text-success" /> : <EyeOff className="w-5 h-5 text-muted-foreground" />}
           <div>
             <p className="font-semibold text-foreground">
               {settings.is_published ? "المتجر منشور ومتاح للعملاء" : "المتجر مخفي (مسودة)"}
@@ -2478,7 +2478,7 @@ export default function OnlineStorePage() {
           <div className="bg-card rounded-xl border p-6 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Star className="w-5 h-5 text-amber-500" />
+                <Star className="w-5 h-5 text-warning" />
                 <h3 className="font-semibold">قسم المنتجات المميزة</h3>
               </div>
               <Switch
@@ -2638,10 +2638,10 @@ export default function OnlineStorePage() {
           <div className="bg-card rounded-xl border p-6 space-y-5">
             <div className="rounded-lg border bg-muted/30 p-4">
               <p className="text-xs text-muted-foreground mb-2">معاينة في Google</p>
-              <p className="text-blue-700 dark:text-blue-400 text-base hover:underline cursor-pointer truncate">
+              <p className="text-primary text-base hover:underline cursor-pointer truncate">
                 {val("seo_title") || val("store_name") || "اسم المتجر"}
               </p>
-              <p className="text-green-700 dark:text-green-500 text-xs truncate" dir="ltr">{storeUrl}</p>
+              <p className="text-success text-xs truncate" dir="ltr">{storeUrl}</p>
               <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
                 {val("seo_description") || val("description") || "وصف المتجر..."}
               </p>

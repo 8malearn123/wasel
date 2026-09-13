@@ -73,7 +73,7 @@ export function StoreLayout({ store, pages = [], merchantLegal, designExtras, ch
               <Link to={`${base}/favorites`}>
                 <Heart className="w-5 h-5" />
                 {favCount > 0 && (
-                  <Badge className="absolute -top-1 -left-1 h-5 min-w-5 px-1 text-[10px] bg-red-500 hover:bg-red-500">
+                  <Badge className="absolute -top-1 -left-1 h-5 min-w-5 px-1 text-[10px] bg-destructive hover:bg-destructive">
                     {favCount}
                   </Badge>
                 )}

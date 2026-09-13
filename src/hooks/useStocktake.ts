@@ -253,8 +253,8 @@ export function useStocktake() {
 
     await fetchStocktakes();
     toast.success(adjustInventory 
-      ? 'تم إنهاء الجرد وتعديل المخزون بنجاح' 
-      : 'تم إنهاء الجرد بنجاح');
+      ? 'تم إنهاء الجرد وتعديل المخزون' 
+      : 'تم إنهاء الجرد');
     return true;
   };
 

@@ -441,15 +441,15 @@ function printHTML(title: string, body: string) {
   if (!win) { toast.error("المتصفح منع فتح نافذة الطباعة"); return; }
   win.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${title}</title>
     <style>
-      body{font-family:'IBM Plex Sans Arabic',Tahoma,sans-serif;padding:28px;color:#111}
+      body{font-family:'IBM Plex Sans Arabic',Tahoma,sans-serif;padding:28px;color:#12151B}
       h1{font-size:20px;margin:0 0 4px}
-      .sub{color:#666;font-size:12px;margin-bottom:18px}
+      .sub{color:#6B7280;font-size:12px;margin-bottom:18px}
       table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}
-      th,td{border:1px solid #ddd;padding:8px;text-align:right}
-      th{background:#f5f5f5;font-weight:700}
-      tfoot td{font-weight:800;background:#fafafa}
+      th,td{border:1px solid #E6E8EB;padding:8px;text-align:right}
+      th{background:#F6F7F9;font-weight:700}
+      tfoot td{font-weight:800;background:#F6F7F9}
       .sign{margin-top:44px;display:flex;justify-content:space-between;font-size:13px}
-      .sign div{width:45%;border-top:1px solid #999;padding-top:6px;text-align:center}
+      .sign div{width:45%;border-top:1px solid #6B7280;padding-top:6px;text-align:center}
       @media print{body{padding:0}}
     </style></head><body>${body}</body></html>`);
   win.document.close();

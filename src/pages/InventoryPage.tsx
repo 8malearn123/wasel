@@ -186,7 +186,7 @@ export default function InventoryPage() {
         title={fav ? (isRTL ? "إزالة من المفضلة" : "Remove from favorites") : (isRTL ? "إضافة للمفضلة" : "Add to favorites")}
         onClick={() => toggleFav(id)}
       >
-        <Heart className={cn("w-4 h-4", fav ? "text-red-500 fill-red-500" : "text-muted-foreground")} />
+        <Heart className={cn("w-4 h-4", fav ? "text-destructive fill-destructive" : "text-muted-foreground")} />
       </Button>
     );
   };
@@ -323,7 +323,7 @@ export default function InventoryPage() {
               </div>
               <Button
                 variant={showFavsOnly ? "default" : "outline"}
-                className={cn("gap-2", showFavsOnly && "bg-red-500 hover:bg-red-600 text-white")}
+                className={cn("gap-2", showFavsOnly && "bg-destructive hover:bg-destructive text-destructive-foreground")}
                 onClick={() => setShowFavsOnly(v => !v)}
               >
                 <Heart className={cn("w-4 h-4", showFavsOnly && "fill-white")} />
@@ -641,8 +641,8 @@ export default function InventoryPage() {
                         >
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                                <Wrench className="w-5 h-5 text-amber-600" />
+                              <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
+                                <Wrench className="w-5 h-5 text-warning" />
                               </div>
                               <div>
                                 <p className="font-medium text-foreground">{part.name}</p>

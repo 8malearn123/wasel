@@ -133,9 +133,9 @@ export function StoreProductDetailPage({ store, devices, accessories, type }: Pr
 
           {type === 'device' && (
             <div className="bg-muted/30 rounded-xl p-4 mb-6 space-y-2 text-sm">
-              <div className="flex items-center gap-2"><Check className="w-4 h-4 text-green-600" /> ضمان أصلي من المتجر</div>
-              <div className="flex items-center gap-2"><Check className="w-4 h-4 text-green-600" /> توصيل سريع</div>
-              <div className="flex items-center gap-2"><Check className="w-4 h-4 text-green-600" /> دفع آمن</div>
+              <div className="flex items-center gap-2"><Check className="w-4 h-4 text-success" /> ضمان أصلي من المتجر</div>
+              <div className="flex items-center gap-2"><Check className="w-4 h-4 text-success" /> توصيل سريع</div>
+              <div className="flex items-center gap-2"><Check className="w-4 h-4 text-success" /> دفع آمن</div>
             </div>
           )}
 

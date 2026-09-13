@@ -25,19 +25,19 @@ import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  pending: { label: "قيد الانتظار", color: "bg-amber-500/10 text-amber-600 border-amber-500/20", icon: Clock },
-  confirmed: { label: "مؤكد", color: "bg-blue-500/10 text-blue-600 border-blue-500/20", icon: CheckCircle2 },
-  processing: { label: "قيد التجهيز", color: "bg-cyan-500/10 text-cyan-600 border-cyan-500/20", icon: Package },
-  shipped: { label: "تم الشحن", color: "bg-purple-500/10 text-purple-600 border-purple-500/20", icon: Truck },
-  delivered: { label: "تم التسليم", color: "bg-green-500/10 text-green-600 border-green-500/20", icon: CheckCircle2 },
-  cancelled: { label: "ملغي", color: "bg-red-500/10 text-red-600 border-red-500/20", icon: XCircle },
+  pending: { label: "قيد الانتظار", color: "bg-warning/10 text-warning border-warning/20", icon: Clock },
+  confirmed: { label: "مؤكد", color: "bg-primary/10 text-primary border-primary/20", icon: CheckCircle2 },
+  processing: { label: "قيد التجهيز", color: "bg-primary/10 text-primary border-primary/20", icon: Package },
+  shipped: { label: "تم الشحن", color: "bg-primary/10 text-primary border-primary/20", icon: Truck },
+  delivered: { label: "تم التسليم", color: "bg-success/10 text-success border-success/20", icon: CheckCircle2 },
+  cancelled: { label: "ملغي", color: "bg-destructive/10 text-destructive border-destructive/20", icon: XCircle },
   refunded: { label: "مسترجع", color: "bg-muted text-muted-foreground border-border", icon: XCircle },
 };
 
 const paymentConfig: Record<string, { label: string; color: string }> = {
-  paid: { label: "مدفوع", color: "bg-green-500/10 text-green-600" },
-  unpaid: { label: "غير مدفوع", color: "bg-red-500/10 text-red-600" },
-  partial: { label: "جزئي", color: "bg-amber-500/10 text-amber-600" },
+  paid: { label: "مدفوع", color: "bg-success/10 text-success" },
+  unpaid: { label: "غير مدفوع", color: "bg-destructive/10 text-destructive" },
+  partial: { label: "جزئي", color: "bg-warning/10 text-warning" },
 };
 
 export default function OnlineOrdersPage() {
@@ -83,9 +83,9 @@ export default function OnlineOrdersPage() {
       <div className="grid gap-4 sm:grid-cols-4 mb-6">
         {[
           { label: "إجمالي الطلبات", value: stats.total, icon: ShoppingBag, color: "bg-primary/10 text-primary" },
-          { label: "قيد الانتظار", value: stats.pending, icon: Clock, color: "bg-amber-500/10 text-amber-600" },
-          { label: "قيد التجهيز", value: stats.processing, icon: Package, color: "bg-cyan-500/10 text-cyan-600" },
-          { label: "الإيرادات", value: `${stats.revenue.toFixed(0)} ر.س`, icon: CreditCard, color: "bg-green-500/10 text-green-600" },
+          { label: "قيد الانتظار", value: stats.pending, icon: Clock, color: "bg-warning/10 text-warning" },
+          { label: "قيد التجهيز", value: stats.processing, icon: Package, color: "bg-primary/10 text-primary" },
+          { label: "الإيرادات", value: `${stats.revenue.toFixed(0)} ر.س`, icon: CreditCard, color: "bg-success/10 text-success" },
         ].map((s, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
             className="p-4 rounded-xl bg-card border border-border shadow-sm">

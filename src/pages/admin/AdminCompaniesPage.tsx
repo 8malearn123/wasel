@@ -93,7 +93,7 @@ export default function AdminCompaniesPage() {
       case 'note': result = await addAdminNote(target.subscription.id, actionValue); break;
       case 'fee': result = await updateMerchantFee(target.id, actionValue !== '' ? parseFloat(actionValue) : 5); break;
     }
-    if (result && !result.error) toast.success('تمت العملية بنجاح');
+    if (result && !result.error) toast.success('تمت العملية');
     else if (result?.error) toast.error((result.error as any).message || 'حدث خطأ');
     setActionLoading(false);
     setActionDialog(null);

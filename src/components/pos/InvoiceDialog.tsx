@@ -83,18 +83,18 @@ function getThermalStyles(width: PaperWidth): string {
   return `
     * { margin: 0; padding: 0; box-sizing: border-box; }
     @page { margin: 2mm; size: ${width} auto; }
-    body { font-family: 'Courier New', monospace; font-size: ${fontSize}; width: ${bodyWidth}; margin: 0 auto; padding: 2mm; direction: rtl; text-align: right; }
-    .header { text-align: center; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px dashed #000; }
+    body { font-family: 'IBM Plex Sans Arabic', 'IBM Plex Mono', Tahoma, sans-serif; font-size: ${fontSize}; width: ${bodyWidth}; margin: 0 auto; padding: 2mm; direction: rtl; text-align: right; }
+    .header { text-align: center; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px dashed #12151B; }
     .header h1 { font-size: ${titleSize}; font-weight: bold; margin-bottom: 2px; }
     .header p { font-size: ${fontSize}; }
-    .separator { border: none; border-top: 1px dashed #000; margin: 4px 0; }
+    .separator { border: none; border-top: 1px dashed #12151B; margin: 4px 0; }
     table { width: 100%; border-collapse: collapse; }
-    th { border-bottom: 1px dashed #000; text-align: right; padding: 2px 0; font-size: ${fontSize}; }
+    th { border-bottom: 1px dashed #12151B; text-align: right; padding: 2px 0; font-size: ${fontSize}; }
     td { padding: 2px 0; font-size: ${fontSize}; vertical-align: top; }
     .left { text-align: left; } .center { text-align: center; }
     .totals .row { display: flex; justify-content: space-between; margin: 2px 0; }
-    .totals .total-row { font-size: ${totalSize}; font-weight: bold; border-top: 1px solid #000; padding-top: 4px; margin-top: 4px; }
-    .footer { text-align: center; margin-top: 8px; padding-top: 6px; border-top: 1px dashed #000; }
+    .totals .total-row { font-size: ${totalSize}; font-weight: bold; border-top: 1px solid #12151B; padding-top: 4px; margin-top: 4px; }
+    .footer { text-align: center; margin-top: 8px; padding-top: 6px; border-top: 1px dashed #12151B; }
     .qr-section { text-align: center; margin-top: 6px; }
     .qr-section img { width: ${qrSize}; height: ${qrSize}; margin: 4px auto; }
     @media print { body { width: 100%; } }
@@ -104,7 +104,7 @@ function getThermalStyles(width: PaperWidth): string {
 function buildReceiptHTML(data: InvoiceData, vatNumber: string): string {
   const itemsRows = data.items.map(item => `
     <tr>
-      <td style="max-width:60%">${item.name}<br/><span style="font-size:9px;color:#555">${item.identifier}</span></td>
+      <td style="max-width:60%">${item.name}<br/><span style="font-size:9px;color:#6B7280">${item.identifier}</span></td>
       <td class="center">${item.quantity}</td>
       <td class="left">${(item.price * item.quantity).toLocaleString()}</td>
     </tr>`).join("");
@@ -195,7 +195,7 @@ export function InvoiceDialog({ data, onClose, onPrinted }: InvoiceDialogProps) 
     setIsPrinting(false);
 
     if (result.success) {
-      toast.success('تمت الطباعة بنجاح');
+      toast.success('تمت الطباعة');
       onPrinted?.();
     } else if (result.error === 'USE_SYSTEM_PRINT') {
       handleSystemPrint();
@@ -213,7 +213,7 @@ export function InvoiceDialog({ data, onClose, onPrinted }: InvoiceDialogProps) 
     setIsTesting(false);
     setConnectionStatus(result.success ? 'success' : 'error');
     if (result.success) {
-      toast.success('تم الاتصال بالطابعة بنجاح!');
+      toast.success('تم الاتصال بالطابعة!');
     } else {
       toast.error(result.error || 'فشل الاتصال');
     }
@@ -318,7 +318,7 @@ export function InvoiceDialog({ data, onClose, onPrinted }: InvoiceDialogProps) 
                   {isTesting ? (
                     <Loader2 className="w-4 h-4 ml-2 animate-spin" />
                   ) : connectionStatus === 'success' ? (
-                    <CheckCircle2 className="w-4 h-4 ml-2 text-green-500" />
+                    <CheckCircle2 className="w-4 h-4 ml-2 text-success" />
                   ) : connectionStatus === 'error' ? (
                     <WifiOff className="w-4 h-4 ml-2 text-destructive" />
                   ) : (
@@ -440,7 +440,7 @@ export function InvoiceDialog({ data, onClose, onPrinted }: InvoiceDialogProps) 
               {config.type === 'epson' ? 'Epson ePOS' : 'Star WebPRNT'}
               <span className="font-mono">{config.ip}:{config.port}</span>
             </div>
-            <div className={`flex items-center gap-1 ${connectionStatus === 'success' ? 'text-green-500' : connectionStatus === 'error' ? 'text-destructive' : 'text-muted-foreground'}`}>
+            <div className={`flex items-center gap-1 ${connectionStatus === 'success' ? 'text-success' : connectionStatus === 'error' ? 'text-destructive' : 'text-muted-foreground'}`}>
               {connectionStatus === 'success' ? <Wifi className="w-3 h-3" /> : connectionStatus === 'error' ? <WifiOff className="w-3 h-3" /> : null}
               {connectionStatus === 'success' ? 'متصل' : connectionStatus === 'error' ? 'غير متصل' : ''}
             </div>

@@ -60,18 +60,18 @@ function getThermalStyles(width: PaperWidth): string {
   return `
     * { margin: 0; padding: 0; box-sizing: border-box; }
     @page { margin: 2mm; size: ${width} auto; }
-    body { font-family: 'Courier New', monospace; font-size: ${fontSize}; width: ${bodyWidth}; margin: 0 auto; padding: 2mm; direction: rtl; text-align: right; }
-    .header { text-align: center; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px dashed #000; }
+    body { font-family: 'IBM Plex Sans Arabic', 'IBM Plex Mono', Tahoma, sans-serif; font-size: ${fontSize}; width: ${bodyWidth}; margin: 0 auto; padding: 2mm; direction: rtl; text-align: right; }
+    .header { text-align: center; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px dashed #12151B; }
     .header h1 { font-size: ${titleSize}; font-weight: bold; margin-bottom: 2px; }
     .header p { font-size: ${fontSize}; }
-    .separator { border: none; border-top: 1px dashed #000; margin: 4px 0; }
+    .separator { border: none; border-top: 1px dashed #12151B; margin: 4px 0; }
     table { width: 100%; border-collapse: collapse; }
-    th { border-bottom: 1px dashed #000; text-align: right; padding: 2px 0; font-size: ${fontSize}; }
+    th { border-bottom: 1px dashed #12151B; text-align: right; padding: 2px 0; font-size: ${fontSize}; }
     td { padding: 2px 0; font-size: ${fontSize}; vertical-align: top; }
     .left { text-align: left; } .center { text-align: center; }
     .totals .row { display: flex; justify-content: space-between; margin: 2px 0; }
-    .totals .total-row { font-size: ${totalSize}; font-weight: bold; border-top: 1px solid #000; padding-top: 4px; margin-top: 4px; }
-    .footer { text-align: center; margin-top: 8px; padding-top: 6px; border-top: 1px dashed #000; }
+    .totals .total-row { font-size: ${totalSize}; font-weight: bold; border-top: 1px solid #12151B; padding-top: 4px; margin-top: 4px; }
+    .footer { text-align: center; margin-top: 8px; padding-top: 6px; border-top: 1px dashed #12151B; }
     .qr-section { text-align: center; margin-top: 6px; }
     .qr-section img { width: ${qrSize}; height: ${qrSize}; margin: 4px auto; }
     .info-row { display: flex; justify-content: space-between; margin: 2px 0; font-size: ${fontSize}; }

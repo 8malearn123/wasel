@@ -44,9 +44,9 @@ export default function AdminDashboardPage() {
 
   // Subscription distribution for pie chart
   const subDistribution = useMemo(() => [
-    { name: 'نشط', value: stats.activeSubs, color: 'hsl(142, 70%, 40%)' },
-    { name: 'تجريبي', value: stats.trialSubs, color: 'hsl(38, 95%, 50%)' },
-    { name: 'منتهي/موقوف', value: stats.expiredSubs, color: 'hsl(0, 72%, 51%)' },
+    { name: 'نشط', value: stats.activeSubs, color: 'hsl(var(--chart-4))' },
+    { name: 'تجريبي', value: stats.trialSubs, color: 'hsl(var(--chart-3))' },
+    { name: 'منتهي/موقوف', value: stats.expiredSubs, color: 'hsl(var(--chart-2))' },
   ].filter(d => d.value > 0), [stats]);
 
   // Top merchants by sales

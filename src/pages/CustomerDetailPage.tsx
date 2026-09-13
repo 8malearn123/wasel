@@ -23,10 +23,10 @@ import { ar } from 'date-fns/locale';
 import { toast } from 'sonner';
 
 const tierColors: Record<string, string> = {
-  bronze: 'bg-amber-700/15 text-amber-700',
-  silver: 'bg-slate-400/15 text-slate-500',
-  gold: 'bg-yellow-500/15 text-yellow-600',
-  platinum: 'bg-purple-500/15 text-purple-600',
+  bronze: 'bg-warning/15 text-warning',
+  silver: 'bg-muted-foreground/15 text-muted-foreground',
+  gold: 'bg-warning/15 text-warning',
+  platinum: 'bg-primary/15 text-primary',
 };
 const tierLabel: Record<string, { ar: string; en: string }> = {
   bronze: { ar: 'برونزي', en: 'Bronze' },
@@ -221,7 +221,7 @@ export default function CustomerDetailPage() {
 
           <div className="lg:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { icon: Star, label: t ? 'النقاط' : 'Points', value: customer.loyalty_points.toLocaleString(), color: 'text-yellow-600' },
+              { icon: Star, label: t ? 'النقاط' : 'Points', value: customer.loyalty_points.toLocaleString(), color: 'text-warning' },
               { icon: ShoppingBag, label: t ? 'المشتريات' : 'Purchases', value: stats.salesCount, color: 'text-primary' },
               { icon: Wrench, label: t ? 'الصيانات' : 'Repairs', value: stats.repairsCount, color: 'text-accent' },
               { icon: Gift, label: t ? 'متوسط الفاتورة' : 'Avg ticket', value: `${Math.round(stats.avgTicket).toLocaleString()} ${t ? 'ر.س' : 'SAR'}`, color: 'text-success' },

@@ -17,11 +17,11 @@ interface OrderWithStatus extends SavedOrder {
 }
 
 const STATUS_META: Record<string, { label: string; icon: any; cls: string }> = {
-  pending: { label: 'بانتظار التأكيد', icon: Clock, cls: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },
-  confirmed: { label: 'مؤكّد', icon: CheckCircle2, cls: 'bg-blue-500/10 text-blue-600 border-blue-500/20' },
-  shipped: { label: 'في الطريق', icon: Truck, cls: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20' },
-  delivered: { label: 'تم التسليم', icon: Package, cls: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' },
-  cancelled: { label: 'ملغي', icon: XCircle, cls: 'bg-rose-500/10 text-rose-600 border-rose-500/20' },
+  pending: { label: 'بانتظار التأكيد', icon: Clock, cls: 'bg-warning/10 text-warning border-warning/20' },
+  confirmed: { label: 'مؤكّد', icon: CheckCircle2, cls: 'bg-primary/10 text-primary border-primary/20' },
+  shipped: { label: 'في الطريق', icon: Truck, cls: 'bg-primary/10 text-primary border-primary/20' },
+  delivered: { label: 'تم التسليم', icon: Package, cls: 'bg-success/10 text-success border-success/20' },
+  cancelled: { label: 'ملغي', icon: XCircle, cls: 'bg-destructive/10 text-destructive border-destructive/20' },
 };
 
 export function StoreMyOrdersPage({ store }: { store: StoreSettings }) {

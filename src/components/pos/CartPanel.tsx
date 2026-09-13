@@ -256,7 +256,7 @@ export function CartPanel({
           onClick={() => setShowPaymentDialog(true)}
         >
           <Receipt className={cn("w-4 h-4", isRTL ? "ml-2" : "mr-2")} />
-          {isProcessing ? (isRTL ? "جاري المعالجة..." : "Processing...") : t.pos.completeSale}
+          {isProcessing ? (isRTL ? "جاري البيع..." : "Processing...") : t.pos.completeSale}
         </Button>
       </div>
 

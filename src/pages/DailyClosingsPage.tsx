@@ -88,20 +88,20 @@ export default function DailyClosingsPage() {
 <style>
   @page { size: 80mm auto; margin: 4mm; }
   * { box-sizing: border-box; }
-  body { font-family: 'Cairo', system-ui, -apple-system, sans-serif; width: 72mm; margin: 0 auto; padding: 4px; color: #000; font-size: 12px; line-height: 1.5; }
+  body { font-family: 'IBM Plex Sans Arabic', 'IBM Plex Mono', Tahoma, sans-serif; width: 72mm; margin: 0 auto; padding: 4px; color: #12151B; font-size: 12px; line-height: 1.5; }
   .center { text-align: center; }
   h1 { font-size: 16px; margin: 4px 0; }
-  h2 { font-size: 13px; margin: 8px 0 4px; border-bottom: 1px dashed #000; padding-bottom: 2px; }
+  h2 { font-size: 13px; margin: 8px 0 4px; border-bottom: 1px dashed #12151B; padding-bottom: 2px; }
   .meta { font-size: 11px; margin-bottom: 6px; }
   .row { display: flex; justify-content: space-between; gap: 8px; margin: 2px 0; }
   .row.b { font-weight: 700; }
-  .sep { border-top: 1px dashed #000; margin: 6px 0; }
-  .total { border: 2px solid #000; padding: 6px; margin: 6px 0; text-align: center; font-weight: 700; font-size: 14px; }
-  .small { font-size: 10px; color: #333; }
+  .sep { border-top: 1px dashed #12151B; margin: 6px 0; }
+  .total { border: 2px solid #12151B; padding: 6px; margin: 6px 0; text-align: center; font-weight: 700; font-size: 14px; }
+  .small { font-size: 10px; color: #6B7280; }
   .footer { text-align: center; margin-top: 10px; font-size: 10px; }
   table { width: 100%; border-collapse: collapse; font-size: 10px; }
   th, td { padding: 2px 0; text-align: ${isRTL ? 'right' : 'left'}; }
-  th { border-bottom: 1px solid #000; }
+  th { border-bottom: 1px solid #12151B; }
 </style></head><body>
   <div class="center">
     <h1>${merchant?.name || ''}</h1>
@@ -209,9 +209,9 @@ export default function DailyClosingsPage() {
   const paymentPieData = useMemo(() => {
     if (!daySales) return [];
     return [
-      { name: isRTL ? 'كاش' : 'Cash', value: daySales.cashTotal, color: 'hsl(142 71% 45%)' },
-      { name: isRTL ? 'بطاقة' : 'Card', value: daySales.cardTotal, color: 'hsl(217 91% 60%)' },
-      { name: isRTL ? 'تحويل' : 'Transfer', value: daySales.bankTransferTotal, color: 'hsl(271 76% 53%)' },
+      { name: isRTL ? 'كاش' : 'Cash', value: daySales.cashTotal, color: 'hsl(var(--chart-4))' },
+      { name: isRTL ? 'بطاقة' : 'Card', value: daySales.cardTotal, color: 'hsl(var(--chart-1))' },
+      { name: isRTL ? 'تحويل' : 'Transfer', value: daySales.bankTransferTotal, color: 'hsl(var(--chart-5))' },
     ].filter(d => d.value > 0);
   }, [daySales, isRTL]);
 
@@ -350,9 +350,9 @@ export default function DailyClosingsPage() {
               {/* Payment cards */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {[
-                  { icon: Banknote, label: isRTL ? 'كاش' : 'Cash', value: daySales.cashTotal, card: 'border-green-500/30 bg-green-500/5', iconBg: 'bg-green-500/15', iconText: 'text-green-600', valueText: 'text-green-700 dark:text-green-400' },
-                  { icon: CreditCard, label: isRTL ? 'مدى / بطاقة' : 'Card', value: daySales.cardTotal, card: 'border-blue-500/30 bg-blue-500/5', iconBg: 'bg-blue-500/15', iconText: 'text-blue-600', valueText: 'text-blue-700 dark:text-blue-400' },
-                  { icon: Building2, label: isRTL ? 'تحويل بنكي' : 'Transfer', value: daySales.bankTransferTotal, card: 'border-purple-500/30 bg-purple-500/5', iconBg: 'bg-purple-500/15', iconText: 'text-purple-600', valueText: 'text-purple-700 dark:text-purple-400' },
+                  { icon: Banknote, label: isRTL ? 'كاش' : 'Cash', value: daySales.cashTotal, card: 'border-success/30 bg-success/5', iconBg: 'bg-success/15', iconText: 'text-success', valueText: 'text-success' },
+                  { icon: CreditCard, label: isRTL ? 'مدى / بطاقة' : 'Card', value: daySales.cardTotal, card: 'border-primary/30 bg-primary/5', iconBg: 'bg-primary/15', iconText: 'text-primary', valueText: 'text-primary' },
+                  { icon: Building2, label: isRTL ? 'تحويل بنكي' : 'Transfer', value: daySales.bankTransferTotal, card: 'border-primary/30 bg-primary/5', iconBg: 'bg-primary/15', iconText: 'text-primary', valueText: 'text-primary' },
                   { icon: ShoppingBag, label: isRTL ? 'الإجمالي' : 'Total', value: daySales.totalSales, card: 'border-primary/30 bg-primary/5', iconBg: 'bg-primary/15', iconText: 'text-primary', valueText: 'text-primary' },
                 ].map((c, i) => (
                   <motion.div
@@ -408,7 +408,7 @@ export default function DailyClosingsPage() {
                 </CardContent></Card>
                 <Card><CardContent className="p-3 text-center">
                   <ArrowLeftRight className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
-                  <p className="text-xl font-bold text-orange-600">{formatCurrency(daySales.totalDiscount)}</p>
+                  <p className="text-xl font-bold text-warning">{formatCurrency(daySales.totalDiscount)}</p>
                   <p className="text-xs text-muted-foreground">{isRTL ? 'الخصومات' : 'Discounts'}</p>
                 </CardContent></Card>
               </div>
@@ -456,7 +456,7 @@ export default function DailyClosingsPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base flex items-center gap-2">
-                      <Award className="w-4 h-4 text-amber-500" />
+                      <Award className="w-4 h-4 text-warning" />
                       {isRTL ? 'أفضل 5 منتجات' : 'Top 5 Products'}
                     </CardTitle>
                   </CardHeader>
@@ -546,7 +546,7 @@ export default function DailyClosingsPage() {
                           onChange={e => setCashCounted(e.target.value)}
                         />
                         {cashCounted && (
-                          <p className={`text-sm mt-1 ${parseFloat(cashCounted) - daySales.cashTotal === 0 ? 'text-green-600' : 'text-destructive'}`}>
+                          <p className={`text-sm mt-1 ${parseFloat(cashCounted) - daySales.cashTotal === 0 ? 'text-success' : 'text-destructive'}`}>
                             {isRTL ? 'الفرق:' : 'Difference:'} {formatCurrency(parseFloat(cashCounted) - daySales.cashTotal)}
                           </p>
                         )}
@@ -568,11 +568,11 @@ export default function DailyClosingsPage() {
               )}
 
               {existingClosing && (
-                <Card className="border-green-500/30 bg-green-50 dark:bg-green-950/20">
+                <Card className="border-success/30 bg-success/10 dark:bg-success/20">
                   <CardContent className="p-4 flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    <CheckCircle className="w-5 h-5 text-success" />
                     <div>
-                      <p className="font-medium text-green-700 dark:text-green-400">
+                      <p className="font-medium text-success">
                         {isRTL ? 'تم إغلاق هذا اليوم' : 'This day has been closed'}
                       </p>
                       {existingClosing.cash_counted !== null && (
@@ -633,7 +633,7 @@ export default function DailyClosingsPage() {
                       <TableCell>{formatCurrency(Number(c.bank_transfer_sales))}</TableCell>
                       <TableCell className="font-bold">{formatCurrency(Number(c.total_sales))}</TableCell>
                       <TableCell>{c.transactions_count}</TableCell>
-                      <TableCell className={Number(c.cash_difference || 0) !== 0 ? 'text-destructive font-medium' : 'text-green-600'}>
+                      <TableCell className={Number(c.cash_difference || 0) !== 0 ? 'text-destructive font-medium' : 'text-success'}>
                         {c.cash_counted !== null ? formatCurrency(Number(c.cash_difference || 0)) : '-'}
                       </TableCell>
                       <TableCell>

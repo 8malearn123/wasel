@@ -56,7 +56,7 @@ export function useBranchRequests() {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('تم إرسال طلب إضافة الفرع بنجاح');
+      toast.success('تم إرسال طلب إضافة الفرع');
       await fetchRequests();
     }
     return { error };

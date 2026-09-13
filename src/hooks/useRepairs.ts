@@ -140,7 +140,7 @@ export function useRepairs() {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('تم إنشاء طلب الإصلاح بنجاح');
+      toast.success('تم إنشاء طلب الإصلاح');
       await fetchRepairs();
     }
     return { data, error };

@@ -28,7 +28,7 @@ export function StoreFavoritesPage({ store, devices, accessories }: Props) {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="flex items-center gap-2 mb-6">
-        <Heart className="w-6 h-6 text-red-500 fill-red-500" />
+        <Heart className="w-6 h-6 text-destructive fill-destructive" />
         <h1 className="text-2xl font-bold">المفضلة</h1>
         <span className="text-sm text-muted-foreground">({favorites.length})</span>
       </div>

@@ -191,7 +191,7 @@ export function useDailyClosings() {
       return { error: error.message };
     }
 
-    toast.success('تم إغلاق اليوم بنجاح');
+    toast.success('تم إغلاق اليوم');
     await fetchClosings();
     return { error: null };
   };

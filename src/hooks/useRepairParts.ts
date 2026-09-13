@@ -69,7 +69,7 @@ export function useRepairParts() {
 
     if (!error) {
       await fetchParts();
-      toast.success('تم إضافة القطعة بنجاح');
+      toast.success('تم إضافة القطعة');
     } else {
       toast.error(error.message);
     }

@@ -5,124 +5,196 @@
 /* Fonts are loaded via <link> tags in index.html — a CSS @import here gets
    dropped at build time because it lands after Tailwind's generated rules. */
 
-/* Mobile Retail OS - Enterprise Design System */
+/* الأرقام بخط IBM Plex Mono كما ينص دليل الهوية (NUMERALS · IBM Plex Mono).
+   نُعرّفها عبر unicode-range فتنطبق تلقائياً على كل رقم في المنتج
+   بينما يبقى النص العربي على IBM Plex Sans Arabic. */
+@font-face {
+  font-family: 'Wasel Numerals';
+  src: url('/brand/fonts/wasel-numerals-400.woff2') format('woff2');
+  font-weight: 100 500;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0030-0039;
+}
+@font-face {
+  font-family: 'Wasel Numerals';
+  src: url('/brand/fonts/wasel-numerals-600.woff2') format('woff2');
+  font-weight: 501 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0030-0039;
+}
+
+/* نظام تصميم وصل — مبني بالكامل على دليل الهوية الرسمي v1.0 */
 
 @layer base {
+  /* ===========================================================
+     هوية وصل الرسمية · Brand Identity v1.0
+     أزرق وصل  #2F6BFF · الحبر #12151B · رمادي #6B7280
+     نجاح/مدفوع #16A34A · السطح #F6F7F9 · الحدود #E6E8EB
+     لا يُستخدم أي لون خارج هذه اللوحة.
+     =========================================================== */
   :root {
-    /* Core brand colors - Warm Gold/Bronze (من تصميم Wasl Dashboard) */
-    --background: 36 30% 96%;
-    --foreground: 24 30% 12%;
+    /* ألوان الهوية الخام — المرجع الوحيد لبقية التوكنات */
+    --brand-blue: 223 100% 59%;      /* #2F6BFF */
+    --brand-ink: 220 20% 9%;         /* #12151B */
+    --brand-grey: 220 9% 46%;        /* #6B7280 */
+    --brand-green: 142 76% 36%;      /* #16A34A */
+    --brand-surface: 220 20% 97%;    /* #F6F7F9 */
+    --brand-border: 216 11% 91%;     /* #E6E8EB */
 
-    --card: 40 40% 99%;
-    --card-foreground: 24 30% 12%;
+    /* الأسطح والنصوص */
+    --background: var(--brand-surface);
+    --foreground: var(--brand-ink);
 
-    --popover: 40 40% 99%;
-    --popover-foreground: 24 30% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: var(--brand-ink);
 
-    /* Primary - Bronze/Gold */
-    --primary: 32 45% 44%;
+    --popover: 0 0% 100%;
+    --popover-foreground: var(--brand-ink);
+
+    /* الأساسي — أزرق وصل: الأزرار والروابط والتأكيد */
+    --primary: var(--brand-blue);
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary - Warm sand */
-    --secondary: 34 25% 92%;
-    --secondary-foreground: 24 30% 20%;
+    /* الثانوي — سطح رمادي فاتح */
+    --secondary: var(--brand-surface);
+    --secondary-foreground: var(--brand-ink);
 
-    /* Muted */
-    --muted: 34 25% 94%;
-    --muted-foreground: 28 12% 45%;
+    /* الصامت — الأوصاف الثانوية */
+    --muted: var(--brand-surface);
+    --muted-foreground: var(--brand-grey);
 
-    /* Accent - Light gold */
-    --accent: 36 46% 58%;
-    --accent-foreground: 28 40% 12%;
+    /* المميز — درجة زرقاء خفيفة من نفس الأساسي */
+    --accent: 223 100% 96%;
+    --accent-foreground: 223 100% 45%;
 
-    --destructive: 0 72% 51%;
+    /* الخطر — الحبر (اللوحة لا تحوي أحمر، والحبر أقوى تأكيد متاح) */
+    --destructive: var(--brand-ink);
     --destructive-foreground: 0 0% 100%;
 
-    /* Success */
-    --success: 142 70% 38%;
+    /* النجاح / مدفوع */
+    --success: var(--brand-green);
     --success-foreground: 0 0% 100%;
 
-    /* Warning */
-    --warning: 38 92% 48%;
-    --warning-foreground: 38 95% 15%;
+    /* التحذير — رمادي الهوية */
+    --warning: var(--brand-grey);
+    --warning-foreground: 0 0% 100%;
 
-    --border: 32 22% 86%;
-    --input: 32 22% 86%;
-    --ring: 32 45% 44%;
+    --border: var(--brand-border);
+    --input: var(--brand-border);
+    --ring: var(--brand-blue);
 
     --radius: 0.75rem;
 
-    /* Sidebar — warm beige */
-    --sidebar-background: 33 26% 92%;
-    --sidebar-foreground: 26 25% 28%;
-    --sidebar-primary: 32 45% 44%;
+    /* الشريط الجانبي */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: var(--brand-grey);
+    --sidebar-primary: var(--brand-blue);
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 33 22% 86%;
-    --sidebar-accent-foreground: 24 30% 18%;
-    --sidebar-border: 33 20% 84%;
-    --sidebar-ring: 32 45% 44%;
+    --sidebar-accent: var(--brand-surface);
+    --sidebar-accent-foreground: var(--brand-ink);
+    --sidebar-border: var(--brand-border);
+    --sidebar-ring: var(--brand-blue);
 
-    /* Custom semantic tokens */
-    --surface-elevated: 40 40% 99%;
-    --surface-sunken: 34 25% 94%;
-    --text-muted: 28 12% 52%;
-    --gradient-primary: linear-gradient(135deg, hsl(32 45% 48%) 0%, hsl(28 50% 36%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(36 55% 62%) 0%, hsl(30 50% 50%) 100%);
-    --gradient-surface: linear-gradient(180deg, hsl(36 30% 96%) 0%, hsl(34 25% 94%) 100%);
-    --shadow-sm: 0 1px 2px 0 hsl(28 25% 10% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(28 25% 10% / 0.08), 0 2px 4px -2px hsl(28 25% 10% / 0.06);
-    --shadow-lg: 0 10px 15px -3px hsl(28 25% 10% / 0.08), 0 4px 6px -4px hsl(28 25% 10% / 0.05);
-    --shadow-xl: 0 20px 25px -5px hsl(28 25% 10% / 0.1), 0 8px 10px -6px hsl(28 25% 10% / 0.08);
-    --shadow-glow: 0 0 20px hsl(34 45% 52% / 0.22);
+    /* توكنات دلالية إضافية */
+    --surface-elevated: 0 0% 100%;
+    --surface-sunken: var(--brand-surface);
+    --text-muted: var(--brand-grey);
+
+    /* الرسوم البيانية — تدرجات من لوحة الهوية فقط */
+    --chart-1: var(--brand-blue);
+    --chart-2: var(--brand-ink);
+    --chart-3: var(--brand-grey);
+    --chart-4: var(--brand-green);
+    --chart-5: 223 100% 76%;
+    --chart-6: 220 12% 72%;
+
+    /* تدرّجات مسطّحة من الأزرق نفسه — الهوية تقنية بلا زخرفة */
+    --gradient-primary: linear-gradient(135deg, hsl(223 100% 62%) 0%, hsl(223 100% 47%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(223 100% 66%) 0%, hsl(223 100% 55%) 100%);
+    --gradient-surface: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(220 20% 97%) 100%);
+
+    --shadow-sm: 0 1px 2px 0 hsl(220 20% 9% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(220 20% 9% / 0.07), 0 2px 4px -2px hsl(220 20% 9% / 0.05);
+    --shadow-lg: 0 10px 15px -3px hsl(220 20% 9% / 0.07), 0 4px 6px -4px hsl(220 20% 9% / 0.05);
+    --shadow-xl: 0 20px 25px -5px hsl(220 20% 9% / 0.09), 0 8px 10px -6px hsl(220 20% 9% / 0.07);
+    --shadow-glow: 0 0 0 4px hsl(223 100% 59% / 0.14);
   }
 
+  /* نسخة ON DARK من دليل الهوية — خلفية الحبر #12151B */
   .dark {
-    /* Warm dark brown (#17120f) مع لمسات ذهبية (#b08a57 / #cdaa77) */
-    --background: 22 21% 7%;
-    --foreground: 35 25% 92%;
+    --brand-blue: 223 100% 64%;
+    --brand-ink: 220 20% 9%;
+    --brand-grey: 220 10% 62%;
+    --brand-green: 142 62% 45%;
+    --brand-surface: 220 20% 97%;
+    --brand-border: 220 14% 20%;
 
-    --card: 24 28% 10%;
-    --card-foreground: 35 25% 92%;
+    --background: 220 20% 9%;
+    --foreground: 220 20% 97%;
 
-    --popover: 24 28% 10%;
-    --popover-foreground: 35 25% 92%;
+    --card: 220 18% 12%;
+    --card-foreground: 220 20% 97%;
 
-    --primary: 34 38% 55%;
-    --primary-foreground: 24 40% 8%;
+    --popover: 220 18% 12%;
+    --popover-foreground: 220 20% 97%;
 
-    --secondary: 25 20% 16%;
-    --secondary-foreground: 35 20% 88%;
+    --primary: var(--brand-blue);
+    --primary-foreground: 0 0% 100%;
 
-    --muted: 25 20% 13%;
-    --muted-foreground: 30 12% 60%;
+    --secondary: 220 16% 16%;
+    --secondary-foreground: 220 20% 94%;
 
-    --accent: 36 46% 64%;
-    --accent-foreground: 24 40% 8%;
+    --muted: 220 16% 15%;
+    --muted-foreground: var(--brand-grey);
 
-    --destructive: 0 72% 55%;
-    --destructive-foreground: 0 0% 100%;
+    --accent: 223 46% 22%;
+    --accent-foreground: 223 100% 80%;
 
-    --success: 142 70% 50%;
-    --success-foreground: 0 0% 100%;
+    /* الخطر على الداكن — معكوس الخلفية (سطح فاتح) لأقصى تأكيد داخل اللوحة */
+    --destructive: 220 20% 97%;
+    --destructive-foreground: 220 20% 9%;
 
-    --warning: 38 92% 55%;
-    --warning-foreground: 38 95% 10%;
+    --success: var(--brand-green);
+    --success-foreground: 220 20% 9%;
 
-    --border: 25 26% 18%;
-    --input: 25 26% 18%;
-    --ring: 34 38% 55%;
+    --warning: var(--brand-grey);
+    --warning-foreground: 220 20% 9%;
 
-    --sidebar-background: 24 25% 6%;
-    --sidebar-foreground: 33 15% 82%;
-    --sidebar-primary: 34 38% 55%;
-    --sidebar-primary-foreground: 24 40% 8%;
-    --sidebar-accent: 25 22% 12%;
-    --sidebar-accent-foreground: 35 20% 92%;
-    --sidebar-border: 25 24% 14%;
-    --sidebar-ring: 34 38% 55%;
+    --border: var(--brand-border);
+    --input: var(--brand-border);
+    --ring: var(--brand-blue);
 
-    --surface-elevated: 24 25% 12%;
-    --surface-sunken: 22 25% 5%;
+    --sidebar-background: 220 22% 7%;
+    --sidebar-foreground: var(--brand-grey);
+    --sidebar-primary: var(--brand-blue);
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 16% 14%;
+    --sidebar-accent-foreground: 220 20% 97%;
+    --sidebar-border: 220 14% 16%;
+    --sidebar-ring: var(--brand-blue);
+
+    --surface-elevated: 220 18% 14%;
+    --surface-sunken: 220 22% 7%;
+    --text-muted: var(--brand-grey);
+
+    --chart-1: var(--brand-blue);
+    --chart-2: 220 20% 92%;
+    --chart-3: var(--brand-grey);
+    --chart-4: var(--brand-green);
+    --chart-5: 223 100% 78%;
+    --chart-6: 220 12% 44%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(223 100% 64%) 0%, hsl(223 100% 50%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(223 100% 68%) 0%, hsl(223 100% 56%) 100%);
+    --gradient-surface: linear-gradient(180deg, hsl(220 18% 12%) 0%, hsl(220 20% 9%) 100%);
+
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.4);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.45), 0 2px 4px -2px hsl(0 0% 0% / 0.4);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.5), 0 4px 6px -4px hsl(0 0% 0% / 0.4);
+    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.55), 0 8px 10px -6px hsl(0 0% 0% / 0.45);
+    --shadow-glow: 0 0 0 4px hsl(223 100% 64% / 0.22);
   }
 }
 
@@ -133,7 +205,22 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'IBM Plex Sans Arabic', 'Inter', system-ui, sans-serif;
+    font-family: 'Wasel Numerals', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  }
+
+  /* الأرقام تتبع الخط الأحادي في كل مكان — حقول الإدخال والأزرار كذلك */
+  input,
+  textarea,
+  select,
+  button {
+    font-family: inherit;
+  }
+
+  /* أرقام جدولية للمبالغ حتى تصطف الخانات رأسياً */
+  .tabular,
+  table td,
+  table th {
+    font-variant-numeric: tabular-nums;
   }
 }
 

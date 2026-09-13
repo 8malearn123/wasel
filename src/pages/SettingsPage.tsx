@@ -403,14 +403,14 @@ export default function SettingsPage() {
                     <p className="text-sm text-muted-foreground">
                       {isRTL ? "الحالة: " : "Status: "}
                       <span className={cn("font-medium",
-                        subscription?.status === 'active' ? 'text-green-600' :
-                        subscription?.status === 'trial' ? 'text-yellow-600' : 'text-destructive'
+                        subscription?.status === 'active' ? 'text-success' :
+                        subscription?.status === 'trial' ? 'text-warning' : 'text-destructive'
                       )}>{subscription?.status?.toUpperCase()}</span>
                     </p>
                   </div>
                   {subscription?.status === 'trial' && (
                     <div className="text-right">
-                      <p className="text-2xl font-bold text-yellow-600">{daysRemaining}</p>
+                      <p className="text-2xl font-bold text-warning">{daysRemaining}</p>
                       <p className="text-xs text-muted-foreground">{isRTL ? "يوم متبقي" : "days left"}</p>
                     </div>
                   )}
@@ -456,8 +456,8 @@ export default function SettingsPage() {
 
           {subscription?.status === 'trial' && daysRemaining <= 3 && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-              className="mt-6 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+              className="mt-6 p-4 rounded-xl bg-warning/10 border border-warning/20 flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
               <div>
                 <p className="font-semibold text-foreground">{isRTL ? "الاشتراك التجريبي ينتهي قريباً" : "Trial Ending Soon"}</p>
                 <p className="text-sm text-muted-foreground mt-1">
@@ -529,7 +529,7 @@ function AccountingAPISection({ isRTL }: { isRTL: boolean }) {
             <code className="text-sm font-mono text-foreground flex-1 break-all" dir="ltr">{baseUrl}</code>
             <Button variant="ghost" size="icon" className="flex-shrink-0 h-8 w-8" 
               onClick={() => copyToClipboard(baseUrl, 'url')}>
-              {copied === 'url' ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+              {copied === 'url' ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
             </Button>
           </div>
         </div>
@@ -559,12 +559,12 @@ function AccountingAPISection({ isRTL }: { isRTL: boolean }) {
         <div className="space-y-2">
           {endpoints.map((ep) => (
             <div key={ep.path} className="flex items-center gap-3 py-2.5 px-3 rounded-lg hover:bg-muted/50 border border-border/50 transition-colors">
-              <span className="text-xs font-mono font-bold bg-green-500/10 text-green-600 px-2 py-0.5 rounded">{ep.method}</span>
+              <span className="text-xs font-mono font-bold bg-success/10 text-success px-2 py-0.5 rounded">{ep.method}</span>
               <code className="text-sm font-mono text-foreground flex-1" dir="ltr">{ep.path}</code>
               <span className="text-xs text-muted-foreground hidden sm:block">{ep.desc}</span>
               <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0"
                 onClick={() => copyToClipboard(`${baseUrl}${ep.path}`, ep.path)}>
-                {copied === ep.path ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                {copied === ep.path ? <Check className="w-3 h-3 text-success" /> : <Copy className="w-3 h-3" />}
               </Button>
             </div>
           ))}
@@ -594,7 +594,7 @@ function AccountingAPISection({ isRTL }: { isRTL: boolean }) {
           </h3>
           <Button variant="outline" size="sm" className="gap-1.5 text-xs"
             onClick={() => copyToClipboard(exampleCurl, 'curl')}>
-            {copied === 'curl' ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+            {copied === 'curl' ? <Check className="w-3 h-3 text-success" /> : <Copy className="w-3 h-3" />}
             {isRTL ? "نسخ" : "Copy"}
           </Button>
         </div>
@@ -602,7 +602,7 @@ function AccountingAPISection({ isRTL }: { isRTL: boolean }) {
           {exampleCurl}
         </pre>
 
-        <div className="mt-4 p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
+        <div className="mt-4 p-3 rounded-lg bg-primary/5 border border-primary/20">
           <p className="text-xs text-muted-foreground">
              {isRTL 
               ? "للحصول على JWT token، سجل دخول عبر التطبيق واستخدم supabase.auth.getSession() للحصول على access_token."

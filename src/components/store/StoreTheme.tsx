@@ -56,11 +56,11 @@ interface Props {
 }
 
 export function StoreThemeProvider({ store, children, textColor, extras }: Props) {
-  const fontKey = store.font_family || 'cairo';
-  const fontHref = FONT_LINKS[fontKey] || FONT_LINKS.cairo;
-  const fontStack = FONT_FAMILY[fontKey] || FONT_FAMILY.cairo;
-  const primary = store.primary_color || '#6366f1';
-  const secondary = store.secondary_color || '#8b5cf6';
+  const fontKey = store.font_family || 'ibm_plex';
+  const fontHref = FONT_LINKS[fontKey] || FONT_LINKS.ibm_plex;
+  const fontStack = FONT_FAMILY[fontKey] || FONT_FAMILY.ibm_plex;
+  const primary = store.primary_color || '#2F6BFF';
+  const secondary = store.secondary_color || '#12151B';
 
   useEffect(() => {
     const id = 'store-font-link';

@@ -62,15 +62,15 @@ import { toast } from "sonner";
 
 const statusConfig: Record<string, { label: string; color: string }> = {
   draft: { label: "مسودة", color: "bg-muted text-muted-foreground border-border" },
-  in_progress: { label: "جاري الجرد", color: "bg-cyan-500/10 text-cyan-600 border-cyan-500/20" },
-  completed: { label: "مكتمل", color: "bg-green-500/10 text-green-600 border-green-500/20" },
-  cancelled: { label: "ملغي", color: "bg-red-500/10 text-red-600 border-red-500/20" },
+  in_progress: { label: "جاري الجرد", color: "bg-primary/10 text-primary border-primary/20" },
+  completed: { label: "مكتمل", color: "bg-success/10 text-success border-success/20" },
+  cancelled: { label: "ملغي", color: "bg-destructive/10 text-destructive border-destructive/20" },
 };
 
 const itemTypeConfig: Record<StocktakeItemType, { label: string; icon: React.ElementType; color: string }> = {
   device: { label: "أجهزة", icon: Smartphone, color: "text-primary bg-primary/10" },
   accessory: { label: "إكسسوارات", icon: Package, color: "text-accent bg-accent/10" },
-  repair_part: { label: "قطع صيانة", icon: Wrench, color: "text-amber-600 bg-amber-500/10" },
+  repair_part: { label: "قطع صيانة", icon: Wrench, color: "text-warning bg-warning/10" },
 };
 
 // ============ Schedule storage helpers ============
@@ -109,26 +109,26 @@ function printStocktakeReport(stocktake: Stocktake, items: StocktakeItem[]) {
 <title>تقرير جرد - ${stocktake.stocktake_number}</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Segoe UI', Tahoma, sans-serif; padding: 20px; font-size: 12px; color: #1a1a1a; }
-  .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 15px; }
+  body { font-family: 'IBM Plex Sans Arabic', 'IBM Plex Mono', Tahoma, sans-serif; padding: 20px; font-size: 12px; color: #12151B; }
+  .header { text-align: center; border-bottom: 2px solid #12151B; padding-bottom: 15px; margin-bottom: 15px; }
   .header h1 { font-size: 20px; margin-bottom: 5px; }
-  .header p { color: #666; font-size: 11px; }
-  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; padding: 10px; background: #f5f5f5; border-radius: 6px; }
+  .header p { color: #6B7280; font-size: 11px; }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; padding: 10px; background: #F6F7F9; border-radius: 6px; }
   .info-item { display: flex; gap: 6px; }
-  .info-label { font-weight: bold; color: #555; }
+  .info-label { font-weight: bold; color: #6B7280; }
   .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 15px; }
-  .summary-card { text-align: center; padding: 10px; border: 1px solid #ddd; border-radius: 6px; }
+  .summary-card { text-align: center; padding: 10px; border: 1px solid #E6E8EB; border-radius: 6px; }
   .summary-card .num { font-size: 22px; font-weight: bold; }
-  .summary-card .label { font-size: 10px; color: #666; }
-  .surplus { color: #16a34a; }
-  .shortage { color: #dc2626; }
+  .summary-card .label { font-size: 10px; color: #6B7280; }
+  .surplus { color: #16A34A; }
+  .shortage { color: #12151B; font-weight: 700; }
   table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-  th { background: #333; color: white; padding: 8px 6px; font-size: 11px; text-align: right; }
-  td { padding: 6px; border-bottom: 1px solid #eee; font-size: 11px; }
-  tr:nth-child(even) { background: #fafafa; }
-  .disc-row { background: #fef3c7 !important; }
+  th { background: #12151B; color: #fff; padding: 8px 6px; font-size: 11px; text-align: right; }
+  td { padding: 6px; border-bottom: 1px solid #E6E8EB; font-size: 11px; }
+  tr:nth-child(even) { background: #F6F7F9; }
+  .disc-row { background: #F6F7F9 !important; box-shadow: inset 3px 0 0 #2F6BFF; }
   .text-center { text-align: center; }
-  .footer { text-align: center; margin-top: 20px; padding-top: 10px; border-top: 1px solid #ddd; color: #999; font-size: 10px; }
+  .footer { text-align: center; margin-top: 20px; padding-top: 10px; border-top: 1px solid #E6E8EB; color: #6B7280; font-size: 10px; }
   @media print { body { padding: 10px; } }
 </style>
 </head>
@@ -154,7 +154,7 @@ function printStocktakeReport(stocktake: Stocktake, items: StocktakeItem[]) {
 </div>
 
 ${discrepancies.length > 0 ? `
-<h3 style="margin-bottom:8px;color:#b45309;"> التباينات المكتشفة (${discrepancies.length})</h3>
+<h3 style="margin-bottom:8px;color:#12151B;"> التباينات المكتشفة (${discrepancies.length})</h3>
 <table>
   <thead><tr><th>العنصر</th><th>SKU</th><th>النوع</th><th class="text-center">النظام</th><th class="text-center">الفعلي</th><th class="text-center">الفرق</th></tr></thead>
   <tbody>${discrepancies.map(d => {
@@ -223,8 +223,8 @@ export default function StocktakePage() {
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="p-4 rounded-xl bg-card border border-border shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center">
-              <Loader2 className="w-5 h-5 text-cyan-600" />
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Loader2 className="w-5 h-5 text-primary" />
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">{activeCount}</p>
@@ -235,8 +235,8 @@ export default function StocktakePage() {
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="p-4 rounded-xl bg-card border border-border shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-              <CheckCircle2 className="w-5 h-5 text-green-600" />
+            <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
+              <CheckCircle2 className="w-5 h-5 text-success" />
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">{completedCount}</p>
@@ -247,8 +247,8 @@ export default function StocktakePage() {
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="p-4 rounded-xl bg-card border border-border shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-              <AlertTriangle className="w-5 h-5 text-amber-600" />
+            <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
+              <AlertTriangle className="w-5 h-5 text-warning" />
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">{totalDiscrepancies}</p>
@@ -365,7 +365,7 @@ export default function StocktakePage() {
                           <div className="flex items-center gap-3 mt-1 text-sm">
                             <span className="text-muted-foreground">{stocktake.counted_items}/{stocktake.total_items} عنصر</span>
                             {stocktake.discrepancy_count > 0 && (
-                              <span className="text-amber-600 flex items-center gap-1">
+                              <span className="text-warning flex items-center gap-1">
                                 <AlertTriangle className="w-3 h-3" />
                                 {stocktake.discrepancy_count} تباين
                               </span>
@@ -553,7 +553,7 @@ function ScheduleDialog({ open, onOpenChange, branches }: {
     saveSchedules(updated);
     setShowAdd(false);
     setBranchId(""); setNotes(""); setSelectedTypes(['device', 'accessory', 'repair_part']);
-    toast.success('تمت جدولة الجرد بنجاح');
+    toast.success('تمت جدولة الجرد');
   };
 
   const removeSchedule = (id: string) => {
@@ -786,8 +786,8 @@ function StocktakeDetailDialog({ stocktake, open, onOpenChange, getItems, update
               <p className="text-xl font-bold text-primary">{countedItems}</p>
               <p className="text-xs text-muted-foreground">تم جردها</p>
             </div>
-            <div className="p-3 rounded-lg bg-green-500/5 text-center">
-              <p className="text-xl font-bold text-green-600">{surplusCount}</p>
+            <div className="p-3 rounded-lg bg-success/5 text-center">
+              <p className="text-xl font-bold text-success">{surplusCount}</p>
               <p className="text-xs text-muted-foreground">فائض</p>
             </div>
             <div className="p-3 rounded-lg bg-destructive/5 text-center">
@@ -889,7 +889,7 @@ function StocktakeDetailDialog({ stocktake, open, onOpenChange, getItems, update
                     const hasDisc = disc !== null && disc !== 0;
 
                     return (
-                      <tr key={item.id} className={cn("hover:bg-muted/20", hasDisc && "bg-amber-500/5")}>
+                      <tr key={item.id} className={cn("hover:bg-muted/20", hasDisc && "bg-warning/5")}>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <div className={cn("w-7 h-7 rounded-md flex items-center justify-center shrink-0", cfg?.color)}>
@@ -915,7 +915,7 @@ function StocktakeDetailDialog({ stocktake, open, onOpenChange, getItems, update
                         <td className="px-4 py-3 text-center">
                           {disc !== null ? (
                             <span className={cn("font-bold text-sm flex items-center justify-center gap-1",
-                              disc > 0 && "text-green-600", disc < 0 && "text-destructive", disc === 0 && "text-muted-foreground"
+                              disc > 0 && "text-success", disc < 0 && "text-destructive", disc === 0 && "text-muted-foreground"
                             )}>
                               {disc > 0 && <TrendingUp className="w-3.5 h-3.5" />}
                               {disc < 0 && <TrendingDown className="w-3.5 h-3.5" />}
@@ -947,7 +947,7 @@ function StocktakeDetailDialog({ stocktake, open, onOpenChange, getItems, update
               <Button variant="outline" onClick={handleSaveAll}>
                 <Save className="w-4 h-4 mr-2" /> حفظ الكل
               </Button>
-              <Button onClick={() => setShowFinalize(true)} className="bg-green-600 hover:bg-green-700">
+              <Button onClick={() => setShowFinalize(true)} className="bg-success hover:bg-success">
                 <CheckCircle2 className="w-4 h-4 mr-2" /> إنهاء الجرد
               </Button>
             </DialogFooter>
@@ -966,8 +966,8 @@ function StocktakeDetailDialog({ stocktake, open, onOpenChange, getItems, update
           </DialogHeader>
           {discrepancies.length > 0 && (
             <div className="space-y-3 py-2">
-              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                <p className="text-sm font-medium text-amber-600 flex items-center gap-2">
+              <div className="p-3 rounded-lg bg-warning/10 border border-warning/20">
+                <p className="text-sm font-medium text-warning flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4" /> تباينات تم اكتشافها
                 </p>
                 <div className="mt-2 space-y-1 max-h-32 overflow-y-auto">
@@ -975,7 +975,7 @@ function StocktakeDetailDialog({ stocktake, open, onOpenChange, getItems, update
                     <div key={d.id} className="text-xs flex justify-between text-foreground">
                       <span>{d.item_name}</span>
                       <span className={cn("font-mono font-bold",
-                        (d.counted_quantity! - d.system_quantity) > 0 ? "text-green-600" : "text-destructive"
+                        (d.counted_quantity! - d.system_quantity) > 0 ? "text-success" : "text-destructive"
                       )}>
                         {(d.counted_quantity! - d.system_quantity) > 0 ? '+' : ''}{d.counted_quantity! - d.system_quantity}
                       </span>
@@ -994,7 +994,7 @@ function StocktakeDetailDialog({ stocktake, open, onOpenChange, getItems, update
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowFinalize(false)}>إلغاء</Button>
-            <Button onClick={handleFinalize} className="bg-green-600 hover:bg-green-700">
+            <Button onClick={handleFinalize} className="bg-success hover:bg-success">
               <CheckCircle2 className="w-4 h-4 mr-2" /> تأكيد الإنهاء
             </Button>
           </DialogFooter>
