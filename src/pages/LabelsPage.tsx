@@ -8,12 +8,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTabParam } from '@/hooks/useTabParam';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Search, Printer, Barcode, Settings2, Package, Smartphone } from "lucide-react";
 import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 import JsBarcode from "jsbarcode";
 
 type LabelSize = "small" | "medium" | "large";
@@ -274,8 +274,27 @@ export default function LabelsPage() {
 
         {/* Tabs and Actions */}
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <Tabs value={tab} onValueChange={setTab}>
-          </Tabs>
+          {/* Devices and accessories share one page; these narrow it to one kind */}
+          <div className="flex items-center gap-1.5">
+            {([
+              { key: "devices", label: t.labels.devices },
+              { key: "accessories", label: t.labels.accessories },
+            ] as const).map(option => (
+              <button
+                key={option.key}
+                type="button"
+                onClick={() => setTab(tab === option.key ? "all" : option.key)}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                  tab === option.key
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-muted/40 text-muted-foreground border-border hover:border-primary/50"
+                )}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
 
           <div className="flex items-center gap-2">
             {selectedIds.size > 0 && (
