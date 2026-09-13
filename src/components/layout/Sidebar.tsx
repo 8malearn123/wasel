@@ -87,11 +87,7 @@ const navSections: NavSection[] = [
         { key: "suppliers", label: "Suppliers", labelAr: "الموردين" },
         { key: "orders", label: "Purchase Orders", labelAr: "أوامر الشراء" },
       ] },
-      { icon: Barcode, label: "Verification Codes", labelAr: "أكواد التحقق", path: "/labels", children: [
-        { key: "all", label: "All", labelAr: "الكل" },
-        { key: "devices", label: "Devices", labelAr: "أجهزة" },
-        { key: "accessories", label: "Accessories", labelAr: "إكسسوارات" },
-      ] },
+      { icon: Barcode, label: "Verification Codes", labelAr: "أكواد التحقق", path: "/labels" },
     ],
   },
   {
