@@ -148,7 +148,8 @@ function AppRoutes() {
       <Route path="/branches" element={<ProtectedRoute><CashierRedirect><BranchesPage /></CashierRedirect></ProtectedRoute>} />
       <Route path="/transfers" element={<ProtectedRoute><CashierRedirect><TransfersPage /></CashierRedirect></ProtectedRoute>} />
       <Route path="/suppliers" element={<ProtectedRoute><CashierRedirect><SuppliersPage /></CashierRedirect></ProtectedRoute>} />
-      <Route path="/purchases" element={<ProtectedRoute><CashierRedirect><SuppliersPage mode="purchases" /></CashierRedirect></ProtectedRoute>} />
+      {/* Purchases lived here as a second door onto the same page */}
+      <Route path="/purchases" element={<Navigate to="/suppliers?tab=orders" replace />} />
       <Route path="/labels" element={<ProtectedRoute><CashierRedirect><LabelsPage /></CashierRedirect></ProtectedRoute>} />
       <Route path="/notifications" element={<ProtectedRoute><CashierRedirect><NotificationsPage /></CashierRedirect></ProtectedRoute>} />
       <Route path="/marketing" element={<ProtectedRoute><CashierRedirect><MarketingPage /></CashierRedirect></ProtectedRoute>} />
