@@ -50,6 +50,13 @@ import {
 } from "@/components/ui/select";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { cn } from "@/lib/utils";
+import {
+  DEVICE_COLORS,
+  STORAGE_OPTIONS,
+  COMMON_BRANDS,
+  brandFromModel,
+  findSimilarDevice,
+} from "@/lib/deviceSuggestions";
 import { useLanguage } from "@/i18n";
 import { useDevices, useAccessories } from "@/hooks/useInventory";
 import { useRepairParts, RepairPart } from "@/hooks/useRepairParts";
@@ -59,10 +66,22 @@ import { ProductThumb } from "@/components/common/ProductThumb";
 import { useAuth } from "@/hooks/useAuth";
 import type { Device, Accessory, DeviceStatus } from "@/types/database";
 
+type StockKind = "all" | "devices" | "accessories" | "repair_parts";
+
 export default function InventoryPage() {
   const [searchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
-  const [activeTab, setActiveTab] = useTabParam("devices");
+  const [activeTab, setActiveTab] = useTabParam("all");
+  // Devices, accessories and repair parts share one page; this narrows it to one kind
+  const [typeFilter, setTypeFilter] = useState<StockKind>("all");
+
+  // Links from before the three lists merged still point at one of them
+  useEffect(() => {
+    if (activeTab === "devices" || activeTab === "accessories" || activeTab === "repair_parts") {
+      setTypeFilter(activeTab);
+      setActiveTab("all");
+    }
+  }, [activeTab, setActiveTab]);
 
   // Sync when a global-search result is opened while already on this page
   useEffect(() => {
@@ -205,11 +224,35 @@ export default function InventoryPage() {
     (!showFavsOnly || favIds.includes(a.id))
   );
 
+  // No "all" button: nothing selected already means the whole page, and pressing
+  // the selected kind again goes back to it
+  const kindOptions: { key: Exclude<StockKind, "all">; labelAr: string; labelEn: string }[] = [
+    { key: "devices", labelAr: "الأجهزة", labelEn: "Devices" },
+    { key: "accessories", labelAr: "الإكسسوارات", labelEn: "Accessories" },
+    { key: "repair_parts", labelAr: "قطع الصيانة", labelEn: "Repair parts" },
+  ];
+
   const filteredRepairParts = repairParts.filter(p =>
     p.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.brand?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // In the merged view a kind with nothing to show is simply left out; picking a
+  // single kind shows it on its own, empty state and all
+  const showSection = (kind: Exclude<StockKind, "all">) => {
+    if (typeFilter !== "all") return typeFilter === kind;
+    if (kind === "devices") return devicesLoading || filteredDevices.length > 0;
+    if (kind === "accessories") return accessoriesLoading || filteredAccessories.length > 0;
+    return partsLoading || filteredRepairParts.length > 0;
+  };
+
+  const nothingInStock =
+    typeFilter === "all" &&
+    !devicesLoading && !accessoriesLoading && !partsLoading &&
+    filteredDevices.length === 0 &&
+    filteredAccessories.length === 0 &&
+    filteredRepairParts.length === 0;
 
   const deviceStats = {
     total: devices.length,
@@ -307,7 +350,24 @@ export default function InventoryPage() {
         className="bg-card rounded-xl border border-border shadow-md overflow-hidden"
       >
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <div className="px-6 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-end gap-4">
+          <div className="px-6 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {kindOptions.map(option => (
+                <button
+                  key={option.key}
+                  type="button"
+                  onClick={() => setTypeFilter(prev => (prev === option.key ? "all" : option.key))}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                    typeFilter === option.key
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-muted/40 text-muted-foreground border-border hover:border-primary/50"
+                  )}
+                >
+                  {isRTL ? option.labelAr : option.labelEn}
+                </button>
+              ))}
+            </div>
             <div className="flex items-center gap-3">
               <div className="relative">
                 <Search className={cn(
@@ -315,7 +375,7 @@ export default function InventoryPage() {
                   isRTL ? "right-3" : "left-3"
                 )} />
                 <Input
-                  placeholder={activeTab === "devices" ? t.inventory.searchDevices : t.inventory.searchAccessories}
+                  placeholder={isRTL ? "ابحث في المخزون..." : "Search the stock..."}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className={cn("w-64", isRTL ? "pr-9" : "pl-9")}
@@ -330,22 +390,39 @@ export default function InventoryPage() {
                 {isRTL ? "المفضلة" : "Favorites"}
                 {favIds.length > 0 && <span className="text-xs">({favIds.length})</span>}
               </Button>
-              <Button
-                className="gap-2 bg-gradient-primary hover:opacity-90"
-                onClick={() => {
-                  if (activeTab === "devices") setShowAddDevice(true);
-                  else if (activeTab === "accessories") setShowAddAccessory(true);
-                  else setShowAddRepairPart(true);
-                }}
-              >
-                <Plus className="w-4 h-4" />
-                {activeTab === "devices" ? t.inventory.addDevice : activeTab === "accessories" ? t.inventory.addAccessory : t.inventory.addRepairPart}
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button className="gap-2 bg-gradient-primary hover:opacity-90">
+                    <Plus className="w-4 h-4" />
+                    {isRTL ? "إضافة" : "Add"}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setShowAddDevice(true)}>
+                    <Smartphone className="w-4 h-4 me-2" /> {t.inventory.addDevice}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowAddAccessory(true)}>
+                    <Package className="w-4 h-4 me-2" /> {t.inventory.addAccessory}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowAddRepairPart(true)}>
+                    <Wrench className="w-4 h-4 me-2" /> {t.inventory.addRepairPart}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
 
           {/* Devices Tab */}
-          <TabsContent value="devices" className="m-0">
+          <TabsContent value="all" className="m-0 divide-y divide-border">
+            {nothingInStock && (
+              <div className="text-center py-20">
+                <Package className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">
+                  {isRTL ? "لا توجد أصناف مطابقة في المخزون" : "No matching items in stock"}
+                </p>
+              </div>
+            )}
+            {showSection("devices") && (<>
             {devicesLoading ? (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -375,13 +452,13 @@ export default function InventoryPage() {
                 <table className="w-full">
                   <thead className="bg-muted/30">
                     <tr>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.model}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.imei}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.status}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.location}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.cost}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.price}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-left" : "text-right")}>{t.inventory.actions}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.model}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">{t.inventory.imei}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">{t.inventory.status}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">{t.inventory.location}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">{t.inventory.cost}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">{t.inventory.price}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-end">{t.inventory.actions}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -414,19 +491,19 @@ export default function InventoryPage() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-4 text-center">
                           <code className="text-sm font-mono bg-muted px-2 py-1 rounded">{device.imei}</code>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-4 text-center">
                           <StatusBadge status={device.status} />
                         </td>
-                        <td className="px-6 py-4 text-sm text-muted-foreground">{device.branch?.name || t.inventory.unassigned}</td>
-                        <td className="px-6 py-4 text-sm text-muted-foreground">{Number(device.cost).toLocaleString()} ر.س</td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-4 text-center text-sm text-muted-foreground">{device.branch?.name || t.inventory.unassigned}</td>
+                        <td className="px-6 py-4 text-center text-sm text-muted-foreground">{Number(device.cost).toLocaleString()} ر.س</td>
+                        <td className="px-6 py-4 text-center">
                           <span className="text-base font-extrabold text-foreground">{Number(device.price).toLocaleString()}</span>
                           <span className="text-[10px] font-semibold text-muted-foreground ms-1">ر.س</span>
                         </td>
-                        <td className={cn("px-6 py-4", isRTL ? "text-left" : "text-right")}>
+                        <td className="px-6 py-4 text-end">
                           <div className="flex items-center gap-0.5 justify-end">
                           <FavButton id={device.id} />
                           <DropdownMenu>
@@ -484,10 +561,9 @@ export default function InventoryPage() {
                 )}
               </div>
             )}
-          </TabsContent>
+            </>)}
 
-          {/* Accessories Tab */}
-          <TabsContent value="accessories" className="m-0">
+            {showSection("accessories") && (<>
             {accessoriesLoading ? (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -508,13 +584,13 @@ export default function InventoryPage() {
                 <table className="w-full">
                   <thead className="bg-muted/30">
                     <tr>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.product}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.sku}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.category}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.quantity}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.cost}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.price}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-left" : "text-right")}>{t.inventory.actions}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.product}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">{t.inventory.sku}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">{t.inventory.category}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">{t.inventory.quantity}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">{t.inventory.cost}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">{t.inventory.price}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-end">{t.inventory.actions}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -550,11 +626,11 @@ export default function InventoryPage() {
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-6 py-4 text-center">
                             <code className="text-sm font-mono bg-muted px-2 py-1 rounded">{accessory.sku}</code>
                           </td>
-                          <td className="px-6 py-4 text-sm text-muted-foreground">{accessory.category || '-'}</td>
-                          <td className="px-6 py-4">
+                          <td className="px-6 py-4 text-center text-sm text-muted-foreground">{accessory.category || '-'}</td>
+                          <td className="px-6 py-4 text-center">
                             <span className={cn(
                               "font-medium",
                               isLowStock ? "text-destructive" : "text-foreground"
@@ -565,9 +641,9 @@ export default function InventoryPage() {
                               )}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-sm text-muted-foreground">{Number(accessory.cost).toLocaleString()} ر.س</td>
-                          <td className="px-6 py-4 font-semibold text-foreground">{Number(accessory.price).toLocaleString()} ر.س</td>
-                          <td className={cn("px-6 py-4", isRTL ? "text-left" : "text-right")}>
+                          <td className="px-6 py-4 text-center text-sm text-muted-foreground">{Number(accessory.cost).toLocaleString()} ر.س</td>
+                          <td className="px-6 py-4 text-center font-semibold text-foreground">{Number(accessory.price).toLocaleString()} ر.س</td>
+                          <td className="px-6 py-4 text-end">
                             <div className="flex items-center gap-0.5 justify-end">
                             <FavButton id={accessory.id} />
                             <DropdownMenu>
@@ -598,10 +674,9 @@ export default function InventoryPage() {
                 </table>
               </div>
             )}
-          </TabsContent>
+            </>)}
 
-          {/* Repair Parts Tab */}
-          <TabsContent value="repair_parts" className="m-0">
+            {showSection("repair_parts") && (<>
             {partsLoading ? (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -619,13 +694,13 @@ export default function InventoryPage() {
                 <table className="w-full">
                   <thead className="bg-muted/30">
                     <tr>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.product}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.sku}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.category}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.quantity}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.cost}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-right" : "text-left")}>{t.inventory.price}</th>
-                      <th className={cn("px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider", isRTL ? "text-left" : "text-right")}>{t.inventory.actions}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-start">{t.inventory.product}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">{t.inventory.sku}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">{t.inventory.category}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">{t.inventory.quantity}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">{t.inventory.cost}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">{t.inventory.price}</th>
+                      <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-end">{t.inventory.actions}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -650,19 +725,19 @@ export default function InventoryPage() {
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-6 py-4 text-center">
                             <code className="text-sm font-mono bg-muted px-2 py-1 rounded">{part.sku}</code>
                           </td>
-                          <td className="px-6 py-4 text-sm text-muted-foreground">{part.category || '-'}</td>
-                          <td className="px-6 py-4">
+                          <td className="px-6 py-4 text-center text-sm text-muted-foreground">{part.category || '-'}</td>
+                          <td className="px-6 py-4 text-center">
                             <span className={cn("font-medium", isLowStock ? "text-destructive" : "text-foreground")}>
                               {part.quantity}
                               {isLowStock && <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/10 text-destructive mr-2">{t.inventory.low}</span>}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-sm text-muted-foreground">{Number(part.cost).toLocaleString()} ر.س</td>
-                          <td className="px-6 py-4 font-semibold text-foreground">{Number(part.price).toLocaleString()} ر.س</td>
-                          <td className={cn("px-6 py-4", isRTL ? "text-left" : "text-right")}>
+                          <td className="px-6 py-4 text-center text-sm text-muted-foreground">{Number(part.cost).toLocaleString()} ر.س</td>
+                          <td className="px-6 py-4 text-center font-semibold text-foreground">{Number(part.price).toLocaleString()} ر.س</td>
+                          <td className="px-6 py-4 text-end">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon">
@@ -687,6 +762,7 @@ export default function InventoryPage() {
                 </table>
               </div>
             )}
+            </>)}
           </TabsContent>
 
           {/* Categories Tab */}
@@ -702,6 +778,7 @@ export default function InventoryPage() {
         onOpenChange={setShowAddDevice}
         branches={branches}
         categories={deviceCategories}
+        knownDevices={devices}
         onSave={addDevice}
       />
 
@@ -761,6 +838,7 @@ function DeviceDialog({
   device, 
   branches,
   categories,
+  knownDevices = [],
   onSave 
 }: { 
   open: boolean;
@@ -768,9 +846,12 @@ function DeviceDialog({
   device?: Device | null;
   branches: { id: string; name: string }[];
   categories: { id: string; name: string; name_ar?: string | null }[];
+  /** Stock already on the shelves, used to fill the form from a similar device */
+  knownDevices?: Device[];
   onSave: (data: any) => Promise<any>;
 }) {
   const [loading, setLoading] = useState(false);
+  const [filledFrom, setFilledFrom] = useState<string | null>(null);
   const { t, isRTL } = useLanguage();
   const [formData, setFormData] = useState({
     imei: '',
@@ -804,6 +885,46 @@ function DeviceDialog({
     }
   });
 
+  // Fill whatever the shop hasn't typed yet from a device just like this one.
+  // Anything already entered is left exactly as it is.
+  const fillFromSimilar = (next: { imei?: string; model?: string }) => {
+    if (device) return; // editing an existing device — never overwrite it
+    const match = findSimilarDevice(knownDevices, next);
+    if (!match) return;
+
+    setFormData(prev => ({
+      ...prev,
+      model: prev.model || match.model,
+      brand: prev.brand || match.brand || '',
+      color: prev.color || match.color || '',
+      storage: prev.storage || match.storage || '',
+      cost: prev.cost || String(match.cost),
+      price: prev.price || String(match.price),
+      category: prev.category || match.category || '',
+    }));
+    setFilledFrom(`${match.brand || ''} ${match.model}`.trim());
+  };
+
+  const handleModelBlur = () => {
+    if (device || !formData.model) return;
+    fillFromSimilar({ model: formData.model });
+    const brand = brandFromModel(formData.model);
+    if (brand) setFormData(prev => (prev.brand ? prev : { ...prev, brand }));
+  };
+
+  const handleImeiChange = (value: string) => {
+    setFormData(prev => ({ ...prev, imei: value }));
+    if (value.replace(/\D/g, '').length >= 8) fillFromSimilar({ imei: value });
+  };
+
+  // The shop's own brands first, then the usual suspects
+  const brandChoices = Array.from(
+    new Set([
+      ...knownDevices.map(d => d.brand).filter(Boolean) as string[],
+      ...COMMON_BRANDS,
+    ])
+  ).slice(0, 6);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -824,6 +945,7 @@ function DeviceDialog({
     
     setLoading(false);
     onOpenChange(false);
+    setFilledFrom(null);
     setFormData({
       imei: '', model: '', brand: '', color: '', storage: '',
       cost: '', price: '', status: 'available', branch_id: '', condition: 'new', category: ''
@@ -857,7 +979,7 @@ function DeviceDialog({
                 <Input 
                   id="imei" 
                   value={formData.imei}
-                  onChange={(e) => setFormData({ ...formData, imei: e.target.value })}
+                  onChange={(e) => handleImeiChange(e.target.value)}
                   placeholder="353845110987456"
                   required
                 />
@@ -868,11 +990,19 @@ function DeviceDialog({
                   id="model"
                   value={formData.model}
                   onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+                  onBlur={handleModelBlur}
                   placeholder="iPhone 15 Pro"
                   required
                 />
               </div>
             </div>
+            {filledFrom && (
+              <p className="text-[11px] text-primary bg-primary/5 border border-primary/20 rounded-lg px-2.5 py-1.5">
+                {isRTL
+                  ? `تم تعبئة الحقول الفارغة من جهاز مشابه في المخزون: ${filledFrom} — عدّل ما تشاء`
+                  : `Empty fields filled from a similar device in stock: ${filledFrom} — change anything you like`}
+              </p>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="brand">{t.inventory.brand}</Label>
@@ -882,6 +1012,23 @@ function DeviceDialog({
                   onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
                   placeholder="Apple"
                 />
+                <div className="flex flex-wrap gap-1">
+                  {brandChoices.map(brand => (
+                    <button
+                      key={brand}
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, brand }))}
+                      className={cn(
+                        "px-2 py-0.5 rounded-full border text-[11px] transition-colors",
+                        formData.brand === brand
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-muted/40 border-border hover:border-primary/50"
+                      )}
+                    >
+                      {brand}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="storage">{t.inventory.storage}</Label>
@@ -891,6 +1038,23 @@ function DeviceDialog({
                   onChange={(e) => setFormData({ ...formData, storage: e.target.value })}
                   placeholder="256GB"
                 />
+                <div className="flex flex-wrap gap-1">
+                  {STORAGE_OPTIONS.map(size => (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, storage: size }))}
+                      className={cn(
+                        "px-2 py-0.5 rounded-full border text-[11px] transition-colors",
+                        formData.storage === size
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-muted/40 border-border hover:border-primary/50"
+                      )}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -900,8 +1064,28 @@ function DeviceDialog({
                   id="color"
                   value={formData.color}
                   onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                  placeholder="Natural Titanium"
+                  placeholder={isRTL ? "اختر لوناً أو اكتبه" : "Pick a colour or type one"}
                 />
+                <div className="flex flex-wrap gap-1.5">
+                  {DEVICE_COLORS.map(option => {
+                    const name = isRTL ? option.nameAr : option.nameEn;
+                    const selected = formData.color === name;
+                    return (
+                      <button
+                        key={option.nameEn}
+                        type="button"
+                        title={name}
+                        aria-label={name}
+                        onClick={() => setFormData(prev => ({ ...prev, color: name }))}
+                        className={cn(
+                          "w-6 h-6 rounded-full border transition-transform hover:scale-110",
+                          selected ? "ring-2 ring-primary ring-offset-1 border-primary" : "border-border"
+                        )}
+                        style={{ backgroundColor: option.hex }}
+                      />
+                    );
+                  })}
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="branch">{t.inventory.branch}</Label>

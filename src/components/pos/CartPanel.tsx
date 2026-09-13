@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ShoppingCart, X, Minus, Plus, CreditCard, Banknote, Building2, Percent, Receipt, User, Phone
+  ShoppingCart, X, Minus, Plus, CreditCard, Banknote, Building2, Percent, Receipt, User, Phone, ShieldCheck, Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,11 +16,12 @@ import {
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n";
 import { CouponApply } from "./CouponApply";
-import type { PaymentMethod } from "@/types/database";
+import { pickAccessoryKinds, suggestAccessories } from "@/lib/accessorySuggestions";
+import type { Accessory, PaymentMethod } from "@/types/database";
 
 export interface POSCartItem {
   id: string;
-  type: 'device' | 'accessory';
+  type: 'device' | 'accessory' | 'warranty';
   name: string;
   identifier: string;
   price: number;
@@ -28,7 +29,26 @@ export interface POSCartItem {
   quantity: number;
   deviceId?: string;
   accessoryId?: string;
+  /** For a warranty line: the cart's device it protects */
+  coversDeviceId?: string;
 }
+
+// Extended warranty offered alongside a device sale. The price is a share of
+// the device price, rounded to the nearest 5 ر.س — adjust the rates to match
+// what the shop actually charges.
+const WARRANTY_PLANS = [
+  { months: 6, rate: 0.08 },
+  { months: 12, rate: 0.12 },
+  { months: 24, rate: 0.18 },
+];
+
+const warrantyPrice = (devicePrice: number, rate: number) =>
+  Math.max(5, Math.round((devicePrice * rate) / 5) * 5);
+
+const warrantyLabel = (months: number, isRTL: boolean) => {
+  if (isRTL) return months === 12 ? "سنة" : months === 24 ? "سنتان" : `${months} أشهر`;
+  return months === 12 ? "1 year" : months === 24 ? "2 years" : `${months} months`;
+};
 
 interface CartPanelProps {
   cart: POSCartItem[];
@@ -36,6 +56,10 @@ interface CartPanelProps {
   onSelectPayment: (method: PaymentMethod) => void;
   onUpdateQuantity: (id: string, delta: number) => void;
   onRemoveItem: (id: string) => void;
+  onAddWarranty: (item: POSCartItem) => void;
+  onAddAccessory: (accessory: Accessory) => void;
+  /** Branch stock, used to suggest what goes with a device in the cart */
+  accessories: Accessory[];
   onClearCart: () => void;
   onCompleteSale: (customerName: string, customerPhone: string, discount: number) => void;
   isProcessing: boolean;
@@ -47,6 +71,9 @@ export function CartPanel({
   onSelectPayment,
   onUpdateQuantity,
   onRemoveItem,
+  onAddWarranty,
+  onAddAccessory,
+  accessories,
   onClearCart,
   onCompleteSale,
   isProcessing,
@@ -59,6 +86,61 @@ export function CartPanel({
   const [cashReceived, setCashReceived] = useState("");
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [dismissedWarranties, setDismissedWarranties] = useState<string[]>([]);
+  const [dismissedAddOns, setDismissedAddOns] = useState<string[]>([]);
+
+  // What the customer just picked up decides what else to offer
+  const lastDevice = [...cart].reverse().find(item => item.type === "device");
+
+  const inCartAccessoryIds = cart.map(item => item.accessoryId).filter(Boolean) as string[];
+
+  // The three add-ons every phone buyer is asked about by name
+  const quickAddOns = useMemo(() => {
+    if (!lastDevice) return [];
+    return pickAccessoryKinds(lastDevice.name, accessories, { exclude: inCartAccessoryIds });
+  }, [lastDevice, accessories, cart]);
+
+  // Anything else that fits the device, minus what the named options already cover
+  const suggestedAccessories = useMemo(() => {
+    if (!lastDevice) return [];
+    return suggestAccessories(lastDevice.name, accessories, {
+      exclude: [
+        ...inCartAccessoryIds,
+        ...(quickAddOns.map(option => option.accessory?.id).filter(Boolean) as string[]),
+      ],
+      limit: 2,
+    });
+  }, [lastDevice, accessories, cart, quickAddOns]);
+
+  const showAddOns = Boolean(
+    lastDevice?.deviceId &&
+      !dismissedAddOns.includes(lastDevice.deviceId) &&
+      (quickAddOns.some(option => option.accessory) || suggestedAccessories.length > 0)
+  );
+
+  // Offer a warranty for the first device that doesn't have one yet, unless the
+  // customer has already turned it down
+  const deviceNeedingWarranty = cart.find(
+    item =>
+      item.type === "device" &&
+      item.deviceId &&
+      !dismissedWarranties.includes(item.deviceId) &&
+      !cart.some(w => w.type === "warranty" && w.coversDeviceId === item.deviceId)
+  );
+
+  const addWarranty = (device: POSCartItem, months: number, price: number) => {
+    const label = warrantyLabel(months, isRTL);
+    onAddWarranty({
+      id: `war-${device.deviceId}-${months}`,
+      type: "warranty",
+      name: isRTL ? `ضمان ${label} — ${device.name}` : `${label} warranty — ${device.name}`,
+      identifier: isRTL ? `ضمان ${months} شهر` : `${months}-month warranty`,
+      price,
+      cost: 0,
+      quantity: 1,
+      coversDeviceId: device.deviceId,
+    });
+  };
 
   const discount = couponDiscount;
   const totalBeforeDiscount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -172,21 +254,29 @@ export function CartPanel({
                 </div>
 
                 <div className="mt-2 flex items-center justify-between">
-                  {item.type === "accessory" ? (
-                    <div className="flex items-center gap-1.5">
-                      <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => onUpdateQuantity(item.id, -1)}>
-                        <Minus className="w-3 h-3" />
-                      </Button>
-                      <span className="w-6 text-center text-sm font-medium">{item.quantity}</span>
-                      <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => onUpdateQuantity(item.id, 1)}>
-                        <Plus className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <span className="text-[11px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
-                      {isRTL ? "جهاز" : "Device"}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-1.5">
+                    {item.type === "device" && (
+                      <span className="text-[11px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                        {isRTL ? "جهاز" : "Device"}
+                      </span>
+                    )}
+                    {item.type === "warranty" ? (
+                      <span className="text-[11px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium flex items-center gap-1">
+                        <ShieldCheck className="w-3 h-3" />
+                        {isRTL ? "ضمان" : "Warranty"}
+                      </span>
+                    ) : (
+                      <>
+                        <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => onUpdateQuantity(item.id, -1)}>
+                          <Minus className="w-3 h-3" />
+                        </Button>
+                        <span className="w-6 text-center text-sm font-medium">{item.quantity}</span>
+                        <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => onUpdateQuantity(item.id, 1)}>
+                          <Plus className="w-3 h-3" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
                   <span className="font-bold text-foreground">
                     {(item.price * item.quantity).toLocaleString()} <span className="text-xs text-muted-foreground">ر.س</span>
                   </span>
@@ -195,6 +285,140 @@ export function CartPanel({
             ))
           )}
         </AnimatePresence>
+
+        {/* Warranty upsell — shown to the customer while the cart is open */}
+        {deviceNeedingWarranty && (
+          <motion.div
+            layout
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-3 rounded-lg border border-dashed border-primary/40 bg-primary/5"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <ShieldCheck className="w-4 h-4 text-primary shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground">
+                    {isRTL ? "أضف ضماناً للجهاز؟" : "Add a warranty?"}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground truncate">
+                    {deviceNeedingWarranty.name}
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-muted-foreground shrink-0"
+                aria-label={isRTL ? "لا، شكراً" : "No thanks"}
+                onClick={() =>
+                  setDismissedWarranties(prev => [...prev, deviceNeedingWarranty.deviceId!])
+                }
+              >
+                <X className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+            <div className="mt-2 grid grid-cols-3 gap-1.5">
+              {WARRANTY_PLANS.map(plan => {
+                const price = warrantyPrice(deviceNeedingWarranty.price, plan.rate);
+                return (
+                  <button
+                    key={plan.months}
+                    type="button"
+                    onClick={() => addWarranty(deviceNeedingWarranty, plan.months, price)}
+                    className="rounded-lg border border-primary/30 bg-background px-2 py-1.5 text-center transition-colors hover:border-primary hover:bg-primary/10"
+                  >
+                    <span className="block text-[11px] font-medium text-foreground">
+                      {warrantyLabel(plan.months, isRTL)}
+                    </span>
+                    <span className="block text-[11px] text-muted-foreground">
+                      +{price.toLocaleString()} ر.س
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+
+        {/* What goes with the device the customer is buying */}
+        {showAddOns && (
+          <motion.div
+            layout
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-3 rounded-lg border border-dashed border-accent/40 bg-accent/5"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <Sparkles className="w-4 h-4 text-accent shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground">
+                    {isRTL ? "قد يحتاج العميل أيضاً" : "The customer may also need"}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground truncate">
+                    {isRTL ? `مناسبة لـ ${lastDevice!.name}` : `Goes with ${lastDevice!.name}`}
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-muted-foreground shrink-0"
+                aria-label={isRTL ? "إخفاء الاقتراحات" : "Hide suggestions"}
+                onClick={() => setDismissedAddOns(prev => [...prev, lastDevice!.deviceId!])}
+              >
+                <X className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+            <div className="mt-2 grid grid-cols-3 gap-1.5">
+              {quickAddOns.map(({ kind, accessory }) => (
+                <button
+                  key={kind.key}
+                  type="button"
+                  disabled={!accessory}
+                  onClick={() => accessory && onAddAccessory(accessory)}
+                  title={accessory?.name}
+                  className="rounded-lg border border-accent/30 bg-background px-2 py-1.5 text-center transition-colors hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-accent/30 disabled:hover:bg-background"
+                >
+                  <span className="block text-[11px] font-medium text-foreground leading-tight">
+                    {isRTL ? kind.labelAr : kind.labelEn}
+                  </span>
+                  <span className="block text-[10px] text-muted-foreground">
+                    {accessory
+                      ? `+${Number(accessory.price).toLocaleString()} ر.س`
+                      : isRTL
+                        ? "غير متوفر"
+                        : "Out of stock"}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <div className="mt-1.5 space-y-1.5">
+              {suggestedAccessories.map(accessory => (
+                <button
+                  key={accessory.id}
+                  type="button"
+                  onClick={() => onAddAccessory(accessory)}
+                  className="w-full flex items-center justify-between gap-2 rounded-lg border border-accent/30 bg-background px-2 py-1.5 text-start transition-colors hover:border-accent hover:bg-accent/10"
+                >
+                  <span className="min-w-0">
+                    <span className="block text-[11px] font-medium text-foreground truncate">
+                      {accessory.name}
+                    </span>
+                    <span className="block text-[10px] text-muted-foreground font-mono">
+                      {accessory.sku}
+                    </span>
+                  </span>
+                  <span className="flex items-center gap-1 shrink-0 text-[11px] font-medium text-foreground">
+                    +{Number(accessory.price).toLocaleString()} ر.س
+                    <Plus className="w-3 h-3 text-accent" />
+                  </span>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
       </div>
 
       {/* Cart Footer */}

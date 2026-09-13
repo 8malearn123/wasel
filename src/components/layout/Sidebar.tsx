@@ -66,8 +66,8 @@ const navSections: NavSection[] = [
   {
     title: "Daily Operations", titleAr: "العمليات اليومية",
     items: [
-      { icon: ShoppingCart, label: "Point of Sale", labelAr: "نقطة البيع", path: "/pos", children: [
-        { key: "pos", label: "Point of Sale", labelAr: "نقطة البيع" },
+      { icon: ShoppingCart, label: "Products", labelAr: "المنتجات", path: "/pos", children: [
+        { key: "pos", label: "Products", labelAr: "المنتجات" },
         { key: "history", label: "Sales History", labelAr: "سجل المبيعات" },
       ] },
       { icon: Calculator, label: "Daily Closings", labelAr: "الإغلاق اليومي", path: "/daily-closings" },
@@ -78,9 +78,7 @@ const navSections: NavSection[] = [
     title: "Inventory & Purchasing", titleAr: "المخزون والمشتريات",
     items: [
       { icon: Package, label: "Inventory", labelAr: "المخزون", path: "/inventory", children: [
-        { key: "devices", label: "Devices", labelAr: "الأجهزة" },
-        { key: "accessories", label: "Accessories", labelAr: "الإكسسوارات" },
-        { key: "repair_parts", label: "Repair Parts", labelAr: "قطع الصيانة" },
+        { key: "all", label: "All Stock", labelAr: "كل المخزون" },
         { key: "categories", label: "Categories", labelAr: "التصنيفات" },
       ] },
       { icon: ClipboardCheck, label: "Stocktake", labelAr: "الجرد", path: "/stocktake", requireFeature: 'stocktake' },

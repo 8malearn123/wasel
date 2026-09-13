@@ -41,7 +41,7 @@ export interface DaySalesData {
 
 export interface SoldItem {
   name: string;
-  type: 'device' | 'accessory';
+  type: 'device' | 'accessory' | 'warranty';
   quantity: number;
   unitPrice: number;
   total: number;
@@ -123,8 +123,11 @@ export function useDailyClosings() {
       const items = (sale as any).items || [];
       for (const item of items) {
         const isDevice = !!item.device_id;
+        // A line tied to neither the device nor the accessory table is a
+        // warranty sold on top of a device — it isn't stock, so it isn't counted
+        const isWarranty = !item.device_id && !item.accessory_id;
         if (isDevice) devicesSold += item.quantity;
-        else accessoriesSold += item.quantity;
+        else if (!isWarranty) accessoriesSold += item.quantity;
 
         const deviceData = item.device;
         const accessoryData = item.accessory;
@@ -132,8 +135,10 @@ export function useDailyClosings() {
         soldItems.push({
           name: isDevice
             ? `${deviceData?.brand || ''} ${deviceData?.model || ''}`.trim() || 'جهاز'
-            : accessoryData?.name || 'إكسسوار',
-          type: isDevice ? 'device' : 'accessory',
+            : isWarranty
+              ? 'ضمان'
+              : accessoryData?.name || 'إكسسوار',
+          type: isDevice ? 'device' : isWarranty ? 'warranty' : 'accessory',
           quantity: item.quantity,
           unitPrice: Number(item.unit_price),
           total: Number(item.unit_price) * item.quantity,

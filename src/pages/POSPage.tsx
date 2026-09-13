@@ -5,6 +5,7 @@ import { useLanguage } from "@/i18n";
 import { useAuth } from "@/hooks/useAuth";
 import { usePOSInventory } from "@/hooks/usePOSInventory";
 import { useSales } from "@/hooks/useSales";
+import { usePOSActivity } from "@/hooks/usePOSActivity";
 import { ScannerSection } from "@/components/pos/ScannerSection";
 import { ProductGrid } from "@/components/pos/ProductGrid";
 import { CartPanel, POSCartItem } from "@/components/pos/CartPanel";
@@ -72,14 +73,24 @@ export default function POSPage() {
   }, [merchant?.id, user?.id, merchantUser?.role]);
 
   const { devices, accessories, loading, refetch, searchByIMEI, searchBySkuOrName } = usePOSInventory();
-  const { createSale, markAsPrinted, sales, loading: salesLoading, updateSale, refetch: refetchSales } = useSales();
+  const { createSale, markAsPrinted, sales, loading: salesLoading, updateSale, deleteSale, refetch: refetchSales } = useSales();
+  const { activity, loading: activityLoading, refetch: refetchActivity } = usePOSActivity();
 
   const isCashier = merchantUser?.role === 'cashier';
 
   const addDeviceToCart = (device: Device) => {
-    const alreadyInCart = cart.find(item => item.deviceId === device.id);
-    if (alreadyInCart) {
-      toast.error("This device is already in cart");
+    const existing = cart.find(item => item.deviceId === device.id);
+    if (existing) {
+      // Raising the count on a device already in the cart — the cashier decides
+      // how many units of this model go on the invoice
+      setCart(prev =>
+        prev.map(item =>
+          item.deviceId === device.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        )
+      );
+      toast.success(`Added ${`${device.brand || ''} ${device.model}`.trim()}`);
       return;
     }
     const newItem: POSCartItem = {
@@ -147,20 +158,36 @@ export default function POSPage() {
     }
   };
 
+  const addWarrantyToCart = (warranty: POSCartItem) => {
+    if (cart.some(item => item.id === warranty.id)) return;
+    setCart(prev => [...prev, warranty]);
+    toast.success(`Added ${warranty.identifier}`);
+  };
+
+  // A warranty is only worth anything while the device it covers is still being sold
+  const dropOrphanWarranties = (items: POSCartItem[]) =>
+    items.filter(
+      item =>
+        item.type !== "warranty" ||
+        items.some(device => device.deviceId && device.deviceId === item.coversDeviceId)
+    );
+
   const updateQuantity = (id: string, delta: number) => {
     setCart(prev =>
-      prev.map(item => {
-        if (item.id === id) {
-          const newQty = item.quantity + delta;
-          return newQty > 0 ? { ...item, quantity: newQty } : item;
-        }
-        return item;
-      }).filter(item => item.quantity > 0)
+      dropOrphanWarranties(
+        prev.map(item => {
+          if (item.id === id) {
+            const newQty = item.quantity + delta;
+            return newQty > 0 ? { ...item, quantity: newQty } : item;
+          }
+          return item;
+        }).filter(item => item.quantity > 0)
+      )
     );
   };
 
   const removeFromCart = (id: string) => {
-    setCart(prev => prev.filter(item => item.id !== id));
+    setCart(prev => dropOrphanWarranties(prev.filter(item => item.id !== id)));
   };
 
   const handleCompleteSale = async (customerName: string, customerPhone: string, discount: number) => {
@@ -246,6 +273,9 @@ export default function POSPage() {
               onSelectPayment={setSelectedPayment}
               onUpdateQuantity={updateQuantity}
               onRemoveItem={removeFromCart}
+              onAddWarranty={addWarrantyToCart}
+              onAddAccessory={addAccessoryToCart}
+              accessories={accessories}
               onClearCart={() => setCart([])}
               onCompleteSale={handleCompleteSale}
               isProcessing={isProcessing}
@@ -256,10 +286,16 @@ export default function POSPage() {
         <TabsContent value="history" className="h-[calc(100%-60px)] overflow-auto">
           <CashierSalesHistory
             sales={cashierSales}
-            loading={salesLoading}
+            activity={activity}
+            loading={salesLoading || activityLoading}
             isCashier={isCashier}
             onUpdateSale={updateSale}
-            onRefresh={refetchSales}
+            onDeleteSale={deleteSale}
+            onRefresh={() => {
+              refetchSales();
+              refetchActivity();
+              refetch();
+            }}
             merchantName={merchant?.name || "Store"}
             branchName={currentBranch?.name || "Main"}
           />
