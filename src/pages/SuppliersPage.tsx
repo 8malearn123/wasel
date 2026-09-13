@@ -58,6 +58,7 @@ export default function SuppliersPage() {
   const [showPODetails, setShowPODetails] = useState<PurchaseOrder | null>(null);
   // The debts view folded into the orders table as two filters
   const [unpaidOnly, setUnpaidOnly] = useState(false);
+  const [requestsOnly, setRequestsOnly] = useState(false);
   const [debtSupplier, setDebtSupplier] = useState<string | null>(null);
   const { t, isRTL } = useLanguage();
   const { suppliers, loading: suppliersLoading, addSupplier, updateSupplier, deleteSupplier } = useSuppliers();
@@ -98,7 +99,12 @@ export default function SuppliersPage() {
   const isUnsettled = (order: PurchaseOrder) =>
     order.payment_status !== 'paid' && order.status !== 'cancelled';
 
+  // A purchase request is an order the supplier hasn't been committed to yet
+  const isRequest = (order: PurchaseOrder) =>
+    order.status === 'draft' || order.status === 'pending';
+
   const filteredOrders = orders.filter(order => {
+    if (requestsOnly && !isRequest(order)) return false;
     if (unpaidOnly && !isUnsettled(order)) return false;
     if (debtSupplier && order.supplier_id !== debtSupplier) return false;
     return true;
@@ -224,8 +230,21 @@ export default function SuppliersPage() {
           )}
 
           {/* The debts list, now filters over the orders themselves */}
-          {(owedSuppliers.length > 0 || unpaidOnly) && (
+          {(owedSuppliers.length > 0 || unpaidOnly || requestsOnly || orders.some(isRequest)) && (
             <div className="mb-4 flex items-center gap-1.5 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setRequestsOnly(v => !v)}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                  requestsOnly
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-muted/40 text-muted-foreground border-border hover:border-primary/50"
+                )}
+              >
+                {isRTL ? 'طلبات الشراء' : 'Purchase requests'}
+                {orders.filter(isRequest).length > 0 && ` · ${orders.filter(isRequest).length}`}
+              </button>
               <button
                 type="button"
                 onClick={() => setUnpaidOnly(v => !v)}
@@ -262,7 +281,7 @@ export default function SuppliersPage() {
             <div className="text-center py-20 bg-card rounded-xl border border-border">
               <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-muted-foreground">
-                {unpaidOnly || debtSupplier
+                {unpaidOnly || debtSupplier || requestsOnly
                   ? (isRTL ? 'لا توجد طلبات مطابقة' : 'No matching orders')
                   : (isRTL ? 'لا توجد أوامر شراء' : 'No purchase orders yet')}
               </p>
