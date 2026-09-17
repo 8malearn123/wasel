@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useLanguage } from '@/i18n';
 import { useCustomers, Customer, LoyaltyTransaction } from '@/hooks/useCustomers';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Users, UserPlus, Star, Award, Gift, TrendingUp, Search, Plus, Minus, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { LOYALTY_TIERS, tierLabel, tierStyle } from '@/lib/loyaltyTiers';
+import { LOYALTY_TIERS } from '@/lib/loyaltyTiers';
 import { TierBadge } from '@/components/customers/TierBadge';
 
 
@@ -111,31 +111,6 @@ export default function CustomersPage() {
             <div><p className="text-xs text-muted-foreground">{t ? 'عملاء بلاتينيين' : 'Platinum'}</p><p className="text-xl font-bold">{stats.platinum}</p></div>
           </CardContent></Card>
         </div>
-
-        {/* Tier Distribution */}
-        <Card>
-          <CardHeader><CardTitle className="text-base">{t ? 'توزيع المستويات' : 'Tier Distribution'}</CardTitle></CardHeader>
-          <CardContent>
-            <div className="space-y-2.5">
-              {LOYALTY_TIERS.map(tier => {
-                const count = Number(stats[tier.key as keyof typeof stats]) || 0;
-                const share = stats.total > 0 ? (count / stats.total) * 100 : 0;
-                return (
-                  <div key={tier.key} className="flex items-center gap-3">
-                    <TierBadge tier={tier.key} className="w-24 justify-center" />
-                    <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-                      <div
-                        className={cn("h-full rounded-full transition-all", tier.dot)}
-                        style={{ width: `${share}%` }}
-                      />
-                    </div>
-                    <span className="text-sm font-semibold w-8 text-center tabular-nums">{count}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Search & Filter */}
         <div className="flex gap-3 flex-wrap">
