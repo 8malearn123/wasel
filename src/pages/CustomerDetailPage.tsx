@@ -21,26 +21,8 @@ import type { Customer, LoyaltyTransaction } from '@/hooks/useCustomers';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { toast } from 'sonner';
-
-const tierColors: Record<string, string> = {
-  bronze: 'bg-warning/15 text-warning',
-  silver: 'bg-muted-foreground/15 text-muted-foreground',
-  gold: 'bg-warning/15 text-warning',
-  platinum: 'bg-primary/15 text-primary',
-};
-const tierLabel: Record<string, { ar: string; en: string }> = {
-  bronze: { ar: 'برونزي', en: 'Bronze' },
-  silver: { ar: 'فضي', en: 'Silver' },
-  gold: { ar: 'ذهبي', en: 'Gold' },
-  platinum: { ar: 'بلاتيني', en: 'Platinum' },
-};
-
-function tierFromPoints(p: number) {
-  if (p >= 5000) return 'platinum';
-  if (p >= 2000) return 'gold';
-  if (p >= 500) return 'silver';
-  return 'bronze';
-}
+import { tierFromPoints } from '@/lib/loyaltyTiers';
+import { TierBadge } from '@/components/customers/TierBadge';
 
 export default function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -193,10 +175,7 @@ export default function CustomerDetailPage() {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold">{customer.name}</h2>
-                  <Badge className={tierColors[customer.loyalty_tier]}>
-                    <Star className="w-3 h-3 ml-1" />
-                    {t ? tierLabel[customer.loyalty_tier]?.ar : tierLabel[customer.loyalty_tier]?.en}
-                  </Badge>
+                  <TierBadge tier={customer.loyalty_tier} />
                 </div>
               </div>
 
