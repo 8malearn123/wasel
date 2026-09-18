@@ -9,24 +9,26 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { usePlans, planDisplayName, Plan } from '@/hooks/usePlans';
-import { useBranches } from '@/hooks/useBranches';
+import { useBranches, useMerchantUsers } from '@/hooks/useBranches';
 import { useBranchRequests } from '@/hooks/useBranchRequests';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { describePlanLimits, isUnlimited } from '@/lib/planLimits';
+import { useLanguage } from '@/i18n';
 
-// Tiered marketing copy: each plan shows its audience, limits, and only
-// what it ADDS on top of the previous one, keyed by the plan's DB name
+// Tiered marketing copy: each plan's audience and only what it ADDS on top of
+// the previous one, keyed by the plan's DB name. Limits are not written here —
+// they come from the plans table, so the card cannot promise what the plan
+// does not allow.
 const PLAN_CONTENT: Record<string, {
   audience: string;
-  limits: string;
   inherits?: string;
   features: string[];
   missing?: string[];
 }> = {
   Basic: {
     audience: 'للمحل الصغير المبتدئ',
-    limits: 'فرع واحد · عدد مستخدمين غير محدود',
     features: [
       'نقطة البيع الكاملة بالباركود والـ IMEI',
       'إدارة مخزون الأجهزة والإكسسوارات',
@@ -38,7 +40,6 @@ const PLAN_CONTENT: Record<string, {
   },
   Enterprise: {
     audience: 'للمحلات النامية والشركات الكبيرة',
-    limits: 'فرع واحد · عدد مستخدمين غير محدود',
     inherits: 'كل مميزات باقة لايت',
     features: [
       'متجر إلكتروني كامل مع تصميم مبسط (شعار، بانر، ألوان جاهزة)',
@@ -52,7 +53,6 @@ const PLAN_CONTENT: Record<string, {
   },
   Distributor: {
     audience: 'للموزعين والتجار وأصحاب الكميات',
-    limits: 'فرع واحد · عدد مستخدمين غير محدود',
     inherits: 'كل مميزات باقة برو',
     features: [
       'بيع الجملة B2B ولوحة موزع خاصة',
@@ -71,8 +71,17 @@ export default function SubscriptionPage() {
   const { branches: allBranches } = useBranches();
   const [upgrading, setUpgrading] = useState<string | null>(null);
 
+  const { users } = useMerchantUsers();
+  const { isRTL } = useLanguage();
+
   const activeBranches = allBranches.filter(b => b.is_active);
+  const activeUsers = users.filter(u => u.is_active !== false);
   const currentPlanId = subscription?.plan_id;
+  // The subscription carries the limits it was granted; the plan row is the
+  // fallback when a subscription predates them
+  const currentPlan = plans.find(p => p.id === currentPlanId);
+  const branchLimit = subscription?.max_branches ?? currentPlan?.branch_limit ?? 1;
+  const userLimit = subscription?.max_users ?? currentPlan?.user_limit ?? 0;
 
   const handleUpgradeRequest = async (plan: Plan) => {
     if (!merchant) return;
@@ -126,15 +135,18 @@ export default function SubscriptionPage() {
             <div className="text-center p-3 rounded-lg bg-muted/30">
               <p className="text-2xl font-bold text-foreground">
                 {activeBranches.length}
-                <span className="text-sm text-muted-foreground">/{subscription?.max_branches || 1}</span>
+                <span className="text-sm text-muted-foreground">
+                  /{isUnlimited(branchLimit) ? '∞' : branchLimit}
+                </span>
               </p>
               <p className="text-xs text-muted-foreground">الفروع</p>
             </div>
             <div className="text-center p-3 rounded-lg bg-muted/30">
               <p className="text-2xl font-bold text-foreground">
-                {(subscription?.max_users ?? 0) >= 9999
-                  ? 'غير محدود'
-                  : <>—<span className="text-sm text-muted-foreground">/{subscription?.max_users || 3}</span></>}
+                {activeUsers.length}
+                <span className="text-sm text-muted-foreground">
+                  /{isUnlimited(userLimit) ? '∞' : userLimit}
+                </span>
               </p>
               <p className="text-xs text-muted-foreground">المستخدمين</p>
             </div>
@@ -212,7 +224,9 @@ export default function SubscriptionPage() {
 
                       <div className="flex items-center justify-center gap-2 rounded-lg bg-muted/40 border border-border px-3 py-2">
                         <Users className="w-4 h-4 text-foreground shrink-0" />
-                        <span className="text-sm font-semibold text-foreground">{content.limits}</span>
+                        <span className="text-sm font-semibold text-foreground">
+                          {describePlanLimits(plan, isRTL)}
+                        </span>
                       </div>
 
                       {content.inherits && (
