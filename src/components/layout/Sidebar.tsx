@@ -107,14 +107,7 @@ const navSections: NavSection[] = [
         { key: "links", label: "Links", labelAr: "الروابط" },
       ] },
       { icon: ShoppingBag, label: "Online Orders", labelAr: "طلبات المتجر", path: "/online-orders", requireFeature: 'onlineStore' },
-      { icon: Warehouse, label: "Wholesale", labelAr: "بيع الجملة", path: "/wholesale", requireFeature: 'wholesale', children: [
-        { key: "listings", label: "My Listings", labelAr: "منتجاتي" },
-        { key: "marketplace", label: "Marketplace", labelAr: "سوق الجملة" },
-        { key: "my-orders", label: "My Orders", labelAr: "طلباتي" },
-        { key: "incoming", label: "Incoming", labelAr: "طلبات واردة" },
-        { key: "credits-out", label: "Credits Out", labelAr: "مديونيات لي" },
-        { key: "credits-in", label: "Credits In", labelAr: "مديونياتي" },
-      ] },
+      { icon: Warehouse, label: "Wholesale", labelAr: "بيع الجملة", path: "/wholesale", requireFeature: 'wholesale' },
     ],
   },
   {
