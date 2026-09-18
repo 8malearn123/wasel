@@ -78,7 +78,7 @@ const navSections: NavSection[] = [
     title: "Inventory & Purchasing", titleAr: "المخزون والمشتريات",
     items: [
       { icon: Package, label: "Inventory", labelAr: "المخزون", path: "/inventory", children: [
-        { key: "all", label: "All Stock", labelAr: "كل المخزون" },
+        { key: "devices", label: "Items", labelAr: "الأصناف" },
         { key: "categories", label: "Categories", labelAr: "التصنيفات" },
       ] },
       { icon: ClipboardCheck, label: "Stocktake", labelAr: "الجرد", path: "/stocktake", requireFeature: 'stocktake' },
@@ -336,7 +336,11 @@ export function Sidebar() {
                         to={`${item.path}?tab=${child.key}`}
                         className={cn(
                           "block px-3 py-1.5 rounded-md text-sm transition-colors",
-                          currentTab === child.key
+                          // The stock page holds devices, accessories and parts under
+                          // one child, so any of the three keeps it highlighted
+                          currentTab === child.key ||
+                          (child.key === "devices" &&
+                            (currentTab === "accessories" || currentTab === "repair_parts"))
                             ? "bg-sidebar-primary/15 text-sidebar-primary font-medium"
                             : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                         )}

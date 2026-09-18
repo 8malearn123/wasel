@@ -66,21 +66,22 @@ import { ProductThumb } from "@/components/common/ProductThumb";
 import { useAuth } from "@/hooks/useAuth";
 import type { Device, Accessory, DeviceStatus } from "@/types/database";
 
-type StockKind = "all" | "devices" | "accessories" | "repair_parts";
+type StockKind = "devices" | "accessories" | "repair_parts";
+
+const STOCK_KINDS: StockKind[] = ["devices", "accessories", "repair_parts"];
 
 export default function InventoryPage() {
   const [searchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
-  const [activeTab, setActiveTab] = useTabParam("all");
-  // Devices, accessories and repair parts share one page; this narrows it to one kind
-  const [typeFilter, setTypeFilter] = useState<StockKind>("all");
+  const [activeTab, setActiveTab] = useTabParam("devices");
+  // Devices, accessories and repair parts share one page, one kind at a time
+  const typeFilter: StockKind = STOCK_KINDS.includes(activeTab as StockKind)
+    ? (activeTab as StockKind)
+    : "devices";
 
-  // Links from before the three lists merged still point at one of them
+  // ?tab=all is how the merged page used to be addressed
   useEffect(() => {
-    if (activeTab === "devices" || activeTab === "accessories" || activeTab === "repair_parts") {
-      setTypeFilter(activeTab);
-      setActiveTab("all");
-    }
+    if (activeTab === "all") setActiveTab("devices");
   }, [activeTab, setActiveTab]);
 
   // Sync when a global-search result is opened while already on this page
@@ -226,10 +227,10 @@ export default function InventoryPage() {
 
   // No "all" button: nothing selected already means the whole page, and pressing
   // the selected kind again goes back to it
-  const kindOptions: { key: Exclude<StockKind, "all">; labelAr: string; labelEn: string }[] = [
-    { key: "devices", labelAr: "الأجهزة", labelEn: "Devices" },
-    { key: "accessories", labelAr: "الإكسسوارات", labelEn: "Accessories" },
-    { key: "repair_parts", labelAr: "قطع الصيانة", labelEn: "Repair parts" },
+  const kindOptions: { key: StockKind; labelAr: string; labelEn: string; count: number }[] = [
+    { key: "devices", labelAr: "الأجهزة", labelEn: "Devices", count: devices.length },
+    { key: "accessories", labelAr: "الإكسسوارات", labelEn: "Accessories", count: accessories.length },
+    { key: "repair_parts", labelAr: "قطع الصيانة", labelEn: "Repair parts", count: repairParts.length },
   ];
 
   const filteredRepairParts = repairParts.filter(p =>
@@ -238,21 +239,7 @@ export default function InventoryPage() {
     p.brand?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // In the merged view a kind with nothing to show is simply left out; picking a
-  // single kind shows it on its own, empty state and all
-  const showSection = (kind: Exclude<StockKind, "all">) => {
-    if (typeFilter !== "all") return typeFilter === kind;
-    if (kind === "devices") return devicesLoading || filteredDevices.length > 0;
-    if (kind === "accessories") return accessoriesLoading || filteredAccessories.length > 0;
-    return partsLoading || filteredRepairParts.length > 0;
-  };
-
-  const nothingInStock =
-    typeFilter === "all" &&
-    !devicesLoading && !accessoriesLoading && !partsLoading &&
-    filteredDevices.length === 0 &&
-    filteredAccessories.length === 0 &&
-    filteredRepairParts.length === 0;
+  const showSection = (kind: StockKind) => typeFilter === kind;
 
   const deviceStats = {
     total: devices.length,
@@ -351,20 +338,31 @@ export default function InventoryPage() {
       >
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <div className="px-6 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-1.5 flex-wrap">
+            {/* One kind on screen at a time — the three lists used to run down the
+                page together, which read as one long pile */}
+            <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-muted/50 border border-border self-start">
               {kindOptions.map(option => (
                 <button
                   key={option.key}
                   type="button"
-                  onClick={() => setTypeFilter(prev => (prev === option.key ? "all" : option.key))}
+                  onClick={() => setActiveTab(option.key)}
+                  aria-pressed={typeFilter === option.key}
                   className={cn(
-                    "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                    "px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5",
                     typeFilter === option.key
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-muted/40 text-muted-foreground border-border hover:border-primary/50"
+                      ? "bg-card text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   {isRTL ? option.labelAr : option.labelEn}
+                  <span className={cn(
+                    "text-[11px] tabular-nums px-1.5 rounded-full",
+                    typeFilter === option.key
+                      ? "bg-primary/10 text-primary"
+                      : "bg-muted text-muted-foreground"
+                  )}>
+                    {option.count}
+                  </span>
                 </button>
               ))}
             </div>
@@ -413,15 +411,7 @@ export default function InventoryPage() {
           </div>
 
           {/* Devices Tab */}
-          <TabsContent value="all" className="m-0 divide-y divide-border">
-            {nothingInStock && (
-              <div className="text-center py-20">
-                <Package className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">
-                  {isRTL ? "لا توجد أصناف مطابقة في المخزون" : "No matching items in stock"}
-                </p>
-              </div>
-            )}
+          <TabsContent value={typeFilter} className="m-0">
             {showSection("devices") && (<>
             {devicesLoading ? (
               <div className="flex items-center justify-center py-20">
