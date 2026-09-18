@@ -125,13 +125,7 @@ const navSections: NavSection[] = [
         { key: "coupons", label: "Coupons", labelAr: "الكوبونات" },
         { key: "campaigns", label: "Campaigns", labelAr: "الحملات" },
       ] },
-      { icon: Bell, label: "Notifications", labelAr: "الإشعارات", path: "/notifications", children: [
-        { key: "all", label: "All", labelAr: "الكل" },
-        { key: "stock", label: "Stock", labelAr: "المخزون" },
-        { key: "transfers", label: "Transfers", labelAr: "التحويلات" },
-        { key: "sales", label: "Sales", labelAr: "المبيعات" },
-        { key: "repairs", label: "Repairs", labelAr: "الصيانة" },
-      ] },
+      { icon: Bell, label: "Notifications", labelAr: "الإشعارات", path: "/notifications" },
     ],
   },
   {
