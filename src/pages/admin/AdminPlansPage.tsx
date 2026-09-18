@@ -5,6 +5,7 @@ import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Badge } from '@/components/ui/badge';
 import { usePlatformAdmin } from '@/hooks/usePlatformAdmin';
 import { usePlans, Plan } from '@/hooks/usePlans';
+import { describeBranchLimit, describeUserLimit } from '@/lib/planLimits';
 import { motion } from 'framer-motion';
 
 export default function AdminPlansPage() {
@@ -33,10 +34,11 @@ export default function AdminPlansPage() {
                 <div><h3 className="font-bold text-foreground">{plan.name_ar}</h3><p className="text-sm text-muted-foreground">{plan.name}</p></div>
                 <Badge variant={plan.is_active ? "default" : "secondary"}>{plan.is_active ? 'نشطة' : 'معطلة'}</Badge>
               </div>
-              <p className="text-3xl font-bold text-primary mb-4">{plan.price} <span className="text-sm font-normal text-muted-foreground">ر.س/شهر</span></p>
+              <p className="text-3xl font-bold text-primary mb-4">{Number(plan.price).toLocaleString('ar-SA')} <span className="text-sm font-normal text-muted-foreground">ر.س/شهر</span></p>
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-muted-foreground">الفروع</span><span className="font-medium">{plan.branch_limit}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">المستخدمين</span><span className="font-medium">{plan.user_limit}</span></div>
+                {/* 9999 in the table means "no ceiling" — it should never reach a screen as a number */}
+                <div className="flex justify-between"><span className="text-muted-foreground">الفروع</span><span className="font-medium">{describeBranchLimit(plan.branch_limit, true)}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">المستخدمين</span><span className="font-medium">{describeUserLimit(plan.user_limit, true)}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">متجر إلكتروني</span>{plan.has_online_store ? <CheckCircle className="w-4 h-4 text-success" /> : <XCircle className="w-4 h-4 text-muted-foreground" />}</div>
                 <div className="flex justify-between"><span className="text-muted-foreground">تقارير متقدمة</span>{plan.advanced_reports ? <CheckCircle className="w-4 h-4 text-success" /> : <XCircle className="w-4 h-4 text-muted-foreground" />}</div>
                 <div className="flex justify-between"><span className="text-muted-foreground">دعم أولوية</span>{plan.priority_support ? <CheckCircle className="w-4 h-4 text-success" /> : <XCircle className="w-4 h-4 text-muted-foreground" />}</div>

@@ -162,7 +162,7 @@ export default function LandingPage() {
                 className={`relative p-6 rounded-2xl border-2 bg-card ${p.popular ? "border-primary shadow-glow" : "border-border"}`}
               >
                 {p.popular && (
-                  <span className="absolute -top-3 right-1/2 translate-x-1/2 px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-medium">
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-medium">
                     {ar ? "الأكثر طلباً" : "Most popular"}
                   </span>
                 )}

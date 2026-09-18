@@ -113,7 +113,7 @@ export default function SubscriptionPage() {
               <h3 className="text-lg font-bold text-foreground">باقتك الحالية</h3>
               <p className="text-sm text-muted-foreground">{planDisplayName(subscription?.plan)}</p>
             </div>
-            <div className="mr-auto">
+            <div className="ms-auto">
               <span className={cn(
                 'px-3 py-1 rounded-full text-sm font-medium',
                 subscription?.status === 'active' ? 'bg-success/15 text-success' :
@@ -188,6 +188,10 @@ export default function SubscriptionPage() {
         <div className="grid gap-6 md:grid-cols-3">
           {plans.map((plan, index) => {
             const isCurrent = currentPlanId === plan.id || (plan.sort_order === 1 && !currentPlanId);
+            // Calling a move to a cheaper plan an "upgrade" reads as a mistake
+            const currentOrder = plans.find(p => p.id === currentPlanId)?.sort_order;
+            const isDowngrade = currentOrder !== undefined && plan.sort_order < currentOrder;
+            const actionLabel = isDowngrade ? 'طلب تغيير الباقة' : 'طلب ترقية';
             return (
               <motion.div key={plan.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -203,15 +207,18 @@ export default function SubscriptionPage() {
                   </div>
                 )}
                 {isCurrent && (
-                  <Badge className="absolute top-3 left-3 bg-success/15 text-success border-success/20"> باقتك الحالية
+                  <Badge className="absolute top-3 start-3 bg-success/15 text-success border-success/20"> باقتك الحالية
                   </Badge>
                 )}
 
                 <div className="text-center mb-4">
                   <h3 className="text-xl font-bold text-foreground">{plan.name_ar}</h3>
                   <div className="mt-2">
-                    <span className="text-3xl font-bold text-foreground">{plan.price}</span>
+                    <span className="text-3xl font-bold text-foreground">
+                      {Number(plan.price).toLocaleString('ar-SA')}
+                    </span>
                     <span className="text-muted-foreground"> ر.س/شهر</span>
+                    <p className="text-[11px] text-muted-foreground mt-1">غير شامل ضريبة القيمة المضافة</p>
                   </div>
                 </div>
 
@@ -267,7 +274,7 @@ export default function SubscriptionPage() {
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       <>
-                        <Zap className="w-4 h-4 ml-1" /> طلب ترقية
+                        <Zap className="w-4 h-4 me-1" /> {actionLabel}
                       </>
                     )}
                   </Button>
