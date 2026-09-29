@@ -55,7 +55,7 @@ export function ScannerSection({ onScan, isSearching }: ScannerSectionProps) {
           <Button
             type="submit"
             size="lg"
-            className="h-14 px-6 touch-button bg-gradient-primary hover:opacity-90"
+            className="h-14 px-6 touch-button bg-gradient-red text-white hover:opacity-90"
             disabled={isSearching}
           >
             <Search className={cn("w-5 h-5", isRTL ? "ml-2" : "mr-2")} />
