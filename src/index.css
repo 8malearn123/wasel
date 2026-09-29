@@ -31,7 +31,7 @@
   /* ===========================================================
      هوية وصل الرسمية · Brand Identity v1.0
      أزرق وصل  #2F6BFF · الحبر #12151B · رمادي #6B7280
-     نجاح/مدفوع #16A34A · أحمر #DC2626 · السطح #F6F7F9 · الحدود #E6E8EB
+     نجاح/مدفوع #16A34A · السطح #F6F7F9 · الحدود #E6E8EB
      لا يُستخدم أي لون خارج هذه اللوحة.
      =========================================================== */
   :root {
@@ -40,7 +40,6 @@
     --brand-ink: 220 20% 9%;         /* #12151B */
     --brand-grey: 220 9% 46%;        /* #6B7280 */
     --brand-green: 142 76% 36%;      /* #16A34A */
-    --brand-red: 0 72% 51%;          /* #DC2626 — الأحمر، لنداء الفعل الرئيسي في نقطة البيع */
     --brand-surface: 220 20% 97%;    /* #F6F7F9 */
     --brand-border: 216 11% 91%;     /* #E6E8EB */
 
@@ -114,7 +113,6 @@
     /* تدرّجات مسطّحة من الأزرق نفسه — الهوية تقنية بلا زخرفة */
     --gradient-primary: linear-gradient(135deg, hsl(223 100% 62%) 0%, hsl(223 100% 47%) 100%);
     --gradient-accent: linear-gradient(135deg, hsl(223 100% 66%) 0%, hsl(223 100% 55%) 100%);
-    --gradient-red: linear-gradient(135deg, hsl(0 72% 56%) 0%, hsl(0 72% 46%) 100%);
     --gradient-surface: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(220 20% 97%) 100%);
 
     --shadow-sm: 0 1px 2px 0 hsl(220 20% 9% / 0.05);
@@ -130,8 +128,6 @@
     --brand-ink: 220 20% 9%;
     --brand-grey: 220 10% 62%;
     --brand-green: 142 62% 45%;
-    /* أفتح قليلاً على الداكن ليبقى النص الأبيض مقروءاً فوقه */
-    --brand-red: 0 74% 56%;
     --brand-surface: 220 20% 97%;
     --brand-border: 220 14% 20%;
 
@@ -192,7 +188,6 @@
 
     --gradient-primary: linear-gradient(135deg, hsl(223 100% 64%) 0%, hsl(223 100% 50%) 100%);
     --gradient-accent: linear-gradient(135deg, hsl(223 100% 68%) 0%, hsl(223 100% 56%) 100%);
-    --gradient-red: linear-gradient(135deg, hsl(0 74% 60%) 0%, hsl(0 74% 50%) 100%);
     --gradient-surface: linear-gradient(180deg, hsl(220 18% 12%) 0%, hsl(220 20% 9%) 100%);
 
     --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.4);
@@ -305,10 +300,6 @@
 
   .bg-gradient-accent {
     background-image: var(--gradient-accent);
-  }
-
-  .bg-gradient-red {
-    background-image: var(--gradient-red);
   }
 
   .shadow-glow {
