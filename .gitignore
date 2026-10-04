@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment — never commit these. Deployment reads them from
+# Vercel (VITE_*) and from Supabase function secrets (server keys).
+.env
+.env.*
+!.env.example

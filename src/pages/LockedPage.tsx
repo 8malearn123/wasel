@@ -71,7 +71,7 @@ export default function LockedPage() {
             <Input
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
-              placeholder="ACTIVATE-30"
+              placeholder="XXXX-XXXX-XXXX"
               dir="ltr"
               className="text-center font-mono text-lg"
               disabled={loading}

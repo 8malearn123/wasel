@@ -66,7 +66,7 @@ const PLAN_CONTENT: Record<string, {
 
 export default function SubscriptionPage() {
   const { merchant, subscription, branches } = useAuth();
-  const { daysRemaining, isTrialExpired, isSubscriptionExpired } = useSubscription();
+  const { daysRemaining, isTrialExpired, isSubscriptionExpired, requestPlanChange } = useSubscription();
   const { plans, loading: plansLoading } = usePlans();
   const { branches: allBranches } = useBranches();
   const [upgrading, setUpgrading] = useState<string | null>(null);
@@ -86,16 +86,17 @@ export default function SubscriptionPage() {
   const handleUpgradeRequest = async (plan: Plan) => {
     if (!merchant) return;
     setUpgrading(plan.id);
-
-    // Log upgrade request in activity_logs
-    await supabase.from('activity_logs').insert({
-      merchant_id: merchant.id,
-      action: 'upgrade_requested',
-      entity_type: 'subscription',
-      new_data: { plan_name: plan.name_ar, plan_id: plan.id },
-    });
-
-    toast.success('وصلنا طلب الترقية — نتواصل معك قريباً');
+    // request_plan_change records the request server-side and validates the
+    // plan and the caller's role there; it deliberately does not grant it.
+    const { error } = await requestPlanChange(plan.id, plan.name_ar);
+    if (!error) {
+      await supabase.from('activity_logs').insert({
+        merchant_id: merchant.id,
+        action: 'upgrade_requested',
+        entity_type: 'subscription',
+        new_data: { plan_name: plan.name_ar, plan_id: plan.id },
+      });
+    }
     setUpgrading(null);
   };
 

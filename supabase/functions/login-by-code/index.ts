@@ -1,6 +1,20 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.93.3";
 import { corsHeaders } from "../_shared/cors.ts";
 
+// Throttle: this many failures from one caller inside the window locks it out.
+const MAX_FAILURES = 10;
+const WINDOW_MINUTES = 15;
+
+// The IP and the attempted code are stored hashed — the log should not become a
+// list of valid login codes if it is ever read.
+async function sha256(value: string): Promise<string> {
+  const bytes = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -21,6 +35,41 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // A login code is five digits and this endpoint hands back a full session,
+    // so without a throttle the whole code space is walkable in minutes.
+    // Attempts are counted per caller IP over a rolling window.
+    const callerIp =
+      req.headers.get("cf-connecting-ip") ||
+      req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+      "unknown";
+    const ipHash = await sha256(callerIp);
+    const codeHash = await sha256(code.trim().toUpperCase());
+
+    const { data: failures } = await supabaseAdmin.rpc("login_code_recent_failures", {
+      _ip_hash: ipHash,
+      _window_minutes: WINDOW_MINUTES,
+    });
+
+    if ((failures ?? 0) >= MAX_FAILURES) {
+      return new Response(
+        JSON.stringify({ error: `محاولات كثيرة. حاول بعد ${WINDOW_MINUTES} دقيقة.` }),
+        {
+          status: 429,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+            "Retry-After": String(WINDOW_MINUTES * 60),
+          },
+        },
+      );
+    }
+
+    const recordAttempt = (succeeded: boolean) =>
+      supabaseAdmin
+        .from("login_code_attempts")
+        .insert({ ip_hash: ipHash, code_hash: codeHash, succeeded })
+        .then(() => undefined, () => undefined);
+
     // Look up the login code
     const { data: merchantUser, error: lookupError } = await supabaseAdmin
       .from("merchant_users")
@@ -30,6 +79,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (lookupError || !merchantUser) {
+      await recordAttempt(false);
       return new Response(JSON.stringify({ error: "كود الدخول غير صحيح" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -82,6 +132,8 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    await recordAttempt(true);
 
     return new Response(JSON.stringify({
       success: true,

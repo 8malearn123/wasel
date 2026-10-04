@@ -201,20 +201,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             branch_id: branchData?.id
           });
 
-        // Create trial subscription
-        const trialEnds = new Date();
-        trialEnds.setDate(trialEnds.getDate() + 14);
-        
-        await supabase
-          .from('subscriptions')
-          .insert({
-            merchant_id: merchantData.id,
-            plan: 'trial',
-            status: 'trial',
-            trial_ends_at: trialEnds.toISOString(),
-            max_branches: 1,
-            max_users: 3
-          });
+        // The trial is started by the merchants_start_trial trigger, on the
+        // database clock. It used to be inserted here from new Date(), which
+        // meant the device clock decided when the trial ended — and merchants
+        // can no longer write the subscriptions table at all.
       }
     }
 
