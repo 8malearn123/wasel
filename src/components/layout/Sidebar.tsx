@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { planTier, planAllows, type FeatureKey } from "@/lib/planAccess";
+import { usePermissions, type PermissionKey } from "@/hooks/usePermissions";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -49,6 +50,8 @@ interface NavItem {
   path: string;
   badge?: number;
   requireFeature?: FeatureKey;
+  /** hidden unless the user holds this permission */
+  requirePermission?: PermissionKey;
   children?: NavChild[];
 }
 
@@ -134,6 +137,7 @@ const navSections: NavSection[] = [
       ] },
       { icon: Building2, label: "Branches", labelAr: "الفروع", path: "/branches" },
       { icon: Users, label: "Users", labelAr: "المستخدمين", path: "/users" },
+      { icon: Users, label: "Employees", labelAr: "الموظفون", path: "/employees", requirePermission: "employees.view" },
       { icon: Briefcase, label: "Human Resources", labelAr: "الموارد البشرية", path: "/hr" },
       { icon: CreditCard, label: "Subscription", labelAr: "الباقات والاشتراك", path: "/subscription" },
       { icon: LifeBuoy, label: "Support", labelAr: "الدعم الفني", path: "/support" },
@@ -148,6 +152,7 @@ export function Sidebar() {
   const { t, isRTL } = useLanguage();
   const { merchant, merchantUser, subscription } = useAuth();
   const isCashier = merchantUser?.role === 'cashier';
+  const { can } = usePermissions();
   const logoUrl = (merchant as { logo_url?: string | null } | null)?.logo_url;
 
   // planTier fails closed: an unrecognised plan gets the lowest tier, not the highest
@@ -158,6 +163,9 @@ export function Sidebar() {
       return false;
     }
     if (item.requireFeature && !planAllows(subscription?.plan, item.requireFeature)) {
+      return false;
+    }
+    if (item.requirePermission && !can(item.requirePermission)) {
       return false;
     }
     return true;
