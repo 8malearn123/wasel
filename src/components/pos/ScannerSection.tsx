@@ -55,8 +55,7 @@ export function ScannerSection({ onScan, isSearching }: ScannerSectionProps) {
           <Button
             type="submit"
             size="lg"
-            // أبيض في الوضعين: النص بالحبر دائماً، وحدّ يفصله عن بطاقة الشريط البيضاء في الوضع الفاتح
-            className="h-14 px-6 touch-button bg-white text-[hsl(var(--brand-ink))] border border-border hover:bg-white/90"
+            className="h-14 px-6 touch-button bg-gradient-primary hover:opacity-90"
             disabled={isSearching}
           >
             <Search className={cn("w-5 h-5", isRTL ? "ml-2" : "mr-2")} />
