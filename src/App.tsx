@@ -9,6 +9,7 @@ import { LanguageProvider } from "./i18n";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { planAllows, type FeatureKey } from "@/lib/planAccess";
 import type { UserRole } from "@/types/database";
+import { usePermissions, type PermissionKey } from "@/hooks/usePermissions";
 import { useVersionCheck } from "./hooks/useVersionCheck";
 import { useSubscription } from "./hooks/useSubscription";
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -24,6 +25,7 @@ const RepairsPage = lazy(() => import("./pages/RepairsPage"));
 const ReportsPage = lazy(() => import("./pages/ReportsPage"));
 const UsersPage = lazy(() => import("./pages/UsersPage"));
 const HRPage = lazy(() => import("./pages/HRPage"));
+const EmployeesPage = lazy(() => import("./pages/EmployeesPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const SubscriptionPage = lazy(() => import("./pages/SubscriptionPage"));
 const StocktakePage = lazy(() => import("./pages/StocktakePage"));
@@ -138,6 +140,27 @@ function RoleRoute({ allow, children }: { allow: UserRole[]; children: React.Rea
   return <>{children}</>;
 }
 
+// A page gated on a permission. Like FeatureRoute this only saves the user a
+// blank screen — the data behind it is gated by RLS calling has_permission()
+// for the same key.
+function PermissionRoute({ require, children }: { require: PermissionKey; children: React.ReactNode }) {
+  const { can, loading } = usePermissions();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!can(require)) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 function CashierRedirect({ children }: { children: React.ReactNode }) {
   const { merchantUser } = useAuth();
   if (merchantUser?.role === 'cashier') {
@@ -200,6 +223,7 @@ function AppRoutes() {
       <Route path="/stocktake" element={<ProtectedRoute><FeatureRoute feature="stocktake"><CashierRedirect><StocktakePage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />
       <Route path="/users" element={<ProtectedRoute><RoleRoute allow={["owner", "admin"]}><CashierRedirect><UsersPage /></CashierRedirect></RoleRoute></ProtectedRoute>} />
       <Route path="/hr" element={<ProtectedRoute><RoleRoute allow={["owner", "admin"]}><CashierRedirect><HRPage /></CashierRedirect></RoleRoute></ProtectedRoute>} />
+      <Route path="/employees" element={<ProtectedRoute><PermissionRoute require="employees.view"><CashierRedirect><EmployeesPage /></CashierRedirect></PermissionRoute></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><CashierRedirect><SettingsPage /></CashierRedirect></ProtectedRoute>} />
       <Route path="/subscription" element={<ProtectedRoute><RoleRoute allow={["owner", "admin"]}><CashierRedirect><SubscriptionPage /></CashierRedirect></RoleRoute></ProtectedRoute>} />
       <Route path="/online-store" element={<ProtectedRoute><FeatureRoute feature="onlineStore"><CashierRedirect><OnlineStorePage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />

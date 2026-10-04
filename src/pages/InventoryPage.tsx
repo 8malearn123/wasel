@@ -62,6 +62,9 @@ import { useDevices, useAccessories } from "@/hooks/useInventory";
 import { useRepairParts, RepairPart } from "@/hooks/useRepairParts";
 import { useCategories } from "@/hooks/useCategories";
 import { CategoryManager } from "@/components/inventory/CategoryManager";
+import { ProductMediaManager } from "@/components/inventory/ProductMediaManager";
+import { usePrimaryMedia } from "@/hooks/useProductMedia";
+import { PermissionGate } from "@/components/common/PermissionGate";
 import { ProductThumb } from "@/components/common/ProductThumb";
 import { useAuth } from "@/hooks/useAuth";
 import type { Device, Accessory, DeviceStatus } from "@/types/database";
@@ -239,6 +242,10 @@ export default function InventoryPage() {
     p.brand?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // One query per list for the cover images, rather than one per row
+  const deviceCovers = usePrimaryMedia('device', filteredDevices.map(d => d.id));
+  const accessoryCovers = usePrimaryMedia('accessory', filteredAccessories.map(a => a.id));
+
   const showSection = (kind: StockKind) => typeFilter === kind;
 
   const deviceStats = {
@@ -388,25 +395,28 @@ export default function InventoryPage() {
                 {isRTL ? "المفضلة" : "Favorites"}
                 {favIds.length > 0 && <span className="text-xs">({favIds.length})</span>}
               </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button className="gap-2 bg-gradient-primary hover:opacity-90">
-                    <Plus className="w-4 h-4" />
-                    {isRTL ? "إضافة" : "Add"}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setShowAddDevice(true)}>
-                    <Smartphone className="w-4 h-4 me-2" /> {t.inventory.addDevice}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowAddAccessory(true)}>
-                    <Package className="w-4 h-4 me-2" /> {t.inventory.addAccessory}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowAddRepairPart(true)}>
-                    <Wrench className="w-4 h-4 me-2" /> {t.inventory.addRepairPart}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* The same permission the INSERT policy checks */}
+              <PermissionGate require="products.create">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button className="gap-2 bg-gradient-primary hover:opacity-90">
+                      <Plus className="w-4 h-4" />
+                      {isRTL ? "إضافة" : "Add"}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setShowAddDevice(true)}>
+                      <Smartphone className="w-4 h-4 me-2" /> {t.inventory.addDevice}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShowAddAccessory(true)}>
+                      <Package className="w-4 h-4 me-2" /> {t.inventory.addAccessory}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShowAddRepairPart(true)}>
+                      <Wrench className="w-4 h-4 me-2" /> {t.inventory.addRepairPart}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </PermissionGate>
             </div>
           </div>
 
@@ -421,12 +431,14 @@ export default function InventoryPage() {
               <div className="text-center py-20">
                 <Smartphone className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
                 <p className="text-muted-foreground">{t.inventory.noDevicesFound}</p>
-                <Button 
-                  className="mt-4"
-                  onClick={() => setShowAddDevice(true)}
-                >
-                  {t.inventory.addFirstDevice}
-                </Button>
+                <PermissionGate require="products.create">
+                  <Button
+                    className="mt-4"
+                    onClick={() => setShowAddDevice(true)}
+                  >
+                    {t.inventory.addFirstDevice}
+                  </Button>
+                </PermissionGate>
               </div>
             ) : (
               <div>
@@ -464,6 +476,7 @@ export default function InventoryPage() {
                           <div className="flex items-center gap-3">
                             <ProductThumb
                               code={device.imei}
+                              url={deviceCovers[device.id]}
                               className="w-10 h-10"
                               fallback={
                                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -507,12 +520,14 @@ export default function InventoryPage() {
                                 <Edit className="w-4 h-4 mr-2" /> {t.inventory.edit}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                className="text-destructive"
-                                onClick={() => deleteDevice(device.id)}
-                              >
-                                <Trash2 className="w-4 h-4 mr-2" /> {t.inventory.delete}
-                              </DropdownMenuItem>
+                              <PermissionGate require="products.delete">
+                                                              <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={() => deleteDevice(device.id)}
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" /> {t.inventory.delete}
+                                </DropdownMenuItem>
+                              </PermissionGate>
                             </DropdownMenuContent>
                           </DropdownMenu>
                           </div>
@@ -562,12 +577,14 @@ export default function InventoryPage() {
               <div className="text-center py-20">
                 <Package className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
                 <p className="text-muted-foreground">{t.inventory.noAccessoriesFound}</p>
-                <Button 
-                  className="mt-4"
-                  onClick={() => setShowAddAccessory(true)}
-                >
-                  {t.inventory.addFirstAccessory}
-                </Button>
+                <PermissionGate require="products.create">
+                  <Button
+                    className="mt-4"
+                    onClick={() => setShowAddAccessory(true)}
+                  >
+                    {t.inventory.addFirstAccessory}
+                  </Button>
+                </PermissionGate>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -599,6 +616,7 @@ export default function InventoryPage() {
                             <div className="flex items-center gap-3">
                               <ProductThumb
                                 code={accessory.sku}
+                                url={accessoryCovers[accessory.id]}
                                 className="w-10 h-10"
                                 fallback={
                                   <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
@@ -647,12 +665,14 @@ export default function InventoryPage() {
                                   <Edit className="w-4 h-4 mr-2" /> {t.inventory.edit}
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  className="text-destructive"
-                                  onClick={() => deleteAccessory(accessory.id)}
-                                >
-                                  <Trash2 className="w-4 h-4 mr-2" /> {t.inventory.delete}
-                                </DropdownMenuItem>
+                                <PermissionGate require="products.delete">
+                                                                  <DropdownMenuItem
+                                    className="text-destructive"
+                                    onClick={() => deleteAccessory(accessory.id)}
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" /> {t.inventory.delete}
+                                  </DropdownMenuItem>
+                                </PermissionGate>
                               </DropdownMenuContent>
                             </DropdownMenu>
                             </div>
@@ -1132,6 +1152,9 @@ function DeviceDialog({
               </div>
             </div>
           </div>
+          <div className="border-t border-border pt-4 mt-2">
+            <ProductMediaManager itemType="device" itemId={device?.id} />
+          </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t.inventory.cancel}
@@ -1342,6 +1365,9 @@ function AccessoryDialog({
               </div>
             </div>
           </div>
+          <div className="border-t border-border pt-4 mt-2">
+            <ProductMediaManager itemType="accessory" itemId={accessory?.id} />
+          </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t.inventory.cancel}
@@ -1551,6 +1577,9 @@ function RepairPartDialog({
                 </SelectContent>
               </Select>
             </div>
+          </div>
+          <div className="border-t border-border pt-4 mt-2">
+            <ProductMediaManager itemType="repair_part" itemId={part?.id} />
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
