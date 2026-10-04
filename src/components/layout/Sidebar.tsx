@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { planTier, planAllows, type FeatureKey } from "@/lib/planAccess";
+import { planTier, type FeatureKey } from "@/lib/planAccess";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { usePermissions, type PermissionKey } from "@/hooks/usePermissions";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -153,6 +154,7 @@ export function Sidebar() {
   const { merchant, merchantUser, subscription } = useAuth();
   const isCashier = merchantUser?.role === 'cashier';
   const { can } = usePermissions();
+  const { allows: planAllowsFeature, loading: plansLoading } = useFeatureAccess();
   const logoUrl = (merchant as { logo_url?: string | null } | null)?.logo_url;
 
   // planTier fails closed: an unrecognised plan gets the lowest tier, not the highest
@@ -162,7 +164,9 @@ export function Sidebar() {
     if (isCashier && item.path !== '/pos' && item.path !== '/daily-closings' && item.path !== '/repairs') {
       return false;
     }
-    if (item.requireFeature && !planAllows(subscription?.plan, item.requireFeature)) {
+    // While the plans table is loading nothing is hidden on a plan basis —
+    // otherwise half the sidebar appears a moment after the rest.
+    if (!plansLoading && item.requireFeature && !planAllowsFeature(item.requireFeature)) {
       return false;
     }
     if (item.requirePermission && !can(item.requirePermission)) {

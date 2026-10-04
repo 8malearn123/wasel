@@ -7,7 +7,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LanguageProvider } from "./i18n";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
-import { planAllows, type FeatureKey } from "@/lib/planAccess";
+import { type FeatureKey } from "@/lib/planAccess";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import type { UserRole } from "@/types/database";
 import { usePermissions, type PermissionKey } from "@/hooks/usePermissions";
 import { useVersionCheck } from "./hooks/useVersionCheck";
@@ -104,9 +105,10 @@ function LockedRoute({ children }: { children: React.ReactNode }) {
 // URL, so the route itself refuses too. This is a usability guard, not the
 // security boundary — that is RLS, which scopes every row to the merchant.
 function FeatureRoute({ feature, children }: { feature: FeatureKey; children: React.ReactNode }) {
-  const { subscription, loading } = useAuth();
+  const { loading } = useAuth();
+  const { allows, loading: plansLoading } = useFeatureAccess();
 
-  if (loading) {
+  if (loading || plansLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -114,7 +116,7 @@ function FeatureRoute({ feature, children }: { feature: FeatureKey; children: Re
     );
   }
 
-  if (!planAllows(subscription?.plan, feature)) {
+  if (!allows(feature)) {
     return <Navigate to="/subscription" replace />;
   }
 
