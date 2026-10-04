@@ -7,6 +7,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LanguageProvider } from "./i18n";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
+import { planAllows, type FeatureKey } from "@/lib/planAccess";
+import type { UserRole } from "@/types/database";
 import { useVersionCheck } from "./hooks/useVersionCheck";
 import { useSubscription } from "./hooks/useSubscription";
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -96,6 +98,46 @@ function LockedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// A plan-gated page. Hiding the sidebar entry never stopped anyone typing the
+// URL, so the route itself refuses too. This is a usability guard, not the
+// security boundary — that is RLS, which scopes every row to the merchant.
+function FeatureRoute({ feature, children }: { feature: FeatureKey; children: React.ReactNode }) {
+  const { subscription, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!planAllows(subscription?.plan, feature)) {
+    return <Navigate to="/subscription" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+// Pages only certain roles may open, by the role on the merchant_users row.
+function RoleRoute({ allow, children }: { allow: UserRole[]; children: React.ReactNode }) {
+  const { merchantUser, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!merchantUser || !allow.includes(merchantUser.role as UserRole)) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 function CashierRedirect({ children }: { children: React.ReactNode }) {
   const { merchantUser } = useAuth();
   if (merchantUser?.role === 'cashier') {
@@ -146,26 +188,26 @@ function AppRoutes() {
       <Route path="/pos" element={<ProtectedRoute><POSPage /></ProtectedRoute>} />
       <Route path="/inventory" element={<ProtectedRoute><CashierRedirect><InventoryPage /></CashierRedirect></ProtectedRoute>} />
       <Route path="/branches" element={<ProtectedRoute><CashierRedirect><BranchesPage /></CashierRedirect></ProtectedRoute>} />
-      <Route path="/transfers" element={<ProtectedRoute><CashierRedirect><TransfersPage /></CashierRedirect></ProtectedRoute>} />
-      <Route path="/suppliers" element={<ProtectedRoute><CashierRedirect><SuppliersPage /></CashierRedirect></ProtectedRoute>} />
+      <Route path="/transfers" element={<ProtectedRoute><FeatureRoute feature="transfers"><CashierRedirect><TransfersPage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />
+      <Route path="/suppliers" element={<ProtectedRoute><FeatureRoute feature="suppliers"><CashierRedirect><SuppliersPage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />
       {/* Purchases lived here as a second door onto the same page */}
       <Route path="/purchases" element={<Navigate to="/suppliers?tab=orders" replace />} />
       <Route path="/labels" element={<ProtectedRoute><CashierRedirect><LabelsPage /></CashierRedirect></ProtectedRoute>} />
       <Route path="/notifications" element={<ProtectedRoute><CashierRedirect><NotificationsPage /></CashierRedirect></ProtectedRoute>} />
-      <Route path="/marketing" element={<ProtectedRoute><CashierRedirect><MarketingPage /></CashierRedirect></ProtectedRoute>} />
-      <Route path="/repairs" element={<ProtectedRoute><RepairsPage /></ProtectedRoute>} />
-      <Route path="/reports" element={<ProtectedRoute><CashierRedirect><ReportsPage /></CashierRedirect></ProtectedRoute>} />
-      <Route path="/stocktake" element={<ProtectedRoute><CashierRedirect><StocktakePage /></CashierRedirect></ProtectedRoute>} />
-      <Route path="/users" element={<ProtectedRoute><CashierRedirect><UsersPage /></CashierRedirect></ProtectedRoute>} />
-      <Route path="/hr" element={<ProtectedRoute><CashierRedirect><HRPage /></CashierRedirect></ProtectedRoute>} />
+      <Route path="/marketing" element={<ProtectedRoute><FeatureRoute feature="marketing"><CashierRedirect><MarketingPage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />
+      <Route path="/repairs" element={<ProtectedRoute><FeatureRoute feature="repairs"><RepairsPage /></FeatureRoute></ProtectedRoute>} />
+      <Route path="/reports" element={<ProtectedRoute><FeatureRoute feature="reports"><CashierRedirect><ReportsPage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />
+      <Route path="/stocktake" element={<ProtectedRoute><FeatureRoute feature="stocktake"><CashierRedirect><StocktakePage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />
+      <Route path="/users" element={<ProtectedRoute><RoleRoute allow={["owner", "admin"]}><CashierRedirect><UsersPage /></CashierRedirect></RoleRoute></ProtectedRoute>} />
+      <Route path="/hr" element={<ProtectedRoute><RoleRoute allow={["owner", "admin"]}><CashierRedirect><HRPage /></CashierRedirect></RoleRoute></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><CashierRedirect><SettingsPage /></CashierRedirect></ProtectedRoute>} />
-      <Route path="/subscription" element={<ProtectedRoute><CashierRedirect><SubscriptionPage /></CashierRedirect></ProtectedRoute>} />
-      <Route path="/online-store" element={<ProtectedRoute><CashierRedirect><OnlineStorePage /></CashierRedirect></ProtectedRoute>} />
-      <Route path="/online-orders" element={<ProtectedRoute><CashierRedirect><OnlineOrdersPage /></CashierRedirect></ProtectedRoute>} />
+      <Route path="/subscription" element={<ProtectedRoute><RoleRoute allow={["owner", "admin"]}><CashierRedirect><SubscriptionPage /></CashierRedirect></RoleRoute></ProtectedRoute>} />
+      <Route path="/online-store" element={<ProtectedRoute><FeatureRoute feature="onlineStore"><CashierRedirect><OnlineStorePage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />
+      <Route path="/online-orders" element={<ProtectedRoute><FeatureRoute feature="onlineStore"><CashierRedirect><OnlineOrdersPage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />
       <Route path="/daily-closings" element={<ProtectedRoute><DailyClosingsPage /></ProtectedRoute>} />
-      <Route path="/customers" element={<ProtectedRoute><CashierRedirect><CustomersPage /></CashierRedirect></ProtectedRoute>} />
-      <Route path="/customers/:id" element={<ProtectedRoute><CashierRedirect><CustomerDetailPage /></CashierRedirect></ProtectedRoute>} />
-      <Route path="/wholesale" element={<ProtectedRoute><CashierRedirect><WholesalePage /></CashierRedirect></ProtectedRoute>} />
+      <Route path="/customers" element={<ProtectedRoute><FeatureRoute feature="customers"><CashierRedirect><CustomersPage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />
+      <Route path="/customers/:id" element={<ProtectedRoute><FeatureRoute feature="customers"><CashierRedirect><CustomerDetailPage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />
+      <Route path="/wholesale" element={<ProtectedRoute><FeatureRoute feature="wholesale"><CashierRedirect><WholesalePage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />
       <Route path="/support" element={<ProtectedRoute><SupportPage /></ProtectedRoute>} />
       <Route path="/store/:slug/*" element={<PublicStorePage />} />
       {/* Admin Auth */}

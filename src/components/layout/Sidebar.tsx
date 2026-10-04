@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { planTier, planAllows, type FeatureKey } from "@/lib/planAccess";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -47,7 +48,7 @@ interface NavItem {
   labelAr: string;
   path: string;
   badge?: number;
-  requireFeature?: 'onlineStore' | 'wholesale' | 'repairs' | 'suppliers' | 'marketing' | 'stocktake' | 'customers' | 'reports' | 'transfers';
+  requireFeature?: FeatureKey;
   children?: NavChild[];
 }
 
@@ -140,25 +141,6 @@ const navSections: NavSection[] = [
   },
 ];
 
-// Plan tier order: Basic=0, Professional=1, Enterprise=2, Distributor=3
-const PLAN_TIERS: Record<string, number> = {
-  'Basic': 0, 'Professional': 1, 'Enterprise': 2, 'Distributor': 3, 'trial': 3,
-};
-
-// Minimum plan required for each feature
-// باقة بلس (tier 1) ملغاة — مميزاتها انتقلت لباقة برو (tier 2)
-const FEATURE_MIN_PLAN: Record<string, number> = {
-  repairs: 2,      // باقة برو
-  suppliers: 2,    // باقة برو
-  transfers: 2,    // باقة برو
-  stocktake: 2,    // باقة برو
-  reports: 2,      // باقة برو
-  marketing: 2,    // باقة برو
-  customers: 2,    // باقة برو
-  onlineStore: 2,  // باقة برو — لايت ما لها متجر إلكتروني
-  wholesale: 3,    // باقة ماكس (from DB has_wholesale)
-};
-
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
@@ -168,15 +150,15 @@ export function Sidebar() {
   const isCashier = merchantUser?.role === 'cashier';
   const logoUrl = (merchant as { logo_url?: string | null } | null)?.logo_url;
 
-  const currentPlanTier = PLAN_TIERS[subscription?.plan || 'trial'] ?? 3;
+  // planTier fails closed: an unrecognised plan gets the lowest tier, not the highest
+  const currentPlanTier = planTier(subscription?.plan);
 
   const filterItem = (item: NavItem) => {
     if (isCashier && item.path !== '/pos' && item.path !== '/daily-closings' && item.path !== '/repairs') {
       return false;
     }
-    if (item.requireFeature) {
-      const minTier = FEATURE_MIN_PLAN[item.requireFeature] ?? 0;
-      if (currentPlanTier < minTier) return false;
+    if (item.requireFeature && !planAllows(subscription?.plan, item.requireFeature)) {
+      return false;
     }
     return true;
   };

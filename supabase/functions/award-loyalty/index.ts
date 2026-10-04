@@ -78,6 +78,27 @@ Deno.serve(async (req) => {
       });
     }
 
+    // 3b) The phone in the request must be the phone ON the order.
+    // This endpoint runs with the service role and takes no Authorization
+    // header (public checkout calls it), so without this check anyone who
+    // guessed or saw an order number could have that order's points credited
+    // to a phone number of their choosing, and have a customer row created
+    // inside the merchant's book under that number.
+    const digits = (value: string | null | undefined) => (value || '').replace(/\D/g, '');
+    const requestedDigits = digits(body.customer_phone);
+    const orderDigits = digits(order.customer_phone);
+    const sameNumber =
+      requestedDigits.length >= 7 &&
+      (requestedDigits === orderDigits ||
+        requestedDigits.slice(-9) === orderDigits.slice(-9)); // tolerate +966 / 0 prefixes
+
+    if (!sameNumber) {
+      return new Response(JSON.stringify({ error: 'phone_mismatch' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // 4) Find or create customer by phone
     const phone = body.customer_phone.trim();
     let { data: customer } = await supa

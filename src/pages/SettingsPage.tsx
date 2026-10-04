@@ -445,7 +445,7 @@ export default function SettingsPage() {
               </p>
               <div className="space-y-4">
                 <Input value={activationCode} onChange={(e) => setActivationCode(e.target.value.toUpperCase())}
-                  placeholder="ACTIVATE-30" className="font-mono" />
+                  placeholder="XXXX-XXXX-XXXX" className="font-mono" />
                 <Button onClick={handleActivate} disabled={subLoading || !activationCode.trim()} className="w-full">
                   {subLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   {isRTL ? "تفعيل الرمز" : "Activate Code"}

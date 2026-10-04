@@ -12,7 +12,18 @@ const PLANS = [
   { name: 'Distributor', name_ar: 'باقة ماكس', price: '499' },
 ];
 
+// The demo switcher calls demo_switch_plan(), which used to be granted to every
+// authenticated user — any customer could promote themselves to the top plan
+// from the console. The function now refuses anyone who is not a platform
+// admin, and the widget itself is stripped from production builds: Vite folds
+// import.meta.env.DEV to false and the bundler drops everything below.
 export default function DemoPlanSwitcher() {
+  if (!import.meta.env.DEV) return null;
+
+  return <DemoPlanSwitcherPanel />;
+}
+
+function DemoPlanSwitcherPanel() {
   const [open, setOpen] = useState(false);
   const [switching, setSwitching] = useState<string | null>(null);
   const { subscription, refreshMerchantData } = useAuth();
