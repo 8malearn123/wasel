@@ -11,6 +11,10 @@ export interface Plan {
   has_online_store: boolean;
   advanced_reports: boolean;
   priority_support: boolean;
+  // Both columns exist in the plans table already; they were simply missing
+  // from this type, which is why usePlanEnforcement had to cast to any.
+  has_wholesale: boolean;
+  has_loyalty: boolean;
   is_active: boolean;
   sort_order: number;
 }

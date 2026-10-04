@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { permissionsForLegacyRole } from '@/lib/legacyRolePermissions';
 
 /**
  * What the signed-in user may do, as the database sees it.
@@ -38,11 +39,20 @@ export function usePermissions() {
     const { data, error } = await supabase.rpc('my_permissions' as never);
 
     if (error) {
-      // Before the Phase 1 migration lands the function does not exist. Fail
-      // closed: an empty list hides the new controls rather than showing
-      // everyone everything.
-      console.warn('[permissions] my_permissions unavailable:', error.message);
-      setPermissions([]);
+      // The Phase 1 migration has not been applied, so my_permissions() does
+      // not exist yet. Returning an empty list here was wrong: it hid "add
+      // product" and "delete product" from everyone — owners included — while
+      // the database, still on its old merchant-scoped policy, allowed both.
+      // A UI stricter than the server protects nothing and only breaks screens.
+      //
+      // Falling back to the legacy role map gives the same answer the server
+      // gives in this state, and the same answer has_permission() will give
+      // once the migration lands.
+      console.warn(
+        '[permissions] my_permissions unavailable, falling back to the role map:',
+        error.message,
+      );
+      setPermissions(permissionsForLegacyRole(merchantUser.role));
     } else {
       setPermissions((data as unknown as string[]) || []);
     }
