@@ -8,6 +8,11 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTabParam } from '@/hooks/useTabParam';
+import { useCustomers } from '@/hooks/useCustomers';
+import { ReportTable } from '@/components/reports/ReportTable';
+import {
+  salesReport, devicesReport, accessoriesReport, customersReport,
+} from '@/lib/reportDefinitions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -39,6 +44,11 @@ function exportToCSV(data: Record<string, any>[], filename: string) {
 export default function ReportsPage() {
   const [period, setPeriod] = useState<'daily' | 'monthly'>('daily');
   const [activeTab, setActiveTab] = useTabParam('sales');
+
+  // The table reports reuse what this page already loads. useReports() fetches
+  // sales, devices and accessories in one pass, so adding the tables costs no
+  // extra query — only customers, which it does not fetch, needs its own hook.
+  const { customers, loading: customersLoading } = useCustomers();
   const { t, isRTL } = useLanguage();
   const r = t.reports;
   const { 
@@ -518,6 +528,27 @@ export default function ReportsPage() {
         {/* PARTS TAB */}
         <TabsContent value="parts">
           <PartsConsumptionReport report={partsReport} r={r} fmtCurrency={fmtCurrency} isRTL={isRTL} />
+        </TabsContent>
+
+        {/* TABLE REPORTS — search, period, sort, column choice, paging, Excel */}
+        <TabsContent value="table-sales">
+          <ReportTable definition={salesReport} rows={salesData} loading={loading}
+            emptyText={isRTL ? 'لا توجد مبيعات بعد' : 'No sales yet'} />
+        </TabsContent>
+
+        <TabsContent value="table-devices">
+          <ReportTable definition={devicesReport} rows={devices} loading={loading}
+            emptyText={isRTL ? 'لا توجد أجهزة في المخزون' : 'No devices in stock'} />
+        </TabsContent>
+
+        <TabsContent value="table-accessories">
+          <ReportTable definition={accessoriesReport} rows={accessories} loading={loading}
+            emptyText={isRTL ? 'لا توجد إكسسوارات' : 'No accessories'} />
+        </TabsContent>
+
+        <TabsContent value="table-customers">
+          <ReportTable definition={customersReport} rows={customers} loading={customersLoading}
+            emptyText={isRTL ? 'لا يوجد عملاء مسجّلون' : 'No customers yet'} />
         </TabsContent>
       </Tabs>
     </AppLayout>
