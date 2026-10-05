@@ -3,7 +3,9 @@ import { motion } from 'framer-motion';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useLanguage } from '@/i18n';
 import { useWholesale, WholesaleListing, WholesaleOrder, CreditTransaction } from '@/hooks/useWholesale';
-import { usePlanEnforcement } from '@/hooks/usePlanEnforcement';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { useAuth } from '@/hooks/useAuth';
+import { wholesaleAccess } from '@/lib/wholesaleCapability';
 import { useDevices, useAccessories } from '@/hooks/useInventory';
 import { useTabParam } from '@/hooks/useTabParam';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -64,7 +66,10 @@ const listingName = (listing: WholesaleListing) =>
 export default function WholesalePage() {
   const { isRTL } = useLanguage();
   const t = isRTL;
-  const { hasWholesale } = usePlanEnforcement();
+  // Buying and supplying are separate: PRO buys, MAX buys and supplies.
+  const { plan } = useFeatureAccess();
+  const { subscription } = useAuth();
+  const { canBuy, canSupply } = wholesaleAccess(subscription?.plan, plan);
   const {
     myListings, marketplace, myOrders, incomingOrders, myCredits, receivedCredits, loading,
     createListing, toggleListing, deleteListing, createOrder, updateOrderStatus, recordPayment,
@@ -74,17 +79,26 @@ export default function WholesalePage() {
 
   const [rawTab, setRawTab] = useTabParam('marketplace');
   const legacy = LEGACY_TABS[rawTab];
-  const section: Section = legacy
+  // منتجاتي is the supply side — a PRO merchant has nothing to list
+  const visibleSections = canSupply ? SECTIONS : SECTIONS.filter(s => s.key !== 'listings');
+  const requested: Section = legacy
     ? legacy.section
     : (SECTIONS.some(s => s.key === rawTab) ? (rawTab as Section) : 'marketplace');
+  // A direct ?tab=listings on a buy-only plan lands on the marketplace
+  const section: Section = visibleSections.some(s => s.key === requested) ? requested : 'marketplace';
   // Which way round: orders I placed vs orders sent to me, money owed to me vs money I owe
-  const [orderSide, setOrderSide] = useState<'mine' | 'incoming'>(legacy?.section === 'orders' ? (legacy.side as 'mine' | 'incoming') : 'mine');
-  const [creditSide, setCreditSide] = useState<'out' | 'in'>(legacy?.section === 'credits' ? (legacy.side as 'out' | 'in') : 'out');
+  const [orderSideRaw, setOrderSide] = useState<'mine' | 'incoming'>(legacy?.section === 'orders' ? (legacy.side as 'mine' | 'incoming') : 'mine');
+  const [creditSideRaw, setCreditSide] = useState<'out' | 'in'>(legacy?.section === 'credits' ? (legacy.side as 'out' | 'in') : 'out');
 
   useEffect(() => {
     if (legacy) setRawTab(legacy.section);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rawTab]);
+
+  // طلبات واردة and مديونيات لي only exist for a shop that supplies, so a
+  // buy-only plan is pinned to its own side whatever the URL asked for.
+  const orderSide = canSupply ? orderSideRaw : 'mine';
+  const creditSide = canSupply ? creditSideRaw : 'in';
 
   const [search, setSearch] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -121,8 +135,10 @@ export default function WholesalePage() {
   const counts: Record<Section, number> = {
     marketplace: marketplace.length,
     listings: myListings.length,
-    orders: myOrders.length + incomingOrders.length,
-    credits: totals.openCredits,
+    orders: canSupply ? myOrders.length + incomingOrders.length : myOrders.length,
+    credits: canSupply
+      ? totals.openCredits
+      : receivedCredits.filter(c => c.status !== 'paid').length,
   };
 
   const term = search.trim().toLowerCase();
@@ -181,7 +197,7 @@ export default function WholesalePage() {
     setPaymentAmount('');
   };
 
-  if (!hasWholesale) {
+  if (!canBuy && !canSupply) {
     return (
       <AppLayout title={t ? 'بيع الجملة' : 'Wholesale'}>
         <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -203,10 +219,14 @@ export default function WholesalePage() {
   // Each tile opens the section it counts, on the right side of it
   const tiles: { id: string; section: Section; label: string; value: string; icon: typeof Package; tone: string; bg: string; open?: () => void }[] = [
     { id: 'market', section: 'marketplace', label: t ? 'معروض في السوق' : 'On the marketplace', value: String(marketplace.length), icon: Store, tone: 'text-success', bg: 'bg-success/10' },
-    { id: 'mine', section: 'listings', label: t ? 'منتجاتي' : 'My listings', value: String(myListings.length), icon: Package, tone: 'text-primary', bg: 'bg-primary/10' },
-    { id: 'pending', section: 'orders', label: t ? 'طلبات بانتظاري' : 'Orders awaiting me', value: String(totals.pendingIncoming), icon: Inbox, tone: totals.pendingIncoming ? 'text-warning' : 'text-muted-foreground', bg: 'bg-warning/10', open: () => setOrderSide('incoming') },
-    { id: 'owed', section: 'credits', label: t ? 'مديونيات لي' : 'Owed to me', value: money(totals.owed), icon: Wallet, tone: 'text-primary', bg: 'bg-primary/10', open: () => setCreditSide('out') },
-    { id: 'owing', section: 'credits', label: t ? 'مديونياتي' : 'I owe', value: money(totals.owing), icon: Banknote, tone: 'text-warning', bg: 'bg-warning/10', open: () => setCreditSide('in') },
+    ...(canSupply ? [
+      { id: 'mine', section: 'listings' as Section, label: t ? 'منتجاتي' : 'My listings', value: String(myListings.length), icon: Package, tone: 'text-primary', bg: 'bg-primary/10' },
+      { id: 'pending', section: 'orders' as Section, label: t ? 'طلبات بانتظاري' : 'Orders awaiting me', value: String(totals.pendingIncoming), icon: Inbox, tone: totals.pendingIncoming ? 'text-warning' : 'text-muted-foreground', bg: 'bg-warning/10', open: () => setOrderSide('incoming') },
+      { id: 'owed', section: 'credits' as Section, label: t ? 'مديونيات لي' : 'Owed to me', value: money(totals.owed), icon: Wallet, tone: 'text-primary', bg: 'bg-primary/10', open: () => setCreditSide('out') },
+    ] : [
+      { id: 'my-orders', section: 'orders' as Section, label: t ? 'طلباتي' : 'My orders', value: String(myOrders.length), icon: Inbox, tone: 'text-primary', bg: 'bg-primary/10' },
+    ]),
+    { id: 'owing', section: 'credits' as Section, label: t ? 'مديونياتي' : 'I owe', value: money(totals.owing), icon: Banknote, tone: 'text-warning', bg: 'bg-warning/10', open: () => setCreditSide('in') },
   ];
 
   return (
@@ -256,7 +276,7 @@ export default function WholesalePage() {
         {/* The switcher used to live in the sidebar only */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-muted/50 border border-border">
-            {SECTIONS.map(s => (
+            {visibleSections.map(s => (
               <button
                 key={s.key}
                 type="button"
@@ -420,14 +440,14 @@ export default function WholesalePage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between gap-3">
                   <CardTitle className="text-base">{orderSide === 'mine' ? (t ? 'طلبات أرسلتها' : 'Orders I placed') : (t ? 'طلبات وصلتني' : 'Orders sent to me')}</CardTitle>
-                  <SideSwitch
+                  {canSupply && <SideSwitch
                     value={orderSide}
                     onChange={next => setOrderSide(next)}
                     options={[
                       { key: 'mine', label: t ? 'طلباتي (شراء)' : 'My orders', count: myOrders.length },
                       { key: 'incoming', label: t ? 'طلبات واردة (بيع)' : 'Incoming', count: incomingOrders.length, dot: totals.pendingIncoming > 0 },
                     ]}
-                  />
+                  />}
                 </CardHeader>
                 <CardContent className="p-0">
                   {orders.length === 0 ? (
@@ -485,14 +505,14 @@ export default function WholesalePage() {
                       <span className="font-semibold text-foreground">{money(creditSide === 'out' ? totals.owed : totals.owing)}</span>
                     </p>
                   </div>
-                  <SideSwitch
+                  {canSupply && <SideSwitch
                     value={creditSide}
                     onChange={next => setCreditSide(next)}
                     options={[
                       { key: 'out', label: t ? 'لي' : 'Owed to me', count: myCredits.filter(c => c.status !== 'paid').length },
                       { key: 'in', label: t ? 'عليّ' : 'I owe', count: receivedCredits.filter(c => c.status !== 'paid').length },
                     ]}
-                  />
+                  />}
                 </CardHeader>
                 <CardContent className="p-0">
                   {credits.length === 0 ? (
