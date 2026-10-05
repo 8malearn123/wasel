@@ -112,7 +112,9 @@ const navSections: NavSection[] = [
         { key: "links", label: "Links", labelAr: "الروابط" },
       ] },
       { icon: ShoppingBag, label: "Online Orders", labelAr: "طلبات المتجر", path: "/online-orders", requireFeature: 'onlineStore' },
-      { icon: Warehouse, label: "Wholesale", labelAr: "بيع الجملة", path: "/wholesale", requireFeature: 'wholesale' },
+      // PRO buys, MAX buys and supplies — the page itself shows only what the
+      // plan allows, so the entry is no longer behind the supply flag
+      { icon: Warehouse, label: "Wholesale", labelAr: "بيع الجملة", path: "/wholesale" },
     ],
   },
   {

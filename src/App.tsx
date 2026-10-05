@@ -233,7 +233,10 @@ function AppRoutes() {
       <Route path="/daily-closings" element={<ProtectedRoute><DailyClosingsPage /></ProtectedRoute>} />
       <Route path="/customers" element={<ProtectedRoute><FeatureRoute feature="customers"><CashierRedirect><CustomersPage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />
       <Route path="/customers/:id" element={<ProtectedRoute><FeatureRoute feature="customers"><CashierRedirect><CustomerDetailPage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />
-      <Route path="/wholesale" element={<ProtectedRoute><FeatureRoute feature="wholesale"><CashierRedirect><WholesalePage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />
+      {/* No FeatureRoute: PRO may buy wholesale, MAX may buy and supply. The
+          page shows only the side the plan allows, and the server refuses the
+          rest. */}
+      <Route path="/wholesale" element={<ProtectedRoute><CashierRedirect><WholesalePage /></CashierRedirect></ProtectedRoute>} />
       <Route path="/support" element={<ProtectedRoute><SupportPage /></ProtectedRoute>} />
       <Route path="/store/:slug/*" element={<PublicStorePage />} />
       {/* Admin Auth */}
