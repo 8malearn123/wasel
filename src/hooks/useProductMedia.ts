@@ -35,6 +35,25 @@ const MAX_EDGE = 1600;
  * bucket repeats both limits (file_size_limit and allowed_mime_types), which is
  * what actually stops a crafted upload.
  */
+const MODEL_MAX_BYTES = 10 * 1024 * 1024;
+const MODEL_EXTENSIONS = ['.glb', '.gltf'];
+
+/**
+ * GLB is the web format: one binary file with geometry and textures, which is
+ * what model-viewer reads and what the bucket's allowed_mime_types permits.
+ * Browsers often report an empty type for .glb, so the extension decides.
+ */
+export function validateModelFile(file: File): string | null {
+  const name = file.name.toLowerCase();
+  if (!MODEL_EXTENSIONS.some(ext => name.endsWith(ext))) {
+    return 'الصيغ المدعومة للنماذج ثلاثية الأبعاد: GLB أو glTF';
+  }
+  if (file.size > MODEL_MAX_BYTES) {
+    return `حجم النموذج أكبر من ${Math.round(MODEL_MAX_BYTES / 1024 / 1024)} ميجابايت`;
+  }
+  return null;
+}
+
 export function validateImageFile(file: File): string | null {
   if (!ACCEPTED.includes(file.type)) {
     return 'الصيغ المدعومة: JPG، PNG، WebP، AVIF';
@@ -148,6 +167,72 @@ export function useProductMedia(itemType: ProductItemType, itemId?: string | nul
     }
   };
 
+  /**
+   * Upload the product's 3D model. One per product: a second upload replaces
+   * the first, because the viewer shows one model and leaving orphans behind
+   * would just cost storage.
+   */
+  const uploadModel = async (file: File) => {
+    if (!merchant || !itemId) return null;
+
+    const problem = validateModelFile(file);
+    if (problem) { toast.error(problem); return null; }
+
+    setUploading(true);
+    try {
+      const ext = file.name.toLowerCase().endsWith('.gltf') ? 'gltf' : 'glb';
+      const path = `${merchant.id}/${itemType}/${itemId}/model-${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from(BUCKET)
+        .upload(path, file, {
+          contentType: ext === 'glb' ? 'model/gltf-binary' : 'model/gltf+json',
+          cacheControl: '31536000',
+          upsert: false,
+        });
+
+      if (uploadError) { toast.error(uploadError.message); return null; }
+
+      const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(path);
+
+      const previous = media.filter(m => m.media_type === 'model_3d');
+
+      const { data, error } = await supabase
+        .from('product_media' as never)
+        .insert({
+          merchant_id: merchant.id,
+          item_type: itemType,
+          item_id: itemId,
+          media_type: 'model_3d',
+          storage_path: path,
+          public_url: urlData.publicUrl,
+          sort_order: 0,
+          bytes: file.size,
+          mime: ext === 'glb' ? 'model/gltf-binary' : 'model/gltf+json',
+        } as never)
+        .select()
+        .single();
+
+      if (error) {
+        await supabase.storage.from(BUCKET).remove([path]);
+        toast.error(error.message);
+        return null;
+      }
+
+      // only once the new one is safely stored
+      for (const old of previous) {
+        await supabase.from('product_media' as never).delete().eq('id', old.id);
+        await supabase.storage.from(BUCKET).remove([old.storage_path]);
+      }
+
+      await fetchMedia();
+      toast.success('تم رفع النموذج ثلاثي الأبعاد');
+      return data as unknown as ProductMedia;
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const remove = async (item: ProductMedia) => {
     const { error } = await supabase.from('product_media' as never).delete().eq('id', item.id);
     if (error) { toast.error(error.message); return; }
@@ -192,7 +277,14 @@ export function useProductMedia(itemType: ProductItemType, itemId?: string | nul
     else await fetchMedia();
   };
 
-  return { media, loading, uploading, upload, remove, setPrimary, reorder, setAltText, refetch: fetchMedia };
+  // images and the model are separated here so callers do not repeat the filter
+  const images = media.filter(m => m.media_type === 'image');
+  const model3d = media.find(m => m.media_type === 'model_3d') ?? null;
+
+  return {
+    media, images, model3d, loading, uploading,
+    upload, uploadModel, remove, setPrimary, reorder, setAltText, refetch: fetchMedia,
+  };
 }
 
 /** The cover image of many items at once — for a grid or a table. */

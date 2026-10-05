@@ -1,10 +1,13 @@
+import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Smartphone, Package, Share2, ShoppingCart, Check } from 'lucide-react';
+import { Smartphone, Package, Share2, ShoppingCart, Check, Box } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useStoreCart } from '@/components/store/StoreCart';
 import { ProductCard, type StoreProduct } from '@/components/store/ProductCard';
 import { StoreSEO } from '@/components/store/StoreSEO';
+import { Product3DViewer } from '@/components/store/Product3DViewer';
+import { usePublicProductMedia } from '@/hooks/usePublicProductMedia';
 import type { StoreSettings } from '@/hooks/useOnlineStore';
 import { toast } from 'sonner';
 
@@ -66,6 +69,13 @@ export function StoreProductDetailPage({ store, devices, accessories, type }: Pr
       ? { id: p.id, type: 'device', name: `${p.brand || ''} ${p.model}`.trim(), brand: p.brand, price: Number(p.price), storage: p.storage, color: p.color }
       : { id: p.id, type: 'accessory', name: p.name, brand: p.brand, price: Number(p.price) });
 
+  const { images, model3d } = usePublicProductMedia(type === 'device' ? 'device' : 'accessory', item?.id);
+  const [activeImageId, setActiveImageId] = useState<string | null>(null);
+  // A product with a model opens on it; otherwise the first photo
+  const [showing3d, setShowing3d] = useState(false);
+  useEffect(() => { setShowing3d(Boolean(model3d)); setActiveImageId(null); }, [model3d, item?.id]);
+  const activeImage = images.find(i => i.id === activeImageId) ?? images.find(i => i.is_primary) ?? images[0] ?? null;
+
   const productImage = (item as any).image_url || store.og_image_url || store.banner_url || undefined;
   const descBase = (item as any).description || `${name}${item.brand ? ` من ${item.brand}` : ''}${item.storage ? ` - ${item.storage}` : ''}${item.color ? ` - ${item.color}` : ''}. متوفر الآن في ${store.store_name} بسعر ${price.toLocaleString()} ${currency} شامل الضريبة.`;
   const seoTitle = `${name}${item.brand ? ` - ${item.brand}` : ''} | ${store.store_name}`;
@@ -113,8 +123,50 @@ export function StoreProductDetailPage({ store, devices, accessories, type }: Pr
         jsonLd={[productJsonLd, breadcrumbsLd]}
       />
       <div className="grid md:grid-cols-2 gap-8">
-        <div className="aspect-square bg-muted/40 rounded-2xl flex items-center justify-center">
-          {type === 'device' ? <Smartphone className="w-32 h-32 text-muted-foreground/30" /> : <Package className="w-32 h-32 text-muted-foreground/30" />}
+        <div className="space-y-3">
+          <div className="aspect-square bg-muted/40 rounded-2xl overflow-hidden flex items-center justify-center">
+            {/* 3D when the product has a model, otherwise the photo, otherwise
+                the placeholder this page always showed. A product with no model
+                never loads the 3D bundle. */}
+            {showing3d && model3d ? (
+              <Product3DViewer
+                src={model3d.public_url}
+                posterUrl={activeImage?.public_url || productImage}
+                alt={name}
+                className="w-full h-full"
+              />
+            ) : activeImage ? (
+              <img src={activeImage.public_url} alt={activeImage.alt_text || name}
+                   className="w-full h-full object-contain" />
+            ) : productImage ? (
+              <img src={productImage} alt={name} className="w-full h-full object-contain" />
+            ) : type === 'device' ? (
+              <Smartphone className="w-32 h-32 text-muted-foreground/30" />
+            ) : (
+              <Package className="w-32 h-32 text-muted-foreground/30" />
+            )}
+          </div>
+
+          {(model3d || images.length > 1) && (
+            <div className="flex flex-wrap gap-2">
+              {model3d && (
+                <button type="button" onClick={() => setShowing3d(true)}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm transition-colors ${
+                    showing3d ? 'border-primary bg-primary/5 text-primary' : 'border-border hover:bg-muted/50'}`}>
+                  <Box className="w-4 h-4" />
+                  عرض ثلاثي الأبعاد
+                </button>
+              )}
+              {images.map(image => (
+                <button key={image.id} type="button"
+                  onClick={() => { setShowing3d(false); setActiveImageId(image.id); }}
+                  className={`w-14 h-14 rounded-lg overflow-hidden border transition-colors ${
+                    !showing3d && activeImage?.id === image.id ? 'border-primary ring-2 ring-primary/20' : 'border-border'}`}>
+                  <img src={image.public_url} alt={image.alt_text || ''} className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <div>
           {item.brand && <p className="text-sm text-muted-foreground uppercase tracking-wider mb-2">{item.brand}</p>}

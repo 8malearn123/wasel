@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ImagePlus, Loader2, Star, Trash2, ChevronLeft, ChevronRight, ImageOff } from 'lucide-react';
+import { ImagePlus, Loader2, Star, Trash2, ChevronLeft, ChevronRight, ImageOff, Box } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
@@ -24,9 +24,10 @@ export function ProductMediaManager({ itemType, itemId }: Props) {
   const { isRTL } = useLanguage();
   const t = isRTL;
   const { can } = usePermissions();
-  const { media, loading, uploading, upload, remove, setPrimary, reorder } =
+  const { images: media, model3d, loading, uploading, upload, uploadModel, remove, setPrimary, reorder } =
     useProductMedia(itemType, itemId);
   const inputRef = useRef<HTMLInputElement>(null);
+  const modelRef = useRef<HTMLInputElement>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
 
   const mayUpload = can('products.media.upload');
@@ -201,6 +202,71 @@ export function ProductMediaManager({ itemType, itemId }: Props) {
           </p>
         </>
       )}
+
+      {/* 3D — optional. A product without a model behaves exactly as before,
+          and the viewer's bundle is never downloaded for it. */}
+      <div className="border-t border-border pt-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <Label className="flex items-center gap-1.5">
+            <Box className="w-4 h-4" />
+            {t ? 'نموذج ثلاثي الأبعاد' : '3D model'}
+          </Label>
+          {model3d && (
+            <span className="text-xs text-success">{t ? 'مرفوع' : 'Uploaded'}</span>
+          )}
+        </div>
+
+        {model3d ? (
+          <div className="flex items-center gap-2 p-2 rounded-lg border border-border bg-muted/30">
+            <Box className="w-4 h-4 text-primary shrink-0" />
+            <span className="text-sm flex-1 truncate" dir="ltr">
+              {model3d.storage_path.split('/').pop()}
+            </span>
+            {model3d.bytes && (
+              <span className="text-xs text-muted-foreground tabular-nums">
+                {(model3d.bytes / 1024 / 1024).toFixed(1)} MB
+              </span>
+            )}
+            {mayDelete && (
+              <Button type="button" variant="ghost" size="sm" onClick={() => remove(model3d)}>
+                <Trash2 className="w-4 h-4 text-destructive" />
+              </Button>
+            )}
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            {t
+              ? 'اختياري — يظهر في صفحة المنتج بإمكانية التدوير والتكبير.'
+              : 'Optional — shown on the product page, rotatable and zoomable.'}
+          </p>
+        )}
+
+        {mayUpload && (
+          <>
+            <input
+              ref={modelRef}
+              type="file"
+              accept=".glb,.gltf,model/gltf-binary,model/gltf+json"
+              hidden
+              onChange={async e => {
+                const file = e.target.files?.[0];
+                if (file) await uploadModel(file);
+                if (modelRef.current) modelRef.current.value = '';
+              }}
+            />
+            <Button type="button" variant="outline" size="sm" className="w-full gap-2"
+              disabled={uploading} onClick={() => modelRef.current?.click()}>
+              <Box className="w-4 h-4" />
+              {model3d
+                ? (t ? 'استبدال النموذج' : 'Replace the model')
+                : (t ? 'رفع نموذج GLB' : 'Upload a GLB model')}
+            </Button>
+            <p className="text-xs text-muted-foreground text-center">
+              {t ? 'GLB أو glTF، حتى 10 ميجابايت.' : 'GLB or glTF, up to 10 MB.'}
+            </p>
+          </>
+        )}
+      </div>
     </div>
   );
 }
