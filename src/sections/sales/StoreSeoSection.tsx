@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, Save, Search } from 'lucide-react';
-import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/i18n';
 import { toast } from 'sonner';
@@ -16,7 +15,7 @@ import { LoadingState, ErrorState } from '@/components/common/StateViews';
  * indexable switch have no column yet; they are editable here and will persist
  * once the backend adds them — the editor does not pretend they saved.
  */
-export default function StoreSeoPage() {
+export default function StoreSeoSection() {
   const { isRTL } = useLanguage();
   const t = isRTL;
 
@@ -46,10 +45,7 @@ export default function StoreSeoPage() {
   };
 
   return (
-    <AppLayout
-      title={t ? 'محركات البحث' : 'Search engines'}
-      subtitle={t ? 'ظهور المتجر في نتائج البحث' : 'How the store appears in search results'}
-    >
+    <>
       {loading ? <LoadingState />
         : error ? <ErrorState message={error} onRetry={load} />
         : fields ? (
@@ -84,6 +80,6 @@ export default function StoreSeoPage() {
             </div>
           </div>
         ) : null}
-    </AppLayout>
+    </>
   );
 }

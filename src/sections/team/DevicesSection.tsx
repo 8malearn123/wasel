@@ -3,7 +3,6 @@ import {
   HardDrive, Plus, Pencil, Trash2, Wifi, WifiOff, AlertCircle, CircleDashed,
   RefreshCw, Loader2,
 } from 'lucide-react';
-import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -34,7 +33,7 @@ const STATUS: Record<DeviceConnectionStatus, { ar: string; en: string; cls: stri
 
 const EMPTY_FORM = { name: '', kind: '', model: '' };
 
-export default function DevicesPage() {
+export default function DevicesSection() {
   const { isRTL } = useLanguage();
   const t = isRTL;
 
@@ -100,10 +99,7 @@ export default function DevicesPage() {
   };
 
   return (
-    <AppLayout
-      title={t ? 'الأجهزة المتصلة' : 'Connected devices'}
-      subtitle={t ? 'الأجهزة المرتبطة بالنظام وحالتها' : 'Devices linked to the system, and their state'}
-    >
+    <>
       {usingMock('devices') && <MockDataBanner what={t ? 'خدمة الأجهزة' : 'the device service'} />}
 
       <div className="flex justify-end mb-4">
@@ -226,6 +222,6 @@ export default function DevicesPage() {
           </form>
         </DialogContent>
       </Dialog>
-    </AppLayout>
+    </>
   );
 }

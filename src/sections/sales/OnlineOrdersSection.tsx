@@ -4,7 +4,6 @@ import {
   ShoppingBag, Search, Loader2, Eye, Truck, CreditCard, CheckCircle2,
   XCircle, Clock, Package, MoreHorizontal, Hash, MapPin, Phone, User,
 } from "lucide-react";
-import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,7 +39,7 @@ const paymentConfig: Record<string, { label: string; color: string }> = {
   partial: { label: "جزئي", color: "bg-warning/10 text-warning" },
 };
 
-export default function OnlineOrdersPage() {
+export default function OnlineOrdersSection() {
   const { orders, loading, updateOrderStatus, updateTracking, updatePaymentStatus, getOrderItems } = useOnlineOrders();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -78,7 +77,7 @@ export default function OnlineOrdersPage() {
   };
 
   return (
-    <AppLayout title="طلبات المتجر" subtitle="إدارة الطلبات الإلكترونية">
+    <>
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-4 mb-6">
         {[
@@ -300,6 +299,6 @@ export default function OnlineOrdersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </AppLayout>
+    </>
   );
 }

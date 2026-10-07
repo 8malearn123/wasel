@@ -24,7 +24,6 @@ import {
   CalendarPlus,
   Clock,
 } from "lucide-react";
-import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -186,7 +185,7 @@ ${discrepancies.length > 0 ? `
 }
 
 // ============ Main Page ============
-export default function StocktakePage() {
+export default function StocktakeSection() {
   const { stocktakes, loading, createStocktake, getStocktakeItems, updateItemCount, finalizeStocktake, cancelStocktake } = useStocktake();
   const { branches } = useBranches();
   const [showCreate, setShowCreate] = useState(false);
@@ -206,7 +205,7 @@ export default function StocktakePage() {
   const totalDiscrepancies = stocktakes.filter(s => s.status === 'completed').reduce((sum, s) => sum + s.discrepancy_count, 0);
 
   return (
-    <AppLayout title="الجرد" subtitle="جرد المخزون ومطابقة الكميات">
+    <>
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-4 mb-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-4 rounded-xl bg-card border border-border shadow-sm">
@@ -443,7 +442,7 @@ export default function StocktakePage() {
           }}
         />
       )}
-    </AppLayout>
+    </>
   );
 }
 

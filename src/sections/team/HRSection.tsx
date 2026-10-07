@@ -4,7 +4,6 @@ import {
   Briefcase, Users, Wallet, TrendingUp, Loader2, Pencil, Phone, CalendarDays,
   Target, Percent, Save, Printer, FileSpreadsheet,
 } from "lucide-react";
-import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,7 +47,7 @@ const ROLE_LABELS: Record<string, { ar: string; en: string; cls: string }> = {
   technician: { ar: "فني صيانة", en: "Technician", cls: "bg-muted text-muted-foreground border-border" },
 };
 
-export default function HRPage() {
+export default function HRSection() {
   const { isRTL } = useLanguage();
   const { merchant, subscription } = useAuth();
   const { users, loading } = useMerchantUsers();
@@ -183,10 +182,7 @@ export default function HRPage() {
   const teamMonthSales = users.reduce((s, u) => s + (monthSales[u.user_id] || 0), 0);
 
   return (
-    <AppLayout
-      title={isRTL ? "الموارد البشرية" : "Human Resources"}
-      subtitle={isRTL ? "معلومات الموظفين والرواتب والأداء" : "Employee info, salaries and performance"}
-    >
+    <>
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-4 mb-6">
         {[
@@ -431,7 +427,7 @@ export default function HRPage() {
         onSave={(info) => { if (editing) { saveHR(editing.id, info); setEditing(null); } }}
         isRTL={isRTL}
       />
-    </AppLayout>
+    </>
   );
 }
 

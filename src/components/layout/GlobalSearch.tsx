@@ -94,7 +94,7 @@ export function GlobalSearch() {
           id: `d-${d.id}`, icon: Smartphone,
           title: `${d.brand ? d.brand + " " : ""}${d.model}`,
           subtitle: `IMEI: ${d.imei} — ${Number(d.price).toLocaleString()} ر.س`,
-          path: `/inventory?tab=devices&q=${encodeURIComponent(d.imei)}&open=${d.id}`,
+          path: `/products?tab=inventory&sub=devices&q=${encodeURIComponent(d.imei)}&open=${d.id}`,
           imageCode: d.imei,
         });
       }
@@ -103,7 +103,7 @@ export function GlobalSearch() {
           id: `a-${a.id}`, icon: Package,
           title: a.name,
           subtitle: `${a.sku} — ${Number(a.price).toLocaleString()} ر.س`,
-          path: `/inventory?tab=accessories&q=${encodeURIComponent(a.sku)}&open=${a.id}`,
+          path: `/products?tab=inventory&sub=accessories&q=${encodeURIComponent(a.sku)}&open=${a.id}`,
           imageCode: a.sku,
         });
       }
@@ -120,7 +120,7 @@ export function GlobalSearch() {
           id: `r-${r.id}`, icon: Wrench,
           title: `#${r.repair_number} — ${r.customer_name}`,
           subtitle: r.device_model || (isRTL ? "طلب صيانة" : "Repair order"),
-          path: "/repairs",
+          path: "/sales?tab=repairs",
         });
       }
       for (const s of sales.data || []) {

@@ -7,7 +7,6 @@ import {
   Monitor, Smartphone, RotateCcw, GripVertical, ChevronDown, ArrowUp, ArrowDown, Rocket,
   Undo2, Wand2, ListChecks, Clock, HelpCircle, Video, Award,
 } from "lucide-react";
-import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UrlTabs } from '@/components/common/UrlTabs';
+import { SectionNav } from '@/components/layout/SectionNav';
 import { useTabParam } from '@/hooks/useTabParam';
 import { ColorWheel } from '@/components/common/ColorWheel';
 import { CARRIERS } from '@/lib/shipping';
@@ -173,7 +173,7 @@ const THEMES = [
   },
 ];
 
-export default function OnlineStorePage() {
+export default function OnlineStoreSection() {
   const { merchant, subscription } = useAuth();
   const { settings, categories, loading, initStore, updateSettings, addCategory, removeCategory } = useStoreSettings();
   const { pages, upsertPage, deletePage, designExtras, saveDesignExtras } = useStorePages();
@@ -195,7 +195,7 @@ export default function OnlineStorePage() {
   const [designSection, setDesignSection] = useState<string | null>(null);
   const [colorTarget, setColorTarget] = useState<'primary_color' | 'secondary_color'>('primary_color');
   // محرر المتجر (ماكس)
-  const [, setStoreTab] = useTabParam('general');
+  const [storeTab, setStoreTab] = useTabParam('general', 'sub');
   const [openPanel, setOpenPanel] = useState<string | null>('logo');
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
   // المعاينة الحقيقية شغالة دائماً
@@ -302,17 +302,17 @@ export default function OnlineStorePage() {
 
   if (loading) {
     return (
-      <AppLayout title="المتجر الإلكتروني" subtitle="إدارة وتخصيص متجرك">
+      <>
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
-      </AppLayout>
+      </>
     );
   }
 
   if (!settings) {
     return (
-      <AppLayout title="المتجر الإلكتروني" subtitle="إدارة متجرك على الإنترنت">
+      <>
         <div className="flex flex-col items-center justify-center py-20">
           <Store className="w-16 h-16 text-muted-foreground mb-4" />
           <h2 className="text-xl font-bold text-foreground mb-2">لم يتم إنشاء متجر بعد</h2>
@@ -322,7 +322,7 @@ export default function OnlineStorePage() {
             <Store className="w-5 h-5 me-2" /> إنشاء المتجر الإلكتروني
           </Button>
         </div>
-      </AppLayout>
+      </>
     );
   }
 
@@ -475,7 +475,7 @@ export default function OnlineStorePage() {
   const dirty = Object.keys(form).length > 0;
 
   return (
-    <AppLayout title="المتجر الإلكتروني" subtitle="إدارة وتخصيص احترافي لمتجرك">
+    <>
       {/* Status bar */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
         className={cn("p-4 rounded-xl border mb-6 flex items-center justify-between flex-wrap gap-3",
@@ -520,7 +520,48 @@ export default function OnlineStorePage() {
         </motion.div>
       )}
 
-      <UrlTabs defaultTab="general" dir="rtl">
+      {/* The eleven panels of the store editor used to be switchable only from
+          the sidebar's own sub-entries. The sidebar now opens the section, so
+          the editor carries its own grouped navigation. */}
+      <SectionNav
+        value={storeTab}
+        onChange={setStoreTab}
+        groups={[
+          {
+            label: 'الأساسيات',
+            items: [
+              { key: 'general', label: 'عام', icon: Store },
+              { key: 'branding', label: 'الهوية', icon: Palette },
+              { key: 'legal', label: 'الصلاحيات والضريبة', icon: ListChecks },
+            ],
+          },
+          {
+            label: 'الواجهة',
+            items: [
+              { key: 'design', label: 'تصميم المتجر', icon: Wand2 },
+              { key: 'hero', label: 'الواجهة', icon: Layout },
+              { key: 'banners', label: 'البنرات', icon: ImageIcon },
+            ],
+          },
+          {
+            label: 'المحتوى',
+            items: [
+              { key: 'categories', label: 'التصنيفات', icon: Tag },
+              { key: 'pages', label: 'الصفحات', icon: FileText },
+              { key: 'links', label: 'الروابط', icon: Link2 },
+            ],
+          },
+          {
+            label: 'البيع',
+            items: [
+              { key: 'shipping', label: 'الشحن', icon: Truck },
+              { key: 'seo', label: 'SEO', icon: Search },
+            ],
+          },
+        ]}
+      />
+
+      <UrlTabs defaultTab="general" param="sub" dir="rtl">
 
         {/* GENERAL */}
         <TabsContent value="general">
@@ -2983,6 +3024,6 @@ export default function OnlineStorePage() {
           </div>
         </TabsContent>
       </UrlTabs>
-    </AppLayout>
+    </>
   );
 }

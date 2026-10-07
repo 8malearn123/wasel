@@ -18,7 +18,6 @@ import {
   CheckCircle,
   XCircle
 } from "lucide-react";
-import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -64,7 +63,7 @@ const requestStatusBadge = (status: string) => {
   );
 };
 
-export default function BranchesPage() {
+export default function BranchesSection() {
   const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [editing, setEditing] = useState<Branch | null>(null);
   const { t, isRTL } = useLanguage();
@@ -81,7 +80,7 @@ export default function BranchesPage() {
   const isOwner = merchantUser?.role === 'owner';
 
   return (
-    <AppLayout title={t.branches.title} subtitle={t.branches.subtitle}>
+    <>
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-4 mb-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
@@ -322,7 +321,7 @@ export default function BranchesPage() {
           }}
         />
       )}
-    </AppLayout>
+    </>
   );
 }
 

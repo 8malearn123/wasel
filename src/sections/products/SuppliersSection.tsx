@@ -5,7 +5,6 @@ import {
   DollarSign, FileText, Package, CheckCircle2, Clock, Send, Eye,
   AlertTriangle, CreditCard, PackageCheck, Printer
 } from "lucide-react";
-import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,8 +46,8 @@ const paymentStatusConfig: Record<string, { label: string; labelAr: string; colo
   paid: { label: 'Paid', labelAr: 'مدفوع', color: 'bg-success/10 text-success' },
 };
 
-export default function SuppliersPage() {
-  const [activeTab, setActiveTab] = useTabParam('suppliers');
+export default function SuppliersSection() {
+  const [activeTab, setActiveTab] = useTabParam('suppliers', 'sub');
   const [showAdd, setShowAdd] = useState(false);
   const [editing, setEditing] = useState<Supplier | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -121,15 +120,45 @@ export default function SuppliersPage() {
   );
 
   return (
-    <AppLayout
-      title={isRTL ? 'الموردين وأوامر الشراء' : 'Suppliers & Purchase Orders'}
-      subtitle={isRTL ? 'إدارة الموردين والمشتريات والمديونيات' : 'Manage suppliers, purchases & debts'}>
+    <>
       {/* Summary Stats */}
       <div className="grid gap-4 sm:grid-cols-4 mb-6">
         <StatCard icon={Truck} value={activeSuppliers.length} label={isRTL ? 'الموردين النشطين' : 'Active Suppliers'} color="primary" delay={0} />
         <StatCard icon={FileText} value={orders.length} label={isRTL ? 'أوامر الشراء' : 'Purchase Orders'} color="primary" delay={0.05} />
         <StatCard icon={DollarSign} value={`${totalOwed.toLocaleString()} ر.س`} label={isRTL ? 'إجمالي المديونيات' : 'Total Owed'} color="destructive" delay={0.1} />
         <StatCard icon={PackageCheck} value={pendingReceiveCount} label={isRTL ? 'بانتظار الاستلام' : 'Pending Receive'} color="warning" delay={0.15} />
+      </div>
+
+      {/* أوامر الشراء used to be reachable only from the sidebar's own
+          sub-entry. The sidebar now points at sections, not at a page's inner
+          tabs, so the page carries its own switcher. */}
+      <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-muted/50 border border-border mb-5">
+        {[
+          { key: 'suppliers', ar: 'الموردين', en: 'Suppliers', icon: Truck, count: activeSuppliers.length },
+          { key: 'orders', ar: 'أوامر الشراء', en: 'Purchase orders', icon: FileText, count: orders.length },
+        ].map(option => (
+          <button
+            key={option.key}
+            type="button"
+            onClick={() => setActiveTab(option.key)}
+            aria-pressed={activeTab === option.key}
+            className={cn(
+              'px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5',
+              activeTab === option.key
+                ? 'bg-card text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            <option.icon className="w-4 h-4" />
+            {isRTL ? option.ar : option.en}
+            <span className={cn(
+              'text-[11px] tabular-nums px-1.5 rounded-full',
+              activeTab === option.key ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground',
+            )}>
+              {option.count}
+            </span>
+          </button>
+        ))}
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} dir={isRTL ? 'rtl' : 'ltr'}>
@@ -380,7 +409,7 @@ export default function SuppliersPage() {
 
       <PODetailsDialog open={!!showPODetails} onOpenChange={(open) => { if (!open) setShowPODetails(null); }}
         order={showPODetails} isRTL={isRTL} />
-    </AppLayout>
+    </>
   );
 }
 

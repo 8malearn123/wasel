@@ -4,7 +4,6 @@ import {
   Bell, AlertTriangle, Loader2, ShoppingCart, Package,
   CheckCircle2, ArrowRightLeft, Wrench
 } from "lucide-react";
-import { AppLayout } from "@/components/layout/AppLayout";
 import { useTabParam } from '@/hooks/useTabParam';
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -20,11 +19,11 @@ const CATEGORIES = [
   { key: "repairs", labelKey: "repairs" },
 ] as const;
 
-export default function NotificationsPage() {
+export default function NotificationsSection() {
   const { t, isRTL } = useLanguage();
   const n = t.notifications;
   const { notifications, loading } = useNotifications();
-  const [activeTab, setActiveTab] = useTabParam("all");
+  const [activeTab, setActiveTab] = useTabParam("all", 'sub');
   // Severity narrows whatever category is on screen; the summary cards drive it
   const [severity, setSeverity] = useState<"all" | "urgent" | "warning" | "info">("all");
 
@@ -60,7 +59,7 @@ export default function NotificationsPage() {
   };
 
   return (
-    <AppLayout title={n.title} subtitle={n.subtitle}>
+    <>
       {/* Summary cards — each one is the severity filter for the list below */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
         <motion.button type="button" onClick={() => setSeverity("all")}
@@ -223,6 +222,6 @@ export default function NotificationsPage() {
         </div>
       )}
 
-    </AppLayout>
+    </>
   );
 }

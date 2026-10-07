@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import {
   UserPlus, Loader2, Pencil, Archive, Search, Users, ShieldAlert, Link2,
 } from 'lucide-react';
-import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,7 +34,7 @@ const EMPTY: EmployeeInput = {
   branch_id: null, merchant_user_id: null,
 };
 
-export default function EmployeesPage() {
+export default function EmployeesSection() {
   const { isRTL } = useLanguage();
   const t = isRTL;
   const { can, loading: permsLoading } = usePermissions();
@@ -121,15 +120,15 @@ export default function EmployeesPage() {
 
   if (permsLoading) {
     return (
-      <AppLayout title={t ? 'الموظفون' : 'Employees'}>
+      <>
         <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
-      </AppLayout>
+      </>
     );
   }
 
   if (!mayView) {
     return (
-      <AppLayout title={t ? 'الموظفون' : 'Employees'}>
+      <>
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <ShieldAlert className="w-12 h-12 text-muted-foreground mb-3" />
           <h2 className="text-lg font-semibold mb-1">{t ? 'لا تملك صلاحية عرض الموظفين' : 'You cannot view employees'}</h2>
@@ -137,15 +136,12 @@ export default function EmployeesPage() {
             {t ? 'اطلب من صاحب المتجر منحك صلاحية «عرض الموظفين».' : 'Ask the owner for the employees.view permission.'}
           </p>
         </div>
-      </AppLayout>
+      </>
     );
   }
 
   return (
-    <AppLayout
-      title={t ? 'الموظفون' : 'Employees'}
-      subtitle={t ? 'سجل موظفي المتجر وربطهم بحسابات الدخول' : 'Staff records, and the accounts they sign in with'}
-    >
+    <>
       <div className="flex flex-wrap items-center gap-3 mb-5">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search className="w-4 h-4 absolute top-1/2 -translate-y-1/2 start-3 text-muted-foreground" />
@@ -364,6 +360,6 @@ export default function EmployeesPage() {
           </form>
         </DialogContent>
       </Dialog>
-    </AppLayout>
+    </>
   );
 }

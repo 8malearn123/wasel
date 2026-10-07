@@ -1,8 +1,7 @@
 import {
   Bell, User, Building2, Languages, Sun, Moon, LayoutGrid,
-  LayoutDashboard, ShoppingCart, Package, ArrowLeftRight, Truck, Barcode,
-  Megaphone, Wrench, BarChart3, ClipboardCheck, Store, ShoppingBag,
-  Calculator, Heart, Warehouse, Users, CreditCard, LifeBuoy, Briefcase,
+  LayoutDashboard, ShoppingCart, Package, Truck, BarChart3, ShoppingBag,
+  CreditCard, Briefcase, Settings, Sparkles,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -29,31 +28,23 @@ interface HeaderProps {
   subtitle?: string;
 }
 
+// The launcher mirrors the sidebar: nine sections, not the thirty pages they
+// were split across before the consolidation.
 const SECTIONS = [
-  { icon: LayoutDashboard, label: "Dashboard", labelAr: "لوحة التحكم", path: "/" },
+  { icon: LayoutDashboard, label: "Dashboard", labelAr: "الرئيسية", path: "/" },
   { icon: ShoppingCart, label: "Point of Sale", labelAr: "نقطة البيع", path: "/pos" },
-  { icon: Package, label: "Inventory", labelAr: "المخزون", path: "/inventory" },
-  { icon: Building2, label: "Branches", labelAr: "الفروع", path: "/branches" },
-  { icon: ArrowLeftRight, label: "Transfers", labelAr: "التحويلات", path: "/transfers" },
-  { icon: Truck, label: "Suppliers", labelAr: "الموردين", path: "/suppliers" },
-  { icon: Barcode, label: "Verification Codes", labelAr: "أكواد التحقق", path: "/labels" },
-  { icon: Megaphone, label: "Marketing", labelAr: "التسويق", path: "/marketing" },
-  { icon: Wrench, label: "Maintenance", labelAr: "الصيانة", path: "/repairs" },
+  { icon: Package, label: "Products", labelAr: "المنتجات", path: "/products" },
+  { icon: ShoppingBag, label: "Orders & Sales", labelAr: "الطلبات والمبيعات", path: "/sales" },
+  { icon: Truck, label: "Shipping", labelAr: "الشحن", path: "/shipping" },
   { icon: BarChart3, label: "Reports", labelAr: "التقارير", path: "/reports" },
-  { icon: ClipboardCheck, label: "Stocktake", labelAr: "الجرد", path: "/stocktake" },
-  { icon: Store, label: "Online Store", labelAr: "المتجر الإلكتروني", path: "/online-store" },
-  { icon: ShoppingBag, label: "Online Orders", labelAr: "طلبات المتجر", path: "/online-orders" },
-  { icon: Calculator, label: "Daily Closings", labelAr: "الإغلاق اليومي", path: "/daily-closings" },
-  { icon: Heart, label: "Customers", labelAr: "العملاء والولاء", path: "/customers" },
-  { icon: Warehouse, label: "Wholesale", labelAr: "بيع الجملة", path: "/wholesale" },
-  { icon: Users, label: "Users", labelAr: "المستخدمين", path: "/users" },
-  { icon: Briefcase, label: "Human Resources", labelAr: "الموارد البشرية", path: "/hr" },
-  { icon: CreditCard, label: "Subscription", labelAr: "الباقات والاشتراك", path: "/subscription" },
-  { icon: LifeBuoy, label: "Support", labelAr: "الدعم الفني", path: "/support" },
+  { icon: Briefcase, label: "People", labelAr: "الموارد البشرية", path: "/team" },
+  { icon: Sparkles, label: "AI insights", labelAr: "الذكاء الاصطناعي", path: "/ai-insights" },
+  { icon: CreditCard, label: "Subscription & Plans", labelAr: "الاشتراك والباقات", path: "/subscription" },
+  { icon: Settings, label: "Settings", labelAr: "الإعدادات", path: "/settings" },
 ];
 
 // Routes a cashier can open without being bounced back to the POS
-const CASHIER_PATHS = new Set(["/pos", "/repairs", "/daily-closings", "/support"]);
+const CASHIER_PATHS = new Set(["/pos", "/sales", "/settings"]);
 
 export function Header({ title, subtitle }: HeaderProps) {
   const { t, language, setLanguage, isRTL } = useLanguage();
@@ -225,7 +216,7 @@ export function Header({ title, subtitle }: HeaderProps) {
                 {notifications.slice(0, 8).map((notif) => (
                   <DropdownMenuItem
                     key={notif.id}
-                    onSelect={() => navigate("/notifications")}
+                    onSelect={() => navigate("/settings?tab=notifications")}
                     className="gap-3 items-start py-2.5 cursor-pointer"
                   >
                     <div className={cn(
@@ -246,7 +237,7 @@ export function Header({ title, subtitle }: HeaderProps) {
             )}
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onSelect={() => navigate("/notifications")}
+              onSelect={() => navigate("/settings?tab=notifications")}
               className="justify-center text-primary font-medium cursor-pointer"
             >
               {language === "ar" ? "عرض كل الإشعارات" : "View all notifications"}

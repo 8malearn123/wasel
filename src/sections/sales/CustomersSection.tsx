@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AppLayout } from '@/components/layout/AppLayout';
 import { useLanguage } from '@/i18n';
 import { useCustomers, Customer, LoyaltyTransaction } from '@/hooks/useCustomers';
 import { Card, CardContent } from '@/components/ui/card';
@@ -17,7 +16,7 @@ import { LOYALTY_TIERS } from '@/lib/loyaltyTiers';
 import { TierBadge } from '@/components/customers/TierBadge';
 
 
-export default function CustomersPage() {
+export default function CustomersSection() {
   const { isRTL } = useLanguage();
   const { customers, loading, stats, createCustomer, updateCustomer, addLoyaltyPoints, getLoyaltyHistory } = useCustomers();
   const [search, setSearch] = useState('');
@@ -66,7 +65,7 @@ export default function CustomersPage() {
   const t = isRTL;
 
   return (
-    <AppLayout title={isRTL ? 'قاعدة العملاء' : 'Customers'}>
+    <>
       <div className="p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -247,6 +246,6 @@ export default function CustomersPage() {
           </DialogContent>
         </Dialog>
       </div>
-    </AppLayout>
+    </>
   );
 }
