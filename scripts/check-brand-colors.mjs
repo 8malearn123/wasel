@@ -23,6 +23,9 @@ const DATA_FILES = new Set([
   'lib/deviceSuggestions.ts',
   // القيم هنا محدِّدات CSS تطابق افتراضيات recharts، وليست ألواناً تُرسم
   'components/ui/chart.tsx',
+  // معاينة نتيجة البحث تحاكي ألوان Google نفسها (العنوان الأزرق والوصف الرمادي)،
+  // فلو استُبدلت بألوان وصل لما عادت معاينة — تماماً كعيّنات ألوان الأجهزة أعلاه
+  'components/seo/SeoEditor.tsx',
 ]);
 const ALLOW_INLINE = /brand-allow-color/;
 

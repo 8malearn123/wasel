@@ -5,6 +5,11 @@ import { usePermissions, type PermissionKey } from "@/hooks/usePermissions";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  Fingerprint,
+  Sparkles,
+  HardDrive,
+  FileText,
+  Search,
   LayoutDashboard,
   ShoppingCart,
   Package,
@@ -111,7 +116,9 @@ const navSections: NavSection[] = [
         { key: "shipping", label: "Shipping", labelAr: "الشحن" },
         { key: "links", label: "Links", labelAr: "الروابط" },
       ] },
+      { icon: Search, label: "Search engines", labelAr: "محركات البحث", path: "/store-seo", requireFeature: 'onlineStore' },
       { icon: ShoppingBag, label: "Online Orders", labelAr: "طلبات المتجر", path: "/online-orders", requireFeature: 'onlineStore' },
+      { icon: Truck, label: "Shipping", labelAr: "الشحن", path: "/shipping" },
       // PRO buys, MAX buys and supplies — the page itself shows only what the
       // plan allows, so the entry is no longer behind the supply flag
       { icon: Warehouse, label: "Wholesale", labelAr: "بيع الجملة", path: "/wholesale" },
@@ -145,8 +152,12 @@ const navSections: NavSection[] = [
       { icon: Building2, label: "Branches", labelAr: "الفروع", path: "/branches" },
       { icon: Users, label: "Users", labelAr: "المستخدمين", path: "/users" },
       { icon: Users, label: "Employees", labelAr: "الموظفون", path: "/employees", requirePermission: "employees.view" },
+      { icon: Fingerprint, label: "Attendance", labelAr: "الحضور والانصراف", path: "/attendance" },
       { icon: Briefcase, label: "Human Resources", labelAr: "الموارد البشرية", path: "/hr" },
       { icon: CreditCard, label: "Subscription", labelAr: "الباقات والاشتراك", path: "/subscription" },
+      { icon: Sparkles, label: "AI insights", labelAr: "تحليلات الذكاء الاصطناعي", path: "/ai-insights" },
+      { icon: HardDrive, label: "Devices", labelAr: "الأجهزة المتصلة", path: "/devices" },
+      { icon: FileText, label: "Business policy", labelAr: "سياسة العمل", path: "/business-policy" },
       { icon: LifeBuoy, label: "Support", labelAr: "الدعم الفني", path: "/support" },
     ],
   },

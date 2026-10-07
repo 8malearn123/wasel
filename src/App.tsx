@@ -27,6 +27,12 @@ const ReportsPage = lazy(() => import("./pages/ReportsPage"));
 const UsersPage = lazy(() => import("./pages/UsersPage"));
 const HRPage = lazy(() => import("./pages/HRPage"));
 const EmployeesPage = lazy(() => import("./pages/EmployeesPage"));
+const AttendancePage = lazy(() => import("./pages/AttendancePage"));
+const ShippingPage = lazy(() => import("./pages/ShippingPage"));
+const AIInsightsPage = lazy(() => import("./pages/AIInsightsPage"));
+const DevicesPage = lazy(() => import("./pages/DevicesPage"));
+const BusinessPolicyPage = lazy(() => import("./pages/BusinessPolicyPage"));
+const StoreSeoPage = lazy(() => import("./pages/StoreSeoPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const SubscriptionPage = lazy(() => import("./pages/SubscriptionPage"));
 const StocktakePage = lazy(() => import("./pages/StocktakePage"));
@@ -226,6 +232,12 @@ function AppRoutes() {
       <Route path="/users" element={<ProtectedRoute><RoleRoute allow={["owner", "admin"]}><CashierRedirect><UsersPage /></CashierRedirect></RoleRoute></ProtectedRoute>} />
       <Route path="/hr" element={<ProtectedRoute><RoleRoute allow={["owner", "admin"]}><CashierRedirect><HRPage /></CashierRedirect></RoleRoute></ProtectedRoute>} />
       <Route path="/employees" element={<ProtectedRoute><PermissionRoute require="employees.view"><CashierRedirect><EmployeesPage /></CashierRedirect></PermissionRoute></ProtectedRoute>} />
+      <Route path="/attendance" element={<ProtectedRoute><CashierRedirect><AttendancePage /></CashierRedirect></ProtectedRoute>} />
+      <Route path="/shipping" element={<ProtectedRoute><CashierRedirect><ShippingPage /></CashierRedirect></ProtectedRoute>} />
+      <Route path="/ai-insights" element={<ProtectedRoute><CashierRedirect><AIInsightsPage /></CashierRedirect></ProtectedRoute>} />
+      <Route path="/devices" element={<ProtectedRoute><CashierRedirect><DevicesPage /></CashierRedirect></ProtectedRoute>} />
+      <Route path="/business-policy" element={<ProtectedRoute><RoleRoute allow={["owner", "admin"]}><CashierRedirect><BusinessPolicyPage /></CashierRedirect></RoleRoute></ProtectedRoute>} />
+      <Route path="/store-seo" element={<ProtectedRoute><FeatureRoute feature="onlineStore"><CashierRedirect><StoreSeoPage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><CashierRedirect><SettingsPage /></CashierRedirect></ProtectedRoute>} />
       <Route path="/subscription" element={<ProtectedRoute><RoleRoute allow={["owner", "admin"]}><CashierRedirect><SubscriptionPage /></CashierRedirect></RoleRoute></ProtectedRoute>} />
       <Route path="/online-store" element={<ProtectedRoute><FeatureRoute feature="onlineStore"><CashierRedirect><OnlineStorePage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />

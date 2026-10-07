@@ -91,11 +91,24 @@ async function compress(file: File): Promise<{ blob: Blob; width: number; height
   }
 }
 
+/** What one upload did, so the UI can show it rather than guess. */
+export interface UploadReport {
+  fileName: string;
+  originalBytes: number;
+  storedBytes: number;
+  /** 0–100; zero when compression did not help and the original was kept */
+  savedPercent: number;
+  width: number | null;
+  height: number | null;
+}
+
 export function useProductMedia(itemType: ProductItemType, itemId?: string | null) {
   const { merchant } = useAuth();
   const [media, setMedia] = useState<ProductMedia[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  // The last few uploads, so the user sees what the compression actually did
+  const [reports, setReports] = useState<UploadReport[]>([]);
 
   const fetchMedia = useCallback(async () => {
     if (!itemId || !merchant) { setMedia([]); return; }
@@ -160,12 +173,30 @@ export function useProductMedia(itemType: ProductItemType, itemId?: string | nul
         return null;
       }
 
+      // Measured, not estimated: the real sizes either side of compression
+      const savedPercent = file.size > 0
+        ? Math.max(0, Math.round((1 - blob.size / file.size) * 100))
+        : 0;
+      setReports(prev => [
+        {
+          fileName: file.name,
+          originalBytes: file.size,
+          storedBytes: blob.size,
+          savedPercent,
+          width: width || null,
+          height: height || null,
+        },
+        ...prev,
+      ].slice(0, 5));
+
       await fetchMedia();
       return data as unknown as ProductMedia;
     } finally {
       setUploading(false);
     }
   };
+
+  const clearReports = () => setReports([]);
 
   /**
    * Upload the product's 3D model. One per product: a second upload replaces
@@ -282,7 +313,7 @@ export function useProductMedia(itemType: ProductItemType, itemId?: string | nul
   const model3d = media.find(m => m.media_type === 'model_3d') ?? null;
 
   return {
-    media, images, model3d, loading, uploading,
+    media, images, model3d, loading, uploading, reports, clearReports,
     upload, uploadModel, remove, setPrimary, reorder, setAltText, refetch: fetchMedia,
   };
 }
