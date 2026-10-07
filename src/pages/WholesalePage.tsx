@@ -6,6 +6,7 @@ import { useWholesale, WholesaleListing, WholesaleOrder, CreditTransaction } fro
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { useAuth } from '@/hooks/useAuth';
 import { wholesaleAccess } from '@/lib/wholesaleCapability';
+import UpgradeRequiredPage from '@/pages/UpgradeRequiredPage';
 import { useDevices, useAccessories } from '@/hooks/useInventory';
 import { useTabParam } from '@/hooks/useTabParam';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -196,6 +197,17 @@ export default function WholesalePage() {
     setSelectedCredit(null);
     setPaymentAmount('');
   };
+
+  // A supply-only section reached directly on a buy-only plan: say why, and
+  // offer the way out, rather than bouncing the user somewhere else.
+  if (!canSupply && (requested === 'listings' || legacy?.side === 'incoming' || legacy?.side === 'out')) {
+    return (
+      <UpgradeRequiredPage
+        featureName={t ? 'التوريد بالجملة' : 'Wholesale supply'}
+        planName="MAX"
+      />
+    );
+  }
 
   if (!canBuy && !canSupply) {
     return (

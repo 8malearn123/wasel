@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/i18n';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useProductMedia, type ProductItemType } from '@/hooks/useProductMedia';
+import { UploadReportList } from '@/components/common/UploadReport';
 
 interface Props {
   itemType: ProductItemType;
@@ -24,8 +25,10 @@ export function ProductMediaManager({ itemType, itemId }: Props) {
   const { isRTL } = useLanguage();
   const t = isRTL;
   const { can } = usePermissions();
-  const { images: media, model3d, loading, uploading, upload, uploadModel, remove, setPrimary, reorder } =
-    useProductMedia(itemType, itemId);
+  const {
+    images: media, model3d, loading, uploading, reports, clearReports,
+    upload, uploadModel, remove, setPrimary, reorder,
+  } = useProductMedia(itemType, itemId);
   const inputRef = useRef<HTMLInputElement>(null);
   const modelRef = useRef<HTMLInputElement>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
@@ -200,6 +203,8 @@ export function ProductMediaManager({ itemType, itemId }: Props) {
               ? 'JPG أو PNG أو WebP، حتى 10 ميجابايت. تُصغَّر الصورة تلقائياً قبل الرفع.'
               : 'JPG, PNG or WebP up to 10 MB. Images are downscaled before upload.'}
           </p>
+
+          <UploadReportList reports={reports} onDismiss={clearReports} />
         </>
       )}
 
