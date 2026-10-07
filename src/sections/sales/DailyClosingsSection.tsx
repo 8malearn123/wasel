@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { AppLayout } from "@/components/layout/AppLayout";
 import { useLanguage } from "@/i18n";
 import { useAuth } from "@/hooks/useAuth";
 import { useDailyClosings, DaySalesData } from "@/hooks/useDailyClosings";
@@ -22,7 +21,7 @@ import {
 } from "recharts";
 import { toast } from "sonner";
 
-export default function DailyClosingsPage() {
+export default function DailyClosingsSection() {
   const { isRTL } = useLanguage();
   const { merchant, currentBranch, user } = useAuth();
   const { closings, loading, fetchDaySalesData, createClosing } = useDailyClosings();
@@ -250,10 +249,7 @@ export default function DailyClosingsPage() {
   const printReport = () => window.print();
 
   return (
-    <AppLayout
-      title={isRTL ? "الإغلاق اليومي" : "Daily Closings"}
-      subtitle={isRTL ? "تقرير شامل لمبيعات اليوم وحركة الكاش" : "Comprehensive daily sales & cash report"}
-    >
+    <>
       {/* Tabs + actions */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6 print:hidden">
         <div className="flex gap-2">
@@ -649,6 +645,6 @@ export default function DailyClosingsPage() {
           </CardContent>
         </Card>
       )}
-    </AppLayout>
+    </>
   );
 }

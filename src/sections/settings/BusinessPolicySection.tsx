@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import { FileText, Megaphone, Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
-import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,10 +34,10 @@ const EMPTY = {
   isFree: false, isActive: true, notes: '',
 };
 
-export default function BusinessPolicyPage() {
+export default function BusinessPolicySection() {
   const { isRTL } = useLanguage();
   const t = isRTL;
-  const [activeTab, setActiveTab] = useTabParam('modification');
+  const [activeTab, setActiveTab] = useTabParam('modification', 'sub');
   const kind = (activeTab === 'marketing' ? 'marketing' : 'modification') as Kind;
 
   const [items, setItems] = useState<PolicyItem[]>([]);
@@ -115,10 +114,7 @@ export default function BusinessPolicyPage() {
   };
 
   return (
-    <AppLayout
-      title={t ? 'سياسة العمل' : 'Business policy'}
-      subtitle={t ? 'التعديلات وخدمات التسويق' : 'Modifications and marketing services'}
-    >
+    <>
       {usingMock('policy') && <MockDataBanner what={t ? 'خدمة سياسة العمل' : 'the policy service'} />}
 
       <div className="flex flex-wrap items-center gap-3 mb-5">
@@ -267,6 +263,6 @@ export default function BusinessPolicyPage() {
           </form>
         </DialogContent>
       </Dialog>
-    </AppLayout>
+    </>
   );
 }

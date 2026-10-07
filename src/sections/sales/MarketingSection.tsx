@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react";
-import { AppLayout } from "@/components/layout/AppLayout";
 import { useLanguage } from "@/i18n";
 import { useMarketing, Coupon, Campaign } from "@/hooks/useMarketing";
 import { useDevices, useAccessories } from "@/hooks/useInventory";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UrlTabs } from '@/components/common/UrlTabs';
+import { SectionNav } from '@/components/layout/SectionNav';
+import { useTabParam } from '@/hooks/useTabParam';
 import { useAuth } from '@/hooks/useAuth';
 import { SearchableSelect } from '@/components/common/SearchableSelect';
 
@@ -22,9 +23,10 @@ import { toast } from "@/hooks/use-toast";
 import { Plus, Ticket, Megaphone, Trash2, Pencil, Copy, Zap, Package, Tag, PercentIcon , Sparkles } from "lucide-react";
 import { format } from "date-fns";
 
-export default function MarketingPage() {
+export default function MarketingSection() {
   const { t, language } = useLanguage();
   const mk = t.marketing;
+  const [marketingTab, setMarketingTab] = useTabParam('coupons', 'sub');
   const { devices } = useDevices();
   const { accessories } = useAccessories();
 
@@ -258,7 +260,7 @@ export default function MarketingPage() {
   const activeCampaigns = campaigns.filter(c => c.is_active && !isExpired(c.ends_at));
 
   return (
-    <AppLayout title={mk.title} subtitle={mk.subtitle}>
+    <>
       <div className="p-4 md:p-6 space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -316,8 +318,21 @@ export default function MarketingPage() {
           </Card>
         </div>
 
-        {/* Tabs */}
-        <UrlTabs defaultTab="coupons">
+        {/* الكوبونات والحملات used to be switchable only from the sidebar's own
+            sub-entries. The sidebar now opens the section, so the page carries
+            its own switcher. */}
+        <SectionNav
+          value={marketingTab}
+          onChange={setMarketingTab}
+          groups={[{
+            items: [
+              { key: 'coupons', label: mk.couponsTab, icon: Ticket },
+              { key: 'campaigns', label: mk.campaignsTab, icon: Megaphone },
+            ],
+          }]}
+        />
+
+        <UrlTabs defaultTab="coupons" param="sub">
 
           {/* COUPONS TAB */}
           <TabsContent value="coupons" className="space-y-4">
@@ -779,6 +794,6 @@ export default function MarketingPage() {
           </DialogContent>
         </Dialog>
       </div>
-    </AppLayout>
+    </>
   );
 }

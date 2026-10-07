@@ -136,7 +136,7 @@ export default function CustomerDetailPage() {
       <AppLayout title={t ? 'العميل' : 'Customer'}>
         <div className="text-center py-20">
           <p className="text-muted-foreground mb-4">{t ? 'العميل غير موجود' : 'Customer not found'}</p>
-          <Button asChild><Link to="/customers">{t ? 'العودة للعملاء' : 'Back to customers'}</Link></Button>
+          <Button asChild><Link to="/sales?tab=customers">{t ? 'العودة للعملاء' : 'Back to customers'}</Link></Button>
         </div>
       </AppLayout>
     );
@@ -148,7 +148,7 @@ export default function CustomerDetailPage() {
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Button variant="ghost" size="sm" asChild>
-            <Link to="/customers"><ArrowRight className="w-4 h-4 ml-1" /> {t ? 'العملاء' : 'Customers'}</Link>
+            <Link to="/sales?tab=customers"><ArrowRight className="w-4 h-4 ml-1" /> {t ? 'العملاء' : 'Customers'}</Link>
           </Button>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setPointsDlg(true)}>

@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import {
   Clock, LogIn, LogOut, CalendarDays, Fingerprint, Loader2, Timer, Users,
 } from 'lucide-react';
-import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -54,24 +53,21 @@ const duration = (minutes: number | null, isRTL: boolean) => {
   return isRTL ? `${h} س ${m} د` : `${h}h ${m}m`;
 };
 
-export default function AttendancePage() {
+export default function AttendanceSection() {
   const { isRTL } = useLanguage();
   const t = isRTL;
   const { can, loading: permsLoading } = usePermissions();
-  const [activeTab, setActiveTab] = useTabParam('today');
+  const [activeTab, setActiveTab] = useTabParam('today', 'sub');
   const { employees } = useEmployees();
 
   const mayViewAll = can('employees.view');
 
   if (permsLoading) {
-    return <AppLayout title={t ? 'الحضور والانصراف' : 'Attendance'}><LoadingState /></AppLayout>;
+    return <LoadingState />;
   }
 
   return (
-    <AppLayout
-      title={t ? 'الحضور والانصراف' : 'Attendance'}
-      subtitle={t ? 'حضور الموظفين وسجلّه' : 'Employee attendance and its record'}
-    >
+    <>
       {usingMock('attendance') && (
         <MockDataBanner what={t ? 'خدمة الحضور' : 'the attendance service'} />
       )}
@@ -103,7 +99,7 @@ export default function AttendancePage() {
             : <PermissionDeniedState permission="employees.view" />}
         </TabsContent>
       </Tabs>
-    </AppLayout>
+    </>
   );
 }
 

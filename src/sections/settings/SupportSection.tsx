@@ -4,7 +4,6 @@ import {
   TicketPlus, MessageSquare, Clock, CheckCircle, Loader2, Send,
   AlertCircle, ChevronDown, ChevronUp, Plus,
 } from 'lucide-react';
-import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,7 +34,7 @@ const priorityConfig: Record<string, { label: string; color: string }> = {
   urgent: { label: 'عاجلة', color: 'bg-destructive/10 text-destructive' },
 };
 
-export default function SupportPage() {
+export default function SupportSection() {
   const { tickets, loading, createTicket } = useTickets();
   const [showCreate, setShowCreate] = useState(false);
   const [expandedTicket, setExpandedTicket] = useState<string | null>(null);
@@ -60,7 +59,7 @@ export default function SupportPage() {
   const openCount = tickets.filter(t => t.status === 'open' || t.status === 'in_progress').length;
 
   return (
-    <AppLayout title="الدعم الفني" subtitle="إرسال ومتابعة طلبات الدعم">
+    <>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -193,6 +192,6 @@ export default function SupportPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </AppLayout>
+    </>
   );
 }

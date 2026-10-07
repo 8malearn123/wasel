@@ -12,7 +12,6 @@ import {
   ChevronDown,
   ScanLine
 } from "lucide-react";
-import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,7 +54,7 @@ const statusColors: Record<TransferStatus, string> = {
   cancelled: "bg-destructive/10 text-destructive border-destructive/20"
 };
 
-export default function TransfersPage() {
+export default function TransfersSection() {
   const [showCreate, setShowCreate] = useState(false);
   const { t, isRTL } = useLanguage();
   const { branches } = useAuth();
@@ -70,7 +69,7 @@ export default function TransfersPage() {
   const [openItems, setOpenItems] = useState<string | null>(null);
 
   return (
-    <AppLayout title={t.transfers.title} subtitle={t.transfers.subtitle}>
+    <>
       {/* A single line of counts instead of three cards */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -251,7 +250,7 @@ export default function TransfersPage() {
         accessories={accessories}
         onCreate={createTransfer}
       />
-    </AppLayout>
+    </>
   );
 }
 

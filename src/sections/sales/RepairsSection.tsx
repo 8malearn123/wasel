@@ -26,7 +26,6 @@ import {
   Printer,
   Trash2,
 } from "lucide-react";
-import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -102,7 +101,7 @@ function getWarrantyRemaining(warrantyEndsAt: string | null) {
   return { expired: false, text: `${hours} ساعة ${mins > 0 ? `و ${mins} دقيقة` : ''}`, days: 0, percentage: 50 };
 }
 
-export default function RepairsPage() {
+export default function RepairsSection() {
   const { repairs, loading, createRepair, updateRepairStatus, updateRepair } = useRepairs();
   const { parts: repairParts, usePartsInRepair, getRepairOrderParts } = useRepairParts();
   const { branches } = useBranches();
@@ -145,7 +144,7 @@ export default function RepairsPage() {
   const underWarranty = repairs.filter(r => r.status === 'delivered' && r.warranty_ends_at && new Date(r.warranty_ends_at) > new Date()).length;
 
   return (
-    <AppLayout title="الإصلاحات والصيانة" subtitle="إدارة طلبات الإصلاح وتتبع حالتها">
+    <>
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-4 mb-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-4 rounded-xl bg-card border border-border shadow-sm">
@@ -304,7 +303,7 @@ export default function RepairsPage() {
           onClose={() => setInvoiceRepair(null)}
         />
       )}
-    </AppLayout>
+    </>
   );
 }
 

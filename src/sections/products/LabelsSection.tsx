@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { AppLayout } from "@/components/layout/AppLayout";
 import { useLanguage } from "@/i18n";
 import { useDevices, useAccessories } from "@/hooks/useInventory";
 import { Input } from "@/components/ui/input";
@@ -110,12 +109,12 @@ function LabelCard({
   );
 }
 
-export default function LabelsPage() {
+export default function LabelsSection() {
   const { t, isRTL } = useLanguage();
   const { devices, loading: devicesLoading } = useDevices();
   const { accessories, loading: accessoriesLoading } = useAccessories();
 
-  const [tab, setTab] = useTabParam("all");
+  const [tab, setTab] = useTabParam("all", 'sub');
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [labelSize, setLabelSize] = useState<LabelSize>("medium");
@@ -225,7 +224,7 @@ export default function LabelsPage() {
   const selectedItems = filteredItems.filter((i) => selectedIds.has(i.id));
 
   return (
-    <AppLayout title={t.labels.title} subtitle={t.labels.subtitle}>
+    <>
       <div className="space-y-4">
         {/* Controls */}
         <Card>
@@ -354,6 +353,6 @@ export default function LabelsPage() {
           </div>
         )}
       </div>
-    </AppLayout>
+    </>
   );
 }

@@ -17,7 +17,6 @@ import {
   Copy,
   Check
 } from "lucide-react";
-import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -73,7 +72,7 @@ const roleLabels: Record<UserRole, string> = {
   inventory_manager: "Inventory Manager"
 };
 
-export default function UsersPage() {
+export default function UsersSection() {
   const [editing, setEditing] = useState<MerchantUser | null>(null);
   const [resettingUser, setResettingUser] = useState<MerchantUser | null>(null);
   const [regeneratingCode, setRegeneratingCode] = useState<MerchantUser | null>(null);
@@ -89,7 +88,7 @@ export default function UsersPage() {
   }, {} as Record<string, number>);
 
   return (
-    <AppLayout title={t.users.title} subtitle={t.users.subtitle}>
+    <>
       {/* Add User Button */}
       <div className="flex justify-end mb-4">
         <Button onClick={() => setShowAddUser(true)} className="bg-primary">
@@ -287,7 +286,7 @@ export default function UsersPage() {
         branches={branches}
         onSuccess={refetch}
       />
-    </AppLayout>
+    </>
   );
 }
 

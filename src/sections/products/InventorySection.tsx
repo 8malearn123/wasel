@@ -21,7 +21,6 @@ import {
   FolderOpen,
   Heart
 } from "lucide-react";
-import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -73,10 +72,10 @@ type StockKind = "devices" | "accessories" | "repair_parts";
 
 const STOCK_KINDS: StockKind[] = ["devices", "accessories", "repair_parts"];
 
-export default function InventoryPage() {
+export default function InventorySection() {
   const [searchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
-  const [activeTab, setActiveTab] = useTabParam("devices");
+  const [activeTab, setActiveTab] = useTabParam("devices", 'sub');
   // Devices, accessories and repair parts share one page, one kind at a time
   const typeFilter: StockKind = STOCK_KINDS.includes(activeTab as StockKind)
     ? (activeTab as StockKind)
@@ -263,7 +262,7 @@ export default function InventoryPage() {
   };
 
   return (
-    <AppLayout title={t.inventory.title} subtitle={t.inventory.subtitle}>
+    <>
       {/* Stats Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
         <motion.div
@@ -372,6 +371,24 @@ export default function InventoryPage() {
                   </span>
                 </button>
               ))}
+              {/* التصنيفات used to be reachable only from the sidebar's own
+                  sub-entry. The sidebar now points at sections, not at a
+                  page's inner tabs, so the page carries its own way in. */}
+              <span className="mx-1 h-5 w-px bg-border" aria-hidden />
+              <button
+                type="button"
+                onClick={() => setActiveTab("categories")}
+                aria-pressed={activeTab === "categories"}
+                className={cn(
+                  "px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5",
+                  activeTab === "categories"
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Tag className="w-4 h-4" />
+                {isRTL ? "التصنيفات" : "Categories"}
+              </button>
             </div>
             <div className="flex items-center gap-3">
               <div className="relative">
@@ -837,7 +854,7 @@ export default function InventoryPage() {
         branches={branches}
         onSave={(data) => editingRepairPart && updatePart(editingRepairPart.id, data)}
       />
-    </AppLayout>
+    </>
   );
 }
 

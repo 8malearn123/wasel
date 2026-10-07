@@ -2,12 +2,13 @@ import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { 
   BarChart3, TrendingUp, TrendingDown, DollarSign, Package, Smartphone, 
-  Building2, Calendar, Loader2, Wrench, AlertTriangle, Download, Archive, Users
+  Building2, Calendar, Loader2, Wrench, AlertTriangle, Download, Archive, Users, Warehouse, FileText
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTabParam } from '@/hooks/useTabParam';
+import { SectionNav } from '@/components/layout/SectionNav';
 import { useCustomers } from '@/hooks/useCustomers';
 import { ReportTable } from '@/components/reports/ReportTable';
 import {
@@ -162,9 +163,36 @@ export default function ReportsPage() {
 
   return (
     <AppLayout title={r.title} subtitle={r.subtitle}>
+      {/* The nine reports used to be switchable only from the sidebar. They are
+          grouped here the way the sections are: the dashboards, then the
+          tables you export. */}
+      <SectionNav
+        value={activeTab}
+        onChange={setActiveTab}
+        groups={[
+          {
+            label: isRTL ? 'لوحات' : 'Dashboards',
+            items: [
+              { key: 'sales', label: isRTL ? 'المبيعات' : 'Sales', icon: BarChart3 },
+              { key: 'inventory', label: isRTL ? 'المخزون' : 'Inventory', icon: Package },
+              { key: 'employees', label: isRTL ? 'الموظفين' : 'Employees', icon: Users },
+              { key: 'deadstock', label: isRTL ? 'الرواكد' : 'Dead stock', icon: Warehouse },
+              { key: 'parts', label: isRTL ? 'قطع الصيانة' : 'Repair parts', icon: Wrench },
+            ],
+          },
+          {
+            label: isRTL ? 'جداول للتصدير' : 'Exportable tables',
+            items: [
+              { key: 'table-sales', label: isRTL ? 'المبيعات' : 'Sales', icon: FileText },
+              { key: 'table-devices', label: isRTL ? 'الأجهزة' : 'Devices', icon: FileText },
+              { key: 'table-accessories', label: isRTL ? 'الإكسسوارات' : 'Accessories', icon: FileText },
+              { key: 'table-customers', label: isRTL ? 'العملاء' : 'Customers', icon: FileText },
+            ],
+          },
+        ]}
+      />
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-        </div>
 
         {/* SALES TAB */}
         <TabsContent value="sales">

@@ -15,7 +15,8 @@ const ALLOWED_HEX = new Set(['#2f6bff', '#12151b', '#6b7280', '#16a34a', '#f6f7f
 
 // ملفات يسمح فيها بألوان خام لأنها بيانات يختارها التاجر لمتجره لا ألوان واجهة وصل
 const DATA_FILES = new Set([
-  'pages/OnlineStorePage.tsx',      // منتقي ألوان المتجر — الألوان هنا خيارات معروضة للتاجر
+  // كان pages/OnlineStorePage.tsx قبل دمج الأقسام
+  'sections/sales/OnlineStoreSection.tsx', // منتقي ألوان المتجر — الألوان هنا خيارات معروضة للتاجر
   'components/store/StoreTheme.tsx',// يطبّق لون التاجر المختار
   'components/common/ColorWheel.tsx',
   // ألوان الأجهزة نفسها (أسود/ذهبي/تيتانيوم…) تُعرض كعيّنات في منتقي لون الجوال،

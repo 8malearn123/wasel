@@ -1,52 +1,57 @@
-import { useState, useEffect } from "react";
-import { planTier, type FeatureKey } from "@/lib/planAccess";
+import { useState } from "react";
+import { type FeatureKey } from "@/lib/planAccess";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { usePermissions, type PermissionKey } from "@/hooks/usePermissions";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Fingerprint,
-  Sparkles,
-  HardDrive,
-  FileText,
-  Search,
-  LayoutDashboard,
-  ShoppingCart,
-  Package,
-  Building2,
   ArrowLeftRight,
-  Truck,
   Barcode,
-  Bell,
-  Megaphone,
-  Wrench,
   BarChart3,
-  Users,
-  Settings,
+  Bell,
+  Briefcase,
+  Building2,
+  Calculator,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
-  Smartphone,
-  CreditCard,
-  
   ClipboardCheck,
-  Store,
-  ShoppingBag,
-  Calculator,
+  CreditCard,
+  FileText,
+  Fingerprint,
+  HardDrive,
   Heart,
-  Warehouse,
+  LayoutDashboard,
   LifeBuoy,
-  Briefcase,
+  Megaphone,
+  Package,
+  Search,
+  Settings,
+  ShieldCheck,
+  ShoppingBag,
+  ShoppingCart,
+  SlidersHorizontal,
+  Sparkles,
+  Store,
+  Truck,
+  Users,
+  Warehouse,
+  Wrench,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n";
 import { useAuth } from "@/hooks/useAuth";
-
+import type { UserRole } from "@/types/database";
 
 interface NavChild {
+  /** the section leaf this opens, as ?tab= */
   key: string;
   label: string;
   labelAr: string;
+  icon: React.ElementType;
+  requireFeature?: FeatureKey;
+  requirePermission?: PermissionKey;
+  denyRoles?: UserRole[];
 }
 
 interface NavItem {
@@ -54,111 +59,101 @@ interface NavItem {
   label: string;
   labelAr: string;
   path: string;
-  badge?: number;
   requireFeature?: FeatureKey;
-  /** hidden unless the user holds this permission */
   requirePermission?: PermissionKey;
+  denyRoles?: UserRole[];
   children?: NavChild[];
 }
 
-interface NavSection {
-  title?: string;
-  titleAr?: string;
-  items: NavItem[];
-}
-
-const navSections: NavSection[] = [
+/**
+ * Nine sections. Each one's children deep-link into that page's ?tab=, which
+ * is the same leaf key the page's own sub-navigation uses — so the sidebar and
+ * the page can never disagree about where you are.
+ *
+ * The gates here are the usability half of the per-leaf gates in SectionShell:
+ * hiding an entry has never been what stops anyone, RLS is.
+ */
+const navItems: NavItem[] = [
   {
-    items: [
-      { icon: LayoutDashboard, label: "Dashboard", labelAr: "لوحة التحكم", path: "/" },
+    // A cashier's "/" bounces straight to the till, so it is not offered to them
+    icon: LayoutDashboard, label: "Dashboard", labelAr: "الرئيسية", path: "/",
+    denyRoles: ["cashier"],
+  },
+  {
+    icon: Package, label: "Products", labelAr: "المنتجات", path: "/products",
+    denyRoles: ["cashier"],
+    children: [
+      { key: "inventory", label: "Stock", labelAr: "المخزون", icon: Package },
+      { key: "stocktake", label: "Stocktake", labelAr: "الجرد", icon: ClipboardCheck, requireFeature: "stocktake" },
+      { key: "transfers", label: "Transfers", labelAr: "التحويلات", icon: ArrowLeftRight, requireFeature: "transfers" },
+      { key: "suppliers", label: "Suppliers & purchases", labelAr: "الموردين والمشتريات", icon: Truck, requireFeature: "suppliers" },
+      { key: "labels", label: "Verification codes", labelAr: "أكواد التحقق", icon: Barcode },
     ],
   },
   {
-    title: "Daily Operations", titleAr: "العمليات اليومية",
-    items: [
-      { icon: ShoppingCart, label: "Products", labelAr: "المنتجات", path: "/pos", children: [
-        { key: "pos", label: "Products", labelAr: "المنتجات" },
-        { key: "history", label: "Sales History", labelAr: "سجل المبيعات" },
-      ] },
-      { icon: Calculator, label: "Daily Closings", labelAr: "الإغلاق اليومي", path: "/daily-closings" },
-      { icon: Wrench, label: "Maintenance", labelAr: "الصيانة", path: "/repairs", requireFeature: 'repairs' },
+    icon: ShoppingBag, label: "Orders & Sales", labelAr: "الطلبات والمبيعات", path: "/sales",
+    children: [
+      { key: "orders", label: "Online orders", labelAr: "طلبات المتجر", icon: ShoppingBag, requireFeature: "onlineStore", denyRoles: ["cashier"] },
+      { key: "repairs", label: "Repairs", labelAr: "الصيانة", icon: Wrench, requireFeature: "repairs" },
+      { key: "closings", label: "Daily closings", labelAr: "الإغلاق اليومي", icon: Calculator },
+      { key: "store", label: "Store settings", labelAr: "إعدادات المتجر", icon: Store, requireFeature: "onlineStore", denyRoles: ["cashier"] },
+      { key: "seo", label: "Search engines", labelAr: "محركات البحث", icon: Search, requireFeature: "onlineStore", denyRoles: ["cashier"] },
+      { key: "customers", label: "Customers & loyalty", labelAr: "العملاء والولاء", icon: Heart, requireFeature: "customers", denyRoles: ["cashier"] },
+      { key: "marketing", label: "Marketing", labelAr: "التسويق", icon: Megaphone, requireFeature: "marketing", denyRoles: ["cashier"] },
+      { key: "wholesale", label: "Wholesale", labelAr: "بيع الجملة", icon: Warehouse, denyRoles: ["cashier"] },
     ],
   },
   {
-    title: "Inventory & Purchasing", titleAr: "المخزون والمشتريات",
-    items: [
-      { icon: Package, label: "Inventory", labelAr: "المخزون", path: "/inventory", children: [
-        { key: "devices", label: "Items", labelAr: "الأصناف" },
-        { key: "categories", label: "Categories", labelAr: "التصنيفات" },
-      ] },
-      { icon: ClipboardCheck, label: "Stocktake", labelAr: "الجرد", path: "/stocktake", requireFeature: 'stocktake' },
-      { icon: ArrowLeftRight, label: "Transfers", labelAr: "التحويلات", path: "/transfers", requireFeature: 'transfers' },
-      { icon: Truck, label: "Suppliers", labelAr: "الموردين", path: "/suppliers", requireFeature: 'suppliers', children: [
-        { key: "suppliers", label: "Suppliers", labelAr: "الموردين" },
-        { key: "orders", label: "Purchase Orders", labelAr: "أوامر الشراء" },
-      ] },
-      { icon: Barcode, label: "Verification Codes", labelAr: "أكواد التحقق", path: "/labels" },
+    icon: Truck, label: "Shipping", labelAr: "الشحن", path: "/shipping",
+    denyRoles: ["cashier"],
+    children: [
+      { key: "carriers", label: "Carriers", labelAr: "شركات الشحن", icon: Truck },
+      { key: "api", label: "API settings", labelAr: "إعدادات الاتصال", icon: SlidersHorizontal },
+      { key: "ai", label: "Shipping insights", labelAr: "تحليلات الشحن", icon: Sparkles },
     ],
   },
   {
-    title: "Online Store", titleAr: "المتجر الإلكتروني",
-    items: [
-      { icon: Store, label: "Online Store", labelAr: "المتجر الإلكتروني", path: "/online-store", requireFeature: 'onlineStore', children: [
-        { key: "general", label: "General", labelAr: "عام" },
-        { key: "design", label: "Store Design", labelAr: "تصميم المتجر" },
-        { key: "branding", label: "Branding", labelAr: "الهوية" },
-        { key: "hero", label: "Storefront", labelAr: "الواجهة" },
-        { key: "banners", label: "Banners", labelAr: "البنرات" },
-        { key: "legal", label: "Legal & Tax", labelAr: "الصلاحيات والضريبة" },
-        { key: "seo", label: "SEO", labelAr: "SEO" },
-        { key: "pages", label: "Pages", labelAr: "الصفحات" },
-        { key: "categories", label: "Categories", labelAr: "التصنيفات" },
-        { key: "shipping", label: "Shipping", labelAr: "الشحن" },
-        { key: "links", label: "Links", labelAr: "الروابط" },
-      ] },
-      { icon: Search, label: "Search engines", labelAr: "محركات البحث", path: "/store-seo", requireFeature: 'onlineStore' },
-      { icon: ShoppingBag, label: "Online Orders", labelAr: "طلبات المتجر", path: "/online-orders", requireFeature: 'onlineStore' },
-      { icon: Truck, label: "Shipping", labelAr: "الشحن", path: "/shipping" },
-      // PRO buys, MAX buys and supplies — the page itself shows only what the
-      // plan allows, so the entry is no longer behind the supply flag
-      { icon: Warehouse, label: "Wholesale", labelAr: "بيع الجملة", path: "/wholesale" },
+    icon: BarChart3, label: "Reports", labelAr: "التقارير", path: "/reports",
+    requireFeature: "reports", denyRoles: ["cashier"],
+    children: [
+      { key: "sales", label: "Sales", labelAr: "المبيعات", icon: BarChart3 },
+      { key: "inventory", label: "Inventory", labelAr: "المخزون", icon: Package },
+      { key: "employees", label: "Employees", labelAr: "الموظفين", icon: Users },
+      { key: "deadstock", label: "Dead Stock", labelAr: "الرواكد", icon: Warehouse },
+      { key: "parts", label: "Repair Parts", labelAr: "قطع الصيانة", icon: Wrench },
+      { key: "table-sales", label: "Sales Table", labelAr: "جدول المبيعات", icon: FileText },
+      { key: "table-devices", label: "Devices Table", labelAr: "جدول الأجهزة", icon: FileText },
+      { key: "table-accessories", label: "Accessories Table", labelAr: "جدول الإكسسوارات", icon: FileText },
+      { key: "table-customers", label: "Customers Table", labelAr: "جدول العملاء", icon: FileText },
     ],
   },
   {
-    title: "Customers & Marketing", titleAr: "العملاء والتسويق",
-    items: [
-      { icon: Heart, label: "Customers", labelAr: "العملاء والولاء", path: "/customers", requireFeature: 'customers' },
-      { icon: Megaphone, label: "Marketing", labelAr: "التسويق", path: "/marketing", requireFeature: 'marketing', children: [
-        { key: "coupons", label: "Coupons", labelAr: "الكوبونات" },
-        { key: "campaigns", label: "Campaigns", labelAr: "الحملات" },
-      ] },
-      { icon: Bell, label: "Notifications", labelAr: "الإشعارات", path: "/notifications" },
+    icon: Briefcase, label: "People", labelAr: "الموارد البشرية", path: "/team",
+    denyRoles: ["cashier"],
+    children: [
+      { key: "employees", label: "Employees", labelAr: "الموظفون", icon: Users, requirePermission: "employees.view" },
+      { key: "attendance", label: "Attendance", labelAr: "الحضور والانصراف", icon: Fingerprint },
+      { key: "devices", label: "Fingerprint devices", labelAr: "أجهزة البصمة", icon: HardDrive },
+      { key: "payroll", label: "Payroll", labelAr: "الرواتب", icon: Briefcase, denyRoles: ["branch_manager", "inventory_manager"] },
+      { key: "users", label: "Users & permissions", labelAr: "المستخدمين والصلاحيات", icon: ShieldCheck, denyRoles: ["branch_manager", "inventory_manager"] },
     ],
   },
   {
-    title: "Management", titleAr: "الإدارة",
-    items: [
-      { icon: BarChart3, label: "Reports", labelAr: "التقارير", path: "/reports", requireFeature: 'reports', children: [
-        { key: "sales", label: "Sales", labelAr: "المبيعات" },
-        { key: "inventory", label: "Inventory", labelAr: "المخزون" },
-        { key: "employees", label: "Employees", labelAr: "الموظفين" },
-        { key: "deadstock", label: "Dead Stock", labelAr: "الرواكد" },
-        { key: "parts", label: "Repair Parts", labelAr: "قطع الصيانة" },
-        { key: "table-sales", label: "Sales Table", labelAr: "جدول المبيعات" },
-        { key: "table-devices", label: "Devices Table", labelAr: "جدول الأجهزة" },
-        { key: "table-accessories", label: "Accessories Table", labelAr: "جدول الإكسسوارات" },
-        { key: "table-customers", label: "Customers Table", labelAr: "جدول العملاء" },
-      ] },
-      { icon: Building2, label: "Branches", labelAr: "الفروع", path: "/branches" },
-      { icon: Users, label: "Users", labelAr: "المستخدمين", path: "/users" },
-      { icon: Users, label: "Employees", labelAr: "الموظفون", path: "/employees", requirePermission: "employees.view" },
-      { icon: Fingerprint, label: "Attendance", labelAr: "الحضور والانصراف", path: "/attendance" },
-      { icon: Briefcase, label: "Human Resources", labelAr: "الموارد البشرية", path: "/hr" },
-      { icon: CreditCard, label: "Subscription", labelAr: "الباقات والاشتراك", path: "/subscription" },
-      { icon: Sparkles, label: "AI insights", labelAr: "تحليلات الذكاء الاصطناعي", path: "/ai-insights" },
-      { icon: HardDrive, label: "Devices", labelAr: "الأجهزة المتصلة", path: "/devices" },
-      { icon: FileText, label: "Business policy", labelAr: "سياسة العمل", path: "/business-policy" },
-      { icon: LifeBuoy, label: "Support", labelAr: "الدعم الفني", path: "/support" },
+    icon: Sparkles, label: "AI insights", labelAr: "الذكاء الاصطناعي", path: "/ai-insights",
+    denyRoles: ["cashier"],
+  },
+  {
+    icon: CreditCard, label: "Subscription & Plans", labelAr: "الاشتراك والباقات", path: "/subscription",
+    denyRoles: ["cashier", "branch_manager", "inventory_manager"],
+  },
+  {
+    icon: Settings, label: "Settings", labelAr: "الإعدادات", path: "/settings",
+    children: [
+      { key: "general", label: "General", labelAr: "عام", icon: SlidersHorizontal, denyRoles: ["cashier"] },
+      { key: "notifications", label: "Notifications", labelAr: "الإشعارات", icon: Bell, denyRoles: ["cashier"] },
+      { key: "policy", label: "Business policy", labelAr: "سياسة العمل", icon: FileText, denyRoles: ["cashier", "branch_manager", "inventory_manager"] },
+      { key: "branches", label: "Branches", labelAr: "الفروع", icon: Building2, denyRoles: ["cashier"] },
+      { key: "support", label: "Support", labelAr: "الدعم الفني", icon: LifeBuoy },
     ],
   },
 ];
@@ -168,42 +163,25 @@ export function Sidebar() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const { t, isRTL } = useLanguage();
-  const { merchant, merchantUser, subscription } = useAuth();
-  const isCashier = merchantUser?.role === 'cashier';
+  const { merchant, merchantUser } = useAuth();
+  const role = merchantUser?.role as UserRole | undefined;
   const { can } = usePermissions();
   const { allows: planAllowsFeature, loading: plansLoading } = useFeatureAccess();
   const logoUrl = (merchant as { logo_url?: string | null } | null)?.logo_url;
 
-  // planTier fails closed: an unrecognised plan gets the lowest tier, not the highest
-  const currentPlanTier = planTier(subscription?.plan);
-
-  const filterItem = (item: NavItem) => {
-    if (isCashier && item.path !== '/pos' && item.path !== '/daily-closings' && item.path !== '/repairs') {
-      return false;
-    }
-    // While the plans table is loading nothing is hidden on a plan basis —
-    // otherwise half the sidebar appears a moment after the rest.
-    if (!plansLoading && item.requireFeature && !planAllowsFeature(item.requireFeature)) {
-      return false;
-    }
-    if (item.requirePermission && !can(item.requirePermission)) {
-      return false;
-    }
+  const permitted = (gate: { requireFeature?: FeatureKey; requirePermission?: PermissionKey; denyRoles?: UserRole[] }) => {
+    if (gate.denyRoles && role && gate.denyRoles.includes(role)) return false;
+    // While the plans table loads nothing is hidden on a plan basis — otherwise
+    // half the sidebar appears a moment after the rest.
+    if (!plansLoading && gate.requireFeature && !planAllowsFeature(gate.requireFeature)) return false;
+    if (gate.requirePermission && !can(gate.requirePermission)) return false;
     return true;
   };
 
-  const filteredSections = navSections
-    .map(section => ({
-      ...section,
-      items: section.items.filter(filterItem).map(item => {
-        // تبويب "تصميم المتجر": نسخة مبسطة من باقة برو، والاستوديو الكامل في ماكس
-        if (item.path === '/online-store' && currentPlanTier < 2) {
-          return { ...item, children: item.children?.filter(c => c.key !== 'design') };
-        }
-        return item;
-      }),
-    }))
-    .filter(section => section.items.length > 0);
+  const items = navItems
+    .map(item => ({ ...item, children: item.children?.filter(permitted) }))
+    // A section whose every leaf is closed to this user is not a section for them
+    .filter(item => permitted(item) && (!item.children || item.children.length > 0));
 
   return (
     <motion.aside
@@ -238,7 +216,7 @@ export function Sidebar() {
             </motion.div>
           )}
         </AnimatePresence>
-        
+
         {isCollapsed && (
           logoUrl ? (
             <img src={logoUrl} alt="logo" className="w-10 h-10 rounded-xl object-cover shadow-glow mx-auto" />
@@ -248,35 +226,44 @@ export function Sidebar() {
         )}
       </div>
 
+      {/* The till is the one screen a shop opens all day, so it leads and is not
+          folded into a section */}
+      <div className="px-3 pt-3">
+        <Link
+          to="/pos"
+          className={cn(
+            "flex items-center gap-3 rounded-xl px-3 py-2.5 font-semibold transition-colors group relative",
+            location.pathname === "/pos"
+              ? "bg-sidebar-primary text-sidebar-primary-foreground"
+              : "bg-sidebar-primary/10 text-sidebar-primary hover:bg-sidebar-primary/20",
+            isCollapsed && "justify-center"
+          )}
+        >
+          <ShoppingCart className="w-5 h-5 flex-shrink-0" />
+          {!isCollapsed && <span className="text-sm">{isRTL ? "نقطة البيع" : "Point of Sale"}</span>}
+          {isCollapsed && (
+            <div className={cn(
+              "absolute px-3 py-2 bg-popover text-popover-foreground rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 text-sm",
+              isRTL ? "right-full mr-2" : "left-full ml-2"
+            )}>
+              {isRTL ? "نقطة البيع" : "Point of Sale"}
+            </div>
+          )}
+        </Link>
+      </div>
+
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-3 px-3">
-        {filteredSections.map((section, si) => (
-          <div key={section.title || si}>
-            {section.title && !isCollapsed && (
-              <p className="px-4 pt-3 pb-1 text-[10px] font-semibold text-sidebar-foreground/40 tracking-wider">
-                {isRTL ? section.titleAr : section.title}
-              </p>
-            )}
-            {section.title && isCollapsed && si > 0 && (
-              <div className="my-2 mx-3 border-t border-sidebar-border/60" />
-            )}
-            <div className="space-y-0.5">
-            {section.items.map((item) => {
+      <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-0.5">
+        {items.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
           const label = isRTL ? item.labelAr : item.label;
-          const showChildren = !!item.children && isActive && !isCollapsed;
+          const showChildren = !!item.children?.length && isActive && !isCollapsed;
           const currentTab = searchParams.get("tab") || item.children?.[0]?.key;
 
           return (
             <div key={item.path}>
-              <Link
-                to={item.path}
-                className={cn(
-                  "nav-item relative group",
-                  isActive && "active"
-                )}
-              >
+              <Link to={item.path} className={cn("nav-item relative group", isActive && "active")}>
                 <Icon className="w-5 h-5 flex-shrink-0" />
 
                 <AnimatePresence mode="wait">
@@ -292,21 +279,8 @@ export function Sidebar() {
                   )}
                 </AnimatePresence>
 
-                {item.children && !isCollapsed && (
+                {!!item.children?.length && !isCollapsed && (
                   <ChevronDown className={cn("w-4 h-4 opacity-60 transition-transform", showChildren && "rotate-180")} />
-                )}
-
-                {item.badge && !isCollapsed && (
-                  <span className="px-2 py-0.5 rounded-full bg-accent text-accent-foreground text-xs font-medium">
-                    {item.badge}
-                  </span>
-                )}
-
-                {item.badge && isCollapsed && (
-                  <span className={cn(
-                    "absolute top-1 w-2 h-2 rounded-full bg-accent",
-                    isRTL ? "left-1" : "right-1"
-                  )} />
                 )}
 
                 {isCollapsed && (
@@ -334,11 +308,7 @@ export function Sidebar() {
                         to={`${item.path}?tab=${child.key}`}
                         className={cn(
                           "block px-3 py-1.5 rounded-md text-sm transition-colors",
-                          // The stock page holds devices, accessories and parts under
-                          // one child, so any of the three keeps it highlighted
-                          currentTab === child.key ||
-                          (child.key === "devices" &&
-                            (currentTab === "accessories" || currentTab === "repair_parts"))
+                          currentTab === child.key
                             ? "bg-sidebar-primary/15 text-sidebar-primary font-medium"
                             : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                         )}
@@ -352,70 +322,10 @@ export function Sidebar() {
             </div>
           );
         })}
-            </div>
-          </div>
-        ))}
       </nav>
 
-      {/* Settings & Collapse */}
-      <div className="p-3 border-t border-sidebar-border space-y-1">
-        {!isCashier && (
-          <>
-            <Link
-              to="/settings"
-              className={cn(
-                "nav-item",
-                location.pathname === "/settings" && "active"
-              )}
-            >
-              <Settings className="w-5 h-5 flex-shrink-0" />
-              <AnimatePresence mode="wait">
-                {!isCollapsed && (
-                  <motion.span
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="flex-1 text-sm"
-                  >
-                    {t.nav.settings}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-              {!isCollapsed && (
-                <ChevronDown className={cn("w-4 h-4 opacity-60 transition-transform", location.pathname === "/settings" && "rotate-180")} />
-              )}
-            </Link>
-            {location.pathname === "/settings" && !isCollapsed && (
-              <div className={cn("space-y-0.5 py-1", isRTL ? "pr-9" : "pl-9")}>
-                {[
-                  { key: "business", label: "Business", labelAr: "المتجر" },
-                  { key: "tax-invoice", label: "Tax & Invoice", labelAr: "الضريبة والفاتورة" },
-                  { key: "printer", label: "Printer", labelAr: "الطابعة" },
-                  { key: "subscription", label: "Subscription", labelAr: "الاشتراك" },
-                  { key: "api", label: "Accounting API", labelAr: "API المحاسبي" },
-                ].map((child) => (
-                  <Link
-                    key={child.key}
-                    to={`/settings?tab=${child.key}`}
-                    className={cn(
-                      "block px-3 py-1.5 rounded-md text-sm transition-colors",
-                      (searchParams.get("tab") || "business") === child.key
-                        ? "bg-sidebar-primary/15 text-sidebar-primary font-medium"
-                        : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                    )}
-                  >
-                    {isRTL ? child.labelAr : child.label}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="nav-item w-full"
-        >
+      <div className="p-3 border-t border-sidebar-border">
+        <button onClick={() => setIsCollapsed(!isCollapsed)} className="nav-item w-full">
           {isCollapsed ? (
             isRTL ? <ChevronLeft className="w-5 h-5 mx-auto" /> : <ChevronRight className="w-5 h-5 mx-auto" />
           ) : (

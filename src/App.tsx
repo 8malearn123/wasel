@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
+import { LegacyRedirect } from "@/components/common/LegacyRedirect";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,37 +16,18 @@ import { useVersionCheck } from "./hooks/useVersionCheck";
 import { useSubscription } from "./hooks/useSubscription";
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const POSPage = lazy(() => import("./pages/POSPage"));
-const InventoryPage = lazy(() => import("./pages/InventoryPage"));
-const BranchesPage = lazy(() => import("./pages/BranchesPage"));
-const TransfersPage = lazy(() => import("./pages/TransfersPage"));
-const SuppliersPage = lazy(() => import("./pages/SuppliersPage"));
-const LabelsPage = lazy(() => import("./pages/LabelsPage"));
-const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
-const MarketingPage = lazy(() => import("./pages/MarketingPage"));
-const RepairsPage = lazy(() => import("./pages/RepairsPage"));
 const ReportsPage = lazy(() => import("./pages/ReportsPage"));
-const UsersPage = lazy(() => import("./pages/UsersPage"));
-const HRPage = lazy(() => import("./pages/HRPage"));
-const EmployeesPage = lazy(() => import("./pages/EmployeesPage"));
-const AttendancePage = lazy(() => import("./pages/AttendancePage"));
 const ShippingPage = lazy(() => import("./pages/ShippingPage"));
 const AIInsightsPage = lazy(() => import("./pages/AIInsightsPage"));
-const DevicesPage = lazy(() => import("./pages/DevicesPage"));
-const BusinessPolicyPage = lazy(() => import("./pages/BusinessPolicyPage"));
-const StoreSeoPage = lazy(() => import("./pages/StoreSeoPage"));
+const ProductsPage = lazy(() => import("./pages/ProductsPage"));
+const SalesPage = lazy(() => import("./pages/SalesPage"));
+const TeamPage = lazy(() => import("./pages/TeamPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const SubscriptionPage = lazy(() => import("./pages/SubscriptionPage"));
-const StocktakePage = lazy(() => import("./pages/StocktakePage"));
-const OnlineStorePage = lazy(() => import("./pages/OnlineStorePage"));
-const OnlineOrdersPage = lazy(() => import("./pages/OnlineOrdersPage"));
 const PublicStorePage = lazy(() => import("./pages/PublicStorePage"));
-const DailyClosingsPage = lazy(() => import("./pages/DailyClosingsPage"));
-const CustomersPage = lazy(() => import("./pages/CustomersPage"));
 const CustomerDetailPage = lazy(() => import("./pages/CustomerDetailPage"));
-const WholesalePage = lazy(() => import("./pages/WholesalePage"));
 const AuthPage = lazy(() => import("./pages/AuthPage"));
 const LockedPage = lazy(() => import("./pages/LockedPage"));
-const SupportPage = lazy(() => import("./pages/SupportPage"));
 const AdminDashboardPage = lazy(() => import("./pages/admin/AdminDashboardPage"));
 const AdminCompaniesPage = lazy(() => import("./pages/admin/AdminCompaniesPage"));
 const AdminBranchRequestsPage = lazy(() => import("./pages/admin/AdminBranchRequestsPage"));
@@ -217,39 +199,48 @@ function AppRoutes() {
       <Route path="/locked" element={<LockedRoute><LockedPage /></LockedRoute>} />
       <Route path="/" element={<HomeRoute />} />
       <Route path="/pos" element={<ProtectedRoute><POSPage /></ProtectedRoute>} />
-      <Route path="/inventory" element={<ProtectedRoute><CashierRedirect><InventoryPage /></CashierRedirect></ProtectedRoute>} />
-      <Route path="/branches" element={<ProtectedRoute><CashierRedirect><BranchesPage /></CashierRedirect></ProtectedRoute>} />
-      <Route path="/transfers" element={<ProtectedRoute><FeatureRoute feature="transfers"><CashierRedirect><TransfersPage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />
-      <Route path="/suppliers" element={<ProtectedRoute><FeatureRoute feature="suppliers"><CashierRedirect><SuppliersPage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />
-      {/* Purchases lived here as a second door onto the same page */}
-      <Route path="/purchases" element={<Navigate to="/suppliers?tab=orders" replace />} />
-      <Route path="/labels" element={<ProtectedRoute><CashierRedirect><LabelsPage /></CashierRedirect></ProtectedRoute>} />
-      <Route path="/notifications" element={<ProtectedRoute><CashierRedirect><NotificationsPage /></CashierRedirect></ProtectedRoute>} />
-      <Route path="/marketing" element={<ProtectedRoute><FeatureRoute feature="marketing"><CashierRedirect><MarketingPage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />
-      <Route path="/repairs" element={<ProtectedRoute><FeatureRoute feature="repairs"><RepairsPage /></FeatureRoute></ProtectedRoute>} />
-      <Route path="/reports" element={<ProtectedRoute><FeatureRoute feature="reports"><CashierRedirect><ReportsPage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />
-      <Route path="/stocktake" element={<ProtectedRoute><FeatureRoute feature="stocktake"><CashierRedirect><StocktakePage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />
-      <Route path="/users" element={<ProtectedRoute><RoleRoute allow={["owner", "admin"]}><CashierRedirect><UsersPage /></CashierRedirect></RoleRoute></ProtectedRoute>} />
-      <Route path="/hr" element={<ProtectedRoute><RoleRoute allow={["owner", "admin"]}><CashierRedirect><HRPage /></CashierRedirect></RoleRoute></ProtectedRoute>} />
-      <Route path="/employees" element={<ProtectedRoute><PermissionRoute require="employees.view"><CashierRedirect><EmployeesPage /></CashierRedirect></PermissionRoute></ProtectedRoute>} />
-      <Route path="/attendance" element={<ProtectedRoute><CashierRedirect><AttendancePage /></CashierRedirect></ProtectedRoute>} />
+
+      {/* ---- The nine sections ---- */}
+      <Route path="/products" element={<ProtectedRoute><ProductsPage /></ProtectedRoute>} />
+      <Route path="/sales" element={<ProtectedRoute><SalesPage /></ProtectedRoute>} />
       <Route path="/shipping" element={<ProtectedRoute><CashierRedirect><ShippingPage /></CashierRedirect></ProtectedRoute>} />
+      <Route path="/reports" element={<ProtectedRoute><FeatureRoute feature="reports"><CashierRedirect><ReportsPage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />
+      <Route path="/team" element={<ProtectedRoute><TeamPage /></ProtectedRoute>} />
       <Route path="/ai-insights" element={<ProtectedRoute><CashierRedirect><AIInsightsPage /></CashierRedirect></ProtectedRoute>} />
-      <Route path="/devices" element={<ProtectedRoute><CashierRedirect><DevicesPage /></CashierRedirect></ProtectedRoute>} />
-      <Route path="/business-policy" element={<ProtectedRoute><RoleRoute allow={["owner", "admin"]}><CashierRedirect><BusinessPolicyPage /></CashierRedirect></RoleRoute></ProtectedRoute>} />
-      <Route path="/store-seo" element={<ProtectedRoute><FeatureRoute feature="onlineStore"><CashierRedirect><StoreSeoPage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />
-      <Route path="/settings" element={<ProtectedRoute><CashierRedirect><SettingsPage /></CashierRedirect></ProtectedRoute>} />
       <Route path="/subscription" element={<ProtectedRoute><RoleRoute allow={["owner", "admin"]}><CashierRedirect><SubscriptionPage /></CashierRedirect></RoleRoute></ProtectedRoute>} />
-      <Route path="/online-store" element={<ProtectedRoute><FeatureRoute feature="onlineStore"><CashierRedirect><OnlineStorePage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />
-      <Route path="/online-orders" element={<ProtectedRoute><FeatureRoute feature="onlineStore"><CashierRedirect><OnlineOrdersPage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />
-      <Route path="/daily-closings" element={<ProtectedRoute><DailyClosingsPage /></ProtectedRoute>} />
-      <Route path="/customers" element={<ProtectedRoute><FeatureRoute feature="customers"><CashierRedirect><CustomersPage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+
+      {/* A customer's own page stays a route of its own, not a tab */}
       <Route path="/customers/:id" element={<ProtectedRoute><FeatureRoute feature="customers"><CashierRedirect><CustomerDetailPage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />
-      {/* No FeatureRoute: PRO may buy wholesale, MAX may buy and supply. The
-          page shows only the side the plan allows, and the server refuses the
-          rest. */}
-      <Route path="/wholesale" element={<ProtectedRoute><CashierRedirect><WholesalePage /></CashierRedirect></ProtectedRoute>} />
-      <Route path="/support" element={<ProtectedRoute><SupportPage /></ProtectedRoute>} />
+
+      {/* ---- Paths from before the consolidation. None of them is removed. ---- */}
+      <Route path="/inventory" element={<LegacyRedirect to="/products" tab="inventory" />} />
+      <Route path="/stocktake" element={<LegacyRedirect to="/products" tab="stocktake" />} />
+      <Route path="/transfers" element={<LegacyRedirect to="/products" tab="transfers" />} />
+      <Route path="/suppliers" element={<LegacyRedirect to="/products" tab="suppliers" />} />
+      <Route path="/purchases" element={<LegacyRedirect to="/products" tab="suppliers" sub="orders" />} />
+      <Route path="/labels" element={<LegacyRedirect to="/products" tab="labels" />} />
+
+      <Route path="/online-orders" element={<LegacyRedirect to="/sales" tab="orders" />} />
+      <Route path="/repairs" element={<LegacyRedirect to="/sales" tab="repairs" />} />
+      <Route path="/daily-closings" element={<LegacyRedirect to="/sales" tab="closings" />} />
+      <Route path="/online-store" element={<LegacyRedirect to="/sales" tab="store" />} />
+      <Route path="/store-seo" element={<LegacyRedirect to="/sales" tab="seo" />} />
+      <Route path="/customers" element={<LegacyRedirect to="/sales" tab="customers" />} />
+      <Route path="/marketing" element={<LegacyRedirect to="/sales" tab="marketing" />} />
+      <Route path="/wholesale" element={<LegacyRedirect to="/sales" tab="wholesale" />} />
+
+      <Route path="/employees" element={<LegacyRedirect to="/team" tab="employees" />} />
+      <Route path="/attendance" element={<LegacyRedirect to="/team" tab="attendance" />} />
+      <Route path="/devices" element={<LegacyRedirect to="/team" tab="devices" />} />
+      <Route path="/hr" element={<LegacyRedirect to="/team" tab="payroll" />} />
+      <Route path="/users" element={<LegacyRedirect to="/team" tab="users" />} />
+
+      <Route path="/notifications" element={<LegacyRedirect to="/settings" tab="notifications" />} />
+      <Route path="/business-policy" element={<LegacyRedirect to="/settings" tab="policy" />} />
+      <Route path="/branches" element={<LegacyRedirect to="/settings" tab="branches" />} />
+      <Route path="/support" element={<LegacyRedirect to="/settings" tab="support" />} />
+
       <Route path="/store/:slug/*" element={<PublicStorePage />} />
       {/* Admin Auth */}
       <Route path="/admin/login" element={<AdminAuthPage />} />

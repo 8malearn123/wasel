@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { AppLayout } from '@/components/layout/AppLayout';
 import { useLanguage } from '@/i18n';
 import { useWholesale, WholesaleListing, WholesaleOrder, CreditTransaction } from '@/hooks/useWholesale';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
@@ -64,7 +63,7 @@ const listingName = (listing: WholesaleListing) =>
     ? `${listing.device?.brand || ''} ${listing.device?.model || ''}`.trim() || '—'
     : listing.accessory?.name || '—';
 
-export default function WholesalePage() {
+export default function WholesaleSection() {
   const { isRTL } = useLanguage();
   const t = isRTL;
   // Buying and supplying are separate: PRO buys, MAX buys and supplies.
@@ -78,7 +77,7 @@ export default function WholesalePage() {
   const { devices } = useDevices();
   const { accessories } = useAccessories();
 
-  const [rawTab, setRawTab] = useTabParam('marketplace');
+  const [rawTab, setRawTab] = useTabParam('marketplace', 'sub');
   const legacy = LEGACY_TABS[rawTab];
   // منتجاتي is the supply side — a PRO merchant has nothing to list
   const visibleSections = canSupply ? SECTIONS : SECTIONS.filter(s => s.key !== 'listings');
@@ -211,7 +210,7 @@ export default function WholesalePage() {
 
   if (!canBuy && !canSupply) {
     return (
-      <AppLayout title={t ? 'بيع الجملة' : 'Wholesale'}>
+      <>
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-4">
             <Lock className="w-10 h-10 text-muted-foreground" />
@@ -222,7 +221,7 @@ export default function WholesalePage() {
           </p>
           <Button onClick={() => window.location.href = '/subscription'}>{t ? 'ترقية الباقة' : 'Upgrade Plan'}</Button>
         </div>
-      </AppLayout>
+      </>
     );
   }
 
@@ -242,10 +241,7 @@ export default function WholesalePage() {
   ];
 
   return (
-    <AppLayout
-      title={t ? 'بيع الجملة' : 'Wholesale'}
-      subtitle={t ? 'السوق، منتجاتك، الطلبات والمديونيات في صفحة واحدة' : 'Marketplace, listings, orders and credits in one place'}
-    >
+    <>
       <div className="space-y-6">
         {/* Each tile opens the section it counts */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
@@ -683,7 +679,7 @@ export default function WholesalePage() {
           </DialogContent>
         </Dialog>
       </div>
-    </AppLayout>
+    </>
   );
 }
 

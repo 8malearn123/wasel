@@ -13,7 +13,8 @@ import { InvoiceDialog } from "@/components/pos/InvoiceDialog";
 import { CashierSalesHistory } from "@/components/pos/CashierSalesHistory";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTabParam } from '@/hooks/useTabParam';
-import { ShoppingCart, FileText } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { ShoppingCart, FileText, Receipt } from "lucide-react";
 import type { Device, Accessory, PaymentMethod } from "@/types/database";
 import { toast } from "sonner";
 
@@ -253,6 +254,31 @@ export default function POSPage() {
   return (
     <AppLayout title={t.pos.title} subtitle={t.pos.subtitle}>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="h-[calc(100vh-140px)]">
+        {/* سجل المبيعات used to be reachable only from the sidebar's own
+            sub-entry under the till. The sidebar now opens the till directly,
+            so the switcher belongs on the screen it switches. */}
+        <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-muted/50 border border-border mb-4">
+          {[
+            { key: 'pos', ar: 'المنتجات', en: 'Products', icon: ShoppingCart },
+            { key: 'history', ar: 'سجل المبيعات', en: 'Sales history', icon: Receipt },
+          ].map(option => (
+            <button
+              key={option.key}
+              type="button"
+              onClick={() => setActiveTab(option.key)}
+              aria-pressed={activeTab === option.key}
+              className={cn(
+                'px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5',
+                activeTab === option.key
+                  ? 'bg-card text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              <option.icon className="w-4 h-4" />
+              {isRTL ? option.ar : option.en}
+            </button>
+          ))}
+        </div>
 
         <TabsContent value="pos" className="h-[calc(100%-60px)]">
           <div className="flex gap-6 h-full">
