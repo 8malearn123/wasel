@@ -5,6 +5,7 @@ import { usePermissions, type PermissionKey } from "@/hooks/usePermissions";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  Archive,
   ArrowLeftRight,
   Barcode,
   BarChart3,
@@ -31,6 +32,7 @@ import {
   ShoppingBag,
   ShoppingCart,
   SlidersHorizontal,
+  Smartphone,
   Sparkles,
   Store,
   Truck,
@@ -115,16 +117,19 @@ const navItems: NavItem[] = [
   {
     icon: BarChart3, label: "Reports", labelAr: "التقارير", path: "/reports",
     requireFeature: "reports", denyRoles: ["cashier"],
+    // Same order and keys as the report groups on the page, so the sidebar and
+    // the page's own sub-navigation can never disagree about where you are
     children: [
-      { key: "sales", label: "Sales", labelAr: "المبيعات", icon: BarChart3 },
-      { key: "inventory", label: "Inventory", labelAr: "المخزون", icon: Package },
-      { key: "employees", label: "Employees", labelAr: "الموظفين", icon: Users },
-      { key: "deadstock", label: "Dead Stock", labelAr: "الرواكد", icon: Warehouse },
-      { key: "parts", label: "Repair Parts", labelAr: "قطع الصيانة", icon: Wrench },
-      { key: "table-sales", label: "Sales Table", labelAr: "جدول المبيعات", icon: FileText },
-      { key: "table-devices", label: "Devices Table", labelAr: "جدول الأجهزة", icon: FileText },
-      { key: "table-accessories", label: "Accessories Table", labelAr: "جدول الإكسسوارات", icon: FileText },
-      { key: "table-customers", label: "Customers Table", labelAr: "جدول العملاء", icon: FileText },
+      { key: "sales", label: "Sales & profit", labelAr: "المبيعات والأرباح", icon: BarChart3 },
+      { key: "table-sales", label: "Sales detail", labelAr: "تفاصيل المبيعات", icon: FileText },
+      { key: "inventory", label: "Stock", labelAr: "المخزون", icon: Package },
+      { key: "table-devices", label: "Devices", labelAr: "الأجهزة", icon: Smartphone },
+      { key: "table-accessories", label: "Accessories", labelAr: "الإكسسوارات", icon: Package },
+      { key: "parts", label: "Repair parts", labelAr: "قطع الصيانة", icon: Wrench },
+      { key: "deadstock", label: "Dead stock", labelAr: "الرواكد", icon: Archive },
+      { key: "employees", label: "Employees", labelAr: "الموظفون", icon: Users },
+      { key: "table-suppliers", label: "Suppliers", labelAr: "الموردون", icon: Truck },
+      { key: "table-customers", label: "Customers", labelAr: "العملاء", icon: Heart },
     ],
   },
   {
