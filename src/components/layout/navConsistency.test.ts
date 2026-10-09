@@ -15,7 +15,11 @@ const read = (p: string) => readFileSync(resolve(process.cwd(), p), 'utf8');
 /** every `key: "x"` inside a section page's leaf registry */
 function pageLeafKeys(path: string): string[] {
   const src = read(path);
-  return [...src.matchAll(/^\s*key: '([a-z0-9-]+)',$/gm)].map(m => m[1]);
+  return [
+    ...[...src.matchAll(/^\s*key: '([a-z0-9-]+)',$/gm)].map(m => m[1]),
+    // the reports page declares its leaves inline, on one line each
+    ...[...src.matchAll(/\{ key: '([a-z0-9-]+)', label:/g)].map(m => m[1]),
+  ];
 }
 
 /** the children the sidebar declares under a given section path */
@@ -35,6 +39,7 @@ const SECTIONS: Array<[path: string, page: string]> = [
   ['/sales', 'src/pages/SalesPage.tsx'],
   ['/team', 'src/pages/TeamPage.tsx'],
   ['/settings', 'src/pages/SettingsPage.tsx'],
+  ['/reports', 'src/pages/ReportsPage.tsx'],
 ];
 
 describe('sidebar deep links', () => {

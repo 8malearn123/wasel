@@ -43,10 +43,14 @@ export function useCustomers() {
   const { merchant, user } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
+  // A failed fetch was logged and then forgotten, leaving an empty list that
+  // reads as "no customers" rather than "the request failed"
+  const [error, setError] = useState<string | null>(null);
 
   const fetchCustomers = useCallback(async () => {
     if (!merchant) return;
     setLoading(true);
+    setError(null);
     const { data, error } = await supabase
       .from('customers')
       .select('*')
@@ -55,6 +59,7 @@ export function useCustomers() {
 
     if (error) {
       console.error('Error fetching customers:', error);
+      setError(error.message);
     } else {
       setCustomers((data || []) as Customer[]);
     }
@@ -131,5 +136,5 @@ export function useCustomers() {
     bronze: customers.filter(c => c.loyalty_tier === 'bronze').length,
   };
 
-  return { customers, loading, stats, createCustomer, updateCustomer, addLoyaltyPoints, getLoyaltyHistory, refetch: fetchCustomers };
+  return { customers, loading, error, stats, createCustomer, updateCustomer, addLoyaltyPoints, getLoyaltyHistory, refetch: fetchCustomers };
 }

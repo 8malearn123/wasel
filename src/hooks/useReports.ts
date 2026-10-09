@@ -59,6 +59,10 @@ interface EmployeePerformance {
 export function useReports() {
   const { merchant } = useAuth();
   const [loading, setLoading] = useState(true);
+  // A failed fetch used to be logged and then forgotten, so the reports showed
+  // an empty table — which reads as "no sales" rather than "the request
+  // failed". The page needs to be able to tell the two apart.
+  const [error, setError] = useState<string | null>(null);
   const [salesData, setSalesData] = useState<Sale[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [accessories, setAccessories] = useState<Accessory[]>([]);
@@ -68,6 +72,7 @@ export function useReports() {
   const fetchData = useCallback(async () => {
     if (!merchant) return;
     setLoading(true);
+    setError(null);
     try {
       const [salesRes, devicesRes, accessoriesRes, branchesRes, merchantUsersRes] = await Promise.all([
         supabase.from('sales')
@@ -79,6 +84,12 @@ export function useReports() {
         supabase.from('branches').select('*').eq('merchant_id', merchant.id).eq('is_active', true),
         supabase.from('merchant_users').select('user_id, role').eq('merchant_id', merchant.id).eq('is_active', true)
       ]);
+
+      // supabase-js resolves with an { error } rather than rejecting, so a
+      // failed query would otherwise land here as an empty array
+      const failed = [salesRes, devicesRes, accessoriesRes, branchesRes, merchantUsersRes]
+        .find(res => res.error);
+      if (failed?.error) throw failed.error;
 
       setSalesData((salesRes.data || []) as Sale[]);
       setDevices((devicesRes.data || []) as Device[]);
@@ -101,6 +112,7 @@ export function useReports() {
       }
     } catch (err) {
       console.error('Error fetching report data:', err);
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }
@@ -284,7 +296,7 @@ export function useReports() {
   }, [salesData, getInventoryReport]);
 
   return {
-    loading, salesData, devices, accessories, branches,
+    loading, error, salesData, devices, accessories, branches,
     refetch: fetchData,
     getDailySalesReport, getMonthlySalesReport, getInventoryReport,
     getBranchReport, getProfitByDevice, getSummaryStats,

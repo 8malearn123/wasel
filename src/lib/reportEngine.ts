@@ -8,7 +8,7 @@ import type { CellValue, SheetColumn } from './xlsx';
  * derived from the column definitions, so a new report needs no new UI.
  */
 
-export type ColumnType = 'text' | 'number' | 'money' | 'date' | 'badge';
+export type ColumnType = 'text' | 'number' | 'money' | 'date' | 'badge' | 'id';
 
 export interface ReportColumn<Row> {
   key: string;
@@ -24,6 +24,24 @@ export interface ReportColumn<Row> {
   /** Excluded from the free-text search box */
   notSearchable?: boolean;
   align?: 'start' | 'center' | 'end';
+  /**
+   * Offer a dropdown of this column's distinct values. The options come from
+   * the rows themselves, so a report never shows a filter for a category no
+   * row has — and never needs a hardcoded list that drifts from the data.
+   */
+  filterable?: boolean;
+  /** Label for that dropdown; the header is used when absent */
+  filterLabel?: string;
+}
+
+/** One figure above the table, computed from the rows the filters left */
+export interface ReportStat {
+  key: string;
+  label: string;
+  value: string;
+  /** a second line, when the figure needs one */
+  hint?: string;
+  tone?: 'default' | 'positive' | 'warning' | 'danger';
 }
 
 export interface ReportDefinition<Row> {
@@ -34,6 +52,14 @@ export interface ReportDefinition<Row> {
   dateKey?: string;
   /** A permission the viewer must hold, checked again by RLS on the data */
   requiredPermission?: string;
+  /**
+   * The figures shown above the table, from the rows that passed the filters.
+   * A report returns only what its data supports: a stat it cannot compute is
+   * left out rather than shown as a zero that reads like a real answer.
+   */
+  stats?: (rows: Row[]) => ReportStat[];
+  /** A stable key per row, so paging reuses the right DOM nodes */
+  rowKey?: (row: Row) => string;
 }
 
 export type SortDirection = 'asc' | 'desc';
@@ -48,6 +74,8 @@ export interface ReportState {
   visibleColumns: string[];
   from: string | null;
   to: string | null;
+  /** column key -> the one value kept, for the filterable columns */
+  filters: Record<string, string>;
 }
 
 export const DEFAULT_PAGE_SIZE = 25;
@@ -63,6 +91,7 @@ export function initialState<Row>(definition: ReportDefinition<Row>): ReportStat
     visibleColumns: definition.columns.filter(c => !c.defaultHidden).map(c => c.key),
     from: null,
     to: null,
+    filters: {},
   };
 }
 
@@ -101,6 +130,53 @@ export interface ReportResult<Row> {
   pageCount: number;
   /** All matching rows, for an export that ignores the current page */
   allMatching: Row[];
+  /** Figures over allMatching, so they answer for what the filters left */
+  stats: ReportStat[];
+  /**
+   * True when `from` is after `to`. Such a range matches nothing, and an empty
+   * table is a misleading way to say "those two dates are the wrong way round".
+   */
+  invalidRange: boolean;
+}
+
+/** The distinct values of a filterable column, for its dropdown */
+export function filterOptions<Row>(column: ReportColumn<Row>, rows: Row[]): string[] {
+  const seen = new Set<string>();
+  for (const row of rows) {
+    const value = column.value(row);
+    if (value === null || value === undefined || value === '') continue;
+    seen.add(value instanceof Date ? value.toISOString().slice(0, 10) : String(value));
+  }
+  return [...seen].sort((a, b) => a.localeCompare(b, 'ar'));
+}
+
+/** The filters the user has actually set, for the chips that let them undo one */
+export interface ActiveFilter {
+  kind: 'search' | 'from' | 'to' | 'column';
+  /** the column key, for kind 'column' */
+  key?: string;
+  label: string;
+  value: string;
+}
+
+export function activeFilters<Row>(
+  definition: ReportDefinition<Row>,
+  state: ReportState,
+  labels: { search: string; from: string; to: string },
+): ActiveFilter[] {
+  const chips: ActiveFilter[] = [];
+  if (state.search.trim()) {
+    chips.push({ kind: 'search', label: labels.search, value: state.search.trim() });
+  }
+  if (state.from) chips.push({ kind: 'from', label: labels.from, value: state.from });
+  if (state.to) chips.push({ kind: 'to', label: labels.to, value: state.to });
+  for (const [key, value] of Object.entries(state.filters)) {
+    if (!value) continue;
+    const column = definition.columns.find(c => c.key === key);
+    if (!column) continue;
+    chips.push({ kind: 'column', key, label: column.filterLabel ?? column.header, value });
+  }
+  return chips;
 }
 
 /**
@@ -117,8 +193,12 @@ export function runReport<Row>(
 ): ReportResult<Row> {
   let working = rows;
 
+  // A range the wrong way round filters everything out, which the caller
+  // reports as such instead of showing an empty table.
+  const invalidRange = Boolean(state.from && state.to && state.from > state.to);
+
   // period
-  if (definition.dateKey && (state.from || state.to)) {
+  if (!invalidRange && definition.dateKey && (state.from || state.to)) {
     const column = definition.columns.find(c => c.key === definition.dateKey);
     if (column) {
       const from = state.from ? new Date(`${state.from}T00:00:00`) : null;
@@ -131,6 +211,20 @@ export function runReport<Row>(
         return true;
       });
     }
+  }
+
+  // the per-column dropdowns, before the free-text search so the search runs
+  // over fewer rows
+  for (const [key, wanted] of Object.entries(state.filters)) {
+    if (!wanted) continue;
+    const column = definition.columns.find(c => c.key === key);
+    if (!column) continue;
+    working = working.filter(row => {
+      const value = column.value(row);
+      if (value === null || value === undefined) return false;
+      const text = value instanceof Date ? value.toISOString().slice(0, 10) : String(value);
+      return text === wanted;
+    });
   }
 
   // free-text search across the searchable columns
@@ -172,10 +266,13 @@ export function runReport<Row>(
   const start = (page - 1) * state.pageSize;
 
   return {
-    rows: working.slice(start, start + state.pageSize),
-    total,
+    rows: invalidRange ? [] : working.slice(start, start + state.pageSize),
+    total: invalidRange ? 0 : total,
     pageCount,
-    allMatching: working,
+    allMatching: invalidRange ? [] : working,
+    // over every matching row, not the page on screen
+    stats: invalidRange || !definition.stats ? [] : definition.stats(working),
+    invalidRange,
   };
 }
 

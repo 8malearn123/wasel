@@ -19,12 +19,14 @@ export interface DailyPartsUsage {
 export function useRepairPartsReport() {
   const { merchant } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [orderParts, setOrderParts] = useState<any[]>([]);
   const [repairParts, setRepairParts] = useState<any[]>([]);
 
   const fetchData = useCallback(async () => {
     if (!merchant) return;
     setLoading(true);
+    setError(null);
 
     const [partsRes, orderPartsRes] = await Promise.all([
       supabase
@@ -36,6 +38,16 @@ export function useRepairPartsReport() {
         .select('*, repair_part:repair_parts(name, sku, merchant_id), repair_order:repair_orders(merchant_id, created_at)')
         .order('created_at', { ascending: false })
     ]);
+
+    // supabase-js resolves with an { error } rather than rejecting, so a failed
+    // query used to arrive here as an empty array and show as "no parts used"
+    const failed = [partsRes, orderPartsRes].find(res => res.error);
+    if (failed?.error) {
+      console.error('Error fetching repair parts report:', failed.error);
+      setError(failed.error.message);
+      setLoading(false);
+      return;
+    }
 
     setRepairParts((partsRes.data || []) as any[]);
     // Filter to merchant's data
@@ -112,6 +124,7 @@ export function useRepairPartsReport() {
 
   return {
     loading,
+    error,
     getConsumptionByPart,
     getDailyUsage,
     getSummary,

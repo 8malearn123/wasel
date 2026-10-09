@@ -1,15 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
-  ArrowDown, ArrowUp, ChevronsUpDown, Columns3, Download, FileSpreadsheet,
-  Search, ChevronLeft, ChevronRight, X,
+  ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ChevronsUpDown,
+  FileSearch, Inbox, RefreshCw, TriangleAlert,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -19,15 +14,21 @@ import {
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/i18n';
 import {
-  runReport, initialState, orderedColumns, toSheetColumns,
+  runReport, initialState, orderedColumns,
   PAGE_SIZES, type ReportDefinition, type ReportState,
 } from '@/lib/reportEngine';
-import { downloadXlsx, downloadCsv } from '@/lib/xlsx';
+import { fmtCount, fmtDate, fmtMoney, fmtNumber } from '@/lib/reportFormat';
+import { ReportFilters } from './ReportFilters';
+import { ReportExport } from './ReportExport';
+import { ReportStats } from './ReportStats';
 
 interface Props<Row> {
   definition: ReportDefinition<Row>;
   rows: Row[];
   loading?: boolean;
+  /** A failed load, so the user is told rather than shown an empty table */
+  error?: string | null;
+  onRetry?: () => void;
   /** Shown when there is no data at all, before any filter */
   emptyText?: string;
 }
@@ -35,14 +36,26 @@ interface Props<Row> {
 /**
  * One table for every report.
  *
- * Search, period, sort, column choice and order, paging and export all come
- * from the report definition, so adding a report is a definition — no new
- * screen. Export covers every matching row, not the page on screen.
+ * Stats, filters, search, sort, column choice and order, paging and export all
+ * come from the report definition, so adding a report is a definition — no new
+ * screen. Three things worth knowing:
+ *
+ *  - The stats are computed over the rows the filters left, so they answer for
+ *    what is on screen rather than for the whole table.
+ *  - Export covers those same rows, not the page being looked at.
+ *  - A failed load is an error with a retry, never an empty table: "no data"
+ *    and "the request failed" are different answers and used to look alike.
  */
-export function ReportTable<Row>({ definition, rows, loading, emptyText }: Props<Row>) {
+export function ReportTable<Row>({
+  definition, rows, loading, error, onRetry, emptyText,
+}: Props<Row>) {
   const { isRTL } = useLanguage();
   const t = isRTL;
   const [state, setState] = useState<ReportState>(() => initialState(definition));
+
+  // A different report means different columns; carrying the old visibleColumns
+  // over would leave the table with keys this definition has never heard of.
+  useEffect(() => { setState(initialState(definition)); }, [definition]);
 
   const columns = useMemo(() => orderedColumns(definition, state), [definition, state]);
   const result = useMemo(() => runReport(definition, rows, state), [definition, rows, state]);
@@ -60,158 +73,80 @@ export function ReportTable<Row>({ definition, rows, loading, emptyText }: Props
       page: 1,
     }));
 
-  const toggleColumn = (key: string) =>
-    setState(s => ({
-      ...s,
-      visibleColumns: s.visibleColumns.includes(key)
-        ? s.visibleColumns.filter(k => k !== key)
-        : [...s.visibleColumns, key],
-    }));
+  const filtered =
+    Boolean(state.search.trim() || state.from || state.to) ||
+    Object.values(state.filters).some(Boolean);
 
-  const moveColumn = (key: string, delta: number) =>
-    setState(s => {
-      const next = [...s.visibleColumns];
-      const index = next.indexOf(key);
-      const target = index + delta;
-      if (index < 0 || target < 0 || target >= next.length) return s;
-      [next[index], next[target]] = [next[target], next[index]];
-      return { ...s, visibleColumns: next };
-    });
-
-  const fileName = `${definition.key}-${new Date().toISOString().slice(0, 10)}`;
-
-  const exportXlsx = () =>
-    downloadXlsx(fileName, [{
-      name: definition.title,
-      columns: toSheetColumns(columns),
-      rows: result.allMatching,
-      rightToLeft: isRTL,
-    }]);
-
-  const exportCsv = () => downloadCsv(fileName, toSheetColumns(columns), result.allMatching);
-
-  const filtered = Boolean(state.search || state.from || state.to);
-  const orderedKeys = [
-    ...state.visibleColumns,
-    ...definition.columns.map(c => c.key).filter(k => !state.visibleColumns.includes(k)),
-  ];
+  const rowKey = (row: Row, index: number) =>
+    definition.rowKey?.(row) ?? `${(state.page - 1) * state.pageSize + index}`;
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-end gap-2">
-        <div className="relative flex-1 min-w-[180px] max-w-xs">
-          <Search className="w-4 h-4 absolute top-1/2 -translate-y-1/2 start-3 text-muted-foreground" />
-          <Input
-            value={state.search}
-            onChange={e => patch({ search: e.target.value })}
-            placeholder={t ? 'ابحث في التقرير' : 'Search this report'}
-            className="ps-9"
-          />
-        </div>
+    <div className="space-y-4">
+      <ReportFilters
+        definition={definition}
+        rows={rows}
+        state={state}
+        onChange={patch}
+        invalidRange={result.invalidRange}
+      />
 
-        {definition.dateKey && (
-          <>
-            <div>
-              <Label className="text-xs text-muted-foreground">{t ? 'من' : 'From'}</Label>
-              <Input type="date" value={state.from ?? ''} className="h-10"
-                onChange={e => patch({ from: e.target.value || null })} />
-            </div>
-            <div>
-              <Label className="text-xs text-muted-foreground">{t ? 'إلى' : 'To'}</Label>
-              <Input type="date" value={state.to ?? ''} className="h-10"
-                onChange={e => patch({ to: e.target.value || null })} />
-            </div>
-          </>
-        )}
+      {!loading && !error && result.stats.length > 0 && (
+        <ReportStats stats={result.stats} />
+      )}
 
-        {filtered && (
-          <Button variant="ghost" size="sm" className="gap-1"
-            onClick={() => patch({ search: '', from: null, to: null })}>
-            <X className="w-3.5 h-3.5" />
-            {t ? 'مسح' : 'Clear'}
-          </Button>
-        )}
-
-        <div className="flex items-center gap-2 ms-auto">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <Columns3 className="w-4 h-4" />
-                {t ? 'الأعمدة' : 'Columns'}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-64 p-2">
-              <p className="text-xs text-muted-foreground px-2 pb-2">
-                {t ? 'اختر الأعمدة ورتّبها' : 'Choose and order the columns'}
-              </p>
-              {orderedKeys.map(key => {
-                const column = definition.columns.find(c => c.key === key);
-                if (!column) return null;
-                const shown = state.visibleColumns.includes(key);
-                const position = state.visibleColumns.indexOf(key);
-                return (
-                  <div key={key} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted/50">
-                    <Checkbox id={`col-${key}`} checked={shown} onCheckedChange={() => toggleColumn(key)} />
-                    <label htmlFor={`col-${key}`} className="text-sm flex-1 cursor-pointer truncate">
-                      {column.header}
-                    </label>
-                    {shown && (
-                      <div className="flex gap-0.5">
-                        <button type="button" className="p-0.5 rounded hover:bg-muted disabled:opacity-30"
-                          disabled={position === 0} onClick={() => moveColumn(key, -1)}
-                          title={t ? 'للأعلى' : 'Up'}>
-                          <ArrowUp className="w-3 h-3" />
-                        </button>
-                        <button type="button" className="p-0.5 rounded hover:bg-muted disabled:opacity-30"
-                          disabled={position === state.visibleColumns.length - 1} onClick={() => moveColumn(key, 1)}
-                          title={t ? 'للأسفل' : 'Down'}>
-                          <ArrowDown className="w-3 h-3" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <Button variant="outline" className="gap-2" onClick={exportXlsx} disabled={result.total === 0}>
-            <FileSpreadsheet className="w-4 h-4" />
-            Excel
-          </Button>
-          <Button variant="outline" className="gap-2" onClick={exportCsv} disabled={result.total === 0}>
-            <Download className="w-4 h-4" />
-            CSV
-          </Button>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground" aria-live="polite">
+          {loading
+            ? (t ? 'جارٍ التحميل…' : 'Loading…')
+            : t
+              ? `${fmtCount(result.total)} صف${filtered ? ' مطابق للتصفية' : ''}`
+              : `${fmtCount(result.total)} row${result.total === 1 ? '' : 's'}${filtered ? ' matching' : ''}`}
+        </p>
+        <ReportExport
+          definition={definition}
+          state={state}
+          onChange={patch}
+          rows={result.allMatching}
+        />
       </div>
 
-      <div className="bg-card rounded-xl border border-border overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="overflow-hidden rounded-xl border border-border bg-card">
+        {/* max-h keeps the sticky header useful: the body scrolls under it
+            rather than the whole page scrolling past it */}
+        <div className="max-h-[65vh] overflow-auto">
           <Table>
-            <TableHeader>
-              <TableRow>
+            <TableHeader className="sticky top-0 z-10">
+              <TableRow className="border-border bg-muted/80 backdrop-blur hover:bg-muted/80">
                 {columns.map(column => {
                   const sorted = state.sortKey === column.key;
                   return (
                     <TableHead
                       key={column.key}
+                      aria-sort={sorted ? (state.sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
                       className={cn(
-                        'cursor-pointer select-none whitespace-nowrap',
+                        'h-11 whitespace-nowrap p-0 text-xs font-semibold text-foreground',
                         column.align === 'center' && 'text-center',
                         column.align === 'end' && 'text-end',
                       )}
-                      onClick={() => toggleSort(column.key)}
-                      aria-sort={sorted ? (state.sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
                     >
-                      <span className="inline-flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort(column.key)}
+                        className={cn(
+                          'inline-flex h-11 w-full items-center gap-1.5 px-4 transition-colors hover:text-primary',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                          column.align === 'center' && 'justify-center',
+                          column.align === 'end' && 'justify-end',
+                        )}
+                        title={t ? `ترتيب حسب ${column.header}` : `Sort by ${column.header}`}
+                      >
                         {column.header}
                         {sorted
                           ? (state.sortDirection === 'asc'
-                              ? <ArrowUp className="w-3 h-3" />
-                              : <ArrowDown className="w-3 h-3" />)
-                          : <ChevronsUpDown className="w-3 h-3 opacity-30" />}
-                      </span>
+                              ? <ArrowUp className="h-3 w-3 shrink-0 text-primary" />
+                              : <ArrowDown className="h-3 w-3 shrink-0 text-primary" />)
+                          : <ChevronsUpDown className="h-3 w-3 shrink-0 opacity-25" />}
+                      </button>
                     </TableHead>
                   );
                 })}
@@ -219,34 +154,97 @@ export function ReportTable<Row>({ definition, rows, loading, emptyText }: Props
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow>
-                  <TableCell colSpan={columns.length} className="text-center py-12 text-muted-foreground">
-                    {t ? 'جارٍ التحميل…' : 'Loading…'}
+                Array.from({ length: 6 }).map((_, row) => (
+                  <TableRow key={`skeleton-${row}`} className="border-border/60 hover:bg-transparent">
+                    {columns.map(column => (
+                      <TableCell key={column.key} className="h-12 px-4">
+                        <Skeleton className="h-3.5 w-full max-w-[8rem]" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : error ? (
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={columns.length} className="py-14">
+                    <div className="flex flex-col items-center gap-3 text-center">
+                      <TriangleAlert className="h-10 w-10 text-destructive" />
+                      <div>
+                        <p className="font-medium text-foreground">
+                          {t ? 'تعذّر تحميل التقرير' : 'The report could not be loaded'}
+                        </p>
+                        <p className="mt-1 max-w-sm text-sm text-muted-foreground">{error}</p>
+                      </div>
+                      {onRetry && (
+                        <Button variant="outline" size="sm" className="gap-2" onClick={onRetry}>
+                          <RefreshCw className="h-4 w-4" />
+                          {t ? 'إعادة المحاولة' : 'Try again'}
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : result.total === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={columns.length} className="text-center py-12 text-muted-foreground">
-                    {filtered
-                      ? (t ? 'لا نتائج مطابقة لهذه التصفية' : 'Nothing matches these filters')
-                      : (emptyText || (t ? 'لا توجد بيانات' : 'No data'))}
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={columns.length} className="py-14">
+                    <div className="flex flex-col items-center gap-3 text-center">
+                      {filtered || result.invalidRange ? (
+                        <>
+                          <FileSearch className="h-10 w-10 text-muted-foreground/60" />
+                          <div>
+                            <p className="font-medium text-foreground">
+                              {t ? 'لا نتائج مطابقة' : 'Nothing matches'}
+                            </p>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              {result.invalidRange
+                                ? (t ? 'نطاق التاريخ معكوس.' : 'The date range is reversed.')
+                                : (t ? 'جرّب توسيع التصفية أو إعادة تعيينها.' : 'Try widening or resetting the filters.')}
+                            </p>
+                          </div>
+                          {!result.invalidRange && (
+                            <Button
+                              variant="outline" size="sm"
+                              onClick={() => patch({ search: '', from: null, to: null, filters: {} })}
+                            >
+                              {t ? 'إعادة تعيين التصفية' : 'Reset filters'}
+                            </Button>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <Inbox className="h-10 w-10 text-muted-foreground/60" />
+                          <p className="font-medium text-foreground">
+                            {emptyText || (t ? 'لا توجد بيانات بعد' : 'No data yet')}
+                          </p>
+                        </>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : (
                 result.rows.map((row, index) => (
-                  <TableRow key={index}>
-                    {columns.map(column => (
-                      <TableCell
-                        key={column.key}
-                        className={cn(
-                          column.align === 'center' && 'text-center',
-                          column.align === 'end' && 'text-end',
-                          (column.type === 'number' || column.type === 'money') && 'tabular-nums',
-                        )}
-                      >
-                        {column.render ? column.render(row) : formatCell(column.value(row), column.type, isRTL)}
-                      </TableCell>
-                    ))}
+                  <TableRow key={rowKey(row, index)} className="border-border/60">
+                    {columns.map(column => {
+                      const numeric = column.type === 'number' || column.type === 'money';
+                      return (
+                        <TableCell
+                          key={column.key}
+                          className={cn(
+                            'h-12 max-w-[20rem] truncate px-4 py-2',
+                            column.align === 'center' && 'text-center',
+                            column.align === 'end' && 'text-end',
+                            numeric && 'tabular-nums',
+                            // an identifier is read character by character, so it
+                            // keeps Latin order even on an RTL page
+                            column.type === 'id' && 'font-mono text-xs',
+                          )}
+                          title={column.render ? undefined : plainText(column.value(row))}
+                        >
+                          {column.render
+                            ? column.render(row)
+                            : formatCell(column.value(row), column.type, isRTL)}
+                        </TableCell>
+                      );
+                    })}
                   </TableRow>
                 ))
               )}
@@ -254,16 +252,12 @@ export function ReportTable<Row>({ definition, rows, loading, emptyText }: Props
           </Table>
         </div>
 
-        {result.total > 0 && (
-          <div className="flex flex-wrap items-center gap-3 px-4 py-3 border-t border-border text-sm">
-            <span className="text-muted-foreground">
-              {t
-                ? `${result.total.toLocaleString('ar-SA')} صف`
-                : `${result.total.toLocaleString()} rows`}
-            </span>
-
+        {!loading && !error && result.total > 0 && (
+          <div className="flex flex-wrap items-center gap-3 border-t border-border px-4 py-3 text-sm">
             <Select value={String(state.pageSize)} onValueChange={v => patch({ pageSize: Number(v) })}>
-              <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-9 w-32" aria-label={t ? 'عدد الصفوف في الصفحة' : 'Rows per page'}>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 {PAGE_SIZES.map(size => (
                   <SelectItem key={size} value={String(size)}>
@@ -273,17 +267,29 @@ export function ReportTable<Row>({ definition, rows, loading, emptyText }: Props
               </SelectContent>
             </Select>
 
-            <div className="flex items-center gap-1 ms-auto">
-              <Button variant="outline" size="sm" className="h-8 px-2"
-                disabled={state.page <= 1} onClick={() => patch({ page: state.page - 1 })}>
-                {isRTL ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            <span className="text-muted-foreground">
+              {t
+                ? `الصفوف ${fmtCount((state.page - 1) * state.pageSize + 1)}–${fmtCount(Math.min(state.page * state.pageSize, result.total))} من ${fmtCount(result.total)}`
+                : `${fmtCount((state.page - 1) * state.pageSize + 1)}–${fmtCount(Math.min(state.page * state.pageSize, result.total))} of ${fmtCount(result.total)}`}
+            </span>
+
+            <div className="ms-auto flex items-center gap-1">
+              <Button
+                variant="outline" size="sm" className="h-9 px-2"
+                aria-label={t ? 'الصفحة السابقة' : 'Previous page'}
+                disabled={state.page <= 1} onClick={() => patch({ page: state.page - 1 })}
+              >
+                {isRTL ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
               </Button>
               <span className="px-2 tabular-nums text-muted-foreground">
                 {state.page} / {result.pageCount}
               </span>
-              <Button variant="outline" size="sm" className="h-8 px-2"
-                disabled={state.page >= result.pageCount} onClick={() => patch({ page: state.page + 1 })}>
-                {isRTL ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+              <Button
+                variant="outline" size="sm" className="h-9 px-2"
+                aria-label={t ? 'الصفحة التالية' : 'Next page'}
+                disabled={state.page >= result.pageCount} onClick={() => patch({ page: state.page + 1 })}
+              >
+                {isRTL ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </Button>
             </div>
           </div>
@@ -293,19 +299,19 @@ export function ReportTable<Row>({ definition, rows, loading, emptyText }: Props
   );
 }
 
+/** The cell's text, for the title attribute that reveals a truncated value */
+function plainText(value: unknown): string | undefined {
+  if (value === null || value === undefined || value === '') return undefined;
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  return String(value);
+}
+
 function formatCell(value: unknown, type: string | undefined, isRTL: boolean) {
   if (value === null || value === undefined || value === '') return '—';
-  const locale = isRTL ? 'ar-SA' : 'en-US';
 
-  if (value instanceof Date) return value.toLocaleDateString(locale);
-  if (type === 'money' && typeof value === 'number') {
-    return `${value.toLocaleString(locale)} ${isRTL ? 'ر.س' : 'SAR'}`;
-  }
-  if (type === 'number' && typeof value === 'number') return value.toLocaleString(locale);
-  if (type === 'date') {
-    const date = new Date(String(value));
-    return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString(locale);
-  }
+  if (value instanceof Date || type === 'date') return fmtDate(value, isRTL);
+  if (type === 'money' && typeof value === 'number') return fmtMoney(value, isRTL);
+  if (type === 'number' && typeof value === 'number') return fmtNumber(value);
   if (typeof value === 'boolean') return value ? (isRTL ? 'نعم' : 'Yes') : (isRTL ? 'لا' : 'No');
   return String(value);
 }
