@@ -2,7 +2,7 @@ import { useState } from "react";
 import { type FeatureKey } from "@/lib/planAccess";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { usePermissions, type PermissionKey } from "@/hooks/usePermissions";
-import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Archive,
@@ -13,7 +13,6 @@ import {
   Briefcase,
   Building2,
   Calculator,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ClipboardCheck,
@@ -68,9 +67,10 @@ interface NavItem {
 }
 
 /**
- * Nine sections. Each one's children deep-link into that page's ?tab=, which
- * is the same leaf key the page's own sub-navigation uses — so the sidebar and
- * the page can never disagree about where you are.
+ * Nine sections. The sidebar shows only the sections; each page's own
+ * sub-navigation is the one place its leaves are listed, so they are never
+ * shown twice. `children` mirrors those leaves (same ?tab= keys) and is kept
+ * for the gating below: a section whose leaves are all denied is hidden.
  *
  * The gates here are the usability half of the per-leaf gates in SectionShell:
  * hiding an entry has never been what stops anyone, RLS is.
@@ -166,7 +166,6 @@ const navItems: NavItem[] = [
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
-  const [searchParams] = useSearchParams();
   const { t, isRTL } = useLanguage();
   const { merchant, merchantUser } = useAuth();
   const role = merchantUser?.role as UserRole | undefined;
@@ -263,8 +262,6 @@ export function Sidebar() {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
           const label = isRTL ? item.labelAr : item.label;
-          const showChildren = !!item.children?.length && isActive && !isCollapsed;
-          const currentTab = searchParams.get("tab") || item.children?.[0]?.key;
 
           return (
             <div key={item.path}>
@@ -284,10 +281,6 @@ export function Sidebar() {
                   )}
                 </AnimatePresence>
 
-                {!!item.children?.length && !isCollapsed && (
-                  <ChevronDown className={cn("w-4 h-4 opacity-60 transition-transform", showChildren && "rotate-180")} />
-                )}
-
                 {isCollapsed && (
                   <div className={cn(
                     "absolute px-3 py-2 bg-popover text-popover-foreground rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 text-sm",
@@ -298,32 +291,6 @@ export function Sidebar() {
                 )}
               </Link>
 
-              <AnimatePresence>
-                {showChildren && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className={cn("overflow-hidden space-y-0.5 py-1", isRTL ? "pr-9" : "pl-9")}
-                  >
-                    {item.children!.map((child) => (
-                      <Link
-                        key={child.key}
-                        to={`${item.path}?tab=${child.key}`}
-                        className={cn(
-                          "block px-3 py-1.5 rounded-md text-sm transition-colors",
-                          currentTab === child.key
-                            ? "bg-sidebar-primary/15 text-sidebar-primary font-medium"
-                            : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                        )}
-                      >
-                        {isRTL ? child.labelAr : child.label}
-                      </Link>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
           );
         })}
