@@ -23,6 +23,7 @@ const ProductsPage = lazy(() => import("./pages/ProductsPage"));
 const SalesPage = lazy(() => import("./pages/SalesPage"));
 const TeamPage = lazy(() => import("./pages/TeamPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const OrganizationPage = lazy(() => import("./pages/OrganizationPage"));
 const SubscriptionPage = lazy(() => import("./pages/SubscriptionPage"));
 const PublicStorePage = lazy(() => import("./pages/PublicStorePage"));
 const CustomerDetailPage = lazy(() => import("./pages/CustomerDetailPage"));
@@ -209,6 +210,7 @@ function AppRoutes() {
       <Route path="/ai-insights" element={<ProtectedRoute><CashierRedirect><AIInsightsPage /></CashierRedirect></ProtectedRoute>} />
       <Route path="/subscription" element={<ProtectedRoute><RoleRoute allow={["owner", "admin"]}><CashierRedirect><SubscriptionPage /></CashierRedirect></RoleRoute></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+      <Route path="/organization" element={<ProtectedRoute><OrganizationPage /></ProtectedRoute>} />
 
       {/* A customer's own page stays a route of its own, not a tab */}
       <Route path="/customers/:id" element={<ProtectedRoute><FeatureRoute feature="customers"><CashierRedirect><CustomerDetailPage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />
@@ -238,8 +240,8 @@ function AppRoutes() {
 
       <Route path="/notifications" element={<LegacyRedirect to="/settings" tab="notifications" />} />
       <Route path="/business-policy" element={<LegacyRedirect to="/settings" tab="policy" />} />
-      <Route path="/branches" element={<LegacyRedirect to="/settings" tab="branches" />} />
-      <Route path="/support" element={<LegacyRedirect to="/settings" tab="support" />} />
+      <Route path="/branches" element={<LegacyRedirect to="/organization" tab="branches" />} />
+      <Route path="/support" element={<LegacyRedirect to="/organization" tab="support" />} />
 
       <Route path="/store/:slug/*" element={<PublicStorePage />} />
       {/* Admin Auth */}

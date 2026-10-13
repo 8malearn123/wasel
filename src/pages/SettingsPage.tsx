@@ -1,17 +1,25 @@
 import { lazy } from 'react';
-import { Bell, Building2, FileText, LifeBuoy, SlidersHorizontal } from 'lucide-react';
+import { Navigate, useSearchParams } from 'react-router-dom';
+import { Bell, FileText, SlidersHorizontal } from 'lucide-react';
 import { SectionShell, type SectionGroup } from '@/components/layout/SectionShell';
 import { useLanguage } from '@/i18n';
 
 const GeneralSettingsSection = lazy(() => import('@/sections/settings/GeneralSettingsSection'));
 const NotificationsSection = lazy(() => import('@/sections/settings/NotificationsSection'));
 const BusinessPolicySection = lazy(() => import('@/sections/settings/BusinessPolicySection'));
-const BranchesSection = lazy(() => import('@/sections/settings/BranchesSection'));
-const SupportSection = lazy(() => import('@/sections/settings/SupportSection'));
 
-/** الإعدادات — the one place the system is configured from. */
+// Leaves that moved to المنشأة والدعم; a bookmark to them here is forwarded
+const MOVED_TO_ORGANIZATION = new Set(['branches', 'support']);
+
+/** الإعدادات — how the system behaves. Branches and support are in المنشأة والدعم. */
 export default function SettingsPage() {
   const { t, isRTL } = useLanguage();
+  const [searchParams] = useSearchParams();
+
+  const tab = searchParams.get('tab');
+  if (tab && MOVED_TO_ORGANIZATION.has(tab)) {
+    return <Navigate to={`/organization?${searchParams.toString()}`} replace />;
+  }
 
   const groups: SectionGroup[] = [
     {
@@ -43,28 +51,6 @@ export default function SettingsPage() {
           subtitle: isRTL ? 'التعديلات وخدمات التسويق' : 'Modifications and marketing services',
           denyRoles: ['cashier', 'branch_manager', 'inventory_manager'],
           render: () => <BusinessPolicySection />,
-        },
-      ],
-    },
-    {
-      label: isRTL ? 'المنشأة والدعم' : 'Business & help',
-      items: [
-        {
-          key: 'branches',
-          label: t.branches.title,
-          icon: Building2,
-          title: t.branches.title,
-          subtitle: t.branches.subtitle,
-          denyRoles: ['cashier'],
-          render: () => <BranchesSection />,
-        },
-        {
-          key: 'support',
-          label: isRTL ? 'الدعم الفني' : 'Support',
-          icon: LifeBuoy,
-          title: isRTL ? 'الدعم الفني' : 'Support',
-          subtitle: isRTL ? 'إرسال ومتابعة طلبات الدعم' : 'Raise and follow support tickets',
-          render: () => <SupportSection />,
         },
       ],
     },

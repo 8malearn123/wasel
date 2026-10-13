@@ -28,7 +28,7 @@ interface HeaderProps {
   subtitle?: string;
 }
 
-// The launcher mirrors the sidebar: nine sections, not the thirty pages they
+// The launcher mirrors the sidebar: ten sections, not the thirty pages they
 // were split across before the consolidation.
 const SECTIONS = [
   { icon: LayoutDashboard, label: "Dashboard", labelAr: "الرئيسية", path: "/" },
@@ -41,10 +41,12 @@ const SECTIONS = [
   { icon: Sparkles, label: "AI insights", labelAr: "الذكاء الاصطناعي", path: "/ai-insights" },
   { icon: CreditCard, label: "Subscription & Plans", labelAr: "الاشتراك والباقات", path: "/subscription" },
   { icon: Settings, label: "Settings", labelAr: "الإعدادات", path: "/settings" },
+  { icon: Building2, label: "Business & help", labelAr: "المنشأة والدعم", path: "/organization" },
 ];
 
 // Routes a cashier can open without being bounced back to the POS
-const CASHIER_PATHS = new Set(["/pos", "/sales", "/settings"]);
+// (support, the one leaf a cashier has outside selling, is in المنشأة والدعم)
+const CASHIER_PATHS = new Set(["/pos", "/sales", "/organization"]);
 
 export function Header({ title, subtitle }: HeaderProps) {
   const { t, language, setLanguage, isRTL } = useLanguage();
@@ -261,7 +263,7 @@ export function Header({ title, subtitle }: HeaderProps) {
             <DropdownMenuItem onSelect={() => setShowProfile(true)} className="cursor-pointer">
               {t.common.profile}
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => navigate("/settings")} className="cursor-pointer">
+            <DropdownMenuItem onSelect={() => navigate(isCashier ? "/organization?tab=support" : "/settings")} className="cursor-pointer">
               {t.common.settings}
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => setShowActivity(true)} className="cursor-pointer">

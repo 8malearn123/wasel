@@ -67,7 +67,7 @@ interface NavItem {
 }
 
 /**
- * Nine sections. The sidebar shows only the sections; each page's own
+ * Ten sections. The sidebar shows only the sections; each page's own
  * sub-navigation is the one place its leaves are listed, so they are never
  * shown twice. `children` mirrors those leaves (same ?tab= keys) and is kept
  * for the gating below: a section whose leaves are all denied is hidden.
@@ -157,6 +157,11 @@ const navItems: NavItem[] = [
       { key: "general", label: "General", labelAr: "عام", icon: SlidersHorizontal, denyRoles: ["cashier"] },
       { key: "notifications", label: "Notifications", labelAr: "الإشعارات", icon: Bell, denyRoles: ["cashier"] },
       { key: "policy", label: "Business policy", labelAr: "سياسة العمل", icon: FileText, denyRoles: ["cashier", "branch_manager", "inventory_manager"] },
+    ],
+  },
+  {
+    icon: Building2, label: "Business & help", labelAr: "المنشأة والدعم", path: "/organization",
+    children: [
       { key: "branches", label: "Branches", labelAr: "الفروع", icon: Building2, denyRoles: ["cashier"] },
       { key: "support", label: "Support", labelAr: "الدعم الفني", icon: LifeBuoy },
     ],
