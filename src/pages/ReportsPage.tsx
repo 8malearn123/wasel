@@ -1,16 +1,11 @@
 import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import {
-  Archive, BarChart3, FileText, Heart, Home, Package, Smartphone,
+  Archive, BarChart3, FileText, Heart, Package, Smartphone,
   Truck, Users, Wrench,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { SectionNav } from '@/components/layout/SectionNav';
-import {
-  Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList,
-  BreadcrumbPage, BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
 import { useTabParam } from '@/hooks/useTabParam';
 import { useLanguage } from '@/i18n';
 import { useReports } from '@/hooks/useReports';
@@ -72,9 +67,9 @@ export default function ReportsPage() {
   const chartData = period === 'daily' ? dailyData : monthlyData;
 
   const statusBreakdown = useMemo(() => [
-    { name: r.available, value: inventory.availableDevices },
-    { name: r.reserved, value: inventory.reservedDevices },
-    { name: r.soldStatus, value: inventory.soldDevices },
+    { key: 'available' as const, name: r.available, value: inventory.availableDevices },
+    { key: 'reserved' as const, name: r.reserved, value: inventory.reservedDevices },
+    { key: 'sold' as const, name: r.soldStatus, value: inventory.soldDevices },
   ].filter(d => d.value > 0), [inventory, r]);
 
   const deadStock = useMemo<DeadStockDevice[]>(() => {
@@ -229,27 +224,6 @@ export default function ReportsPage() {
         ? 'متابعة الأداء والمبيعات والمخزون من مكان واحد'
         : 'Performance, sales and stock, from one place'}
     >
-      <Breadcrumb className="mb-4">
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link to="/" className="flex items-center gap-1.5">
-                <Home className="h-3.5 w-3.5" />
-                {isRTL ? 'الرئيسية' : 'Home'}
-              </Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator className={isRTL ? 'rotate-180' : undefined} />
-          <BreadcrumbItem>
-            <BreadcrumbPage className="text-muted-foreground">{r.title}</BreadcrumbPage>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator className={isRTL ? 'rotate-180' : undefined} />
-          <BreadcrumbItem>
-            <BreadcrumbPage>{current.label}</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-
       <SectionNav groups={groups} value={current.key} onChange={setActiveTab} />
 
       {/* Only the selected report is rendered: ten mounted panels would mean
