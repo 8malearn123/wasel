@@ -39,6 +39,7 @@ const SECTIONS: Array<[path: string, page: string]> = [
   ['/sales', 'src/pages/SalesPage.tsx'],
   ['/team', 'src/pages/TeamPage.tsx'],
   ['/settings', 'src/pages/SettingsPage.tsx'],
+  ['/organization', 'src/pages/OrganizationPage.tsx'],
   ['/reports', 'src/pages/ReportsPage.tsx'],
 ];
 
@@ -58,13 +59,13 @@ describe('sidebar deep links', () => {
     }
   });
 
-  it('keeps the nine sections, and no more', () => {
+  it('keeps the ten sections, and no more', () => {
     const src = read('src/components/layout/Sidebar.tsx');
     const list = src.slice(src.indexOf('const navItems'), src.indexOf('export function Sidebar'));
     const paths = [...list.matchAll(/path: "([^"]+)"/g)].map(m => m[1]);
     expect(paths).toEqual([
       '/', '/products', '/sales', '/shipping', '/reports',
-      '/team', '/ai-insights', '/subscription', '/settings',
+      '/team', '/ai-insights', '/subscription', '/settings', '/organization',
     ]);
   });
 });

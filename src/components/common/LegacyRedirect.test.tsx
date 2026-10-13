@@ -31,8 +31,8 @@ const MOVED: Array<[from: string, to: string, tab: string, sub?: string]> = [
   ['/users', '/team', 'users'],
   ['/notifications', '/settings', 'notifications'],
   ['/business-policy', '/settings', 'policy'],
-  ['/branches', '/settings', 'branches'],
-  ['/support', '/settings', 'support'],
+  ['/branches', '/organization', 'branches'],
+  ['/support', '/organization', 'support'],
 ];
 
 function at(url: string, from: string, to: string, tab: string, sub?: string) {
