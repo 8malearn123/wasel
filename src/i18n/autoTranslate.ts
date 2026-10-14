@@ -1312,6 +1312,8 @@ function translateTextNode(node: Text) {
   // لا نلمس محتوى الحقول القابلة للتحرير حتى ما نفسد كتابة المستخدم
   const parent = node.parentElement;
   if (parent && (parent.isContentEditable || parent.closest('[contenteditable="true"]'))) return;
+  // translate="no" — صفحات عربية فقط مثل مسابقة المعرض
+  if (parent?.closest('[translate="no"]')) return;
   const raw = node.nodeValue;
   if (!raw) return;
   const trimmed = raw.trim();
@@ -1326,6 +1328,7 @@ function translateTextNode(node: Text) {
 
 function translateElementAttrs(el: Element) {
   if (el.tagName === "SCRIPT" || el.tagName === "STYLE") return;
+  if (el.closest('[translate="no"]')) return;
   for (const attr of ATTRS) {
     const v = el.getAttribute(attr);
     if (!v) continue;

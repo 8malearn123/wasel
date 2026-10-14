@@ -46,6 +46,7 @@ const AdminReportsPage = lazy(() => import("./pages/admin/AdminReportsPage"));
 const AdminAuthPage = lazy(() => import("./pages/admin/AdminAuthPage"));
 const OAuthConsentPage = lazy(() => import("./pages/OAuthConsentPage"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
+const QuizPage = lazy(() => import("./pages/QuizPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -167,6 +168,7 @@ function AppRoutes() {
       <Route path="/wholesale" element={<ProtectedRoute><CashierRedirect><WholesalePage /></CashierRedirect></ProtectedRoute>} />
       <Route path="/support" element={<ProtectedRoute><SupportPage /></ProtectedRoute>} />
       <Route path="/store/:slug/*" element={<PublicStorePage />} />
+      <Route path="/quiz" element={<QuizPage />} />
       {/* Admin Auth */}
       <Route path="/admin/login" element={<AdminAuthPage />} />
       {/* Independent Admin Dashboard */}
