@@ -3,17 +3,19 @@ import {
   Trophy, Timer, Zap, Check, X, RotateCcw, Maximize, Minimize, Volume2, VolumeX,
   Flame, Medal, Trash2, ChevronLeft, Brain, LogOut, Scissors, Clock, SkipForward,
   Rocket, Bot, Atom, Gamepad2, Crown, Ghost, Cat, Satellite, Lightbulb, Users, Target,
-  Cpu, Wifi, Smartphone, Shield, Code2, Lock, Play, Repeat,
+  Cpu, Wifi, Smartphone, Shield, Code2, Lock, Play, Repeat, Camera,
 } from "lucide-react";
+import PhotoBooth from "./quiz/PhotoBooth";
 import { CATEGORY_LABELS, LEVEL_LABELS, FUN_FACTS } from "./quiz/questions";
 import {
   QUESTION_SECONDS, BLITZ_SECONDS, AUTO_NEXT_MS, BLITZ_NEXT_MS, RESULT_IDLE_MS, PAUSE_IDLE_MS,
   MAX_IDLE_TIMEOUTS, MODE_LABELS, SFX, CHEERS, OOPS, buildClassicRound, buildBlitzRound,
   loadBoard, saveBoard, rankBoard, loadPlaysToday, bumpPlaysToday, shuffle, pick,
-  classicTitle, blitzTitle, type Mode, type RoundQuestion, type ScoreEntry, type SfxKey,
+  classicTitle, blitzTitle, tierOf, TIERS, SHIELD_PATH, type Tier, type Mode, type RoundQuestion, type ScoreEntry, type SfxKey,
 } from "./quiz/engine";
 
 const LETTERS = ["أ", "ب", "ج", "د"];
+const BOOTH_IDLE_MS = 120000;
 const BRAND = "#600B0D";
 
 const AVATARS = [
@@ -79,6 +81,7 @@ export default function QuizPage() {
   const [plays, setPlays] = useState(loadPlaysToday);
   const [muted, setMuted] = useState(false);
   const [isFs, setIsFs] = useState(false);
+  const [boothOpen, setBoothOpen] = useState(false);
 
   const mutedRef = useRef(muted);
   mutedRef.current = muted;
@@ -109,7 +112,7 @@ export default function QuizPage() {
     setIdx(0); setPicked(null); setTimeLeft(QUESTION_SECONDS); setExtra(0); setBlitzLeft(BLITZ_SECONDS);
     setScore(0); setCorrect(0); setAnsweredCount(0); setStreak(0); setMaxStreak(0); setLightning(false);
     setGain(null); setReaction(null); setHidden([]); setUsed({ fifty: false, time: false, skip: false });
-    setIdleTimeouts(0); setPaused(false); setResult(null);
+    setIdleTimeouts(0); setPaused(false); setResult(null); setBoothOpen(false);
     setCount(3); setPhase("countdown");
     setPlays(bumpPlaysToday());
     play("count");
@@ -281,9 +284,9 @@ export default function QuizPage() {
   // العودة للبداية تلقائياً لاستقبال الزائر التالي
   useEffect(() => {
     if (phase !== "result") return;
-    const t = setTimeout(() => { setPhase("welcome"); setName(""); }, RESULT_IDLE_MS);
+    const t = setTimeout(() => { setBoothOpen(false); setPhase("welcome"); setName(""); }, boothOpen ? BOOTH_IDLE_MS : RESULT_IDLE_MS);
     return () => clearTimeout(t);
-  }, [phase]);
+  }, [phase, boothOpen]);
 
   // لوحة المفاتيح: 1-4 للإجابة، Enter للتالي، Esc للخروج
   useEffect(() => {
@@ -488,7 +491,16 @@ export default function QuizPage() {
           <Result r={result} board={board}
             onAgain={() => start(result.mode)}
             onOther={() => start(result.mode === "classic" ? "blitz" : "classic")}
+            onPhoto={() => setBoothOpen(true)}
             onHome={() => { setPhase("welcome"); setName(""); }} />
+        )}
+        {phase === "result" && result && boothOpen && (
+          <PhotoBooth mute={muted} onClose={() => setBoothOpen(false)} info={{
+            name: result.name, score: result.score, correct: result.correct, total: result.total,
+            tier: tierOf(result.mode, result.correct, result.total),
+            title: (result.mode === "classic" ? classicTitle(result.total ? (result.correct / result.total) * 100 : 0) : blitzTitle(result.correct)).title,
+            modeLabel: MODE_LABELS[result.mode], avatarBg: (AVATARS[result.avatar] ?? AVATARS[0]).bg,
+          }} />
         )}
       </main>
 
@@ -604,9 +616,10 @@ function Welcome({ name, setName, avatar, setAvatar, onStart, board, onClear, pl
 }
 
 /* ───────── شاشة النتيجة ───────── */
-function Result({ r, board, onAgain, onOther, onHome }: {
-  r: RoundResult; board: ScoreEntry[]; onAgain: () => void; onOther: () => void; onHome: () => void;
+function Result({ r, board, onAgain, onOther, onHome, onPhoto }: {
+  r: RoundResult; board: ScoreEntry[]; onAgain: () => void; onOther: () => void; onHome: () => void; onPhoto: () => void;
 }) {
+  const tier = tierOf(r.mode, r.correct, r.total);
   const t = r.mode === "classic" ? classicTitle(r.total ? (r.correct / r.total) * 100 : 0) : blitzTitle(r.correct);
   const A = AVATARS[r.avatar] ?? AVATARS[0];
   const celebrate = r.newRecord || r.rank <= 3 || r.correct / Math.max(r.total, 1) >= 0.5;
@@ -624,10 +637,14 @@ function Result({ r, board, onAgain, onOther, onHome }: {
           </div>
         )}
         <div className="flex items-center gap-4 mb-4">
-          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl grid place-items-center text-white quiz-float shrink-0" style={{ background: A.bg }}>
-            <A.Icon className="w-10 h-10 sm:w-12 sm:h-12" />
+          <div className="relative shrink-0 quiz-float">
+            <ShieldBadge tier={tier} size={104} />
+            <span className="absolute -bottom-1 -left-1 w-9 h-9 rounded-xl grid place-items-center text-white border-2 border-white" style={{ background: A.bg }}>
+              <A.Icon className="w-5 h-5" />
+            </span>
           </div>
           <div className="min-w-0">
+            <p className="text-sm font-bold" style={{ color: TIERS[tier].dark }}>{TIERS[tier].name}</p>
             <p className="text-[#2B0A0B]/60 text-lg sm:text-xl">أحسنت يا <span dir="auto">{r.name}</span> · {MODE_LABELS[r.mode]}</p>
             <h2 className="font-display font-black text-4xl sm:text-6xl quiz-gradient-text leading-tight">{t.title}</h2>
           </div>
@@ -667,6 +684,18 @@ function Result({ r, board, onAgain, onOther, onHome }: {
             );
           })}
         </div>
+
+        <button onClick={onPhoto}
+          className="group w-full mb-4 rounded-3xl bg-gradient-to-l from-[#600B0D] to-[#8E2326] text-white p-4 sm:p-5 flex items-center gap-4 text-right hover:brightness-110 active:scale-[0.99] transition quiz-pulse">
+          <span className="w-14 h-14 rounded-2xl bg-white/15 grid place-items-center shrink-0 group-hover:rotate-[-8deg] transition">
+            <Camera className="w-8 h-8" />
+          </span>
+          <span className="flex-1 min-w-0">
+            <span className="block font-display font-black text-xl sm:text-2xl">خذ صورة الفوز!</span>
+            <span className="block text-white/75 text-sm sm:text-base">سيلفي مع {TIERS[tier].name} ونتيجتك، احفظها وشاركها</span>
+          </span>
+          <ChevronLeft className="w-6 h-6 shrink-0" />
+        </button>
 
         <div className="flex flex-col sm:flex-row flex-wrap gap-3">
           <button onClick={onAgain}
@@ -777,6 +806,29 @@ function FactCard() {
 }
 
 /* ───────── مكوّنات صغيرة ───────── */
+function ShieldBadge({ tier, size }: { tier: Tier; size: number }) {
+  const t = TIERS[tier];
+  const n = tier + 1;
+  const starPts = (cx: number, cy: number, r: number) => Array.from({ length: 10 }, (_, i) => {
+    const rad = i % 2 ? r * 0.45 : r, a = -Math.PI / 2 + (i * Math.PI) / 5;
+    return `${(cx + rad * Math.cos(a)).toFixed(1)},${(cy + rad * Math.sin(a)).toFixed(1)}`;
+  }).join(" ");
+  return (
+    <svg viewBox="0 0 100 100" width={size} height={size} role="img" aria-label={t.name} className="drop-shadow-lg">
+      <defs>
+        <linearGradient id={`shield-${tier}`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor={t.light} /><stop offset="1" stopColor={t.dark} />
+        </linearGradient>
+      </defs>
+      <path d={SHIELD_PATH} fill={`url(#shield-${tier})`} stroke="#fff" strokeWidth="4" />
+      <path d={SHIELD_PATH} fill="none" stroke="rgba(255,255,255,.6)" strokeWidth="2" transform="translate(10 10) scale(.8)" />
+      {Array.from({ length: n }, (_, i) => (
+        <polygon key={i} points={starPts(50 + (i - (n - 1) / 2) * 18, 48, n > 2 ? 8.5 : 11)} fill={t.ink} />
+      ))}
+    </svg>
+  );
+}
+
 function Lifeline({ Icon, label, used, onClick }: { Icon: typeof Trophy; label: string; used: boolean; onClick: () => void }) {
   return (
     <button onClick={onClick} disabled={used}

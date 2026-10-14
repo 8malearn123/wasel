@@ -140,3 +140,19 @@ export function blitzTitle(correct: number) {
   if (correct >= 6) return { title: "سريع البديهة", sub: "جيد جداً، تقدر تكسر الرقم!" };
   return { title: "شرارة البداية", sub: "الجولة الجاية أقوى. جرّب مرة ثانية!" };
 }
+
+/* ───────── الدروع: مستوى اللاعب في نهاية الجولة ───────── */
+export type Tier = 0 | 1 | 2 | 3;
+export const TIERS: Record<Tier, { name: string; light: string; dark: string; ink: string }> = {
+  0: { name: "الدرع البرونزي", light: "#F0B27A", dark: "#8A4B1C", ink: "#3B1D07" },
+  1: { name: "الدرع الفضي", light: "#F1F5F9", dark: "#8B95A5", ink: "#1E293B" },
+  2: { name: "الدرع الذهبي", light: "#FDE68A", dark: "#C27803", ink: "#422006" },
+  3: { name: "الدرع الماسي", light: "#CFFAFE", dark: "#6366F1", ink: "#1E1B4B" },
+};
+export function tierOf(mode: Mode, correct: number, total: number): Tier {
+  if (mode === "blitz") return correct >= 15 ? 3 : correct >= 10 ? 2 : correct >= 6 ? 1 : 0;
+  const pct = total ? (correct / total) * 100 : 0;
+  return pct >= 90 ? 3 : pct >= 70 ? 2 : pct >= 50 ? 1 : 0;
+}
+/** شكل الدرع في مربع 100×100 — يُستخدم في SVG وفي رسم الصورة */
+export const SHIELD_PATH = "M50 2 L94 16 V46 C94 74 76 91 50 99 C24 91 6 74 6 46 V16 Z";
