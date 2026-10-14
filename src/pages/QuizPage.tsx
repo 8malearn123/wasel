@@ -113,7 +113,7 @@ export default function QuizPage() {
   const answered = picked !== null;
 
   useEffect(() => {
-    document.title = "تحدّي وصل التقني";
+    document.title = "تحدّي غراس التقني";
     const onFs = () => setIsFs(!!document.fullscreenElement);
     document.addEventListener("fullscreenchange", onFs);
     return () => document.removeEventListener("fullscreenchange", onFs);
@@ -220,17 +220,17 @@ export default function QuizPage() {
   );
 
   return (
-    <div dir="rtl" translate="no" className="quiz-root relative min-h-screen overflow-x-clip bg-[#0b0d14] text-white font-sans select-none">
+    <div dir="rtl" translate="no" className="quiz-root relative min-h-screen overflow-x-clip bg-[#FBF6EF] text-[#2B0A0B] font-sans select-none">
       <style>{QUIZ_CSS}</style>
       <Backdrop />
 
       {/* الشريط العلوي */}
       <header className="relative z-10 flex items-center justify-between px-4 sm:px-8 py-4">
         <div className="flex items-center gap-3">
-          <img src="/brand/app-icon.svg" alt="وصل" className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl" />
-          <div>
-            <p className="font-display font-extrabold text-lg sm:text-xl leading-none">تحدّي وصل التقني</p>
-            <p className="text-xs sm:text-sm text-white/50 mt-1">اختبر معلوماتك وادخل لوحة الأبطال</p>
+          <img src="/ghirass/logo.png" alt="فريق غراس التطوعي" className="h-12 sm:h-16 w-auto" />
+          <div className="hidden sm:block border-r border-[#600B0D]/15 pr-3">
+            <p className="font-display font-extrabold text-lg sm:text-xl leading-none text-[#600B0D]">تحدّي غراس التقني</p>
+            <p className="text-xs sm:text-sm text-[#2B0A0B]/55 mt-1">اختبر معلوماتك وادخل لوحة الأبطال</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -252,27 +252,27 @@ export default function QuizPage() {
           <div key={current.id} className="max-w-5xl mx-auto quiz-pop">
             {/* التقدّم والنقاط */}
             <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-5">
-              <Chip><span className="text-white/60">سؤال</span> <b className="text-lg">{idx + 1}</b><span className="text-white/40">/ {round.length}</span></Chip>
-              <Chip><Trophy className="w-4 h-4 text-amber-400" /><b className="text-lg tabular-nums">{score}</b></Chip>
+              <Chip><span className="text-[#2B0A0B]/60">سؤال</span> <b className="text-lg">{idx + 1}</b><span className="text-[#2B0A0B]/40">/ {round.length}</span></Chip>
+              <Chip><Trophy className="w-4 h-4 text-[#600B0D]" /><b className="text-lg tabular-nums">{score}</b></Chip>
               {streak >= 2 && (
-                <Chip className="border-orange-400/40 bg-orange-500/15 text-orange-200 quiz-pop">
+                <Chip className="border-orange-500/30 bg-orange-500/10 text-orange-700 quiz-pop">
                   <Flame className="w-4 h-4" /> سلسلة {streak}
                 </Chip>
               )}
               <div className="flex-1" />
               <TimerRing left={timeLeft} />
             </div>
-            <div className="h-2 rounded-full bg-white/10 overflow-hidden mb-8">
-              <div className="h-full bg-gradient-to-l from-amber-300 to-amber-600 transition-all duration-500"
+            <div className="h-2 rounded-full bg-[#600B0D]/10 overflow-hidden mb-8">
+              <div className="h-full bg-gradient-to-l from-[#A8383B] to-[#600B0D] transition-all duration-500"
                 style={{ width: `${((idx + (answered ? 1 : 0)) / round.length) * 100}%` }} />
             </div>
 
             {/* السؤال */}
             <div className="flex flex-wrap gap-2 mb-4">
-              <span className="px-3 py-1 rounded-full text-sm bg-white/10 text-white/80">{CATEGORY_LABELS[current.category]}</span>
+              <span className="px-3 py-1 rounded-full text-sm bg-[#600B0D]/10 text-[#2B0A0B]/80">{CATEGORY_LABELS[current.category]}</span>
               <span className={`px-3 py-1 rounded-full text-sm ${
-                current.level === 1 ? "bg-emerald-500/15 text-emerald-300"
-                : current.level === 2 ? "bg-sky-500/15 text-sky-300" : "bg-rose-500/15 text-rose-300"}`}>
+                current.level === 1 ? "bg-emerald-500/15 text-emerald-700"
+                : current.level === 2 ? "bg-sky-500/15 text-sky-700" : "bg-rose-500/15 text-rose-700"}`}>
                 {LEVEL_LABELS[current.level]} · {current.level * 100} نقطة
               </span>
             </div>
@@ -285,19 +285,19 @@ export default function QuizPage() {
               {current.shuffled.map((opt, i) => {
                 const isCorrect = i === current.correctIndex;
                 const isPicked = i === picked;
-                let state = "border-white/10 bg-white/[0.04] hover:bg-white/[0.09] hover:border-amber-400/50 active:scale-[0.98]";
+                let state = "border-[#600B0D]/10 bg-white hover:bg-[#600B0D]/5 hover:border-[#600B0D]/40 active:scale-[0.98]";
                 if (answered) {
-                  if (isCorrect) state = "border-emerald-400 bg-emerald-500/20 quiz-glow-ok";
-                  else if (isPicked) state = "border-rose-400 bg-rose-500/20 quiz-shake";
-                  else state = "border-white/5 bg-white/[0.02] opacity-40";
+                  if (isCorrect) state = "border-emerald-500 bg-emerald-50 quiz-glow-ok";
+                  else if (isPicked) state = "border-rose-500 bg-rose-50 quiz-shake";
+                  else state = "border-[#600B0D]/5 bg-white/50 opacity-40";
                 }
                 return (
                   <button key={i} disabled={answered} onClick={() => answer(i)}
                     className={`group flex items-center gap-4 text-right rounded-2xl border-2 p-4 sm:p-6 min-h-[84px] transition-all duration-200 ${state}`}>
                     <span className={`shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-xl grid place-items-center font-display font-black text-xl ${
-                      answered && isCorrect ? "bg-emerald-400 text-emerald-950"
-                      : answered && isPicked ? "bg-rose-400 text-rose-950"
-                      : "bg-white/10 text-amber-300 group-hover:bg-amber-400 group-hover:text-black"}`}>
+                      answered && isCorrect ? "bg-emerald-500 text-white"
+                      : answered && isPicked ? "bg-rose-500 text-white"
+                      : "bg-[#600B0D]/10 text-[#600B0D] group-hover:bg-[#600B0D] group-hover:text-white"}`}>
                       {answered && isCorrect ? <Check className="w-6 h-6" />
                         : answered && isPicked ? <X className="w-6 h-6" /> : LETTERS[i]}
                     </span>
@@ -310,23 +310,23 @@ export default function QuizPage() {
             {/* النتيجة والشرح */}
             {answered && (
               <div className={`mt-6 rounded-2xl border p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4 quiz-pop ${
-                picked === current.correctIndex ? "border-emerald-400/40 bg-emerald-500/10" : "border-rose-400/40 bg-rose-500/10"}`}>
+                picked === current.correctIndex ? "border-emerald-500/30 bg-emerald-50" : "border-rose-500/30 bg-rose-50"}`}>
                 <div className="flex-1">
                   <p className="font-display font-extrabold text-xl sm:text-2xl mb-1">
                     {picked === current.correctIndex ? "إجابة صحيحة!"
                       : picked === -1 ? "انتهى الوقت!" : "إجابة خاطئة"}
-                    {gain !== null && <span className="text-amber-300 mr-3 tabular-nums">+{gain}</span>}
+                    {gain !== null && <span className="text-[#600B0D] mr-3 tabular-nums">+{gain}</span>}
                   </p>
-                  <p className="text-white/75 text-base sm:text-lg">
-                    <Brain className="inline w-5 h-5 ml-1 text-amber-300 -mt-1" />
+                  <p className="text-[#2B0A0B]/75 text-base sm:text-lg">
+                    <Brain className="inline w-5 h-5 ml-1 text-[#600B0D] -mt-1" />
                     {current.note}
                   </p>
                 </div>
                 <button onClick={next}
-                  className="shrink-0 inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 text-black font-bold text-lg px-6 py-4 hover:bg-amber-300 active:scale-95 transition relative overflow-hidden">
+                  className="shrink-0 inline-flex items-center justify-center gap-2 rounded-xl bg-[#600B0D] text-white font-bold text-lg px-6 py-4 hover:bg-[#7A1518] active:scale-95 transition relative overflow-hidden">
                   {idx + 1 >= round.length ? "عرض النتيجة" : "السؤال التالي"}
                   <ChevronLeft className="w-5 h-5" />
-                  <span className="absolute bottom-0 right-0 h-1 bg-black/30 quiz-countdown" style={{ animationDuration: `${AUTO_NEXT_MS}ms` }} />
+                  <span className="absolute bottom-0 right-0 h-1 bg-white/40 quiz-countdown" style={{ animationDuration: `${AUTO_NEXT_MS}ms` }} />
                 </button>
               </div>
             )}
@@ -352,13 +352,14 @@ function Welcome({ name, setName, onStart, board, onClear }: {
   return (
     <div className="max-w-6xl mx-auto grid lg:grid-cols-[1.3fr_1fr] gap-8 lg:gap-12 items-center pt-4 lg:pt-12">
       <div className="quiz-pop">
-        <span className="inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-4 py-1.5 text-amber-200 text-sm mb-6">
+        <img src="/ghirass/logo.png" alt="فريق غراس التطوعي" className="h-28 sm:h-36 w-auto mb-8 quiz-float" />
+        <span className="inline-flex items-center gap-2 rounded-full border border-[#600B0D]/20 bg-[#600B0D]/5 px-4 py-1.5 text-[#600B0D] text-sm mb-6">
           <Zap className="w-4 h-4" /> 10 أسئلة · 20 ثانية لكل سؤال
         </span>
         <h1 className="font-display font-black text-5xl sm:text-6xl lg:text-7xl leading-[1.1] mb-5">
           هل أنت <span className="quiz-gradient-text">خبير تقنية</span>؟
         </h1>
-        <p className="text-white/65 text-lg sm:text-xl mb-8 max-w-xl leading-relaxed">
+        <p className="text-[#2B0A0B]/65 text-lg sm:text-xl mb-8 max-w-xl leading-relaxed">
           أسئلة في الذكاء الاصطناعي، الأمن السيبراني، البرمجة، الشبكات والجوالات.
           أجب بسرعة لتكسب نقاطاً أكثر، واجمع سلسلة إجابات صحيحة لمكافأة إضافية!
         </p>
@@ -366,21 +367,21 @@ function Welcome({ name, setName, onStart, board, onClear }: {
           className="flex flex-col sm:flex-row gap-3 max-w-xl">
           <input value={name} onChange={(e) => setName(e.target.value)} maxLength={24}
             placeholder="اكتب اسمك (اختياري)"
-            className="flex-1 rounded-2xl bg-white/[0.06] border-2 border-white/10 focus:border-amber-400 outline-none px-5 py-4 text-lg placeholder:text-white/35 select-text" />
+            className="flex-1 rounded-2xl bg-white border-2 border-[#600B0D]/10 focus:border-[#600B0D] outline-none px-5 py-4 text-lg placeholder:text-[#2B0A0B]/35 select-text" />
           <button type="submit"
-            className="quiz-pulse whitespace-nowrap inline-flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-l from-amber-300 to-amber-500 text-black font-display font-black text-xl px-8 py-4 hover:brightness-110 active:scale-95 transition">
-            <Play className="w-6 h-6 fill-black" /> ابدأ التحدّي
+            className="quiz-pulse whitespace-nowrap inline-flex items-center justify-center gap-3 rounded-2xl bg-[#600B0D] text-white font-display font-black text-xl px-8 py-4 hover:brightness-110 active:scale-95 transition">
+            <Play className="w-6 h-6 fill-white" /> ابدأ التحدّي
           </button>
         </form>
         <div className="grid grid-cols-3 gap-3 mt-10 max-w-xl">
           {[
-            { k: "سهل", v: "100", c: "text-emerald-300" },
-            { k: "متوسط", v: "200", c: "text-sky-300" },
-            { k: "صعب", v: "300", c: "text-rose-300" },
+            { k: "سهل", v: "100", c: "text-emerald-700" },
+            { k: "متوسط", v: "200", c: "text-sky-700" },
+            { k: "صعب", v: "300", c: "text-rose-700" },
           ].map((x) => (
-            <div key={x.k} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
+            <div key={x.k} className="rounded-2xl border border-[#600B0D]/10 bg-white/80 p-4 text-center">
               <p className={`font-display font-black text-2xl ${x.c}`}>{x.v}</p>
-              <p className="text-white/50 text-sm">نقطة · {x.k}</p>
+              <p className="text-[#2B0A0B]/50 text-sm">نقطة · {x.k}</p>
             </div>
           ))}
         </div>
@@ -401,12 +402,12 @@ function Result({ name, score, correct, total, rank, board, lastAt, onAgain, onH
     <div className="max-w-6xl mx-auto grid lg:grid-cols-[1.3fr_1fr] gap-8 lg:gap-12 items-start pt-4 lg:pt-8">
       {pct >= 50 && <Confetti />}
       <div className="text-center lg:text-right quiz-pop">
-        <div className="inline-grid place-items-center w-24 h-24 rounded-3xl bg-gradient-to-br from-amber-300 to-amber-600 mb-6 quiz-float">
-          <Trophy className="w-12 h-12 text-black" />
+        <div className="inline-grid place-items-center w-24 h-24 rounded-3xl bg-gradient-to-br from-[#8E2326] to-[#600B0D] mb-6 quiz-float">
+          <Trophy className="w-12 h-12 text-white" />
         </div>
-        <p className="text-white/60 text-xl mb-1">أحسنت يا {name}</p>
+        <p className="text-[#2B0A0B]/60 text-xl mb-1">أحسنت يا {name}</p>
         <h2 className="font-display font-black text-4xl sm:text-6xl mb-3 quiz-gradient-text">{r.title}</h2>
-        <p className="text-white/70 text-lg sm:text-xl mb-8">{r.sub}</p>
+        <p className="text-[#2B0A0B]/70 text-lg sm:text-xl mb-8">{r.sub}</p>
 
         <div className="grid grid-cols-3 gap-3 mb-8">
           <Stat label="النقاط" value={score.toLocaleString("en")} />
@@ -416,15 +417,15 @@ function Result({ name, score, correct, total, rank, board, lastAt, onAgain, onH
 
         <div className="flex flex-col sm:flex-row gap-3 lg:justify-start justify-center">
           <button onClick={onAgain}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-400 text-black font-display font-black text-xl px-8 py-4 hover:bg-amber-300 active:scale-95 transition">
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#600B0D] text-white font-display font-black text-xl px-8 py-4 hover:bg-[#7A1518] active:scale-95 transition">
             <RotateCcw className="w-5 h-5" /> العب مرة أخرى
           </button>
           <button onClick={onHome}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-white/15 font-bold text-lg px-8 py-4 hover:bg-white/10 transition">
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-[#600B0D]/15 font-bold text-lg px-8 py-4 hover:bg-[#600B0D]/5 transition">
             الزائر التالي
           </button>
         </div>
-        <p className="text-white/35 text-sm mt-6">ستعود الشاشة للبداية تلقائياً بعد قليل</p>
+        <p className="text-[#2B0A0B]/35 text-sm mt-6">ستعود الشاشة للبداية تلقائياً بعد قليل</p>
       </div>
 
       <Leaderboard board={board} highlightAt={lastAt} />
@@ -436,32 +437,32 @@ function Leaderboard({ board, highlightAt, onClear }: {
   board: ScoreEntry[]; highlightAt?: number | null; onClear?: () => void;
 }) {
   const top = board.slice(0, 8);
-  const medal = ["text-amber-300", "text-slate-300", "text-orange-400"];
+  const medal = ["text-[#B8860B]", "text-slate-400", "text-orange-700"];
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/[0.04] backdrop-blur p-5 sm:p-6 quiz-pop">
+    <div className="rounded-3xl border border-[#600B0D]/10 bg-white backdrop-blur shadow-[0_20px_50px_-25px_rgba(96,11,13,.35)] p-5 sm:p-6 quiz-pop">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-display font-extrabold text-xl flex items-center gap-2">
-          <Medal className="w-6 h-6 text-amber-300" /> لوحة الأبطال
+          <Medal className="w-6 h-6 text-[#600B0D]" /> لوحة الأبطال
         </h3>
         {onClear && board.length > 0 && (
           <button onClick={onClear} aria-label="مسح النتائج"
-            className="text-white/25 hover:text-rose-300 p-1.5 rounded-lg transition">
+            className="text-[#2B0A0B]/25 hover:text-rose-700 p-1.5 rounded-lg transition">
             <Trash2 className="w-4 h-4" />
           </button>
         )}
       </div>
       {top.length === 0 ? (
-        <p className="text-white/45 text-center py-10">كن أول من يسجّل اسمه هنا!</p>
+        <p className="text-[#2B0A0B]/45 text-center py-10">كن أول من يسجّل اسمه هنا!</p>
       ) : (
         <ol className="space-y-2">
           {top.map((e, i) => (
             <li key={e.at}
               className={`flex items-center gap-3 rounded-xl px-3 py-2.5 ${
-                e.at === highlightAt ? "bg-amber-400/20 border border-amber-400/50" : "bg-white/[0.03]"}`}>
-              <span className={`w-8 text-center font-display font-black text-lg ${medal[i] ?? "text-white/40"}`}>{i + 1}</span>
+                e.at === highlightAt ? "bg-[#600B0D]/10 border border-[#600B0D]/40" : "bg-white/80"}`}>
+              <span className={`w-8 text-center font-display font-black text-lg ${medal[i] ?? "text-[#2B0A0B]/40"}`}>{i + 1}</span>
               <span className="flex-1 truncate font-semibold" dir="auto">{e.name}</span>
-              <span className="text-white/40 text-sm tabular-nums">{e.correct}/{e.total}</span>
-              <span className="font-display font-black tabular-nums text-amber-200 w-16 text-left">{e.score}</span>
+              <span className="text-[#2B0A0B]/40 text-sm tabular-nums">{e.correct}/{e.total}</span>
+              <span className="font-display font-black tabular-nums text-[#600B0D] w-16 text-left">{e.score}</span>
             </li>
           ))}
         </ol>
@@ -474,11 +475,11 @@ function Leaderboard({ board, highlightAt, onClear }: {
 function TimerRing({ left }: { left: number }) {
   const r = 26, c = 2 * Math.PI * r;
   const frac = left / QUESTION_SECONDS;
-  const color = left <= 5 ? "#fb7185" : left <= 10 ? "#fbbf24" : "#34d399";
+  const color = left <= 5 ? "#e11d48" : left <= 10 ? "#d97706" : "#059669";
   return (
     <div className={`relative w-16 h-16 ${left <= 5 ? "quiz-shake-soft" : ""}`} aria-label={`متبقي ${left} ثانية`}>
       <svg viewBox="0 0 64 64" className="w-full h-full -rotate-90">
-        <circle cx="32" cy="32" r={r} stroke="rgba(255,255,255,.1)" strokeWidth="6" fill="none" />
+        <circle cx="32" cy="32" r={r} stroke="rgba(96,11,13,.1)" strokeWidth="6" fill="none" />
         <circle cx="32" cy="32" r={r} stroke={color} strokeWidth="6" fill="none" strokeLinecap="round"
           strokeDasharray={c} strokeDashoffset={c * (1 - frac)} style={{ transition: "stroke-dashoffset 1s linear, stroke .3s" }} />
       </svg>
@@ -491,7 +492,7 @@ function TimerRing({ left }: { left: number }) {
 
 function Chip({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <span className={`inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 ${className}`}>
+    <span className={`inline-flex items-center gap-2 rounded-full border border-[#600B0D]/10 bg-white px-4 py-2 ${className}`}>
       {children}
     </span>
   );
@@ -499,9 +500,9 @@ function Chip({ children, className = "" }: { children: React.ReactNode; classNa
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 sm:p-5">
-      <p className="font-display font-black text-2xl sm:text-4xl text-amber-300 tabular-nums">{value}</p>
-      <p className="text-white/55 text-sm sm:text-base mt-1">{label}</p>
+    <div className="rounded-2xl border border-[#600B0D]/10 bg-white p-4 sm:p-5">
+      <p className="font-display font-black text-2xl sm:text-4xl text-[#600B0D] tabular-nums">{value}</p>
+      <p className="text-[#2B0A0B]/55 text-sm sm:text-base mt-1">{label}</p>
     </div>
   );
 }
@@ -509,7 +510,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 function IconBtn({ children, onClick, label }: { children: React.ReactNode; onClick: () => void; label: string }) {
   return (
     <button onClick={onClick} aria-label={label} title={label}
-      className="w-11 h-11 grid place-items-center rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/10 transition">
+      className="w-11 h-11 grid place-items-center rounded-xl border border-[#600B0D]/10 bg-white hover:bg-[#600B0D]/5 transition">
       {children}
     </button>
   );
@@ -518,8 +519,8 @@ function IconBtn({ children, onClick, label }: { children: React.ReactNode; onCl
 function Backdrop() {
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden">
-      <div className="absolute -top-40 -right-40 w-[36rem] h-[36rem] rounded-full bg-amber-500/20 blur-[120px] quiz-drift" />
-      <div className="absolute -bottom-40 -left-40 w-[32rem] h-[32rem] rounded-full bg-indigo-500/20 blur-[120px] quiz-drift-rev" />
+      <div className="absolute -top-40 -right-40 w-[36rem] h-[36rem] rounded-full bg-[#600B0D]/10 blur-[120px] quiz-drift" />
+      <div className="absolute -bottom-40 -left-40 w-[32rem] h-[32rem] rounded-full bg-[#C9A27A]/25 blur-[120px] quiz-drift-rev" />
       <div className="absolute inset-0 quiz-grid" />
     </div>
   );
@@ -531,7 +532,7 @@ function Confetti() {
       left: Math.random() * 100,
       delay: Math.random() * 1.5,
       dur: 2.5 + Math.random() * 2,
-      color: ["#fbbf24", "#f59e0b", "#34d399", "#60a5fa", "#f472b6", "#ffffff"][Math.floor(Math.random() * 6)],
+      color: ["#600B0D", "#A8383B", "#C9A27A", "#059669", "#E8C9A0", "#8E2326"][Math.floor(Math.random() * 6)],
       size: 6 + Math.random() * 8,
     })),
   ).current;
@@ -547,8 +548,8 @@ function Confetti() {
 }
 
 const QUIZ_CSS = `
-.quiz-gradient-text{background:linear-gradient(90deg,#fde68a,#f59e0b,#fde68a);background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:quiz-shine 4s linear infinite}
-.quiz-grid{background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(ellipse at center,#000 30%,transparent 75%)}
+.quiz-gradient-text{background:linear-gradient(90deg,#600B0D,#A8383B,#600B0D);background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:quiz-shine 4s linear infinite}
+.quiz-grid{background-image:linear-gradient(rgba(96,11,13,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(96,11,13,.05) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(ellipse at center,#000 30%,transparent 75%)}
 .quiz-pop{animation:quiz-pop .45s cubic-bezier(.2,.9,.3,1.2) both}
 .quiz-shake{animation:quiz-shake .45s}
 .quiz-shake-soft{animation:quiz-shake .6s infinite}
@@ -562,7 +563,7 @@ const QUIZ_CSS = `
 @keyframes quiz-shine{to{background-position:200% center}}
 @keyframes quiz-pop{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
 @keyframes quiz-shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
-@keyframes quiz-pulse{0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,.5)}50%{box-shadow:0 0 0 14px rgba(251,191,36,0)}}
+@keyframes quiz-pulse{0%,100%{box-shadow:0 0 0 0 rgba(96,11,13,.35)}50%{box-shadow:0 0 0 14px rgba(96,11,13,0)}}
 @keyframes quiz-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
 @keyframes quiz-drift{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,40px)}}
 @keyframes quiz-countdown{from{width:0}to{width:100%}}
