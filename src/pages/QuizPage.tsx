@@ -209,7 +209,6 @@ export default function QuizPage() {
   }, [phase, answered, answer, next]);
 
   const clearBoard = () => {
-    if (!window.confirm("هل تريد مسح لوحة المتصدرين بالكامل؟")) return;
     saveBoard([]);
     setBoard([]);
   };
@@ -436,6 +435,12 @@ function Result({ name, score, correct, total, rank, board, lastAt, onAgain, onH
 function Leaderboard({ board, highlightAt, onClear }: {
   board: ScoreEntry[]; highlightAt?: number | null; onClear?: () => void;
 }) {
+  const [confirming, setConfirming] = useState(false);
+  useEffect(() => {
+    if (!confirming) return;
+    const t = setTimeout(() => setConfirming(false), 4000);
+    return () => clearTimeout(t);
+  }, [confirming]);
   const top = board.slice(0, 8);
   const medal = ["text-[#B8860B]", "text-slate-400", "text-orange-700"];
   return (
@@ -445,9 +450,12 @@ function Leaderboard({ board, highlightAt, onClear }: {
           <Medal className="w-6 h-6 text-[#600B0D]" /> لوحة الأبطال
         </h3>
         {onClear && board.length > 0 && (
-          <button onClick={onClear} aria-label="مسح النتائج"
-            className="text-[#2B0A0B]/25 hover:text-rose-700 p-1.5 rounded-lg transition">
+          <button aria-label="مسح النتائج"
+            onClick={() => { if (confirming) { setConfirming(false); onClear(); } else setConfirming(true); }}
+            className={`inline-flex items-center gap-1.5 text-sm p-1.5 rounded-lg transition ${
+              confirming ? "bg-rose-50 text-rose-700 px-3" : "text-[#2B0A0B]/25 hover:text-rose-700"}`}>
             <Trash2 className="w-4 h-4" />
+            {confirming && "اضغط مرة أخرى للمسح"}
           </button>
         )}
       </div>
