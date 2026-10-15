@@ -120,7 +120,7 @@ const PV_CATS = [
 
 // ألوان جاهزة للمصمم المبسط (باقة برو)
 const PRO_COLOR_PRESETS = [
-  { name: "أزرق وصل", primary: "#2563eb", secondary: "#f59e0b" },
+  { name: "أزرق كلاسيكي", primary: "#2563eb", secondary: "#f59e0b" },
   { name: "تركواز هادئ", primary: "#0f766e", secondary: "#f59e0b" },
   { name: "أسود أنيق", primary: "#111827", secondary: "#f59e0b" },
 ];
@@ -968,7 +968,7 @@ export default function OnlineStoreSection() {
                         )}
                       </div>
 
-                      {/* حسابات التواصل + شارة وصل */}
+                      {/* حسابات التواصل + شارة PIXA */}
                       <div className="bg-card rounded-xl border overflow-hidden">
                         <button type="button" onClick={() => setOpenPanel(openPanel === 'socials' ? null : 'socials')}
                           className="w-full flex items-center justify-between p-4 text-right">
@@ -1012,10 +1012,10 @@ export default function OnlineStoreSection() {
                                   className="mt-1 h-9 font-mono text-xs" dir="ltr" placeholder={f.ph} />
                               </div>
                             ))}
-                            {/* حصري لماكس: إخفاء شارة وصل */}
+                            {/* حصري لماكس: إخفاء شارة PIXA */}
                             <div className="flex items-center justify-between rounded-xl border p-3 bg-muted/20 mt-2">
                               <div>
-                                <p className="text-sm font-semibold">إخفاء "صُنع بواسطة وصل"</p>
+                                <p className="text-sm font-semibold">إخفاء "صُنع بواسطة PIXA"</p>
                                 <p className="text-[11px] text-muted-foreground">ميزة حصرية لباقة ماكس — متجرك بهويتك بالكامل</p>
                               </div>
                               <Switch checked={!!extras.hide_wasel_badge}
@@ -1849,7 +1849,7 @@ export default function OnlineStoreSection() {
                           <span className="text-[11px] text-white font-bold px-3 py-1.5 rounded-lg" style={{ background: '#25D366' }}>واتساب</span>
                         )}
                         {extras.customer_service?.phone && (
-                          <span className="text-[11px] text-white font-bold px-3 py-1.5 rounded-lg bg-primary">{extras.customer_service.phone}</span>
+                          <span className="text-[11px] text-primary-foreground font-bold px-3 py-1.5 rounded-lg bg-primary">{extras.customer_service.phone}</span>
                         )}
                       </div>
                       {extras.customer_service?.hours && <p className="text-[11px] text-muted-foreground mt-3">{extras.customer_service.hours}</p>}
