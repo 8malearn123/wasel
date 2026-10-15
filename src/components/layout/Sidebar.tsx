@@ -215,11 +215,11 @@ export function Sidebar() {
               {logoUrl ? (
                 <img src={logoUrl} alt="logo" className="w-10 h-10 rounded-xl object-cover shadow-glow" />
               ) : (
-                <img src="/brand/app-icon.svg" alt="PIXA" className="w-10 h-10 rounded-xl" />
+                <img src="/brand/app-icon.svg" alt="وصل" className="w-10 h-10 rounded-xl shadow-glow" />
               )}
               <div className="flex flex-col gap-0.5">
-                {/* The sidebar is Midnight in both themes, so the light wordmark always */}
-                <img src="/brand/wordmark-white.svg" alt="PIXA" className="h-5 w-auto object-contain object-right" />
+                <img src="/brand/wordmark-ink.svg" alt="وصل" className="h-5 w-auto object-contain object-right dark:hidden" />
+                <img src="/brand/wordmark-white.svg" alt="وصل" className="h-5 w-auto object-contain object-right hidden dark:block" />
                 <span className="text-[10px] text-sidebar-foreground/50 tracking-wider">نظام محلات الجوالات</span>
               </div>
             </motion.div>
@@ -230,7 +230,7 @@ export function Sidebar() {
           logoUrl ? (
             <img src={logoUrl} alt="logo" className="w-10 h-10 rounded-xl object-cover shadow-glow mx-auto" />
           ) : (
-            <img src="/brand/app-icon.svg" alt="PIXA" className="w-10 h-10 rounded-xl mx-auto" />
+            <img src="/brand/app-icon.svg" alt="وصل" className="w-10 h-10 rounded-xl shadow-glow mx-auto" />
           )
         )}
       </div>

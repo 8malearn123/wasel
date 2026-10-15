@@ -88,7 +88,7 @@ export interface DesignExtras {
     snapchat?: string; tiktok?: string; youtube?: string; linkedin?: string;
     facebook?: string; email?: string; phone?: string; website?: string; maps?: string;
   };
-  // إخفاء شارة "صنع بواسطة PIXA" — متاح لباقة ماكس فقط
+  // إخفاء شارة "صنع بواسطة وصل" — متاح لباقة ماكس فقط
   hide_wasel_badge?: boolean;
   // دومين خاص للمتجر
   custom_domain?: { domain?: string; status?: 'pending' | 'active'; added_at?: string };

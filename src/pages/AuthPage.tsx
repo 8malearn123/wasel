@@ -143,9 +143,9 @@ export default function AuthPage() {
       >
         {/* Logo */}
         <div className="text-center mb-8">
-          <img src="/brand/app-icon.svg" alt="PIXA" className="w-16 h-16 rounded-2xl mx-auto mb-4 shadow-glow" />
-          <img src="/brand/wordmark-ink.svg" alt="PIXA" className="h-8 w-auto mx-auto dark:hidden" />
-          <img src="/brand/wordmark-white.svg" alt="PIXA" className="h-8 w-auto mx-auto hidden dark:block" />
+          <img src="/brand/app-icon.svg" alt="وصل" className="w-16 h-16 rounded-2xl mx-auto mb-4 shadow-glow" />
+          <img src="/brand/wordmark-ink.svg" alt="وصل" className="h-8 w-auto mx-auto dark:hidden" />
+          <img src="/brand/wordmark-white.svg" alt="وصل" className="h-8 w-auto mx-auto hidden dark:block" />
           <p className="text-muted-foreground mt-2">نظام محلات الجوالات</p>
         </div>
 

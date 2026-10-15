@@ -25,175 +25,176 @@
   unicode-range: U+0030-0039;
 }
 
-/* نظام تصميم PIXA — هوية «إشارة / Signal» · Retail Energy */
+/* نظام تصميم وصل — مبني بالكامل على دليل الهوية الرسمي v1.0 */
 
 @layer base {
   /* ===========================================================
-     هوية PIXA · Direction D — Signal
-     ليلي Midnight #1A1633 (50%) — الخلفيات الداكنة والنصوص
-     إشارة Signal  #F04E1A (15%) — البكسل والأزرار، ونص داكن عليه
-     ورقي Paper    #FBF8F5 (25%) — الخلفيات الفاتحة
-     خوخي Peach    #FFE6DA (5%)  — التظليل وخلفيات العروض
-     بنفسجي Mauve  #6F6987 (5%)  — النصوص الثانوية
+     هوية وصل الرسمية · Brand Identity v1.0
+     أزرق وصل  #2F6BFF · الحبر #12151B · رمادي #6B7280
+     نجاح/مدفوع #16A34A · السطح #F6F7F9 · الحدود #E6E8EB
+     لا يُستخدم أي لون خارج هذه اللوحة.
      =========================================================== */
   :root {
     /* ألوان الهوية الخام — المرجع الوحيد لبقية التوكنات */
-    --brand-midnight: 248 40% 14%;   /* #1A1633 */
-    --brand-signal: 15 88% 52%;      /* #F04E1A */
-    --brand-paper: 30 43% 97%;       /* #FBF8F5 */
-    --brand-peach: 19 100% 93%;      /* #FFE6DA */
-    --brand-mauve: 252 13% 47%;      /* #6F6987 */
-    /* إشارة أعمق للنص فقط: البرتقالي الأصلي على الورقي 3.4:1، وهذا 5.2:1 */
-    --brand-signal-deep: 17 88% 40%; /* #C2410C */
-    /* الأخضر يبقى للدفع والنجاح فقط — معنى لا يحمله أي لون في الهوية */
+    --brand-blue: 223 100% 59%;      /* #2F6BFF */
+    --brand-ink: 220 20% 9%;         /* #12151B */
+    --brand-grey: 220 9% 46%;        /* #6B7280 */
     --brand-green: 142 76% 36%;      /* #16A34A */
-    --brand-line: 28 25% 90%;        /* #ECE5DF */
-    --brand-sand: 27 33% 94%;        /* #F4EEE9 */
+    --brand-surface: 220 20% 97%;    /* #F6F7F9 */
+    --brand-border: 216 11% 91%;     /* #E6E8EB */
 
     /* الأسطح والنصوص */
-    --background: var(--brand-paper);
-    --foreground: var(--brand-midnight);
+    --background: var(--brand-surface);
+    --foreground: var(--brand-ink);
 
     --card: 0 0% 100%;
-    --card-foreground: var(--brand-midnight);
+    --card-foreground: var(--brand-ink);
 
     --popover: 0 0% 100%;
-    --popover-foreground: var(--brand-midnight);
+    --popover-foreground: var(--brand-ink);
 
-    /* الأساسي — إشارة: الأزرار والتأكيد، والنص عليها ليلي كما في الهوية */
-    --primary: var(--brand-signal);
-    --primary-foreground: var(--brand-midnight);
-    --primary-text: var(--brand-signal-deep);
+    /* الأساسي — أزرق وصل: الأزرار والروابط والتأكيد */
+    --primary: var(--brand-blue);
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: var(--brand-sand);
-    --secondary-foreground: var(--brand-midnight);
+    /* الثانوي — سطح رمادي فاتح */
+    --secondary: var(--brand-surface);
+    --secondary-foreground: var(--brand-ink);
 
-    --muted: var(--brand-sand);
-    --muted-foreground: var(--brand-mauve);
+    /* الصامت — الأوصاف الثانوية */
+    --muted: var(--brand-surface);
+    --muted-foreground: var(--brand-grey);
 
-    /* المميز — خوخي للتظليل وخلفيات العروض */
-    --accent: var(--brand-peach);
-    --accent-foreground: var(--brand-midnight);
+    /* المميز — درجة زرقاء خفيفة من نفس الأساسي */
+    --accent: 223 100% 96%;
+    --accent-foreground: 223 100% 45%;
 
-    /* الخطر — الليلي، أقوى تأكيد داخل اللوحة */
-    --destructive: var(--brand-midnight);
-    --destructive-foreground: var(--brand-paper);
+    /* الخطر — الحبر (اللوحة لا تحوي أحمر، والحبر أقوى تأكيد متاح) */
+    --destructive: var(--brand-ink);
+    --destructive-foreground: 0 0% 100%;
 
+    /* النجاح / مدفوع */
     --success: var(--brand-green);
     --success-foreground: 0 0% 100%;
 
-    --warning: var(--brand-mauve);
+    /* التحذير — رمادي الهوية */
+    --warning: var(--brand-grey);
     --warning-foreground: 0 0% 100%;
 
-    --border: var(--brand-line);
-    --input: var(--brand-line);
-    --ring: var(--brand-signal);
+    --border: var(--brand-border);
+    --input: var(--brand-border);
+    --ring: var(--brand-blue);
 
     --radius: 0.75rem;
 
-    /* الشريط الجانبي — ليلي، فالهوية نصفها ليلي */
-    --sidebar-background: var(--brand-midnight);
-    --sidebar-foreground: 253 21% 75%;
-    --sidebar-primary: var(--brand-signal);
-    --sidebar-primary-foreground: var(--brand-midnight);
-    --sidebar-accent: 247 37% 23%;
-    --sidebar-accent-foreground: var(--brand-paper);
-    --sidebar-border: 247 37% 21%;
-    --sidebar-ring: var(--brand-signal);
+    /* الشريط الجانبي */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: var(--brand-grey);
+    --sidebar-primary: var(--brand-blue);
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: var(--brand-surface);
+    --sidebar-accent-foreground: var(--brand-ink);
+    --sidebar-border: var(--brand-border);
+    --sidebar-ring: var(--brand-blue);
 
     /* توكنات دلالية إضافية */
     --surface-elevated: 0 0% 100%;
-    --surface-sunken: var(--brand-sand);
-    --text-muted: var(--brand-mauve);
+    --surface-sunken: var(--brand-surface);
+    --text-muted: var(--brand-grey);
 
-    /* الرسوم البيانية — من لوحة الهوية */
-    --chart-1: var(--brand-signal);
-    --chart-2: var(--brand-midnight);
-    --chart-3: var(--brand-mauve);
+    /* الرسوم البيانية — تدرجات من لوحة الهوية فقط */
+    --chart-1: var(--brand-blue);
+    --chart-2: var(--brand-ink);
+    --chart-3: var(--brand-grey);
     --chart-4: var(--brand-green);
-    --chart-5: 17 88% 73%;
-    --chart-6: 258 23% 83%;
+    --chart-5: 223 100% 76%;
+    --chart-6: 220 12% 72%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(15 88% 56%) 0%, hsl(15 88% 48%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(19 100% 93%) 0%, hsl(19 100% 88%) 100%);
-    --gradient-surface: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(30 43% 97%) 100%);
+    /* تدرّجات مسطّحة من الأزرق نفسه — الهوية تقنية بلا زخرفة */
+    --gradient-primary: linear-gradient(135deg, hsl(223 100% 62%) 0%, hsl(223 100% 47%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(223 100% 66%) 0%, hsl(223 100% 55%) 100%);
+    --gradient-surface: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(220 20% 97%) 100%);
 
-    --shadow-sm: 0 1px 2px 0 hsl(248 40% 14% / 0.06);
-    --shadow-md: 0 4px 6px -1px hsl(248 40% 14% / 0.08), 0 2px 4px -2px hsl(248 40% 14% / 0.05);
-    --shadow-lg: 0 10px 15px -3px hsl(248 40% 14% / 0.08), 0 4px 6px -4px hsl(248 40% 14% / 0.05);
-    --shadow-xl: 0 20px 25px -5px hsl(248 40% 14% / 0.1), 0 8px 10px -6px hsl(248 40% 14% / 0.07);
-    --shadow-glow: 0 0 0 4px hsl(15 88% 52% / 0.18);
+    --shadow-sm: 0 1px 2px 0 hsl(220 20% 9% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(220 20% 9% / 0.07), 0 2px 4px -2px hsl(220 20% 9% / 0.05);
+    --shadow-lg: 0 10px 15px -3px hsl(220 20% 9% / 0.07), 0 4px 6px -4px hsl(220 20% 9% / 0.05);
+    --shadow-xl: 0 20px 25px -5px hsl(220 20% 9% / 0.09), 0 8px 10px -6px hsl(220 20% 9% / 0.07);
+    --shadow-glow: 0 0 0 4px hsl(223 100% 59% / 0.14);
   }
 
-  /* على الداكن — الليلي خلفية، والورقي نص */
+  /* نسخة ON DARK من دليل الهوية — خلفية الحبر #12151B */
   .dark {
+    --brand-blue: 223 100% 64%;
+    --brand-ink: 220 20% 9%;
+    --brand-grey: 220 10% 62%;
     --brand-green: 142 62% 45%;
+    --brand-surface: 220 20% 97%;
+    --brand-border: 220 14% 20%;
 
-    --background: var(--brand-midnight);
-    --foreground: var(--brand-paper);
+    --background: 220 20% 9%;
+    --foreground: 220 20% 97%;
 
-    --card: 248 39% 19%;
-    --card-foreground: var(--brand-paper);
+    --card: 220 18% 12%;
+    --card-foreground: 220 20% 97%;
 
-    --popover: 248 39% 19%;
-    --popover-foreground: var(--brand-paper);
+    --popover: 220 18% 12%;
+    --popover-foreground: 220 20% 97%;
 
-    --primary: var(--brand-signal);
-    --primary-foreground: var(--brand-midnight);
-    /* على الليلي يقرأ البرتقالي الأصلي جيدًا (5.7:1) */
-    --primary-text: var(--brand-signal);
+    --primary: var(--brand-blue);
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 247 37% 23%;
-    --secondary-foreground: var(--brand-paper);
+    --secondary: 220 16% 16%;
+    --secondary-foreground: 220 20% 94%;
 
-    --muted: 248 38% 20%;
-    --muted-foreground: 252 20% 69%;
+    --muted: 220 16% 15%;
+    --muted-foreground: var(--brand-grey);
 
-    --accent: 247 37% 25%;
-    --accent-foreground: var(--brand-peach);
+    --accent: 223 46% 22%;
+    --accent-foreground: 223 100% 80%;
 
-    --destructive: var(--brand-paper);
-    --destructive-foreground: var(--brand-midnight);
+    /* الخطر على الداكن — معكوس الخلفية (سطح فاتح) لأقصى تأكيد داخل اللوحة */
+    --destructive: 220 20% 97%;
+    --destructive-foreground: 220 20% 9%;
 
     --success: var(--brand-green);
-    --success-foreground: var(--brand-midnight);
+    --success-foreground: 220 20% 9%;
 
-    --warning: 252 20% 69%;
-    --warning-foreground: var(--brand-midnight);
+    --warning: var(--brand-grey);
+    --warning-foreground: 220 20% 9%;
 
-    --border: 248 34% 26%;
-    --input: 248 34% 26%;
-    --ring: var(--brand-signal);
+    --border: var(--brand-border);
+    --input: var(--brand-border);
+    --ring: var(--brand-blue);
 
-    --sidebar-background: 250 44% 11%;
-    --sidebar-foreground: 253 21% 75%;
-    --sidebar-primary: var(--brand-signal);
-    --sidebar-primary-foreground: var(--brand-midnight);
-    --sidebar-accent: 248 38% 18%;
-    --sidebar-accent-foreground: var(--brand-paper);
-    --sidebar-border: 248 34% 18%;
-    --sidebar-ring: var(--brand-signal);
+    --sidebar-background: 220 22% 7%;
+    --sidebar-foreground: var(--brand-grey);
+    --sidebar-primary: var(--brand-blue);
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 16% 14%;
+    --sidebar-accent-foreground: 220 20% 97%;
+    --sidebar-border: 220 14% 16%;
+    --sidebar-ring: var(--brand-blue);
 
-    --surface-elevated: 248 39% 21%;
-    --surface-sunken: 250 44% 11%;
-    --text-muted: 252 20% 69%;
+    --surface-elevated: 220 18% 14%;
+    --surface-sunken: 220 22% 7%;
+    --text-muted: var(--brand-grey);
 
-    --chart-1: var(--brand-signal);
-    --chart-2: var(--brand-paper);
-    --chart-3: 252 20% 69%;
+    --chart-1: var(--brand-blue);
+    --chart-2: 220 20% 92%;
+    --chart-3: var(--brand-grey);
     --chart-4: var(--brand-green);
-    --chart-5: 17 88% 73%;
-    --chart-6: 252 13% 40%;
+    --chart-5: 223 100% 78%;
+    --chart-6: 220 12% 44%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(15 88% 58%) 0%, hsl(15 88% 50%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(247 37% 27%) 0%, hsl(247 37% 22%) 100%);
-    --gradient-surface: linear-gradient(180deg, hsl(248 39% 19%) 0%, hsl(248 40% 14%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(223 100% 64%) 0%, hsl(223 100% 50%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(223 100% 68%) 0%, hsl(223 100% 56%) 100%);
+    --gradient-surface: linear-gradient(180deg, hsl(220 18% 12%) 0%, hsl(220 20% 9%) 100%);
 
-    --shadow-sm: 0 1px 2px 0 hsl(250 50% 4% / 0.4);
-    --shadow-md: 0 4px 6px -1px hsl(250 50% 4% / 0.45), 0 2px 4px -2px hsl(250 50% 4% / 0.4);
-    --shadow-lg: 0 10px 15px -3px hsl(250 50% 4% / 0.5), 0 4px 6px -4px hsl(250 50% 4% / 0.4);
-    --shadow-xl: 0 20px 25px -5px hsl(250 50% 4% / 0.55), 0 8px 10px -6px hsl(250 50% 4% / 0.45);
-    --shadow-glow: 0 0 0 4px hsl(15 88% 52% / 0.25);
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.4);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.45), 0 2px 4px -2px hsl(0 0% 0% / 0.4);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.5), 0 4px 6px -4px hsl(0 0% 0% / 0.4);
+    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.55), 0 8px 10px -6px hsl(0 0% 0% / 0.45);
+    --shadow-glow: 0 0 0 4px hsl(223 100% 64% / 0.22);
   }
 }
 
