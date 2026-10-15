@@ -127,7 +127,7 @@ export function useSubscription() {
         return { error: new Error(error.message) };
       }
 
-      toast.success('تم إرسال طلب تغيير الباقة، وسيتواصل معك فريق وصل');
+      toast.success('تم إرسال طلب تغيير الباقة، وسيتواصل معك فريق PIXA');
       return { error: null };
     } finally {
       setLoading(false);

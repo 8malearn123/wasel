@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  Smartphone, ShoppingCart, Package, Ticket, Store, BarChart3,
+  ShoppingCart, Package, Ticket, Store, BarChart3,
   Building2, Check, Zap, ArrowLeft, ArrowRight, ShieldCheck, Clock,
   Sun, Moon, Languages,
 } from "lucide-react";
@@ -36,10 +36,10 @@ export default function LandingPage() {
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src="/brand/app-icon.svg" alt="وصل" className="w-9 h-9 rounded-xl" />
+            <img src="/brand/app-icon.svg" alt="PIXA" className="w-9 h-9 rounded-xl" />
             <div>
-              <img src="/brand/wordmark-ink.svg" alt="وصل" className="h-4 w-auto dark:hidden" />
-              <img src="/brand/wordmark-white.svg" alt="وصل" className="h-4 w-auto hidden dark:block" />
+              <img src="/brand/wordmark-ink.svg" alt="PIXA" className="h-4 w-auto dark:hidden" />
+              <img src="/brand/wordmark-white.svg" alt="PIXA" className="h-4 w-auto hidden dark:block" />
               <p className="text-[11px] text-muted-foreground mt-0.5">{ar ? "نظام محلات الجوالات" : "Phone Shop System"}</p>
             </div>
           </div>
@@ -190,13 +190,13 @@ export default function LandingPage() {
 
       {/* CTA */}
       <section className="max-w-6xl mx-auto px-6 pb-24">
-        <div className="rounded-3xl bg-gradient-primary p-10 md:p-14 text-center text-white relative overflow-hidden">
+        <div className="rounded-3xl bg-gradient-primary p-10 md:p-14 text-center text-primary-foreground relative overflow-hidden">
           <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
           <div className="absolute -left-10 -bottom-10 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
           <h2 className="text-3xl md:text-4xl font-extrabold mb-4">
             {ar ? "جاهز تنقل محلك للمستوى التالي؟" : "Ready to level up your shop?"}
           </h2>
-          <p className="text-white/85 mb-8 max-w-xl mx-auto">
+          <p className="text-primary-foreground/80 mb-8 max-w-xl mx-auto">
             {ar ? "سجّل الآن وابدأ البيع خلال دقائق — 14 يوماً مجاناً بكل المميزات." : "Sign up now and start selling in minutes — 14 days free with every feature."}
           </p>
           <Button asChild size="lg" variant="secondary" className="h-12 px-8 text-base font-bold">
@@ -209,10 +209,8 @@ export default function LandingPage() {
       <footer className="border-t border-border/60">
         <div className="max-w-6xl mx-auto px-6 py-8 flex items-center justify-between flex-wrap gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-primary flex items-center justify-center">
-              <Smartphone className="w-4 h-4 text-white" />
-            </div>
-            <span>{ar ? "منصة وصل — نظام محلات الجوالات" : "Wasel — Phone Shop System"}</span>
+            <img src="/brand/app-icon.svg" alt="" className="w-7 h-7 rounded-lg" />
+            <span>{ar ? "منصة PIXA — نظام محلات الجوالات" : "PIXA — Phone Shop System"}</span>
           </div>
           <div className="flex items-center gap-4">
             <Link to="/auth" className="hover:text-primary transition-colors">{ar ? "تسجيل الدخول" : "Sign in"}</Link>

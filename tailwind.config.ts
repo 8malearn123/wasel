@@ -87,12 +87,21 @@ export default {
         },
         // ألوان الهوية الخام للحالات التي تحتاج اللون مباشرة
         brand: {
-          blue: "hsl(var(--brand-blue))",
-          ink: "hsl(var(--brand-ink))",
-          grey: "hsl(var(--brand-grey))",
+          midnight: "hsl(var(--brand-midnight))",
+          signal: "hsl(var(--brand-signal))",
+          paper: "hsl(var(--brand-paper))",
+          peach: "hsl(var(--brand-peach))",
+          mauve: "hsl(var(--brand-mauve))",
           green: "hsl(var(--brand-green))",
-          surface: "hsl(var(--brand-surface))",
-          border: "hsl(var(--brand-border))",
+        },
+      },
+      // Signal orange fills buttons, but as small text on Paper it reads at
+      // 3.4:1 — so `text-primary` alone takes a deeper step of it (5.2:1).
+      // Fills, borders and rings keep the brand orange.
+      textColor: {
+        primary: {
+          DEFAULT: "hsl(var(--primary-text))",
+          foreground: "hsl(var(--primary-foreground))",
         },
       },
       borderRadius: {
