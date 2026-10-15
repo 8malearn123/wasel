@@ -94,7 +94,7 @@ function ProductCard3D({
           "group relative w-full rounded-2xl border border-border bg-card p-3 text-start",
           "shadow-[0_1px_2px_rgba(15,23,42,0.06),0_8px_20px_-12px_rgba(15,23,42,0.25)]",
           "transition-[box-shadow,border-color] duration-300",
-          "hover:border-primary/40 hover:shadow-[0_2px_4px_rgba(15,23,42,0.06),0_24px_40px_-18px_rgba(240,78,26,0.4)]",
+          "hover:border-primary/40 hover:shadow-[0_2px_4px_rgba(15,23,42,0.06),0_24px_40px_-18px_rgba(47,107,255,0.45)]",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         )}
       >

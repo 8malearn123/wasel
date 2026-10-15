@@ -218,7 +218,7 @@ export function StoreLayout({ store, pages = [], merchantLegal, designExtras, ch
               <span>صُنع بواسطة</span>
               <a href="https://wasel-alpha.vercel.app" target="_blank" rel="noopener"
                 className="inline-flex items-center gap-1 font-bold text-foreground/80 hover:text-foreground transition-colors">
-                <img src="/brand/app-icon.svg" alt="" className="w-3.5 h-3.5" /> منصة PIXA
+                <img src="/brand/app-icon.svg" alt="وصل" className="w-3.5 h-3.5" /> منصة وصل
               </a>
             </p>
           )}
