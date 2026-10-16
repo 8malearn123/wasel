@@ -59,8 +59,9 @@ export function StoreThemeProvider({ store, children, textColor, extras }: Props
   const fontKey = store.font_family || 'ibm_plex';
   const fontHref = FONT_LINKS[fontKey] || FONT_LINKS.ibm_plex;
   const fontStack = FONT_FAMILY[fontKey] || FONT_FAMILY.ibm_plex;
-  const primary = store.primary_color || '#2F6BFF';
-  const secondary = store.secondary_color || '#12151B';
+  // A store that never chose colours wears the platform's: PIXA Signal on Midnight
+  const primary = store.primary_color || '#F04E1A';
+  const secondary = store.secondary_color || '#1A1633';
 
   useEffect(() => {
     const id = 'store-font-link';
