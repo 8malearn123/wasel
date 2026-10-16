@@ -1,19 +1,18 @@
-name: Apply PIXA colors to demo stores
+name: Restore demo store colors
 
 on:
   workflow_dispatch:
-  # The repository's default branch is not main, so a manual dispatch of a
-  # workflow that only lives on main is not offered — landing this file on
-  # main runs it once instead.
+  # Undoes apply-store-brand (#54/#55). Runs once when this file lands on
+  # main, since the repository's default branch is not main.
   push:
     branches: [main]
-    paths: ['.github/workflows/apply-store-brand.yml']
+    paths: ['.github/workflows/restore-store-colors.yml']
 
 jobs:
   apply:
     runs-on: ubuntu-latest
     steps:
-      - name: Set store primary/secondary to the PIXA palette
+      - name: Put store colours back to what they were before the PIXA change
         env:
           SUPA: https://ynwddyxzypbcftlevuam.supabase.co
           # Public anon key (already committed in .env) — RLS still applies
@@ -21,12 +20,14 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Only the two colour columns change — names, banners, texts and
-          # every other setting the merchant made are left as they are.
-          BODY='{"primary_color": "#F04E1A", "secondary_color": "#1A1633"}'
+          # Only the two colour columns change. The demo-account stores were
+          # seeded by seed-store.yml with teal/gold; the cashier-code store was
+          # never seeded, so it gets the table's column defaults back.
+          SEEDED='{"primary_color": "#0f766e", "secondary_color": "#f59e0b"}'
+          DEFAULTS='{"primary_color": "#6366f1", "secondary_color": "#8b5cf6"}'
 
           apply_merchant() {
-            local TOKEN="$1" LABEL="$2"
+            local TOKEN="$1" LABEL="$2" BODY="$3"
             local MID
             MID=$(curl -sS "$SUPA/rest/v1/merchant_users?select=merchant_id&is_active=eq.true&limit=1" \
               -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN" | jq -r '.[0].merchant_id // empty')
@@ -45,14 +46,14 @@ jobs:
             -H "apikey: $ANON" -H "Authorization: Bearer $ANON" \
             -H "Content-Type: application/json" -d '{"code":"70035"}')
           TOKEN=$(echo "$SESSION" | jq -r '.session.access_token // empty')
-          if [ -n "$TOKEN" ]; then apply_merchant "$TOKEN" "cashier-70035" || FAILED=1; else echo "[cashier-70035] login failed"; fi
+          if [ -n "$TOKEN" ]; then apply_merchant "$TOKEN" "cashier-70035" "$DEFAULTS" || FAILED=1; else echo "[cashier-70035] login failed"; fi
 
           for EMAIL in demo-basic@wasil.demo demo-professional@wasil.demo demo-enterprise@wasil.demo demo-distributor@wasil.demo; do
             AUTH=$(curl -sS "$SUPA/auth/v1/token?grant_type=password" \
               -H "apikey: $ANON" -H "Content-Type: application/json" \
               -d "{\"email\":\"$EMAIL\",\"password\":\"demo1234\"}")
             TOKEN=$(echo "$AUTH" | jq -r '.access_token // empty')
-            if [ -n "$TOKEN" ]; then apply_merchant "$TOKEN" "$EMAIL" || FAILED=1; else echo "[$EMAIL] login failed"; FAILED=1; fi
+            if [ -n "$TOKEN" ]; then apply_merchant "$TOKEN" "$EMAIL" "$SEEDED" || FAILED=1; else echo "[$EMAIL] login failed"; FAILED=1; fi
           done
 
           echo "== published stores now =="
