@@ -26,6 +26,7 @@ import { toast } from "sonner";
 
 // ===== استوديو التصميم الكامل — حصري لباقة ماكس =====
 const COLOR_PRESETS = [
+  { name: "PIXA إشارة", primary: "#F04E1A", secondary: "#1A1633" },
   { name: "تيل ملكي", primary: "#0d9488", secondary: "#f59e0b" },
   { name: "أزرق احترافي", primary: "#2563eb", secondary: "#0ea5e9" },
   { name: "بنفسجي عصري", primary: "#7c3aed", secondary: "#ec4899" },
@@ -120,6 +121,7 @@ const PV_CATS = [
 
 // ألوان جاهزة للمصمم المبسط (باقة برو)
 const PRO_COLOR_PRESETS = [
+  { name: "PIXA إشارة", primary: "#F04E1A", secondary: "#1A1633" },
   { name: "أزرق كلاسيكي", primary: "#2563eb", secondary: "#f59e0b" },
   { name: "تركواز هادئ", primary: "#0f766e", secondary: "#f59e0b" },
   { name: "أسود أنيق", primary: "#111827", secondary: "#f59e0b" },
