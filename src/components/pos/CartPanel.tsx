@@ -19,6 +19,7 @@ import { CouponApply } from "./CouponApply";
 import type { PaymentMethod } from "@/types/database";
 import { POS_TENDER_METHODS, paymentMethodLabel, type PaymentLine, type TenderMethod } from "@/lib/payments";
 import { splitVatInclusive } from "@/lib/vat";
+import { OFFLINE_METHODS } from "@/lib/offline/offlineSales";
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 const emptySplit = () =>
@@ -45,6 +46,8 @@ interface CartPanelProps {
   onClearCart: () => void;
   onCompleteSale: (customerName: string, customerPhone: string, discount: number, payments: PaymentLine[]) => void;
   isProcessing: boolean;
+  /** No connection: only cash / standalone card terminal, no coupons. */
+  offline?: boolean;
 }
 
 export function CartPanel({
@@ -56,6 +59,7 @@ export function CartPanel({
   onClearCart,
   onCompleteSale,
   isProcessing,
+  offline = false,
 }: CartPanelProps) {
   const { t, isRTL } = useLanguage();
   const [customerName, setCustomerName] = useState("");
@@ -73,7 +77,7 @@ export function CartPanel({
   const totalBeforeDiscount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const { total, tax, net: subtotal } = splitVatInclusive(totalBeforeDiscount - discount);
 
-  const paymentMethods: { id: PaymentMethod; icon: typeof Banknote; label: string }[] = [
+  const allPaymentMethods: { id: PaymentMethod; icon: typeof Banknote; label: string }[] = [
     { id: "cash", icon: Banknote, label: t.pos.cash },
     { id: "mada", icon: CreditCard, label: paymentMethodLabel("mada", isRTL) },
     { id: "card", icon: CreditCard, label: t.pos.card },
@@ -82,8 +86,11 @@ export function CartPanel({
     { id: "bank_transfer", icon: Building2, label: paymentMethodLabel("bank_transfer", isRTL) },
     { id: "mixed", icon: Split, label: t.pos.mixed },
   ];
+  const offlineAllowed = (m: string) => (OFFLINE_METHODS as readonly string[]).includes(m);
+  const paymentMethods = offline ? allPaymentMethods.filter((m) => m.id === "mixed" || offlineAllowed(m.id)) : allPaymentMethods;
+  const tenderMethods = offline ? POS_TENDER_METHODS.filter(offlineAllowed) : POS_TENDER_METHODS;
 
-  const splitLines: PaymentLine[] = POS_TENDER_METHODS
+  const splitLines: PaymentLine[] = tenderMethods
     .map((method) => ({ method, amount: round2(parseFloat(splitAmounts[method]) || 0) }))
     .filter((line) => line.amount > 0);
   const splitPaid = round2(splitLines.reduce((sum, line) => sum + line.amount, 0));
@@ -233,13 +240,19 @@ export function CartPanel({
       {/* Cart Footer */}
       <div className="border-t border-border p-3 space-y-2.5 bg-muted/10">
         {/* Coupon */}
-        <CouponApply
-          subtotal={subtotal}
-          onApply={(d, code) => { setCouponDiscount(d); setAppliedCoupon(code); }}
-          onRemove={() => { setCouponDiscount(0); setAppliedCoupon(null); }}
-          appliedCoupon={appliedCoupon}
-          isRTL={isRTL}
-        />
+        {offline ? (
+          <p className="text-[11px] text-muted-foreground text-center">
+            {isRTL ? "بدون إنترنت: الدفع نقداً أو بالشبكة فقط، والكوبونات غير متاحة" : "Offline: cash or card terminal only, no coupons"}
+          </p>
+        ) : (
+          <CouponApply
+            subtotal={subtotal}
+            onApply={(d, code) => { setCouponDiscount(d); setAppliedCoupon(code); }}
+            onRemove={() => { setCouponDiscount(0); setAppliedCoupon(null); }}
+            appliedCoupon={appliedCoupon}
+            isRTL={isRTL}
+          />
+        )}
 
         {/* Totals */}
         <div className="space-y-1 text-xs">
@@ -340,7 +353,7 @@ export function CartPanel({
               <div className="space-y-2">
                 <Label className="text-xs">{isRTL ? "تقسيم المبلغ على طرق الدفع" : "Split across payment methods"}</Label>
                 <div className="grid grid-cols-2 gap-2">
-                  {POS_TENDER_METHODS.map((method) => (
+                  {tenderMethods.map((method) => (
                     <div key={method} className="space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] text-muted-foreground">{paymentMethodLabel(method, isRTL)}</span>

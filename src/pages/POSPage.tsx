@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useLanguage } from "@/i18n";
@@ -13,6 +13,9 @@ import { CashierSalesHistory } from "@/components/pos/CashierSalesHistory";
 import { OpenShiftPanel, ShiftBar } from "@/components/pos/ShiftControls";
 import { FocusModeBar, FocusModeButton, useFocusMode } from "@/components/pos/FocusMode";
 import { useShift } from "@/hooks/useShift";
+import { useOfflineSales } from "@/hooks/useOfflineSales";
+import { OfflineBanner } from "@/components/pos/OfflineBanner";
+import { isNetworkError } from "@/lib/offline/offlineSales";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTabParam } from '@/hooks/useTabParam';
 import { ShoppingCart, FileText, Loader2 } from "lucide-react";
@@ -31,6 +34,8 @@ interface InvoiceData {
   paymentMethod: PaymentMethod;
   payments?: PaymentLine[];
   saleDateISO?: string;
+  /** Made offline: not on the server yet (queued on this device). */
+  offline?: boolean;
   customerName?: string;
   customerPhone?: string;
   merchantName: string;
@@ -77,10 +82,30 @@ export default function POSPage() {
     })();
   }, [merchant?.id, user?.id, merchantUser?.role]);
 
-  const { devices, accessories, loading, refetch, searchByIMEI, searchBySkuOrName } = usePOSInventory();
   const { createSale, markAsPrinted, sales, loading: salesLoading, updateSale, refetch: refetchSales } = useSales();
-
   const { shift, loading: shiftLoading, refresh: refreshShift, openShift, recordMovement, closeShift } = useShift();
+
+  // Offline selling: when the connection drops, sales are queued on this device and
+  // synced back through the server later. onSynced refreshes what the sync changed.
+  const syncedRef = useRef<() => void>(() => {});
+  const offline = useOfflineSales({ onSynced: () => syncedRef.current() });
+  const { devices, accessories, loading, refetch, applyOfflineSale, searchByIMEI, searchBySkuOrName } =
+    usePOSInventory({ offline: !offline.online });
+  syncedRef.current = () => { refetch(); refetchSales(); refreshShift(); };
+
+  // One id per checkout attempt of this cart: a retry after a lost response (online
+  // again, or from the offline queue) can never sell twice.
+  const attemptRef = useRef<string | null>(null);
+  useEffect(() => { attemptRef.current = null; }, [cart]);
+
+  // The shift can't be closed while offline sales are still waiting to sync.
+  const closeShiftWhenSynced: typeof closeShift = async (counted, notes) => {
+    if (offline.pending > 0) {
+      toast.error("توجد مبيعات بدون إنترنت لم تُزامن بعد؛ انتظر المزامنة ثم أغلق الوردية");
+      return null;
+    }
+    return closeShift(counted, notes);
+  };
 
   const focusMode = useFocusMode();
 
@@ -173,64 +198,112 @@ export default function POSPage() {
     setCart(prev => prev.filter(item => item.id !== id));
   };
 
+  const finishSale = (data: InvoiceData) => {
+    setInvoiceData(data);
+    setCart([]);
+    setSelectedPayment(null);
+    // Auto-print if enabled
+    try {
+      const prefs = JSON.parse(localStorage.getItem("pos_printer_prefs") || "{}");
+      if (prefs.autoPrint) {
+        setTimeout(() => {
+          const printBtn = document.querySelector('[data-auto-print]') as HTMLButtonElement;
+          printBtn?.click();
+        }, 500);
+      }
+    } catch { /* printing preferences are optional */ }
+  };
+
   const handleCompleteSale = async (customerName: string, customerPhone: string, discount: number, payments: PaymentLine[]) => {
     if (!selectedPayment || cart.length === 0) return;
+    attemptRef.current ??= crypto.randomUUID();
+    const clientRef = attemptRef.current;
+    const common = {
+      items: [...cart],
+      payments,
+      customerName: customerName || undefined,
+      customerPhone: customerPhone || undefined,
+      merchantName: merchant?.name || "Store",
+      branchName: currentBranch?.name || "Main",
+    };
 
     setIsProcessing(true);
     try {
-      const result = await createSale(cart, payments, customerName || undefined, customerPhone || undefined, discount);
+      if (!offline.online) {
+        // Offline: queue on this device under the till's own OFF- series.
+        try {
+          const sale = await offline.recordSale({
+            clientRef,
+            cart,
+            payments,
+            discount,
+            vatEnabled: (merchant as { vat_enabled?: boolean } | null)?.vat_enabled !== false,
+            customerName: customerName || undefined,
+            customerPhone: customerPhone || undefined,
+          });
+          applyOfflineSale(sale);
+          const soldAt = new Date(sale.sold_at);
+          finishSale({
+            ...common,
+            saleId: sale.client_ref,
+            invoiceNumber: sale.invoice_number,
+            subtotal: sale.subtotal,
+            tax: sale.tax_amount,
+            discount: 0,
+            total: sale.total_amount,
+            paymentMethod: payments.length > 1 ? "mixed" : (payments[0]?.method ?? "cash"),
+            saleDateISO: sale.sold_at,
+            offline: true,
+            date: soldAt.toLocaleString(),
+            deliveryDate: soldAt.toLocaleDateString(),
+          });
+          toast.success(`حُفظت الفاتورة ${sale.invoice_number} على الجهاز، وستُزامن عند عودة الاتصال`);
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : "تعذر حفظ البيع بدون إنترنت");
+        }
+        return;
+      }
+
+      const result = await createSale(cart, payments, customerName || undefined, customerPhone || undefined, discount, undefined, clientRef);
       if (result.error || !result.data) {
+        if (isNetworkError(result.error)) {
+          // The sale may or may not have reached the server. Keep the cart and the same
+          // attempt id: confirming again saves it offline, and the sync recognises it if
+          // the first attempt did go through.
+          offline.markOffline();
+          toast.error("انقطع الاتصال أثناء إتمام البيع. اضغط إتمام البيع مرة أخرى لحفظه بدون إنترنت.");
+          return;
+        }
         // The server refused (e.g. a unit was just sold elsewhere, or the shift was
         // closed from another till): refresh the shelf and the shift.
         await Promise.all([refetch(), refreshShift()]);
         return;
       }
-      if (result.data) {
-        // Totals come from pos_checkout, the single source of truth for the invoice.
-        const sale = result.data;
-        const saleDate = new Date(sale.sale_date);
 
-        setInvoiceData({
-          saleId: sale.sale_id,
-          invoiceNumber: sale.invoice_number,
-          items: [...cart],
-          subtotal: Number(sale.subtotal),
-          tax: Number(sale.tax_amount),
-          discount: Number(sale.discount_amount),
-          total: Number(sale.total_amount),
-          paymentMethod: sale.payment_method,
-          payments,
-          saleDateISO: sale.sale_date,
-          customerName: customerName || undefined,
-          customerPhone: customerPhone || undefined,
-          merchantName: merchant?.name || "Store",
-          branchName: currentBranch?.name || "Main",
-          date: saleDate.toLocaleString(),
-          deliveryDate: saleDate.toLocaleDateString(),
-        });
-
-        setCart([]);
-        setSelectedPayment(null);
-        await refetch();
-
-        // Auto-print if enabled
-        try {
-          const prefs = JSON.parse(localStorage.getItem("pos_printer_prefs") || "{}");
-          if (prefs.autoPrint) {
-            setTimeout(() => {
-              const printBtn = document.querySelector('[data-auto-print]') as HTMLButtonElement;
-              printBtn?.click();
-            }, 500);
-          }
-        } catch {}
-      }
+      // Totals come from pos_checkout, the single source of truth for the invoice.
+      const sale = result.data;
+      const saleDate = new Date(sale.sale_date);
+      finishSale({
+        ...common,
+        saleId: sale.sale_id,
+        invoiceNumber: sale.invoice_number,
+        subtotal: Number(sale.subtotal),
+        tax: Number(sale.tax_amount),
+        discount: Number(sale.discount_amount),
+        total: Number(sale.total_amount),
+        paymentMethod: sale.payment_method,
+        saleDateISO: sale.sale_date,
+        date: saleDate.toLocaleString(),
+        deliveryDate: saleDate.toLocaleDateString(),
+      });
+      await refetch();
     } finally {
       setIsProcessing(false);
     }
   };
 
   const handlePrinted = () => {
-    if (invoiceData?.saleId) {
+    if (invoiceData?.saleId && !invoiceData.offline) {
       markAsPrinted(invoiceData.saleId);
     }
   };
@@ -251,6 +324,15 @@ export default function POSPage() {
           onExit={focusMode.exit}
         />
       )}
+      <div className={focusMode.focus ? "mt-3" : "mb-3"}>
+        <OfflineBanner
+          online={offline.online}
+          pending={offline.pending}
+          syncing={offline.syncing}
+          terminalReady={offline.terminalReady}
+          onSync={offline.syncNow}
+        />
+      </div>
       <Tabs
         value={focusMode.focus ? "pos" : activeTab}
         onValueChange={setActiveTab}
@@ -275,7 +357,7 @@ export default function POSPage() {
           <div className="flex flex-col gap-4 h-full">
           <div className="flex items-center gap-2">
             <div className="flex-1">
-              <ShiftBar report={shift} onMovement={recordMovement} onClose={closeShift} onClosed={refreshShift} />
+              <ShiftBar report={shift} onMovement={recordMovement} onClose={closeShiftWhenSynced} onClosed={refreshShift} />
             </div>
             {!focusMode.focus && <FocusModeButton onEnter={focusMode.enter} />}
           </div>
@@ -300,6 +382,7 @@ export default function POSPage() {
               onClearCart={() => setCart([])}
               onCompleteSale={handleCompleteSale}
               isProcessing={isProcessing}
+              offline={!offline.online}
             />
           </div>
           </div>

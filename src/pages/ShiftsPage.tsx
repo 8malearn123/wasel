@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ShiftReportView, usePrintShiftReport } from "@/components/pos/ShiftControls";
+import { OfflineConflictsCard } from "@/components/pos/OfflineConflicts";
 import { SHIFT_STATUS_LABELS, useShiftsList, type ShiftReport, type ShiftStatus } from "@/hooks/useShift";
 import { cn } from "@/lib/utils";
 
@@ -54,6 +55,7 @@ export default function ShiftsPage() {
   return (
     <AppLayout title="الورديات" subtitle="فتح وإغلاق ورديات الفروع واعتماد الإغلاق">
       <div className="space-y-4">
+        <OfflineConflictsCard />
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex gap-1.5">
             {filters.map((f) => (

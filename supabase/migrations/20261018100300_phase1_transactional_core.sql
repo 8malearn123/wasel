@@ -195,9 +195,15 @@ REVOKE ALL ON FUNCTION public.release_expired_reservations(uuid) FROM PUBLIC, an
 --             the till: send the amount applied, not the cash tendered.
 -- _discount : invoice-level discount, VAT-inclusive, 0 .. gross.
 -- Customer  : _customer_id, or a phone (matched by phone_key, created if new).
+-- _client_ref: optional id the till generates per checkout attempt. A repeat
+--             with the same id returns the existing sale instead of selling
+--             again: a response lost to a dropped connection can be retried,
+--             online or from the offline queue, without a double sale.
 --
 -- Prices and costs always come from the database; client prices are never
 -- read. Any failure raises, and the whole sale rolls back.
+ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS client_ref uuid UNIQUE;
+
 CREATE OR REPLACE FUNCTION public.pos_checkout(
     _branch_id      uuid,
     _items          jsonb,
@@ -206,7 +212,8 @@ CREATE OR REPLACE FUNCTION public.pos_checkout(
     _customer_id    uuid    DEFAULT NULL,
     _customer_name  text    DEFAULT NULL,
     _customer_phone text    DEFAULT NULL,
-    _notes          text    DEFAULT NULL
+    _notes          text    DEFAULT NULL,
+    _client_ref     uuid    DEFAULT NULL
 ) RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -215,6 +222,7 @@ AS $$
 DECLARE
     c_vat_rate CONSTANT numeric := 0.15;
     _uid           uuid := auth.uid();
+    _done          record;
     _merchant_id   uuid;
     _role          public.user_role;
     _user_branch   uuid;
@@ -267,6 +275,19 @@ BEGIN
     END IF;
 
     SELECT COALESCE(vat_enabled, true) INTO _vat_enabled FROM public.merchants WHERE id = _merchant_id;
+
+    -- Retry of a checkout that already went through: return it, sell nothing.
+    IF _client_ref IS NOT NULL THEN
+        SELECT * INTO _done FROM public.sales WHERE client_ref = _client_ref AND merchant_id = _merchant_id;
+        IF FOUND THEN
+            RETURN jsonb_build_object(
+                'sale_id', _done.id, 'invoice_number', _done.invoice_number, 'sale_date', _done.sale_date,
+                'subtotal', _done.subtotal, 'tax_amount', _done.tax_amount,
+                'discount_amount', _done.discount_amount, 'total_amount', _done.total_amount,
+                'payment_method', _done.payment_method, 'customer_id', _done.customer_id,
+                'vat_enabled', _vat_enabled, 'replayed', true);
+        END IF;
+    END IF;
 
     -- 2. Cart shape --------------------------------------------------------
     IF _items IS NULL OR jsonb_typeof(_items) <> 'array' OR jsonb_array_length(_items) = 0 THEN
@@ -433,18 +454,22 @@ BEGIN
     END IF;
 
     -- 8. Header ------------------------------------------------------------------
-    _invoice := public.next_document_number(_merchant_id, 'sales_invoice', _branch_id);
+    -- sync_offline_sale() replays a sale made offline under the number already printed
+    -- for the customer (OFF-T1-000001); it passes it through a transaction-local setting.
+    -- API requests can't set it, and every other sale takes the branch's next number.
+    _invoice := COALESCE(NULLIF(current_setting('wasel.offline_invoice', true), ''),
+                         public.next_document_number(_merchant_id, 'sales_invoice', _branch_id));
 
     INSERT INTO public.sales (
         merchant_id, branch_id, invoice_number, customer_id, customer_name, customer_phone,
         subtotal, tax_amount, discount_amount, total_amount,
-        payment_method, payment_status, notes, sold_by
+        payment_method, payment_status, notes, sold_by, client_ref
     ) VALUES (
         _merchant_id, _branch_id, _invoice, _cust_id,
         COALESCE(NULLIF(TRIM(_customer_name), ''), _cust_name),
         COALESCE(NULLIF(TRIM(_customer_phone), ''), _cust_phone),
         _subtotal, _tax, _discount_amt, _total,
-        _header_method, 'paid', NULLIF(TRIM(_notes), ''), _uid
+        _header_method, 'paid', NULLIF(TRIM(_notes), ''), _uid, _client_ref
     )
     RETURNING id, sale_date INTO _sale_id, _sale_date;
 
@@ -514,8 +539,8 @@ BEGIN
     );
 END;
 $$;
-REVOKE ALL ON FUNCTION public.pos_checkout(uuid, jsonb, jsonb, numeric, uuid, text, text, text) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.pos_checkout(uuid, jsonb, jsonb, numeric, uuid, text, text, text) TO authenticated;
+REVOKE ALL ON FUNCTION public.pos_checkout(uuid, jsonb, jsonb, numeric, uuid, text, text, text, uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.pos_checkout(uuid, jsonb, jsonb, numeric, uuid, text, text, text, uuid) TO authenticated;
 
 
 -- ---------------------------------------------------------------------

@@ -1025,6 +1025,60 @@ export type Database = {
         }
         Relationships: []
       }
+      offline_sale_conflicts: {
+        Row: {
+          branch_id: string
+          client_ref: string
+          created_at: string
+          hint: string | null
+          id: string
+          invoice_number: string
+          merchant_id: string
+          payload: Json
+          reason: string
+          resolution: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          sold_at: string
+          submitted_by: string | null
+          terminal_id: string | null
+        }
+        Insert: {
+          branch_id: string
+          client_ref: string
+          created_at?: string
+          hint?: string | null
+          id?: string
+          invoice_number: string
+          merchant_id: string
+          payload: Json
+          reason: string
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          sold_at: string
+          submitted_by?: string | null
+          terminal_id?: string | null
+        }
+        Update: {
+          branch_id?: string
+          client_ref?: string
+          created_at?: string
+          hint?: string | null
+          id?: string
+          invoice_number?: string
+          merchant_id?: string
+          payload?: Json
+          reason?: string
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          sold_at?: string
+          submitted_by?: string | null
+          terminal_id?: string | null
+        }
+        Relationships: []
+      }
       online_order_items: {
         Row: {
           accessory_id: string | null
@@ -1267,6 +1321,39 @@ export type Database = {
           id?: string
           is_active?: boolean
           user_id?: string
+        }
+        Relationships: []
+      }
+      pos_terminals: {
+        Row: {
+          branch_id: string
+          code: string
+          created_at: string
+          id: string
+          last_seen_at: string
+          merchant_id: string
+          name: string | null
+          registered_by: string | null
+        }
+        Insert: {
+          branch_id: string
+          code: string
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          merchant_id: string
+          name?: string | null
+          registered_by?: string | null
+        }
+        Update: {
+          branch_id?: string
+          code?: string
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          merchant_id?: string
+          name?: string | null
+          registered_by?: string | null
         }
         Relationships: []
       }
@@ -1802,6 +1889,7 @@ export type Database = {
       sales: {
         Row: {
           branch_id: string
+          client_ref: string | null
           created_at: string
           customer_id: string | null
           customer_name: string | null
@@ -1812,6 +1900,7 @@ export type Database = {
           is_printed: boolean
           merchant_id: string
           notes: string | null
+          offline_created_at: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
           payment_status: Database["public"]["Enums"]["payment_status"]
           sale_date: string
@@ -1819,10 +1908,12 @@ export type Database = {
           sold_by: string | null
           subtotal: number
           tax_amount: number | null
+          terminal_id: string | null
           total_amount: number
         }
         Insert: {
           branch_id: string
+          client_ref?: string | null
           created_at?: string
           customer_id?: string | null
           customer_name?: string | null
@@ -1833,6 +1924,7 @@ export type Database = {
           is_printed?: boolean
           merchant_id: string
           notes?: string | null
+          offline_created_at?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           payment_status?: Database["public"]["Enums"]["payment_status"]
           sale_date?: string
@@ -1840,10 +1932,12 @@ export type Database = {
           sold_by?: string | null
           subtotal?: number
           tax_amount?: number | null
+          terminal_id?: string | null
           total_amount?: number
         }
         Update: {
           branch_id?: string
+          client_ref?: string | null
           created_at?: string
           customer_id?: string | null
           customer_name?: string | null
@@ -1854,6 +1948,7 @@ export type Database = {
           is_printed?: boolean
           merchant_id?: string
           notes?: string | null
+          offline_created_at?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           payment_status?: Database["public"]["Enums"]["payment_status"]
           sale_date?: string
@@ -1861,6 +1956,7 @@ export type Database = {
           sold_by?: string | null
           subtotal?: number
           tax_amount?: number | null
+          terminal_id?: string | null
           total_amount?: number
         }
         Relationships: [
@@ -2982,6 +3078,7 @@ export type Database = {
       pos_checkout: {
         Args: {
           _branch_id: string
+          _client_ref?: string
           _customer_id?: string
           _customer_name?: string
           _customer_phone?: string
@@ -2996,8 +3093,31 @@ export type Database = {
         Args: { _amount: number; _reason: string; _shift_id: string; _type: string }
         Returns: Json
       }
+      register_terminal: {
+        Args: { _branch_id: string; _name?: string }
+        Returns: Json
+      }
+      resolve_offline_conflict: {
+        Args: { _conflict_id: string; _resolution: string }
+        Returns: undefined
+      }
       shift_report: { Args: { _shift_id: string }; Returns: Json }
       shop_date: { Args: { _ts: string }; Returns: string }
+      sync_offline_sale: {
+        Args: {
+          _client_ref: string
+          _customer_name?: string
+          _customer_phone?: string
+          _invoice_number: string
+          _items: Json
+          _offline_total?: number
+          _payments: Json
+          _sold_at: string
+          _terminal_id: string
+        }
+        Returns: Json
+      }
+      terminal_state: { Args: { _terminal_id: string }; Returns: Json }
       track_public_order: {
         Args: { _order_number: string; _phone: string; _slug: string }
         Returns: Json

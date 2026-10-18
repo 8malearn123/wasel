@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import type { Sale, PaymentMethod } from '@/types/database';
 import type { PaymentLine } from '@/lib/payments';
+import { isNetworkError } from '@/lib/offline/offlineSales';
 import { toast } from 'sonner';
 
 interface CartItem {
@@ -74,7 +75,9 @@ export function useSales() {
     customerName?: string,
     customerPhone?: string,
     discountAmount: number = 0,
-    customerId?: string
+    customerId?: string,
+    /** Same id for every retry of this checkout, so a lost response can't cause a double sale. */
+    clientRef?: string
   ): Promise<{ data: CheckoutResult | null; error: Error | null }> => {
     if (!merchant || !currentBranch || !user) {
       return { data: null, error: new Error('Missing merchant, branch, or user') };
@@ -94,10 +97,12 @@ export function useSales() {
       _customer_id: customerId,
       _customer_name: customerName,
       _customer_phone: customerPhone,
+      _client_ref: clientRef,
     });
 
     if (error) {
-      toast.error(error.message);
+      // A dropped connection is handled by the POS (offline selling), not shown as an error here.
+      if (!isNetworkError(error)) toast.error(error.message);
       return { data: null, error: new Error(error.message) };
     }
 

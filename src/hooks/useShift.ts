@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { isNetworkError } from '@/lib/offline/offlineSales';
 
 export type ShiftStatus = 'open' | 'pending_approval' | 'closed';
 export type CashMovementType = 'cash_in' | 'cash_out' | 'expense';
@@ -79,7 +80,12 @@ export function useShift() {
       return;
     }
     const { data, error } = await supabase.rpc('current_shift', { _branch_id: currentBranch.id });
-    if (error) toast.error(error.message);
+    if (error) {
+      // Offline: keep the shift we know about, so the till can keep selling offline.
+      if (!isNetworkError(error)) toast.error(error.message);
+      setLoading(false);
+      return;
+    }
     setShift((data as unknown as ShiftReport | null) ?? null);
     setLoading(false);
   }, [currentBranch]);
