@@ -167,6 +167,39 @@ describe("offline sales", () => {
     });
   });
 
+  describe("several tills reconnecting at once", () => {
+    it("syncs every till's queue in parallel without mixing or losing numbers", async () => {
+      await db().sql("UPDATE accessories SET quantity = 100 WHERE id = $1", [ACCESSORIES.charger.id]);
+      const tills = [await register(), await register(OWNER), await register(CASHIER)];
+      expect(tills.map((t) => t.code)).toEqual(["T1", "T2", "T3"]);
+
+      // Each till sold 5 chargers offline; all three come back and sync at the same moment.
+      const results = await Promise.all(
+        tills.map(async (t) => {
+          const out: SyncResult[] = [];
+          for (let n = 1; n <= 5; n++) out.push(await sync(t, n, [accessory(ACCESSORIES.charger.id)], [pay("cash", 115)]));
+          return out;
+        }),
+      );
+
+      expect(results.flat().every((r) => r.status === "synced")).toBe(true);
+      const numbers = (await db().sql("SELECT invoice_number FROM sales WHERE invoice_number LIKE 'OFF-%' ORDER BY invoice_number")).map((r) => r.invoice_number);
+      expect(numbers).toEqual(["T1", "T2", "T3"].flatMap((c) => [1, 2, 3, 4, 5].map((n) => `OFF-${c}-00000${n}`)));
+      expect(await db().one("SELECT quantity FROM accessories WHERE id = $1", [ACCESSORIES.charger.id])).toEqual({ quantity: 85 });
+    });
+
+    it("when two tills sold the same unit, the first to sync keeps it and the other goes to review", async () => {
+      const [t1, t2] = [await register(), await register(OWNER)];
+      const [a, b] = await Promise.all([
+        sync(t1, 1, [device(DEVICES.iphone13.id)], [pay("cash", 1150)]),
+        sync(t2, 1, [device(DEVICES.iphone13.id)], [pay("cash", 1150)]),
+      ]);
+      expect([a.status, b.status].sort()).toEqual(["conflict", "synced"]);
+      expect([a, b].find((r) => r.status === "conflict")).toMatchObject({ hint: "DEVICE_UNAVAILABLE" });
+      expect((await db().one("SELECT count(*) AS n FROM sale_items WHERE device_id = $1", [DEVICES.iphone13.id])).n).toBe(1);
+    });
+  });
+
   describe("offline restrictions are enforced on the server", () => {
     it("refuses payment methods that need the internet", async () => {
       const t = await register();
