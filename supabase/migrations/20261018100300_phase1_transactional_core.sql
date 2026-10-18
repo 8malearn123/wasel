@@ -775,7 +775,13 @@ BEGIN
     END IF;
 
     _stored := regexp_replace(translate(COALESCE(_o.customer_phone, ''), '٠١٢٣٤٥٦٧٨٩', '0123456789'), '[^0-9]', '', 'g');
-    IF right(_stored, length(_given)) <> _given THEN
+    -- 4-8 digits: must equal the end of the stored number. A full number in
+    -- any format (05..., 9665..., +966 5...) compares on the last 9 digits.
+    IF length(_given) >= 9 THEN
+        IF right(_stored, 9) <> right(_given, 9) THEN
+            RETURN NULL;
+        END IF;
+    ELSIF right(_stored, length(_given)) <> _given THEN
         RETURN NULL;
     END IF;
 

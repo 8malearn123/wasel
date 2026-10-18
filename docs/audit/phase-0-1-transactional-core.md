@@ -104,7 +104,9 @@ SELECT jobname, schedule FROM cron.job;
 
 ## How this was tested
 
-All migrations, old and new, were applied in order to a clean Postgres 16 with Supabase role and `auth` stubs. Legacy data was seeded before the new migrations ran. Checks covered:
+Automated: `npm run test:db` runs 81 integration tests against a real Postgres
+(see [`supabase/tests/README.md`](../../supabase/tests/README.md)), and CI runs
+them on every change under `supabase/`. Coverage includes:
 
 - **D1:** an inflated 1,322.50 sale became 1,150, and the daily closing's cash difference went from −89.75 to +100.
 - **Duplicates and backfills:** duplicate invoice and order numbers were suffixed, customer and payment backfills ran, and the ledger backfill ran.
@@ -120,6 +122,6 @@ All migrations, old and new, were applied in order to a clean Postgres 16 with S
 - `store_credit` and `trade_in` exist in the enum, but `pos_checkout` rejects them until those modules exist.
 - Coupons are still validated and counted client-side (`CouponApply`). `pos_checkout` only checks `0 ≤ discount ≤ gross`, so coupon redemption should move server-side next.
 - Per-line VAT and discount are spread pro rata. The header totals are authoritative and may differ from the line sum by a few halalas.
-- `track_public_order` accepts the last 4 digits of the phone, as the UI does today. Order numbers are sequential, so add rate limiting (e.g. an edge function) or require the full phone.
+- `track_public_order` accepts the last 4 digits of the phone, as the UI does today, or the full number in any format (`05…`, `+966 5…`). Order numbers are sequential, so add rate limiting (e.g. an edge function) or require the full phone.
 - Legacy `mixed` sales have no recorded split, so reports keep the 50/50 approximation for them.
 - Unrelated issue spotted during testing: migrations `20260506214517…` and `20260506220551…` hard-code a demo password for a real e-mail address. Rotate that password and remove the secret from history.
