@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { tenderBreakdown } from '@/lib/payments';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 
@@ -23,6 +22,15 @@ export interface DailyClosing {
   notes: string | null;
   closed_by: string | null;
   status: string;
+  /** 'shifts' = summed from the day's shifts by close_day(); 'manual' = closed by the old page. */
+  source: 'manual' | 'shifts';
+  shifts_count: number | null;
+  opening_cash: number | null;
+  cash_in: number | null;
+  cash_out: number | null;
+  expenses: number | null;
+  expected_cash: number | null;
+  closed_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -52,8 +60,100 @@ export interface SoldItem {
   saleTime: string;
 }
 
+/** daily_summary() result. Expected / difference are null for cashiers until the shifts are approved. */
+export interface DaySummary {
+  date: string;
+  branch_id: string;
+  shift_counts: { total: number; open: number; pending: number; closed: number };
+  shifts: {
+    id: string;
+    shift_no: number;
+    status: 'open' | 'pending_approval' | 'closed';
+    opened_at: string;
+    closed_at: string | null;
+    opened_by_name: string | null;
+    opening_cash: number;
+    cash_sales: number;
+    cash_in: number;
+    cash_out: number;
+    expenses: number;
+    expected_cash: number | null;
+    counted_cash: number | null;
+    difference: number | null;
+  }[];
+  cash: {
+    opening: number;
+    sales: number;
+    cash_in: number;
+    cash_out: number;
+    expenses: number;
+    expected: number | null;
+    counted: number | null;
+    difference: number | null;
+  };
+  sales: { count: number; total: number; tax: number; discount: number; outside_shifts: number };
+  tenders: { cash: number; card: number; bank_transfer: number };
+  by_method: { method: string; amount: number }[];
+  devices_sold: number;
+  accessories_sold: number;
+  items: {
+    name: string;
+    type: 'device' | 'accessory';
+    quantity: number;
+    unit_price: number;
+    total: number;
+    payment_method: string;
+    invoice_number: string;
+    customer_name: string | null;
+    sale_time: string;
+  }[];
+  closing: {
+    status: string;
+    source: 'manual' | 'shifts';
+    closed_at: string | null;
+    closed_by_name: string | null;
+    cash_counted: number | null;
+    cash_difference: number | null;
+    notes: string | null;
+  } | null;
+  /** Why the day can't be closed now: NO_SHIFTS, OPEN_SHIFTS, PENDING_SHIFTS, MANAGER_REQUIRED, ALREADY_CLOSED. */
+  blockers: string[];
+  can_close: boolean;
+}
+
+/** Shapes a day summary for the charts and tables of the closing page. */
+export function toDaySalesData(s: DaySummary): DaySalesData {
+  return {
+    cashTotal: Number(s.tenders.cash),
+    cardTotal: Number(s.tenders.card),
+    bankTransferTotal: Number(s.tenders.bank_transfer),
+    totalSales: Number(s.sales.total),
+    totalTax: Number(s.sales.tax),
+    totalDiscount: Number(s.sales.discount),
+    transactionsCount: s.sales.count,
+    devicesSold: s.devices_sold,
+    accessoriesSold: s.accessories_sold,
+    soldItems: s.items.map((i) => ({
+      name: i.name,
+      type: i.type,
+      quantity: i.quantity,
+      unitPrice: Number(i.unit_price),
+      total: Number(i.total),
+      paymentMethod: i.payment_method,
+      invoiceNumber: i.invoice_number,
+      customerName: i.customer_name || undefined,
+      saleTime: i.sale_time,
+    })),
+  };
+}
+
+/**
+ * The daily closing is the sum of the branch's shifts for a business day (Asia/Riyadh).
+ * Figures come from daily_summary(); closing goes through close_day() (managers, after
+ * every shift is approved).
+ */
 export function useDailyClosings() {
-  const { merchant, currentBranch, user } = useAuth();
+  const { merchant, currentBranch } = useAuth();
   const [closings, setClosings] = useState<DailyClosing[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -61,138 +161,53 @@ export function useDailyClosings() {
     if (!merchant) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('daily_closings')
         .select('*')
         .eq('merchant_id', merchant.id)
         .order('closing_date', { ascending: false })
         .limit(30);
+      if (currentBranch) query = query.eq('branch_id', currentBranch.id);
 
+      const { data, error } = await query;
       if (error) throw error;
-      setClosings((data || []) as DailyClosing[]);
+      setClosings((data || []) as unknown as DailyClosing[]);
     } catch (err) {
       console.error('Error fetching closings:', err);
     } finally {
       setLoading(false);
     }
-  }, [merchant]);
+  }, [merchant, currentBranch]);
 
   useEffect(() => {
     fetchClosings();
   }, [fetchClosings]);
 
-  const fetchDaySalesData = useCallback(async (date: string): Promise<DaySalesData> => {
-    if (!merchant || !currentBranch) {
-      return { cashTotal: 0, cardTotal: 0, bankTransferTotal: 0, totalSales: 0, totalTax: 0, totalDiscount: 0, transactionsCount: 0, devicesSold: 0, accessoriesSold: 0, soldItems: [] };
-    }
-
-    const startOfDay = `${date}T00:00:00.000Z`;
-    const endOfDay = `${date}T23:59:59.999Z`;
-
-    const { data: sales, error } = await supabase
-      .from('sales')
-      .select('*, items:sale_items(*, device:devices(*), accessory:accessories(*)), payments:sale_payments(method, amount)')
-      .eq('merchant_id', merchant.id)
-      .eq('branch_id', currentBranch.id)
-      .gte('sale_date', startOfDay)
-      .lte('sale_date', endOfDay)
-      .order('sale_date', { ascending: true });
-
-    if (error) {
-      console.error('Error fetching day sales:', error);
-      return { cashTotal: 0, cardTotal: 0, bankTransferTotal: 0, totalSales: 0, totalTax: 0, totalDiscount: 0, transactionsCount: 0, devicesSold: 0, accessoriesSold: 0, soldItems: [] };
-    }
-
-    let cashTotal = 0, cardTotal = 0, bankTransferTotal = 0;
-    let totalTax = 0, totalDiscount = 0;
-    let devicesSold = 0, accessoriesSold = 0;
-    const soldItems: SoldItem[] = [];
-
-    for (const sale of (sales || [])) {
-      // Tender lines give the real split (Cash + Mada ...); legacy sales fall back to the header method.
-      const tenders = tenderBreakdown(sale);
-      cashTotal += tenders.cash;
-      cardTotal += tenders.card;
-      bankTransferTotal += tenders.bank_transfer;
-
-      totalTax += Number(sale.tax_amount || 0);
-      totalDiscount += Number(sale.discount_amount || 0);
-
-      const items = (sale as any).items || [];
-      for (const item of items) {
-        const isDevice = !!item.device_id;
-        if (isDevice) devicesSold += item.quantity;
-        else accessoriesSold += item.quantity;
-
-        const deviceData = item.device;
-        const accessoryData = item.accessory;
-
-        soldItems.push({
-          name: isDevice
-            ? `${deviceData?.brand || ''} ${deviceData?.model || ''}`.trim() || 'جهاز'
-            : accessoryData?.name || 'إكسسوار',
-          type: isDevice ? 'device' : 'accessory',
-          quantity: item.quantity,
-          unitPrice: Number(item.unit_price),
-          total: Number(item.unit_price) * item.quantity,
-          paymentMethod: sale.payment_method,
-          invoiceNumber: sale.invoice_number,
-          customerName: sale.customer_name || undefined,
-          saleTime: sale.sale_date,
-        });
-      }
-    }
-
-    return {
-      cashTotal,
-      cardTotal,
-      bankTransferTotal,
-      totalSales: cashTotal + cardTotal + bankTransferTotal,
-      totalTax,
-      totalDiscount,
-      transactionsCount: (sales || []).length,
-      devicesSold,
-      accessoriesSold,
-      soldItems,
-    };
-  }, [merchant, currentBranch]);
-
-  const createClosing = async (date: string, data: DaySalesData, cashCounted: number | null, notes: string) => {
-    if (!merchant || !currentBranch || !user) return { error: 'Missing data' };
-
-    const cashDifference = cashCounted !== null ? cashCounted - data.cashTotal : null;
-
-    const { error } = await supabase
-      .from('daily_closings')
-      .upsert({
-        merchant_id: merchant.id,
-        branch_id: currentBranch.id,
-        closing_date: date,
-        cash_sales: data.cashTotal,
-        card_sales: data.cardTotal,
-        bank_transfer_sales: data.bankTransferTotal,
-        total_sales: data.totalSales,
-        total_tax: data.totalTax,
-        total_discount: data.totalDiscount,
-        transactions_count: data.transactionsCount,
-        devices_sold: data.devicesSold,
-        accessories_sold: data.accessoriesSold,
-        cash_counted: cashCounted,
-        cash_difference: cashDifference,
-        notes: notes || null,
-        closed_by: user.id,
-        status: 'closed',
-      }, { onConflict: 'branch_id,closing_date' });
-
+  const fetchDaySummary = useCallback(async (date: string): Promise<DaySummary | null> => {
+    if (!currentBranch) return null;
+    const { data, error } = await supabase.rpc('daily_summary', { _branch_id: currentBranch.id, _date: date });
     if (error) {
       toast.error(error.message);
-      return { error: error.message };
+      return null;
     }
+    return data as unknown as DaySummary;
+  }, [currentBranch]);
 
+  const closeDay = async (date: string, notes: string): Promise<DaySummary | null> => {
+    if (!currentBranch) return null;
+    const { data, error } = await supabase.rpc('close_day', {
+      _branch_id: currentBranch.id,
+      _date: date,
+      _notes: notes || undefined,
+    });
+    if (error) {
+      toast.error(error.message);
+      return null;
+    }
     toast.success('تم إغلاق اليوم بنجاح');
     await fetchClosings();
-    return { error: null };
+    return data as unknown as DaySummary;
   };
 
-  return { closings, loading, fetchClosings, fetchDaySalesData, createClosing };
+  return { closings, loading, fetchClosings, fetchDaySummary, closeDay };
 }

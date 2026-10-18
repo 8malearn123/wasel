@@ -432,14 +432,22 @@ export type Database = {
           card_sales: number
           cash_counted: number | null
           cash_difference: number | null
+          cash_in: number | null
+          cash_out: number | null
           cash_sales: number
+          closed_at: string | null
           closed_by: string | null
           closing_date: string
           created_at: string
           devices_sold: number
+          expected_cash: number | null
+          expenses: number | null
           id: string
           merchant_id: string
           notes: string | null
+          opening_cash: number | null
+          shifts_count: number | null
+          source: string
           status: string
           total_discount: number
           total_sales: number
@@ -454,14 +462,22 @@ export type Database = {
           card_sales?: number
           cash_counted?: number | null
           cash_difference?: number | null
+          cash_in?: number | null
+          cash_out?: number | null
           cash_sales?: number
+          closed_at?: string | null
           closed_by?: string | null
           closing_date?: string
           created_at?: string
           devices_sold?: number
+          expected_cash?: number | null
+          expenses?: number | null
           id?: string
           merchant_id: string
           notes?: string | null
+          opening_cash?: number | null
+          shifts_count?: number | null
+          source?: string
           status?: string
           total_discount?: number
           total_sales?: number
@@ -476,14 +492,22 @@ export type Database = {
           card_sales?: number
           cash_counted?: number | null
           cash_difference?: number | null
+          cash_in?: number | null
+          cash_out?: number | null
           cash_sales?: number
+          closed_at?: string | null
           closed_by?: string | null
           closing_date?: string
           created_at?: string
           devices_sold?: number
+          expected_cash?: number | null
+          expenses?: number | null
           id?: string
           merchant_id?: string
           notes?: string | null
+          opening_cash?: number | null
+          shifts_count?: number | null
+          source?: string
           status?: string
           total_discount?: number
           total_sales?: number
@@ -2876,11 +2900,16 @@ export type Database = {
     }
     Functions: {
       approve_shift: { Args: { _notes?: string; _shift_id: string }; Returns: Json }
+      close_day: {
+        Args: { _branch_id: string; _date: string; _notes?: string }
+        Returns: Json
+      }
       close_shift: {
         Args: { _counted_cash: number; _notes?: string; _shift_id: string }
         Returns: Json
       }
       current_shift: { Args: { _branch_id: string }; Returns: Json }
+      daily_summary: { Args: { _branch_id: string; _date: string }; Returns: Json }
       demo_switch_plan: { Args: { _plan_name: string }; Returns: undefined }
       generate_invoice_number: {
         Args: { _merchant_id: string }
@@ -2968,6 +2997,7 @@ export type Database = {
         Returns: Json
       }
       shift_report: { Args: { _shift_id: string }; Returns: Json }
+      shop_date: { Args: { _ts: string }; Returns: string }
       track_public_order: {
         Args: { _order_number: string; _phone: string; _slug: string }
         Returns: Json

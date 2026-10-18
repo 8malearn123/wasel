@@ -48,16 +48,45 @@ functions, which is what keeps the count blind. Errors carry a code in `HINT`
 close therefore waits for sales in progress and includes them, and a sale arriving during a close is
 refused with `NO_OPEN_SHIFT`.
 
+## Daily closing = sum of the day's shifts
+
+Migration: `supabase/migrations/20261018100500_daily_closing_from_shifts.sql`.
+
+- **Business day.** A shift belongs to the day it was **opened**, in Asia/Riyadh time (stored in
+  `cash_shifts.business_date`), even if it runs past midnight. The old page split days at midnight
+  UTC, which is 03:00 in KSA.
+- **`daily_summary(_branch_id, _date)`** sums the branch's shifts for that day:
+  - opening cash, cash sales, cash in, cash out, expenses, expected, counted and difference;
+  - the shifts list;
+  - sales totals, VAT and discounts, revenue per payment method, and devices and accessories sold;
+  - the sold lines for the charts and tables.
+
+  Sales of the day that belong to no shift (imports, data from before shifts) are included in the
+  sales figures but not in the drawer reconciliation. The same blind-count rule applies to cashiers.
+- **`close_day(_branch_id, _date, _notes?)`** is for managers only. It requires at least one shift,
+  none still open and none awaiting approval. It writes the `daily_closings` row from the shifts
+  (`source = 'shifts'`).
+- **After the close:** no new shift can open on that day (`DAY_CLOSED`), and the day can't be closed
+  twice (`DAY_ALREADY_CLOSED`).
+- **No more client-side writes.** `daily_closings` is no longer writable from the client: the
+  INSERT/UPDATE policies were dropped. Closings made by the old page stay as they are
+  (`source = 'manual'`).
+- **The page (`/daily-closings`)** keeps its charts and tables, now fed by `daily_summary`. The manual
+  "cash counted" form is replaced by the day's shifts with the drawer reconciliation. The **إغلاق
+  اليوم** button appears only when the server allows it; otherwise the page explains why (a shift is
+  still open, a shift awaits approval, or the user is not a manager).
+
 ## Tests
 
 `supabase/tests/db/shifts.test.ts` (19 tests) covers opening rules, selling without a shift, the
 full shift with the expected-cash formula and blind count, approval permissions, movements,
 direct-table access, multi-tenant isolation and both close/sale races.
+`supabase/tests/db/daily-closing.test.ts` (14 tests) covers summing two shifts, the written closing
+row, every refusal, blind count, day boundaries (branch, business day, Riyadh vs UTC), sales outside
+shifts, and that clients can no longer write closings.
 
 ## Not done yet
 
 - Cash refunds don't exist in the system yet; when returns are built they must count as cash out
   of the shift.
-- The daily closing page (`/daily-closings`) still works on its own. It can later become a sum of
-  the day's approved shifts.
 - No printed shift report yet; the report is shown on screen.

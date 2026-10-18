@@ -3,7 +3,8 @@ import { motion } from "framer-motion";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useLanguage } from "@/i18n";
 import { useAuth } from "@/hooks/useAuth";
-import { useDailyClosings, DaySalesData } from "@/hooks/useDailyClosings";
+import { useDailyClosings, toDaySalesData, type DaySummary } from "@/hooks/useDailyClosings";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
   Banknote, CreditCard, Building2, ShoppingBag, Smartphone, Package,
   CheckCircle, Clock, Calculator, FileText, Printer, Download,
-  TrendingUp, TrendingDown, Receipt, Award, Activity, ArrowLeftRight,
+  TrendingUp, TrendingDown, Receipt, Award, Activity, ArrowLeftRight, AlertTriangle, Lock,
 } from "lucide-react";
 import { format, subDays } from "date-fns";
 import {
@@ -26,18 +27,20 @@ import { toast } from "sonner";
 export default function DailyClosingsPage() {
   const { isRTL } = useLanguage();
   const { merchant, currentBranch, user } = useAuth();
-  const { closings, loading, fetchDaySalesData, createClosing } = useDailyClosings();
+  const { closings, loading, fetchDaySummary, closeDay } = useDailyClosings();
 
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [daySales, setDaySales] = useState<DaySalesData | null>(null);
-  const [prevSales, setPrevSales] = useState<DaySalesData | null>(null);
+  // The day = sum of the branch's shifts for that business day (daily_summary RPC).
+  const [summary, setSummary] = useState<DaySummary | null>(null);
+  const [prevSummary, setPrevSummary] = useState<DaySummary | null>(null);
   const [loadingSales, setLoadingSales] = useState(false);
-  const [cashCounted, setCashCounted] = useState('');
   const [notes, setNotes] = useState('');
   const [isClosing, setIsClosing] = useState(false);
   const [activeTab, setActiveTab] = useState<'today' | 'history'>('today');
 
-  const existingClosing = closings.find(c => c.closing_date === selectedDate);
+  const daySales = useMemo(() => (summary ? toDaySalesData(summary) : null), [summary]);
+  const prevSales = useMemo(() => (prevSummary ? toDaySalesData(prevSummary) : null), [prevSummary]);
+  const existingClosing = summary?.closing?.status === 'closed' ? summary.closing : null;
 
   useEffect(() => {
     loadData();
@@ -48,21 +51,21 @@ export default function DailyClosingsPage() {
     setLoadingSales(true);
     const prevDate = format(subDays(new Date(selectedDate), 1), 'yyyy-MM-dd');
     const [today, prev] = await Promise.all([
-      fetchDaySalesData(selectedDate),
-      fetchDaySalesData(prevDate),
+      fetchDaySummary(selectedDate),
+      fetchDaySummary(prevDate),
     ]);
-    setDaySales(today);
-    setPrevSales(prev);
+    setSummary(today);
+    setPrevSummary(prev);
     setLoadingSales(false);
   };
 
   const handleClose = async () => {
-    if (!daySales) return;
+    if (!summary?.can_close) return;
     setIsClosing(true);
-    const counted = cashCounted ? parseFloat(cashCounted) : null;
-    const result = await createClosing(selectedDate, daySales, counted, notes);
-    if (result && !result.error && (merchant as any)?.auto_print_closing) {
-      const printResult = printReceipt(counted, notes);
+    const closed = await closeDay(selectedDate, notes);
+    if (closed) setSummary(closed);
+    if (closed && (merchant as { auto_print_closing?: boolean } | null)?.auto_print_closing) {
+      const printResult = printReceipt(closed, notes);
       if (printResult.ok) {
         toast.success(isRTL ? "تمت طباعة إيصال الإغلاق تلقائياً" : "Closing receipt printed automatically");
       } else {
@@ -72,16 +75,15 @@ export default function DailyClosingsPage() {
         );
       }
     }
-    setCashCounted('');
     setNotes('');
     setIsClosing(false);
   };
 
-  const printReceipt = (counted: number | null, noteText: string): { ok: boolean; reason?: string } => {
-    if (!daySales) return { ok: false, reason: isRTL ? "لا توجد بيانات للمبيعات" : "No sales data available" };
+  const printReceipt = (day: DaySummary, noteText: string): { ok: boolean; reason?: string } => {
+    const daySales = toDaySalesData(day);
     const w = window.open('', '_blank', 'width=400,height=700');
     if (!w) return { ok: false, reason: isRTL ? "تم حظر النافذة المنبثقة من المتصفح" : "Browser blocked popup window" };
-    const diff = counted !== null ? counted - daySales.cashTotal : null;
+    const cash = day.cash;
     const line = (l: string, r: string, bold = false) =>
       `<div class="row${bold ? ' b' : ''}"><span>${l}</span><span>${r}</span></div>`;
     const html = `<!doctype html><html dir="${isRTL ? 'rtl' : 'ltr'}" lang="${isRTL ? 'ar' : 'en'}"><head>
@@ -132,11 +134,16 @@ export default function DailyClosingsPage() {
     ${isRTL ? 'الإجمالي' : 'Total'}: ${formatCurrency(daySales.totalSales)}
   </div>
 
-  ${counted !== null ? `
-    <h2>${isRTL ? 'مطابقة الكاش' : 'Cash Reconciliation'}</h2>
-    ${line(isRTL ? 'الكاش المتوقع' : 'Expected Cash', formatCurrency(daySales.cashTotal))}
-    ${line(isRTL ? 'الكاش المعدود' : 'Counted Cash', formatCurrency(counted))}
-    ${line(isRTL ? 'الفرق' : 'Difference', formatCurrency(diff || 0), true)}
+  ${day.shift_counts.total > 0 ? `
+    <h2>${isRTL ? `مطابقة الدرج (${day.shift_counts.total} وردية)` : `Cash Drawer (${day.shift_counts.total} shifts)`}</h2>
+    ${line(isRTL ? 'الرصيد الافتتاحي' : 'Opening Cash', formatCurrency(Number(cash.opening)))}
+    ${line(isRTL ? 'مبيعات نقدية' : 'Cash Sales', formatCurrency(Number(cash.sales)))}
+    ${line(isRTL ? 'إيداعات' : 'Cash In', formatCurrency(Number(cash.cash_in)))}
+    ${line(isRTL ? 'سحوبات' : 'Cash Out', formatCurrency(Number(cash.cash_out)))}
+    ${line(isRTL ? 'مصروفات' : 'Expenses', formatCurrency(Number(cash.expenses)))}
+    ${cash.expected !== null ? line(isRTL ? 'المتوقع' : 'Expected', formatCurrency(Number(cash.expected)), true) : ''}
+    ${cash.counted !== null ? line(isRTL ? 'المعدود' : 'Counted', formatCurrency(Number(cash.counted)), true) : ''}
+    ${cash.difference !== null ? line(isRTL ? 'الفرق' : 'Difference', formatCurrency(Number(cash.difference)), true) : ''}
   ` : ''}
 
   ${topProducts.length > 0 ? `
@@ -302,9 +309,12 @@ export default function DailyClosingsPage() {
               <Badge variant="default" className="gap-1">
                 <CheckCircle className="w-3 h-3" />{isRTL ? 'تم الإغلاق' : 'Closed'}
               </Badge>
-            ) : daySales && daySales.transactionsCount > 0 ? (
+            ) : summary && summary.shift_counts.total > 0 ? (
               <Badge variant="secondary" className="gap-1">
-                <Clock className="w-3 h-3" />{isRTL ? 'مفتوح' : 'Open'}
+                <Clock className="w-3 h-3" />
+                {summary.can_close || summary.blockers.every(b => b === 'MANAGER_REQUIRED')
+                  ? (isRTL ? 'جاهز للإغلاق' : 'Ready to close')
+                  : (isRTL ? 'مفتوح' : 'Open')}
               </Badge>
             ) : null}
           </div>
@@ -527,40 +537,53 @@ export default function DailyClosingsPage() {
                 </Card>
               )}
 
-              {/* Close form */}
-              {!existingClosing && daySales.transactionsCount > 0 && (
+              {/* Shifts of the day + cash drawer reconciliation */}
+              {summary && summary.shift_counts.total > 0 && (
+                <DayShiftsCard summary={summary} isRTL={isRTL} formatCurrency={formatCurrency} />
+              )}
+
+              {/* Close the day: managers only, once every shift is approved */}
+              {summary && !existingClosing && (
                 <Card className="border-primary/30 print:hidden">
                   <CardHeader><CardTitle className="text-base">{isRTL ? 'إغلاق اليوم' : 'Close Day'}</CardTitle></CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium mb-1 block">
-                          {isRTL ? 'الكاش المعدود فعلياً' : 'Actual Cash Counted'}
-                        </label>
-                        <Input
-                          type="number" step="0.01"
-                          placeholder={isRTL ? 'أدخل المبلغ المعدود' : 'Enter counted amount'}
-                          value={cashCounted}
-                          onChange={e => setCashCounted(e.target.value)}
-                        />
-                        {cashCounted && (
-                          <p className={`text-sm mt-1 ${parseFloat(cashCounted) - daySales.cashTotal === 0 ? 'text-green-600' : 'text-destructive'}`}>
-                            {isRTL ? 'الفرق:' : 'Difference:'} {formatCurrency(parseFloat(cashCounted) - daySales.cashTotal)}
-                          </p>
-                        )}
+                    {summary.blockers.length > 0 && (
+                      <div className="space-y-2">
+                        {summary.blockers.map(b => (
+                          <div key={b} className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
+                            <AlertTriangle className="w-4 h-4 mt-0.5 text-amber-600 shrink-0" />
+                            <span>
+                              {blockerText(b, isRTL)}
+                              {b === 'PENDING_SHIFTS' && (
+                                <Link to="/shifts" className="text-primary underline ms-1">
+                                  {isRTL ? 'صفحة الورديات' : 'Shifts page'}
+                                </Link>
+                              )}
+                            </span>
+                          </div>
+                        ))}
                       </div>
-                      <div>
-                        <label className="text-sm font-medium mb-1 block">{isRTL ? 'ملاحظات' : 'Notes'}</label>
-                        <Textarea
-                          placeholder={isRTL ? 'ملاحظات إضافية...' : 'Additional notes...'}
-                          value={notes} onChange={e => setNotes(e.target.value)} rows={2}
-                        />
-                      </div>
-                    </div>
-                    <Button onClick={handleClose} disabled={isClosing} className="w-full md:w-auto">
-                      <CheckCircle className="w-4 h-4 me-2" />
-                      {isClosing ? (isRTL ? 'جاري الإغلاق...' : 'Closing...') : (isRTL ? 'إغلاق اليوم' : 'Close Day')}
-                    </Button>
+                    )}
+                    {summary.can_close && (
+                      <>
+                        <p className="text-sm text-muted-foreground">
+                          {isRTL
+                            ? 'يُحفظ الإغلاق من مجموع ورديات اليوم المعتمدة، ولا يمكن فتح وردية جديدة في هذا اليوم بعده.'
+                            : "The closing is saved from the day's approved shifts; no new shift can open on this day afterwards."}
+                        </p>
+                        <div>
+                          <label className="text-sm font-medium mb-1 block">{isRTL ? 'ملاحظات' : 'Notes'}</label>
+                          <Textarea
+                            placeholder={isRTL ? 'ملاحظات إضافية...' : 'Additional notes...'}
+                            value={notes} onChange={e => setNotes(e.target.value)} rows={2}
+                          />
+                        </div>
+                        <Button onClick={handleClose} disabled={isClosing} className="w-full md:w-auto">
+                          <Lock className="w-4 h-4 me-2" />
+                          {isClosing ? (isRTL ? 'جاري الإغلاق...' : 'Closing...') : (isRTL ? 'إغلاق اليوم' : 'Close Day')}
+                        </Button>
+                      </>
+                    )}
                   </CardContent>
                 </Card>
               )}
@@ -572,6 +595,7 @@ export default function DailyClosingsPage() {
                     <div>
                       <p className="font-medium text-green-700 dark:text-green-400">
                         {isRTL ? 'تم إغلاق هذا اليوم' : 'This day has been closed'}
+                        {existingClosing.closed_by_name ? ` · ${existingClosing.closed_by_name}` : ''}
                       </p>
                       {existingClosing.cash_counted !== null && (
                         <p className="text-sm text-muted-foreground">
@@ -580,6 +604,7 @@ export default function DailyClosingsPage() {
                           {isRTL ? 'الفرق:' : 'Diff:'} {formatCurrency(Number(existingClosing.cash_difference || 0))}
                         </p>
                       )}
+                      {existingClosing.notes && <p className="text-sm text-muted-foreground">{existingClosing.notes}</p>}
                     </div>
                   </CardContent>
                 </Card>
@@ -618,6 +643,7 @@ export default function DailyClosingsPage() {
                     <TableHead>{isRTL ? 'تحويل' : 'Transfer'}</TableHead>
                     <TableHead>{isRTL ? 'الإجمالي' : 'Total'}</TableHead>
                     <TableHead>{isRTL ? 'الفواتير' : 'Invoices'}</TableHead>
+                    <TableHead>{isRTL ? 'الورديات' : 'Shifts'}</TableHead>
                     <TableHead>{isRTL ? 'فرق الكاش' : 'Cash Diff'}</TableHead>
                     <TableHead>{isRTL ? 'الحالة' : 'Status'}</TableHead>
                   </TableRow>
@@ -631,6 +657,7 @@ export default function DailyClosingsPage() {
                       <TableCell>{formatCurrency(Number(c.bank_transfer_sales))}</TableCell>
                       <TableCell className="font-bold">{formatCurrency(Number(c.total_sales))}</TableCell>
                       <TableCell>{c.transactions_count}</TableCell>
+                      <TableCell>{c.source === 'shifts' ? c.shifts_count : (isRTL ? 'قديم' : 'Legacy')}</TableCell>
                       <TableCell className={Number(c.cash_difference || 0) !== 0 ? 'text-destructive font-medium' : 'text-green-600'}>
                         {c.cash_counted !== null ? formatCurrency(Number(c.cash_difference || 0)) : '-'}
                       </TableCell>
@@ -648,5 +675,113 @@ export default function DailyClosingsPage() {
         </Card>
       )}
     </AppLayout>
+  );
+}
+
+const BLOCKER_TEXT: Record<string, { ar: string; en: string }> = {
+  NO_SHIFTS: { ar: 'لا توجد ورديات في هذا اليوم.', en: 'There are no shifts on this day.' },
+  OPEN_SHIFTS: { ar: 'يوجد وردية مفتوحة، يجب إغلاقها من نقطة البيع أولاً.', en: 'A shift is still open; close it from the POS first.' },
+  PENDING_SHIFTS: { ar: 'يوجد ورديات بانتظار اعتماد المدير.', en: 'Some shifts are waiting for manager approval.' },
+  MANAGER_REQUIRED: { ar: 'إغلاق اليوم للمدير فقط.', en: 'Only a manager can close the day.' },
+};
+
+function blockerText(code: string, isRTL: boolean) {
+  const t = BLOCKER_TEXT[code];
+  return t ? t[isRTL ? 'ar' : 'en'] : code;
+}
+
+const SHIFT_STATUS: Record<string, { ar: string; en: string; className: string }> = {
+  open: { ar: 'مفتوحة', en: 'Open', className: 'bg-success/15 text-success border-success/30' },
+  pending_approval: { ar: 'بانتظار الاعتماد', en: 'Awaiting approval', className: 'bg-amber-500/15 text-amber-600 border-amber-500/30' },
+  closed: { ar: 'معتمدة', en: 'Approved', className: 'bg-muted text-muted-foreground' },
+};
+
+/** The day's shifts and the cash drawer reconciliation, summed across them. */
+function DayShiftsCard({
+  summary, isRTL, formatCurrency,
+}: {
+  summary: DaySummary;
+  isRTL: boolean;
+  formatCurrency: (v: number) => string;
+}) {
+  const money = (v: number | null) => (v === null ? '—' : formatCurrency(Number(v)));
+  const diffClass = (v: number | null) =>
+    v === null ? '' : v < 0 ? 'text-destructive font-bold' : v > 0 ? 'text-amber-600 font-bold' : 'text-green-600 font-bold';
+  const { cash } = summary;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <Banknote className="w-4 h-4 text-green-600" />
+          {isRTL ? `ورديات اليوم ومطابقة الدرج (${summary.shift_counts.total})` : `Shifts & Cash Drawer (${summary.shift_counts.total})`}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2 text-center">
+          {[
+            { label: isRTL ? 'الافتتاحي' : 'Opening', value: money(cash.opening) },
+            { label: isRTL ? 'مبيعات نقدية' : 'Cash sales', value: money(cash.sales) },
+            { label: isRTL ? 'إيداعات' : 'Cash in', value: money(cash.cash_in) },
+            { label: isRTL ? 'سحوبات' : 'Cash out', value: money(cash.cash_out) },
+            { label: isRTL ? 'مصروفات' : 'Expenses', value: money(cash.expenses) },
+            { label: isRTL ? 'المتوقع' : 'Expected', value: money(cash.expected) },
+            { label: isRTL ? 'المعدود' : 'Counted', value: money(cash.counted) },
+            { label: isRTL ? 'الفرق' : 'Difference', value: money(cash.difference), className: diffClass(cash.difference) },
+          ].map(c => (
+            <div key={c.label} className="rounded-lg border border-border p-2">
+              <p className="text-[11px] text-muted-foreground">{c.label}</p>
+              <p className={`text-sm font-semibold ${c.className || ''}`}>{c.value}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>#</TableHead>
+                <TableHead>{isRTL ? 'الحالة' : 'Status'}</TableHead>
+                <TableHead>{isRTL ? 'الفتح' : 'Opened'}</TableHead>
+                <TableHead>{isRTL ? 'الافتتاحي' : 'Opening'}</TableHead>
+                <TableHead>{isRTL ? 'مبيعات نقدية' : 'Cash sales'}</TableHead>
+                <TableHead>{isRTL ? 'المتوقع' : 'Expected'}</TableHead>
+                <TableHead>{isRTL ? 'المعدود' : 'Counted'}</TableHead>
+                <TableHead>{isRTL ? 'الفرق' : 'Diff'}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {summary.shifts.map(sh => {
+                const st = SHIFT_STATUS[sh.status];
+                return (
+                  <TableRow key={sh.id}>
+                    <TableCell className="font-medium">{sh.shift_no}</TableCell>
+                    <TableCell><Badge variant="outline" className={st?.className}>{st ? st[isRTL ? 'ar' : 'en'] : sh.status}</Badge></TableCell>
+                    <TableCell className="text-xs">
+                      {format(new Date(sh.opened_at), 'HH:mm')}
+                      {sh.closed_at ? ` – ${format(new Date(sh.closed_at), 'HH:mm')}` : ''}
+                      <div className="text-muted-foreground">{sh.opened_by_name || ''}</div>
+                    </TableCell>
+                    <TableCell>{money(sh.opening_cash)}</TableCell>
+                    <TableCell>{money(sh.cash_sales)}</TableCell>
+                    <TableCell>{sh.status === 'open' ? '—' : money(sh.expected_cash)}</TableCell>
+                    <TableCell>{money(sh.counted_cash)}</TableCell>
+                    <TableCell className={diffClass(sh.difference)}>{money(sh.difference)}</TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+
+        {summary.sales.outside_shifts > 0 && (
+          <p className="text-xs text-muted-foreground">
+            {isRTL
+              ? `${summary.sales.outside_shifts} فاتورة في هذا اليوم خارج الورديات (مستوردة أو قبل تفعيل الورديات): داخلة في المبيعات وغير داخلة في مطابقة الدرج.`
+              : `${summary.sales.outside_shifts} invoice(s) this day belong to no shift: counted in sales, not in the drawer reconciliation.`}
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
