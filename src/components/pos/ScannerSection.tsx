@@ -9,9 +9,17 @@ import { useLanguage } from "@/i18n";
 interface ScannerSectionProps {
   onScan: (query: string) => void;
   isSearching: boolean;
+  /**
+   * Focus mode: typing anywhere outside a field (e.g. a barcode scanner, which types like a
+   * keyboard) goes into the scan box, and F2 jumps to it.
+   */
+  captureKeys?: boolean;
 }
 
-export function ScannerSection({ onScan, isSearching }: ScannerSectionProps) {
+const isEditable = (el: Element | null) =>
+  !!el && (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement || (el as HTMLElement).isContentEditable);
+
+export function ScannerSection({ onScan, isSearching, captureKeys }: ScannerSectionProps) {
   const [scannerInput, setScannerInput] = useState("");
   const [isScanning, setIsScanning] = useState(false);
   const scannerRef = useRef<HTMLInputElement>(null);
@@ -22,6 +30,27 @@ export function ScannerSection({ onScan, isSearching }: ScannerSectionProps) {
       scannerRef.current.focus();
     }
   }, [isScanning]);
+
+  useEffect(() => {
+    if (!captureKeys) return;
+    scannerRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      const input = scannerRef.current;
+      if (!input || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key === "F2") {
+        e.preventDefault();
+        input.focus();
+        input.select();
+        return;
+      }
+      // Leave dialogs (payment, customer...) and other fields alone.
+      if (e.key.length !== 1 || isEditable(document.activeElement) || document.querySelector('[role="dialog"]')) return;
+      // Focusing during keydown lets the browser type this very character into the scan box.
+      input.focus();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [captureKeys]);
 
   const handleScanSubmit = (e: React.FormEvent) => {
     e.preventDefault();

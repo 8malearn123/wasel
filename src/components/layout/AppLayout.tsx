@@ -9,10 +9,20 @@ interface AppLayoutProps {
   children: ReactNode;
   title: string;
   subtitle?: string;
+  /** Cashier focus mode: the page alone on screen, without sidebar and header. */
+  focusMode?: boolean;
 }
 
-export function AppLayout({ children, title, subtitle }: AppLayoutProps) {
+export function AppLayout({ children, title, subtitle, focusMode }: AppLayoutProps) {
   const { isRTL } = useLanguage();
+
+  if (focusMode) {
+    return (
+      <div className="min-h-screen bg-background">
+        <main className="p-3">{children}</main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

@@ -11,6 +11,7 @@ import { CartPanel, POSCartItem } from "@/components/pos/CartPanel";
 import { InvoiceDialog } from "@/components/pos/InvoiceDialog";
 import { CashierSalesHistory } from "@/components/pos/CashierSalesHistory";
 import { OpenShiftPanel, ShiftBar } from "@/components/pos/ShiftControls";
+import { FocusModeBar, FocusModeButton, useFocusMode } from "@/components/pos/FocusMode";
 import { useShift } from "@/hooks/useShift";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTabParam } from '@/hooks/useTabParam';
@@ -80,6 +81,8 @@ export default function POSPage() {
   const { createSale, markAsPrinted, sales, loading: salesLoading, updateSale, refetch: refetchSales } = useSales();
 
   const { shift, loading: shiftLoading, refresh: refreshShift, openShift, recordMovement, closeShift } = useShift();
+
+  const focusMode = useFocusMode();
 
   const isCashier = merchantUser?.role === 'cashier';
 
@@ -238,8 +241,21 @@ export default function POSPage() {
     : sales;
 
   return (
-    <AppLayout title={t.pos.title} subtitle={t.pos.subtitle}>
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="h-[calc(100vh-140px)]">
+    <AppLayout title={t.pos.title} subtitle={t.pos.subtitle} focusMode={focusMode.focus}>
+      {focusMode.focus && (
+        <FocusModeBar
+          branchName={currentBranch?.name}
+          userName={user?.email || undefined}
+          fullscreen={focusMode.fullscreen}
+          onFullscreen={focusMode.enterFullscreen}
+          onExit={focusMode.exit}
+        />
+      )}
+      <Tabs
+        value={focusMode.focus ? "pos" : activeTab}
+        onValueChange={setActiveTab}
+        className={focusMode.focus ? "h-[calc(100vh-80px)] mt-3" : "h-[calc(100vh-140px)]"}
+      >
 
         <TabsContent value="pos" className="h-[calc(100%-60px)]">
           {shiftLoading ? (
@@ -247,13 +263,25 @@ export default function POSPage() {
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
             </div>
           ) : !shift ? (
-            <OpenShiftPanel onOpen={openShift} />
+            <div className="h-full flex flex-col">
+              {!focusMode.focus && (
+                <div className="flex justify-end">
+                  <FocusModeButton onEnter={focusMode.enter} />
+                </div>
+              )}
+              <div className="flex-1"><OpenShiftPanel onOpen={openShift} /></div>
+            </div>
           ) : (
           <div className="flex flex-col gap-4 h-full">
-          <ShiftBar report={shift} onMovement={recordMovement} onClose={closeShift} onClosed={refreshShift} />
+          <div className="flex items-center gap-2">
+            <div className="flex-1">
+              <ShiftBar report={shift} onMovement={recordMovement} onClose={closeShift} onClosed={refreshShift} />
+            </div>
+            {!focusMode.focus && <FocusModeButton onEnter={focusMode.enter} />}
+          </div>
           <div className="flex gap-6 flex-1 min-h-0">
             <div className="flex-1 flex flex-col gap-6 overflow-hidden">
-              <ScannerSection onScan={handleScan} isSearching={isSearching} />
+              <ScannerSection onScan={handleScan} isSearching={isSearching} captureKeys={focusMode.focus} />
               <ProductGrid
                 devices={devices}
                 accessories={accessories}
