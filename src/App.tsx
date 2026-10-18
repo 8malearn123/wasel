@@ -29,6 +29,7 @@ const OnlineStorePage = lazy(() => import("./pages/OnlineStorePage"));
 const OnlineOrdersPage = lazy(() => import("./pages/OnlineOrdersPage"));
 const PublicStorePage = lazy(() => import("./pages/PublicStorePage"));
 const DailyClosingsPage = lazy(() => import("./pages/DailyClosingsPage"));
+const ShiftsPage = lazy(() => import("./pages/ShiftsPage"));
 const CustomersPage = lazy(() => import("./pages/CustomersPage"));
 const CustomerDetailPage = lazy(() => import("./pages/CustomerDetailPage"));
 const WholesalePage = lazy(() => import("./pages/WholesalePage"));
@@ -162,6 +163,7 @@ function AppRoutes() {
       <Route path="/online-store" element={<ProtectedRoute><CashierRedirect><OnlineStorePage /></CashierRedirect></ProtectedRoute>} />
       <Route path="/online-orders" element={<ProtectedRoute><CashierRedirect><OnlineOrdersPage /></CashierRedirect></ProtectedRoute>} />
       <Route path="/daily-closings" element={<ProtectedRoute><DailyClosingsPage /></ProtectedRoute>} />
+      <Route path="/shifts" element={<ProtectedRoute><CashierRedirect><ShiftsPage /></CashierRedirect></ProtectedRoute>} />
       <Route path="/customers" element={<ProtectedRoute><CashierRedirect><CustomersPage /></CashierRedirect></ProtectedRoute>} />
       <Route path="/customers/:id" element={<ProtectedRoute><CashierRedirect><CustomerDetailPage /></CashierRedirect></ProtectedRoute>} />
       <Route path="/wholesale" element={<ProtectedRoute><CashierRedirect><WholesalePage /></CashierRedirect></ProtectedRoute>} />

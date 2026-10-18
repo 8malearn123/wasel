@@ -198,6 +198,8 @@ export class TestDb {
     await admin.end();
     const pool = new pg.Pool({ connectionString: urlForDatabase(adminUrl, name), max: 40 });
     pool.on("connect", (c) => c.on("notice", () => {}));
+    // Idle clients get "terminating connection" when the clone is force-dropped; that is expected.
+    pool.on("error", () => {});
     return new TestDb(name, adminUrl, pool);
   }
 

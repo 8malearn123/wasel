@@ -46,6 +46,7 @@ TEST_DATABASE_URL=postgres://postgres:postgres@localhost:54329/postgres npm run 
 | `db/migrations.test.ts` | D1 VAT fix + daily-closing correction, de-duplicated numbers, backfills, enums, dropped policies, immutable ledger |
 | `db/pos-checkout.test.ts` | Split tender, VAT, numbering, customers, every refusal (with rollback checks), authorization |
 | `db/online-orders.test.ts` | Server pricing, holds, TTL, refusals, RLS, tracking, status → stock lifecycle, expiry (cron and lazy) |
+| `db/shifts.test.ts` | Open/close shift rules, selling needs a shift, expected cash and blind count, manager approval, movements, races between closing and selling |
 | `db/concurrency.test.ts` | Two tills / POS vs web racing for one IMEI, rollback hand-over, 30 parallel invoices, last-unit race |
 
 Fixture IDs live in `db/fixtures.ts`. Keep them in sync with `support/legacy_seed.sql`.

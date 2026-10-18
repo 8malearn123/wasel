@@ -1,8 +1,8 @@
-import { describe, it, expect } from "vitest";
+import { beforeEach, describe, it, expect } from "vitest";
 import { setTimeout as sleep } from "node:timers/promises";
 import { useTestDb } from "./use-test-db";
 import { anon, user } from "./harness";
-import { ACCESSORIES, BRANCH_MAIN, DEVICES, OWNER, STORE_SLUG, accessory, device, pay } from "./fixtures";
+import { ACCESSORIES, BRANCH_MAIN, DEVICES, OWNER, STORE_SLUG, accessory, device, pay, openShifts } from "./fixtures";
 
 /** Tracks whether a promise has settled, without awaiting it. */
 function track<T>(promise: Promise<T>) {
@@ -25,6 +25,7 @@ const shopper = (phone: string) => ({
 
 describe("concurrency", () => {
   const db = useTestDb();
+  beforeEach(() => openShifts(db()));
   const sellIphone15 = { _branch_id: BRANCH_MAIN, _items: [device(DEVICES.iphone15.id)], _payments: [pay("cash", 4600)] };
 
   it("two tills selling the same IMEI: the second waits, then is refused", async () => {

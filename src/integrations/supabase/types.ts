@@ -1791,6 +1791,7 @@ export type Database = {
           payment_method: Database["public"]["Enums"]["payment_method"]
           payment_status: Database["public"]["Enums"]["payment_status"]
           sale_date: string
+          shift_id: string | null
           sold_by: string | null
           subtotal: number
           tax_amount: number | null
@@ -1811,6 +1812,7 @@ export type Database = {
           payment_method?: Database["public"]["Enums"]["payment_method"]
           payment_status?: Database["public"]["Enums"]["payment_status"]
           sale_date?: string
+          shift_id?: string | null
           sold_by?: string | null
           subtotal?: number
           tax_amount?: number | null
@@ -1831,6 +1833,7 @@ export type Database = {
           payment_method?: Database["public"]["Enums"]["payment_method"]
           payment_status?: Database["public"]["Enums"]["payment_status"]
           sale_date?: string
+          shift_id?: string | null
           sold_by?: string | null
           subtotal?: number
           tax_amount?: number | null
@@ -2872,6 +2875,12 @@ export type Database = {
       }
     }
     Functions: {
+      approve_shift: { Args: { _notes?: string; _shift_id: string }; Returns: Json }
+      close_shift: {
+        Args: { _counted_cash: number; _notes?: string; _shift_id: string }
+        Returns: Json
+      }
+      current_shift: { Args: { _branch_id: string }; Returns: Json }
       demo_switch_plan: { Args: { _plan_name: string }; Returns: undefined }
       generate_invoice_number: {
         Args: { _merchant_id: string }
@@ -2921,6 +2930,11 @@ export type Database = {
         | { Args: never; Returns: boolean }
         | { Args: { _merchant_id: string }; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
+      list_shifts: { Args: { _limit?: number; _status?: string }; Returns: Json }
+      open_shift: {
+        Args: { _branch_id: string; _notes?: string; _opening_cash: number }
+        Returns: Json
+      }
       phone_key: { Args: { _phone: string }; Returns: string }
       place_online_order: {
         Args: {
@@ -2949,6 +2963,11 @@ export type Database = {
         }
         Returns: Json
       }
+      record_cash_movement: {
+        Args: { _amount: number; _reason: string; _shift_id: string; _type: string }
+        Returns: Json
+      }
+      shift_report: { Args: { _shift_id: string }; Returns: Json }
       track_public_order: {
         Args: { _order_number: string; _phone: string; _slug: string }
         Returns: Json

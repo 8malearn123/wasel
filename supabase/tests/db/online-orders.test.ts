@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
+import { beforeEach, describe, it, expect } from "vitest";
 import { useTestDb } from "./use-test-db";
 import { anon, user } from "./harness";
-import { ACCESSORIES, BRANCH_MAIN, DEVICES, MERCHANT, OWNER, STORE_SLUG, device, pay } from "./fixtures";
+import { ACCESSORIES, BRANCH_MAIN, DEVICES, MERCHANT, OWNER, STORE_SLUG, device, pay, openShifts } from "./fixtures";
 
 interface PlacedOrder {
   order_number: string;
@@ -24,6 +24,7 @@ const shopper = {
 
 describe("online orders", () => {
   const db = useTestDb();
+  beforeEach(() => openShifts(db()));
 
   const placeOrder = (items: unknown[], overrides: Record<string, unknown> = {}) =>
     db().as(anon).rpc<PlacedOrder>("place_online_order", { ...shopper, ...overrides, _items: items });

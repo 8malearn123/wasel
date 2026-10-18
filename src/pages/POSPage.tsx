@@ -10,9 +10,11 @@ import { ProductGrid } from "@/components/pos/ProductGrid";
 import { CartPanel, POSCartItem } from "@/components/pos/CartPanel";
 import { InvoiceDialog } from "@/components/pos/InvoiceDialog";
 import { CashierSalesHistory } from "@/components/pos/CashierSalesHistory";
+import { OpenShiftPanel, ShiftBar } from "@/components/pos/ShiftControls";
+import { useShift } from "@/hooks/useShift";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTabParam } from '@/hooks/useTabParam';
-import { ShoppingCart, FileText } from "lucide-react";
+import { ShoppingCart, FileText, Loader2 } from "lucide-react";
 import type { Device, Accessory, PaymentMethod } from "@/types/database";
 import type { PaymentLine } from "@/lib/payments";
 import { toast } from "sonner";
@@ -76,6 +78,8 @@ export default function POSPage() {
 
   const { devices, accessories, loading, refetch, searchByIMEI, searchBySkuOrName } = usePOSInventory();
   const { createSale, markAsPrinted, sales, loading: salesLoading, updateSale, refetch: refetchSales } = useSales();
+
+  const { shift, loading: shiftLoading, refresh: refreshShift, openShift, recordMovement, closeShift } = useShift();
 
   const isCashier = merchantUser?.role === 'cashier';
 
@@ -173,8 +177,9 @@ export default function POSPage() {
     try {
       const result = await createSale(cart, payments, customerName || undefined, customerPhone || undefined, discount);
       if (result.error || !result.data) {
-        // The server refused (e.g. a unit was just sold elsewhere): refresh what's on the shelf.
-        await refetch();
+        // The server refused (e.g. a unit was just sold elsewhere, or the shift was
+        // closed from another till): refresh the shelf and the shift.
+        await Promise.all([refetch(), refreshShift()]);
         return;
       }
       if (result.data) {
@@ -237,7 +242,16 @@ export default function POSPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="h-[calc(100vh-140px)]">
 
         <TabsContent value="pos" className="h-[calc(100%-60px)]">
-          <div className="flex gap-6 h-full">
+          {shiftLoading ? (
+            <div className="h-full flex items-center justify-center">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : !shift ? (
+            <OpenShiftPanel onOpen={openShift} />
+          ) : (
+          <div className="flex flex-col gap-4 h-full">
+          <ShiftBar report={shift} onMovement={recordMovement} onClose={closeShift} onClosed={refreshShift} />
+          <div className="flex gap-6 flex-1 min-h-0">
             <div className="flex-1 flex flex-col gap-6 overflow-hidden">
               <ScannerSection onScan={handleScan} isSearching={isSearching} />
               <ProductGrid
@@ -260,6 +274,8 @@ export default function POSPage() {
               isProcessing={isProcessing}
             />
           </div>
+          </div>
+          )}
         </TabsContent>
 
         <TabsContent value="history" className="h-[calc(100%-60px)] overflow-auto">

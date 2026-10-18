@@ -1,9 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { beforeEach, describe, it, expect } from "vitest";
 import { useTestDb } from "./use-test-db";
 import { anon, user } from "./harness";
 import {
   ACCESSORIES, BRANCH_MAIN, BRANCH_MALL, CASHIER, DEVICES, MERCHANT, OTHER_OWNER, OWNER, SARA,
-  accessory, device, pay,
+  accessory, device, pay, openShifts,
 } from "./fixtures";
 
 interface Checkout {
@@ -19,6 +19,7 @@ interface Checkout {
 
 describe("pos_checkout", () => {
   const db = useTestDb();
+  beforeEach(() => openShifts(db()));
 
   const checkout = (args: Record<string, unknown>, who = OWNER) =>
     db().as(user(who)).rpc<Checkout>("pos_checkout", { _branch_id: BRANCH_MAIN, _discount: 0, ...args });

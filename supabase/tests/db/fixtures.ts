@@ -1,3 +1,5 @@
+import { type TestDb, user } from "./harness";
+
 // IDs of the rows created by supabase/tests/support/legacy_seed.sql.
 
 export const MERCHANT = "11111111-1111-1111-1111-111111111111";
@@ -50,3 +52,10 @@ export const LEGACY_SALES = {
 export const device = (id: string) => ({ type: "device", id });
 export const accessory = (id: string, quantity = 1) => ({ type: "accessory", id, quantity });
 export const pay = (method: string, amount: number, reference?: string) => ({ method, amount, reference });
+
+/** Opens a shift at both branches (every POS sale needs one), as the owner. */
+export async function openShifts(db: TestDb, openingCash = 500) {
+  for (const branch of [BRANCH_MAIN, BRANCH_MALL]) {
+    await db.as(user(OWNER)).rpc("open_shift", { _branch_id: branch, _opening_cash: openingCash });
+  }
+}
