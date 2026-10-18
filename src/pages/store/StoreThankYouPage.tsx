@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams, useLocation } from 'react-router-dom';
 import { CheckCircle2, Loader2, Printer, Package } from 'lucide-react';
+import { orderVatLabel } from '@/lib/vat';
 import { Button } from '@/components/ui/button';
 import { StoreSEO } from '@/components/store/StoreSEO';
 import type { StoreSettings } from '@/hooks/useOnlineStore';
 import { supabase } from '@/integrations/supabase/client';
+import { getOrders } from '@/lib/storeOrdersHistory';
 
 interface OrderItem {
   id: string;
@@ -45,6 +47,15 @@ export function StoreThankYouPage({ store }: { store: StoreSettings }) {
 
   useEffect(() => {
     if (stateOrder || !orderNumber) return;
+    // Shoppers can't read orders directly (RLS); after a reload use the snapshot
+    // saved at checkout on this device.
+    const saved = slug ? getOrders(slug).find((o) => o.order_number === orderNumber) : undefined;
+    if (saved) {
+      setOrder({ id: saved.order_number, customer_email: null, payment_status: 'unpaid', status: 'pending', ...saved });
+      setItems((saved.items || []).map((i, idx) => ({ id: String(idx), ...i })));
+      setLoading(false);
+      return;
+    }
     (async () => {
       const { data: orderData } = await supabase
         .from('online_orders')
@@ -62,7 +73,7 @@ export function StoreThankYouPage({ store }: { store: StoreSettings }) {
       }
       setLoading(false);
     })();
-  }, [orderNumber, store.merchant_id, stateOrder]);
+  }, [orderNumber, store.merchant_id, stateOrder, slug]);
 
   const handlePrint = () => window.print();
 
@@ -163,7 +174,7 @@ export function StoreThankYouPage({ store }: { store: StoreSettings }) {
             {/* Totals */}
             <div className="p-6 space-y-2 text-sm">
               <Row label="المجموع الفرعي" value={`${order.subtotal.toLocaleString()} ${currency}`} />
-              <Row label="ضريبة القيمة المضافة (15%)" value={`${order.tax_amount.toLocaleString()} ${currency}`} />
+              <Row label={orderVatLabel(order)} value={`${order.tax_amount.toLocaleString()} ${currency}`} />
               <Row label="الشحن" value={order.shipping_cost === 0 ? 'مجاني' : `${order.shipping_cost.toLocaleString()} ${currency}`} />
               <div className="flex justify-between font-bold text-lg pt-3 border-t">
                 <span>الإجمالي</span>

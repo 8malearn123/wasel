@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { tenderBreakdown } from '@/lib/payments';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 
@@ -90,7 +91,7 @@ export function useDailyClosings() {
 
     const { data: sales, error } = await supabase
       .from('sales')
-      .select('*, items:sale_items(*, device:devices(*), accessory:accessories(*))')
+      .select('*, items:sale_items(*, device:devices(*), accessory:accessories(*)), payments:sale_payments(method, amount)')
       .eq('merchant_id', merchant.id)
       .eq('branch_id', currentBranch.id)
       .gte('sale_date', startOfDay)
@@ -108,14 +109,11 @@ export function useDailyClosings() {
     const soldItems: SoldItem[] = [];
 
     for (const sale of (sales || [])) {
-      const amount = Number(sale.total_amount);
-      if (sale.payment_method === 'cash') cashTotal += amount;
-      else if (sale.payment_method === 'card') cardTotal += amount;
-      else if (sale.payment_method === 'bank_transfer') bankTransferTotal += amount;
-      else if (sale.payment_method === 'mixed') {
-        cashTotal += amount / 2;
-        cardTotal += amount / 2;
-      }
+      // Tender lines give the real split (Cash + Mada ...); legacy sales fall back to the header method.
+      const tenders = tenderBreakdown(sale);
+      cashTotal += tenders.cash;
+      cardTotal += tenders.card;
+      bankTransferTotal += tenders.bank_transfer;
 
       totalTax += Number(sale.tax_amount || 0);
       totalDiscount += Number(sale.discount_amount || 0);

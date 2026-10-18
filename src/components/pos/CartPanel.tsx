@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ShoppingCart, X, Minus, Plus, CreditCard, Banknote, Building2, Percent, Receipt, User, Phone
+  ShoppingCart, X, Minus, Plus, CreditCard, Banknote, Building2, Split, Smartphone, Receipt, User, Phone
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,12 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n";
 import { CouponApply } from "./CouponApply";
 import type { PaymentMethod } from "@/types/database";
+import { POS_TENDER_METHODS, paymentMethodLabel, type PaymentLine, type TenderMethod } from "@/lib/payments";
+import { splitVatInclusive } from "@/lib/vat";
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+const emptySplit = () =>
+  Object.fromEntries(POS_TENDER_METHODS.map((m) => [m, ""])) as Record<TenderMethod, string>;
 
 export interface POSCartItem {
   id: string;
@@ -37,7 +43,7 @@ interface CartPanelProps {
   onUpdateQuantity: (id: string, delta: number) => void;
   onRemoveItem: (id: string) => void;
   onClearCart: () => void;
-  onCompleteSale: (customerName: string, customerPhone: string, discount: number) => void;
+  onCompleteSale: (customerName: string, customerPhone: string, discount: number, payments: PaymentLine[]) => void;
   isProcessing: boolean;
 }
 
@@ -59,24 +65,48 @@ export function CartPanel({
   const [cashReceived, setCashReceived] = useState("");
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [splitAmounts, setSplitAmounts] = useState<Record<TenderMethod, string>>(emptySplit);
 
-  const discount = couponDiscount;
+  // Prices are VAT-inclusive. Amounts are rounded to halalas exactly like pos_checkout,
+  // so the tender lines we send add up to the server's total.
+  const discount = round2(couponDiscount);
   const totalBeforeDiscount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const total = totalBeforeDiscount - discount;
-  const tax = total - (total / 1.15);
-  const subtotal = total - tax;
+  const { total, tax, net: subtotal } = splitVatInclusive(totalBeforeDiscount - discount);
 
   const paymentMethods: { id: PaymentMethod; icon: typeof Banknote; label: string }[] = [
     { id: "cash", icon: Banknote, label: t.pos.cash },
+    { id: "mada", icon: CreditCard, label: paymentMethodLabel("mada", isRTL) },
     { id: "card", icon: CreditCard, label: t.pos.card },
-    { id: "bank_transfer", icon: Building2, label: "Bank" },
-    { id: "mixed", icon: Percent, label: t.pos.mixed },
+    { id: "apple_pay", icon: Smartphone, label: paymentMethodLabel("apple_pay", isRTL) },
+    { id: "stc_pay", icon: Smartphone, label: paymentMethodLabel("stc_pay", isRTL) },
+    { id: "bank_transfer", icon: Building2, label: paymentMethodLabel("bank_transfer", isRTL) },
+    { id: "mixed", icon: Split, label: t.pos.mixed },
   ];
 
+  const splitLines: PaymentLine[] = POS_TENDER_METHODS
+    .map((method) => ({ method, amount: round2(parseFloat(splitAmounts[method]) || 0) }))
+    .filter((line) => line.amount > 0);
+  const splitPaid = round2(splitLines.reduce((sum, line) => sum + line.amount, 0));
+  const splitRemaining = round2(total - splitPaid);
+
+  const fillRemaining = (method: TenderMethod) => {
+    const current = round2(parseFloat(splitAmounts[method]) || 0);
+    const next = round2(current + splitRemaining);
+    setSplitAmounts((prev) => ({ ...prev, [method]: next > 0 ? String(next) : "" }));
+  };
+
   const handleComplete = () => {
+    if (!selectedPayment) return;
+    const payments: PaymentLine[] =
+      selectedPayment === "mixed"
+        ? splitLines
+        : total > 0
+          ? [{ method: selectedPayment as TenderMethod, amount: total }]
+          : [];
     setShowPaymentDialog(false);
     setCashReceived("");
-    onCompleteSale(customerName, customerPhone, discount);
+    setSplitAmounts(emptySplit());
+    onCompleteSale(customerName, customerPhone, discount, payments);
     setCustomerName("");
     setCustomerPhone("");
     setCouponDiscount(0);
@@ -87,7 +117,10 @@ export function CartPanel({
   const changeDue = receivedAmount - total;
   const cashInsufficient = selectedPayment === "cash" && cashReceived !== "" && receivedAmount < total;
   const canConfirmPayment =
-    !!selectedPayment && (selectedPayment !== "cash" || cashReceived === "" || receivedAmount >= total);
+    !!selectedPayment &&
+    (selectedPayment === "mixed"
+      ? splitLines.length > 0 && splitRemaining === 0
+      : selectedPayment !== "cash" || cashReceived === "" || receivedAmount >= total);
 
   // Sensible quick-tender suggestions for cash payments
   const quickAmounts = Array.from(
@@ -301,6 +334,53 @@ export function CartPanel({
                 ))}
               </div>
             </div>
+
+            {/* Split tender: one amount per method, must add up to the total */}
+            {selectedPayment === "mixed" && (
+              <div className="space-y-2">
+                <Label className="text-xs">{isRTL ? "تقسيم المبلغ على طرق الدفع" : "Split across payment methods"}</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {POS_TENDER_METHODS.map((method) => (
+                    <div key={method} className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-muted-foreground">{paymentMethodLabel(method, isRTL)}</span>
+                        {splitRemaining > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => fillRemaining(method)}
+                            className="text-[10px] text-primary hover:underline"
+                          >
+                            {isRTL ? "الباقي" : "Rest"}
+                          </button>
+                        )}
+                      </div>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        min="0"
+                        value={splitAmounts[method]}
+                        onChange={(e) => setSplitAmounts((prev) => ({ ...prev, [method]: e.target.value }))}
+                        placeholder="0.00"
+                        className="h-9 text-center"
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div
+                  className={cn(
+                    "flex justify-between items-center rounded-lg px-3 py-2 text-sm font-medium border",
+                    splitRemaining === 0
+                      ? "bg-success/10 border-success/20 text-success"
+                      : "bg-destructive/5 border-destructive/20 text-destructive"
+                  )}
+                >
+                  <span>
+                    {splitRemaining >= 0 ? (isRTL ? "المتبقي" : "Remaining") : (isRTL ? "زيادة" : "Over by")}
+                  </span>
+                  <span className="font-bold">{Math.abs(splitRemaining).toFixed(2)} ر.س</span>
+                </div>
+              </div>
+            )}
 
             {/* Cash tender + change */}
             {selectedPayment === "cash" && (

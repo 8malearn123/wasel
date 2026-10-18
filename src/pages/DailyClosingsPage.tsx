@@ -20,6 +20,7 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
   PieChart, Pie, Cell, Legend,
 } from "recharts";
+import { paymentMethodLabel } from "@/lib/payments";
 import { toast } from "sonner";
 
 export default function DailyClosingsPage() {
@@ -512,10 +513,7 @@ export default function DailyClosingsPage() {
                             <TableCell className="font-medium">{formatCurrency(item.total)}</TableCell>
                             <TableCell>
                               <Badge variant="secondary" className="text-xs">
-                                {item.paymentMethod === 'cash' ? (isRTL ? 'كاش' : 'Cash') :
-                                 item.paymentMethod === 'card' ? (isRTL ? 'مدى' : 'Card') :
-                                 item.paymentMethod === 'bank_transfer' ? (isRTL ? 'تحويل' : 'Transfer') :
-                                 (isRTL ? 'مختلط' : 'Mixed')}
+                                {paymentMethodLabel(item.paymentMethod, isRTL)}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-xs font-mono">{item.invoiceNumber}</TableCell>

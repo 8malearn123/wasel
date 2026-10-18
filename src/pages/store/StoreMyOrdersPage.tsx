@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { trackingUrl } from '@/lib/shipping';
 import { Link, useParams } from 'react-router-dom';
 import { Package, ChevronDown, ChevronUp, ShoppingBag, Trash2, Truck, CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { orderVatLabel } from '@/lib/vat';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { StoreSEO } from '@/components/store/StoreSEO';
@@ -40,7 +41,7 @@ export function StoreMyOrdersPage({ store }: { store: StoreSettings }) {
         local.map(async (o) => {
           const last4 = (o.customer_phone || '').replace(/\D/g, '').slice(-4);
           if (!last4 || last4.length !== 4) return o;
-          const res = await trackPublicOrder(o.order_number, last4);
+          const res = await trackPublicOrder(store.slug, o.order_number, last4);
           if (res.order) {
             return {
               ...o,
@@ -169,7 +170,7 @@ export function StoreMyOrdersPage({ store }: { store: StoreSettings }) {
 
                   <div className="space-y-1 text-xs pt-3 border-t">
                     <Row label="المجموع الفرعي" value={`${o.subtotal.toLocaleString()} ${currency}`} />
-                    <Row label="الضريبة" value={`${o.tax_amount.toLocaleString()} ${currency}`} />
+                    <Row label={orderVatLabel(o)} value={`${o.tax_amount.toLocaleString()} ${currency}`} />
                     <Row label="الشحن" value={o.shipping_cost === 0 ? 'مجاني' : `${o.shipping_cost.toLocaleString()} ${currency}`} />
                     <div className="flex justify-between font-bold text-sm pt-1.5 border-t">
                       <span>الإجمالي</span>

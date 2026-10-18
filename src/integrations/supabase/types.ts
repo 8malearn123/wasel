@@ -508,6 +508,65 @@ export type Database = {
           },
         ]
       }
+      device_events: {
+        Row: {
+          actor: string | null
+          created_at: string
+          device_id: string
+          event: string
+          from_branch: string | null
+          from_status: string | null
+          id: number
+          imei: string | null
+          merchant_id: string
+          metadata: Json | null
+          ref_id: string | null
+          ref_table: string | null
+          to_branch: string | null
+          to_status: string | null
+        }
+        Insert: {
+          actor?: string | null
+          created_at?: string
+          device_id: string
+          event: string
+          from_branch?: string | null
+          from_status?: string | null
+          id?: number
+          imei?: string | null
+          merchant_id: string
+          metadata?: Json | null
+          ref_id?: string | null
+          ref_table?: string | null
+          to_branch?: string | null
+          to_status?: string | null
+        }
+        Update: {
+          actor?: string | null
+          created_at?: string
+          device_id?: string
+          event?: string
+          from_branch?: string | null
+          from_status?: string | null
+          id?: number
+          imei?: string | null
+          merchant_id?: string
+          metadata?: Json | null
+          ref_id?: string | null
+          ref_table?: string | null
+          to_branch?: string | null
+          to_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_events_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       devices: {
         Row: {
           branch_id: string | null
@@ -523,8 +582,10 @@ export type Database = {
           merchant_id: string
           model: string
           notes: string | null
+          online_order_id: string | null
           price: number
           purchase_id: string | null
+          reserved_until: string | null
           status: Database["public"]["Enums"]["device_status"]
           storage: string | null
           supplier_id: string | null
@@ -544,8 +605,10 @@ export type Database = {
           merchant_id: string
           model: string
           notes?: string | null
+          online_order_id?: string | null
           price?: number
           purchase_id?: string | null
+          reserved_until?: string | null
           status?: Database["public"]["Enums"]["device_status"]
           storage?: string | null
           supplier_id?: string | null
@@ -565,14 +628,23 @@ export type Database = {
           merchant_id?: string
           model?: string
           notes?: string | null
+          online_order_id?: string | null
           price?: number
           purchase_id?: string | null
+          reserved_until?: string | null
           status?: Database["public"]["Enums"]["device_status"]
           storage?: string | null
           supplier_id?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "devices_online_order_id_fkey"
+            columns: ["online_order_id"]
+            isOneToOne: false
+            referencedRelation: "online_orders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "devices_branch_id_fkey"
             columns: ["branch_id"]
@@ -599,6 +671,54 @@ export type Database = {
             columns: ["purchase_id"]
             isOneToOne: false
             referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_sequences: {
+        Row: {
+          branch_id: string | null
+          created_at: string
+          doc_type: string
+          id: string
+          last_value: number
+          merchant_id: string
+          prefix: string
+          updated_at: string
+        }
+        Insert: {
+          branch_id?: string | null
+          created_at?: string
+          doc_type: string
+          id?: string
+          last_value?: number
+          merchant_id: string
+          prefix: string
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string | null
+          created_at?: string
+          doc_type?: string
+          id?: string
+          last_value?: number
+          merchant_id?: string
+          prefix?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_sequences_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_sequences_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
             referencedColumns: ["id"]
           },
         ]
@@ -968,6 +1088,7 @@ export type Database = {
           payment_reference: string | null
           payment_status: Database["public"]["Enums"]["payment_status"] | null
           payout_id: string | null
+          reservation_expires_at: string | null
           shipping_address: string
           shipping_city: string
           shipping_cost: number | null
@@ -975,6 +1096,7 @@ export type Database = {
             | Database["public"]["Enums"]["shipping_provider"]
             | null
           status: Database["public"]["Enums"]["online_order_status"] | null
+          stock_state: string
           subtotal: number | null
           tax_amount: number | null
           total_amount: number | null
@@ -995,6 +1117,7 @@ export type Database = {
           payment_reference?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"] | null
           payout_id?: string | null
+          reservation_expires_at?: string | null
           shipping_address: string
           shipping_city: string
           shipping_cost?: number | null
@@ -1002,6 +1125,7 @@ export type Database = {
             | Database["public"]["Enums"]["shipping_provider"]
             | null
           status?: Database["public"]["Enums"]["online_order_status"] | null
+          stock_state?: string
           subtotal?: number | null
           tax_amount?: number | null
           total_amount?: number | null
@@ -1022,6 +1146,7 @@ export type Database = {
           payment_reference?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"] | null
           payout_id?: string | null
+          reservation_expires_at?: string | null
           shipping_address?: string
           shipping_city?: string
           shipping_cost?: number | null
@@ -1029,6 +1154,7 @@ export type Database = {
             | Database["public"]["Enums"]["shipping_provider"]
             | null
           status?: Database["public"]["Enums"]["online_order_status"] | null
+          stock_state?: string
           subtotal?: number | null
           tax_amount?: number | null
           total_amount?: number | null
@@ -1339,6 +1465,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           created_by: string | null
+          customer_id: string | null
           customer_name: string
           customer_phone: string | null
           delivered_at: string | null
@@ -1372,6 +1499,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
+          customer_id?: string | null
           customer_name: string
           customer_phone?: string | null
           delivered_at?: string | null
@@ -1405,6 +1533,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
+          customer_id?: string | null
           customer_name?: string
           customer_phone?: string | null
           delivered_at?: string | null
@@ -1432,6 +1561,13 @@ export type Database = {
           warranty_ends_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "repair_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "repair_orders_branch_id_fkey"
             columns: ["branch_id"]
@@ -1524,9 +1660,15 @@ export type Database = {
           created_at: string
           device_id: string | null
           id: string
+          imei_snapshot: string | null
+          item_name: string | null
+          line_discount: number
+          line_total: number | null
           quantity: number
           sale_id: string
+          sku_snapshot: string | null
           unit_price: number
+          vat_amount: number
         }
         Insert: {
           accessory_id?: string | null
@@ -1534,9 +1676,15 @@ export type Database = {
           created_at?: string
           device_id?: string | null
           id?: string
+          imei_snapshot?: string | null
+          item_name?: string | null
+          line_discount?: number
+          line_total?: number | null
           quantity?: number
           sale_id: string
+          sku_snapshot?: string | null
           unit_price?: number
+          vat_amount?: number
         }
         Update: {
           accessory_id?: string | null
@@ -1544,9 +1692,15 @@ export type Database = {
           created_at?: string
           device_id?: string | null
           id?: string
+          imei_snapshot?: string | null
+          item_name?: string | null
+          line_discount?: number
+          line_total?: number | null
           quantity?: number
           sale_id?: string
+          sku_snapshot?: string | null
           unit_price?: number
+          vat_amount?: number
         }
         Relationships: [
           {
@@ -1586,10 +1740,46 @@ export type Database = {
           },
         ]
       }
+      sale_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          method: Database["public"]["Enums"]["payment_method"]
+          reference: string | null
+          sale_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          method: Database["public"]["Enums"]["payment_method"]
+          reference?: string | null
+          sale_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          method?: Database["public"]["Enums"]["payment_method"]
+          reference?: string | null
+          sale_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_payments_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sales: {
         Row: {
           branch_id: string
           created_at: string
+          customer_id: string | null
           customer_name: string | null
           customer_phone: string | null
           discount_amount: number | null
@@ -1609,6 +1799,7 @@ export type Database = {
         Insert: {
           branch_id: string
           created_at?: string
+          customer_id?: string | null
           customer_name?: string | null
           customer_phone?: string | null
           discount_amount?: number | null
@@ -1628,6 +1819,7 @@ export type Database = {
         Update: {
           branch_id?: string
           created_at?: string
+          customer_id?: string | null
           customer_name?: string | null
           customer_phone?: string | null
           discount_amount?: number | null
@@ -1645,6 +1837,13 @@ export type Database = {
           total_amount?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "sales_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "sales_branch_id_fkey"
             columns: ["branch_id"]
@@ -2018,6 +2217,7 @@ export type Database = {
           merchant_id: string
           og_image_url: string | null
           primary_color: string | null
+          reservation_ttl_minutes: number
           return_policy: string | null
           secondary_color: string | null
           seo_description: string | null
@@ -2058,6 +2258,7 @@ export type Database = {
           merchant_id: string
           og_image_url?: string | null
           primary_color?: string | null
+          reservation_ttl_minutes?: number
           return_policy?: string | null
           secondary_color?: string | null
           seo_description?: string | null
@@ -2098,6 +2299,7 @@ export type Database = {
           merchant_id?: string
           og_image_url?: string | null
           primary_color?: string | null
+          reservation_ttl_minutes?: number
           return_policy?: string | null
           secondary_color?: string | null
           seo_description?: string | null
@@ -2719,6 +2921,38 @@ export type Database = {
         | { Args: never; Returns: boolean }
         | { Args: { _merchant_id: string }; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
+      phone_key: { Args: { _phone: string }; Returns: string }
+      place_online_order: {
+        Args: {
+          _customer_email?: string
+          _customer_name: string
+          _customer_phone: string
+          _items: Json
+          _notes?: string
+          _payment_method: string
+          _shipping_address: string
+          _shipping_city: string
+          _slug: string
+        }
+        Returns: Json
+      }
+      pos_checkout: {
+        Args: {
+          _branch_id: string
+          _customer_id?: string
+          _customer_name?: string
+          _customer_phone?: string
+          _discount?: number
+          _items: Json
+          _notes?: string
+          _payments: Json
+        }
+        Returns: Json
+      }
+      track_public_order: {
+        Args: { _order_number: string; _phone: string; _slug: string }
+        Returns: Json
+      }
     }
     Enums: {
       branch_request_status:
@@ -2740,7 +2974,16 @@ export type Database = {
         | "delivered"
         | "cancelled"
         | "refunded"
-      payment_method: "cash" | "card" | "bank_transfer" | "mixed"
+      payment_method:
+        | "cash"
+        | "card"
+        | "bank_transfer"
+        | "mixed"
+        | "mada"
+        | "apple_pay"
+        | "stc_pay"
+        | "store_credit"
+        | "trade_in"
       payment_status: "paid" | "unpaid" | "partial"
       payout_status: "pending" | "processing" | "completed" | "failed"
       purchase_status:
@@ -2755,8 +2998,10 @@ export type Database = {
         | "waiting_parts"
         | "in_progress"
         | "completed"
+        | "ready"
         | "delivered"
         | "cancelled"
+        | "warranty_expired"
       shipping_provider: "aramex" | "smsa" | "other"
       stocktake_item_type: "device" | "accessory" | "repair_part"
       stocktake_status: "draft" | "in_progress" | "completed" | "cancelled"
@@ -2918,7 +3163,17 @@ export const Constants = {
         "cancelled",
         "refunded",
       ],
-      payment_method: ["cash", "card", "bank_transfer", "mixed"],
+      payment_method: [
+        "cash",
+        "card",
+        "bank_transfer",
+        "mixed",
+        "mada",
+        "apple_pay",
+        "stc_pay",
+        "store_credit",
+        "trade_in",
+      ],
       payment_status: ["paid", "unpaid", "partial"],
       payout_status: ["pending", "processing", "completed", "failed"],
       purchase_status: [
@@ -2934,8 +3189,10 @@ export const Constants = {
         "waiting_parts",
         "in_progress",
         "completed",
+        "ready",
         "delivered",
         "cancelled",
+        "warranty_expired",
       ],
       shipping_provider: ["aramex", "smsa", "other"],
       stocktake_item_type: ["device", "accessory", "repair_part"],

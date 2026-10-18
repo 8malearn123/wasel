@@ -8,14 +8,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useStoreCart } from '@/components/store/StoreCart';
 import { StoreSEO } from '@/components/store/StoreSEO';
-import type { StoreSettings } from '@/hooks/useOnlineStore';
+import type { PlacedOrder, StoreSettings } from '@/hooks/useOnlineStore';
 import { toast } from 'sonner';
 import { saveOrder } from '@/lib/storeOrdersHistory';
 import { supabase } from '@/integrations/supabase/client';
+import { splitVatInclusive } from '@/lib/vat';
 
 interface Props {
   store: StoreSettings;
-  placeOrder: (data: any) => Promise<any>;
+  placeOrder: (data: any) => Promise<PlacedOrder | null>;
 }
 
 export function StoreCheckoutPage({ store, placeOrder }: Props) {
@@ -34,8 +35,8 @@ export function StoreCheckoutPage({ store, placeOrder }: Props) {
 
   const currency = store.currency_symbol || 'ر.س';
   const shipping = store.free_shipping_threshold && subtotal >= store.free_shipping_threshold ? 0 : Number(store.shipping_cost || 0);
-  const tax = Math.round(subtotal * 0.15 * 100) / 100;
-  const total = subtotal + tax + shipping;
+  // Prices and shipping are VAT-inclusive; this preview matches what the server will charge.
+  const { total, tax } = splitVatInclusive(subtotal + shipping);
 
   if (items.length === 0) {
     return (
@@ -54,9 +55,9 @@ export function StoreCheckoutPage({ store, placeOrder }: Props) {
 
   const submit = async () => {
     setSubmitting(true);
+    // Only ids and quantities are sent; the server prices the order.
     const orderItems = items.map((c) => ({
-      device_id: c.deviceId, accessory_id: c.accessoryId,
-      item_name: c.name, quantity: c.quantity, unit_price: c.price,
+      device_id: c.deviceId, accessory_id: c.accessoryId, quantity: c.quantity,
     }));
     const result = await placeOrder({
       customer_name: name, customer_phone: phone, customer_email: email || undefined,
@@ -76,11 +77,11 @@ export function StoreCheckoutPage({ store, placeOrder }: Props) {
         payment_method: payment,
         payment_status: 'unpaid',
         status: 'pending',
-        subtotal,
-        tax_amount: tax,
-        shipping_cost: shipping,
-        total_amount: total,
-        items: orderItems.map((i, idx) => ({ id: String(idx), item_name: i.item_name, quantity: i.quantity, unit_price: i.unit_price })),
+        subtotal: result.subtotal,
+        tax_amount: result.taxAmount,
+        shipping_cost: result.shippingCost,
+        total_amount: result.totalAmount,
+        items: result.items.map((i, idx) => ({ id: String(idx), item_name: i.item_name, quantity: i.quantity, unit_price: Number(i.unit_price) })),
       };
       clear();
       if (slug) saveOrder(slug, orderSnapshot as any);
@@ -108,9 +109,8 @@ export function StoreCheckoutPage({ store, placeOrder }: Props) {
       navigate(`/store/${slug}/thank-you/${result.orderNumber}`, {
         state: { order: orderSnapshot, loyalty: loyaltyAwarded },
       });
-    } else {
-      toast.error('فشل إرسال الطلب، حاول مرة أخرى');
     }
+    // On failure placeOrder has already shown the server's reason (e.g. item no longer available).
   };
 
   const steps = ['البيانات', 'الشحن', 'الدفع', 'مراجعة'];
@@ -190,9 +190,9 @@ export function StoreCheckoutPage({ store, placeOrder }: Props) {
             <hr />
             <div className="space-y-1 text-sm">
               <Row label="المجموع الفرعي" value={`${subtotal.toLocaleString()} ${currency}`} />
-              <Row label="الضريبة" value={`${tax.toLocaleString()} ${currency}`} />
               <Row label="الشحن" value={shipping === 0 ? 'مجاني' : `${shipping.toLocaleString()} ${currency}`} />
               <Row label="الإجمالي" value={`${total.toLocaleString()} ${currency}`} bold />
+              <Row label="شامل ضريبة القيمة المضافة (15%)" value={`${tax.toLocaleString()} ${currency}`} />
             </div>
           </div>
         )}

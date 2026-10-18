@@ -3,7 +3,9 @@ export type DeviceStatus = 'available' | 'reserved' | 'sold' | 'transferred' | '
 export type TransferStatus = 'pending' | 'approved' | 'dispatched' | 'received' | 'cancelled';
 export type PurchaseStatus = 'draft' | 'pending' | 'approved' | 'received' | 'cancelled';
 export type PaymentStatus = 'paid' | 'unpaid' | 'partial';
-export type PaymentMethod = 'cash' | 'card' | 'bank_transfer' | 'mixed';
+export type PaymentMethod =
+  | 'cash' | 'card' | 'mada' | 'apple_pay' | 'stc_pay' | 'bank_transfer'
+  | 'store_credit' | 'trade_in' | 'mixed';
 export type SubscriptionStatus = 'trial' | 'active' | 'expired' | 'cancelled';
 export type UserRole = 'owner' | 'admin' | 'branch_manager' | 'cashier' | 'inventory_manager';
 
@@ -101,6 +103,10 @@ export interface Device {
   cost: number;
   price: number;
   status: DeviceStatus;
+  /** Set while an online order holds the unit (status 'reserved'). */
+  reserved_until?: string | null;
+  /** Online order holding (reserved) or having sold (sold) this unit. */
+  online_order_id?: string | null;
   supplier_id?: string;
   purchase_id?: string;
   notes?: string;
@@ -171,6 +177,7 @@ export interface Sale {
   merchant_id: string;
   branch_id: string;
   invoice_number: string;
+  customer_id?: string | null;
   customer_name?: string;
   customer_phone?: string;
   subtotal: number;
@@ -186,6 +193,17 @@ export interface Sale {
   // Joined fields
   branch?: Branch;
   items?: SaleItem[];
+  payments?: SalePayment[];
+}
+
+/** One tender line of a sale (split payments). */
+export interface SalePayment {
+  id: string;
+  sale_id: string;
+  method: Exclude<PaymentMethod, 'mixed'>;
+  amount: number;
+  reference?: string | null;
+  created_at: string;
 }
 
 export interface SaleItem {
@@ -196,6 +214,13 @@ export interface SaleItem {
   quantity: number;
   unit_price: number;
   cost_at_sale: number;
+  /** Snapshots taken at sale time, so history survives edits to the device/accessory row. */
+  item_name?: string | null;
+  imei_snapshot?: string | null;
+  sku_snapshot?: string | null;
+  line_discount?: number;
+  vat_amount?: number;
+  line_total?: number | null;
   created_at: string;
   // Joined fields
   device?: Device;

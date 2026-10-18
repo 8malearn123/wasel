@@ -76,6 +76,7 @@ const statusConfig: Record<RepairStatus, { label: string; color: string; icon: R
   waiting_parts: inProgressConfig,
   in_progress: inProgressConfig,
   completed: { label: "مكتمل", color: "bg-green-500/10 text-green-600 border-green-500/20", icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
+  ready: { label: "جاهز للاستلام", color: "bg-teal-500/10 text-teal-600 border-teal-500/20", icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
   delivered: { label: "تم التسليم", color: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20", icon: <Truck className="w-3.5 h-3.5" /> },
   warranty_expired: { label: "انتهى الضمان", color: "bg-gray-500/10 text-gray-600 border-gray-500/20", icon: <ShieldOff className="w-3.5 h-3.5" /> },
   cancelled: { label: "ملغي", color: "bg-red-500/10 text-red-600 border-red-500/20", icon: <XCircle className="w-3.5 h-3.5" /> },

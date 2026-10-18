@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 
-export type RepairStatus = 'received' | 'diagnosing' | 'waiting_parts' | 'in_progress' | 'completed' | 'delivered' | 'cancelled' | 'warranty_expired';
+export type RepairStatus = 'received' | 'diagnosing' | 'waiting_parts' | 'in_progress' | 'completed' | 'ready' | 'delivered' | 'cancelled' | 'warranty_expired';
 
 export interface RepairOrder {
   id: string;

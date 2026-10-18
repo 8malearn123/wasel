@@ -8,13 +8,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/i18n";
+import { paymentMethodLabel } from "@/lib/payments";
 import type { Sale } from "@/types/database";
 
 interface CashierSalesHistoryProps {
   sales: Sale[];
   loading: boolean;
   isCashier: boolean;
-  onUpdateSale: (id: string, updates: { customer_name?: string; customer_phone?: string; discount_amount?: number; notes?: string }) => Promise<{ error: any }>;
+  onUpdateSale: (id: string, updates: { customer_name?: string; customer_phone?: string; notes?: string }) => Promise<{ error: any }>;
   onRefresh: () => void;
   merchantName: string;
   branchName: string;
@@ -70,12 +71,6 @@ export function CashierSalesHistory({
       setEditSale(null);
       onRefresh();
     }
-  };
-
-  const paymentLabels: Record<string, string> = {
-    cash: isRTL ? "نقداً" : "Cash",
-    card: isRTL ? "بطاقة" : "Card",
-    bank_transfer: isRTL ? "تحويل" : "Transfer",
   };
 
   const formatDate = (d: string) => {
@@ -141,7 +136,7 @@ export function CashierSalesHistory({
                         <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
                           <span>{formatDate(sale.sale_date)}</span>
                           {sale.customer_name && <span>• {sale.customer_name}</span>}
-                          <span>• {paymentLabels[sale.payment_method] || sale.payment_method}</span>
+                          <span>• {paymentMethodLabel(sale.payment_method, isRTL)}</span>
                         </div>
                       </div>
 

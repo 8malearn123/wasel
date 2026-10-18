@@ -188,6 +188,34 @@ export interface OnlineOrderItem {
   created_at: string;
 }
 
+/** Server-computed result of place_online_order (all amounts VAT-inclusive). */
+interface PlacedOrderRow {
+  order_number: string;
+  subtotal: number;
+  tax_amount: number;
+  shipping_cost: number;
+  discount_amount: number;
+  total_amount: number;
+  reservation_expires_at: string;
+  items: { item_name: string; quantity: number; unit_price: number; device_id: string | null; accessory_id: string | null }[];
+}
+
+export interface PlacedOrder {
+  orderNumber: string;
+  subtotal: number;
+  taxAmount: number;
+  shippingCost: number;
+  totalAmount: number;
+  reservationExpiresAt: string;
+  items: PlacedOrderRow['items'];
+}
+
+/** The subset of an order that track_public_order exposes to shoppers. */
+export type PublicOrderView = Pick<OnlineOrder,
+  'order_number' | 'status' | 'payment_status' | 'payment_method' | 'shipping_provider' | 'tracking_number' |
+  'shipping_city' | 'shipping_cost' | 'subtotal' | 'tax_amount' | 'discount_amount' | 'total_amount' |
+  'customer_name' | 'created_at' | 'updated_at'>;
+
 export interface MerchantPayout {
   id: string;
   merchant_id: string;
@@ -532,6 +560,11 @@ export function usePublicStore(slug: string) {
     })();
   }, [slug]);
 
+  /**
+   * Places the order through the place_online_order RPC. Prices, shipping and VAT
+   * are computed server-side (client prices are ignored), and devices are held
+   * ('reserved') so the POS can't sell them twice.
+   */
   const placeOrder = async (orderData: {
     customer_name: string;
     customer_phone: string;
@@ -539,78 +572,55 @@ export function usePublicStore(slug: string) {
     shipping_address: string;
     shipping_city: string;
     payment_method: string;
-    items: { device_id?: string; accessory_id?: string; item_name: string; quantity: number; unit_price: number }[];
-  }) => {
+    items: { device_id?: string; accessory_id?: string; quantity: number }[];
+  }): Promise<PlacedOrder | null> => {
     if (!store) return null;
 
-    const { data: numData } = await supabase.rpc('generate_online_order_number', {
-      _merchant_id: store.merchant_id,
+    const { data, error: rpcErr } = await supabase.rpc('place_online_order', {
+      _slug: store.slug,
+      _customer_name: orderData.customer_name,
+      _customer_phone: orderData.customer_phone,
+      _customer_email: orderData.customer_email,
+      _shipping_address: orderData.shipping_address,
+      _shipping_city: orderData.shipping_city,
+      _payment_method: orderData.payment_method,
+      _items: orderData.items.map(i =>
+        i.device_id ? { device_id: i.device_id } : { accessory_id: i.accessory_id, quantity: i.quantity }
+      ),
     });
-    const orderNumber = numData || `ORD-${Date.now()}`;
 
-    const subtotal = orderData.items.reduce((sum, i) => sum + i.unit_price * i.quantity, 0);
-    const shippingCost = store.free_shipping_threshold && subtotal >= store.free_shipping_threshold ? 0 : store.shipping_cost;
-    const taxAmount = Math.round(subtotal * 0.15 * 100) / 100;
-    const totalAmount = subtotal + taxAmount + shippingCost;
+    if (rpcErr) { toast.error(rpcErr.message); return null; }
 
-    const { data: order, error: orderErr } = await supabase
-      .from('online_orders')
-      .insert({
-        merchant_id: store.merchant_id,
-        order_number: orderNumber,
-        customer_name: orderData.customer_name,
-        customer_phone: orderData.customer_phone,
-        customer_email: orderData.customer_email || null,
-        shipping_address: orderData.shipping_address,
-        shipping_city: orderData.shipping_city,
-        shipping_cost: shippingCost,
-        payment_method: orderData.payment_method,
-        subtotal,
-        tax_amount: taxAmount,
-        total_amount: totalAmount,
-      } as any)
-      .select()
-      .single();
-
-    if (orderErr) { toast.error(orderErr.message); return null; }
-
-    const items = orderData.items.map(i => ({
-      order_id: (order as any).id,
-      device_id: i.device_id || null,
-      accessory_id: i.accessory_id || null,
-      item_name: i.item_name,
-      quantity: i.quantity,
-      unit_price: i.unit_price,
-    }));
-
-    await supabase.from('online_order_items').insert(items as any);
-
-    return { orderNumber, totalAmount, shippingCost };
+    const order = data as unknown as PlacedOrderRow;
+    return {
+      orderNumber: order.order_number,
+      subtotal: Number(order.subtotal),
+      taxAmount: Number(order.tax_amount),
+      shippingCost: Number(order.shipping_cost),
+      totalAmount: Number(order.total_amount),
+      reservationExpiresAt: order.reservation_expires_at,
+      items: order.items,
+    };
   };
 
   return { store, devices, accessories, categories, pages, designExtras, merchantLegal, loading, error, placeOrder };
 }
 
-// ===== Public Order Tracking (no auth, verifies via last 4 digits of phone) =====
-export async function trackPublicOrder(orderNumber: string, phoneLast4: string) {
-  const { data: order, error } = await supabase
-    .from('online_orders')
-    .select('*')
-    .eq('order_number', orderNumber)
-    .maybeSingle();
+// ===== Public Order Tracking (no auth) =====
+// The track_public_order RPC verifies the phone digits server-side and returns
+// only what the tracking pages need (no address, phone or email).
+export async function trackPublicOrder(slug: string, orderNumber: string, phoneDigits: string) {
+  const { data, error } = await supabase.rpc('track_public_order', {
+    _slug: slug,
+    _order_number: orderNumber,
+    _phone: phoneDigits,
+  });
 
-  if (error || !order) return { error: 'الطلب غير موجود' };
-  const phone = (order as any).customer_phone as string;
-  if (!phone || phone.replace(/\D/g, '').slice(-4) !== phoneLast4) {
-    return { error: 'بيانات التحقق غير صحيحة' };
-  }
+  if (error) return { error: 'تعذر جلب الطلب، حاول مرة أخرى' };
+  if (!data) return { error: 'لم نجد طلباً مطابقاً، تحقق من الرقم وآخر 4 أرقام من الجوال' };
 
-  const { data: items } = await supabase
-    .from('online_order_items')
-    .select('*')
-    .eq('order_id', (order as any).id);
-
-  return { order: order as unknown as OnlineOrder, items: (items || []) as unknown as OnlineOrderItem[] };
+  const res = data as unknown as { order: PublicOrderView; items: OnlineOrderItem[] };
+  return { order: res.order, items: res.items || [] };
 }
 
 // ===== Platform Admin Payouts Hook =====

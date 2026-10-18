@@ -28,6 +28,10 @@ interface InvoiceData {
   discount: number;
   total: number;
   paymentMethod: PaymentMethod;
+  /** Tender lines for split payments (e.g. Cash + Mada). */
+  payments?: { method: string; amount: number }[];
+  /** Server sale timestamp (ISO); used in the ZATCA QR instead of the print time. */
+  saleDateISO?: string;
   customerName?: string;
   customerPhone?: string;
   merchantName: string;
@@ -101,6 +105,15 @@ function getThermalStyles(width: PaperWidth): string {
   `;
 }
 
+function paymentText(data: InvoiceData): string {
+  if (data.payments && data.payments.length > 1) {
+    return data.payments
+      .map(p => `${paymentMethodLabels[p.method] || p.method} ${Number(p.amount).toFixed(2)}`)
+      .join(' + ');
+  }
+  return paymentMethodLabels[data.paymentMethod] || data.paymentMethod;
+}
+
 function buildReceiptHTML(data: InvoiceData, vatNumber: string): string {
   const itemsRows = data.items.map(item => `
     <tr>
@@ -109,7 +122,7 @@ function buildReceiptHTML(data: InvoiceData, vatNumber: string): string {
       <td class="left">${(item.price * item.quantity).toLocaleString()}</td>
     </tr>`).join("");
 
-  const zatcaBase64 = generateZATCABase64(data.merchantName, vatNumber || "000000000000000", new Date().toISOString(), data.total.toFixed(2), data.tax.toFixed(2));
+  const zatcaBase64 = generateZATCABase64(data.merchantName, vatNumber || "000000000000000", data.saleDateISO || new Date().toISOString(), data.total.toFixed(2), data.tax.toFixed(2));
   const qrUrl = getQRCodeURL(zatcaBase64);
 
   return `
@@ -133,7 +146,7 @@ function buildReceiptHTML(data: InvoiceData, vatNumber: string): string {
       <div class="row total-row"><span>الإجمالي</span><span>${data.total.toFixed(2)} ر.س</span></div>
     </div>
     <hr class="separator"/>
-    <p>الدفع: ${paymentMethodLabels[data.paymentMethod]}</p>
+    <p>الدفع: ${paymentText(data)}</p>
     <div class="qr-section"><img src="${qrUrl}" alt="QR"/></div>
     <div class="footer"><p>شكراً لزيارتكم!</p></div>
   `;
@@ -147,7 +160,7 @@ export function InvoiceDialog({ data, onClose, onPrinted }: InvoiceDialogProps) 
   const [isTesting, setIsTesting] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
-  const zatcaBase64 = generateZATCABase64(data.merchantName, config.vatNumber || "000000000000000", new Date().toISOString(), data.total.toFixed(2), data.tax.toFixed(2));
+  const zatcaBase64 = generateZATCABase64(data.merchantName, config.vatNumber || "000000000000000", data.saleDateISO || new Date().toISOString(), data.total.toFixed(2), data.tax.toFixed(2));
   const qrUrl = getQRCodeURL(zatcaBase64);
 
   const updateConfig = (partial: Partial<PrinterConfig>) => {
@@ -187,7 +200,7 @@ export function InvoiceDialog({ data, onClose, onPrinted }: InvoiceDialogProps) 
       tax: data.tax,
       discount: data.discount,
       total: data.total,
-      paymentMethod: paymentMethodLabels[data.paymentMethod] || data.paymentMethod,
+      paymentMethod: paymentText(data),
       qrData: zatcaBase64,
     };
 
@@ -420,7 +433,7 @@ export function InvoiceDialog({ data, onClose, onPrinted }: InvoiceDialogProps) 
           </div>
 
           <div className="mt-2 text-xs text-muted-foreground">
-            <p><span className="font-semibold text-foreground">الدفع:</span> {paymentMethodLabels[data.paymentMethod]}</p>
+            <p><span className="font-semibold text-foreground">الدفع:</span> {paymentText(data)}</p>
           </div>
 
           <div className="flex flex-col items-center mt-4 pt-3 border-t border-dashed border-muted-foreground/30">

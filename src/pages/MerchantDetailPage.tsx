@@ -16,6 +16,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useMerchantDetail } from '@/hooks/useMerchantDetail';
 import { format } from 'date-fns';
+import { paymentMethodLabel } from "@/lib/payments";
 import { ar } from 'date-fns/locale';
 
 const roleLabels: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
@@ -40,6 +41,7 @@ const repairStatusLabels: Record<string, { label: string; color: string }> = {
   waiting_parts: { label: 'بانتظار قطع', color: 'bg-amber-500/10 text-amber-700' },
   in_progress: { label: 'جاري', color: 'bg-cyan-500/10 text-cyan-700' },
   completed: { label: 'مكتمل', color: 'bg-green-500/10 text-green-700' },
+  ready: { label: 'جاهز للاستلام', color: 'bg-teal-500/10 text-teal-700' },
   delivered: { label: 'مسلّم', color: 'bg-emerald-500/10 text-emerald-700' },
   warranty_expired: { label: 'انتهى الضمان', color: 'bg-gray-500/10 text-gray-600' },
   cancelled: { label: 'ملغي', color: 'bg-red-500/10 text-red-700' },
@@ -223,7 +225,7 @@ export default function MerchantDetailPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {sale.payment_method === 'cash' ? 'نقد' : sale.payment_method === 'card' ? 'بطاقة' : sale.payment_method === 'bank_transfer' ? 'تحويل' : sale.payment_method}
+                          {paymentMethodLabel(sale.payment_method)}
                         </TableCell>
                         <TableCell>{(sale.branch as any)?.name || '—'}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{format(new Date(sale.sale_date), 'dd/MM/yyyy')}</TableCell>

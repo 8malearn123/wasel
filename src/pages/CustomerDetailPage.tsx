@@ -20,6 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Customer, LoyaltyTransaction } from '@/hooks/useCustomers';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { paymentMethodLabel } from "@/lib/payments";
 import { toast } from 'sonner';
 
 const tierColors: Record<string, string> = {
@@ -273,7 +274,7 @@ export default function CustomerDetailPage() {
                         <TableRow key={s.id}>
                           <TableCell className="font-mono">{s.invoice_number}</TableCell>
                           <TableCell>{format(new Date(s.sale_date), 'dd MMM yyyy', { locale: t ? ar : undefined })}</TableCell>
-                          <TableCell>{s.payment_method}</TableCell>
+                          <TableCell>{paymentMethodLabel(s.payment_method, t)}</TableCell>
                           <TableCell className="font-semibold">{Number(s.total_amount).toLocaleString()} {t ? 'ر.س' : 'SAR'}</TableCell>
                         </TableRow>
                       ))}

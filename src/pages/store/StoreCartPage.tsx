@@ -4,14 +4,15 @@ import { Button } from '@/components/ui/button';
 import { useStoreCart } from '@/components/store/StoreCart';
 import { StoreSEO } from '@/components/store/StoreSEO';
 import type { StoreSettings } from '@/hooks/useOnlineStore';
+import { splitVatInclusive } from '@/lib/vat';
 
 export function StoreCartPage({ store }: { store: StoreSettings }) {
   const { slug } = useParams<{ slug: string }>();
   const { items, subtotal, updateQty, removeItem } = useStoreCart();
   const currency = store.currency_symbol || 'ر.س';
   const shipping = store.free_shipping_threshold && subtotal >= store.free_shipping_threshold ? 0 : Number(store.shipping_cost || 0);
-  const tax = Math.round(subtotal * 0.15 * 100) / 100;
-  const total = subtotal + tax + shipping;
+  // Prices and shipping are VAT-inclusive.
+  const { total, tax } = splitVatInclusive(subtotal + shipping);
 
   if (items.length === 0) {
     return (
@@ -60,10 +61,10 @@ export function StoreCartPage({ store }: { store: StoreSettings }) {
         <div className="bg-card border rounded-xl p-6 h-fit lg:sticky lg:top-20 space-y-3">
           <h2 className="font-bold text-lg mb-2">ملخص الطلب</h2>
           <Row label="المجموع الفرعي" value={`${subtotal.toLocaleString()} ${currency}`} />
-          <Row label="الضريبة (15%)" value={`${tax.toLocaleString()} ${currency}`} />
           <Row label="الشحن" value={shipping === 0 ? 'مجاني' : `${shipping.toLocaleString()} ${currency}`} />
           <hr />
           <Row label="الإجمالي" value={`${total.toLocaleString()} ${currency}`} bold />
+          <Row label="شامل ضريبة القيمة المضافة (15%)" value={`${tax.toLocaleString()} ${currency}`} />
           <Button asChild size="lg" className="w-full text-white mt-3" style={{ background: `hsl(var(--store-primary))` }}>
             <Link to={`/store/${slug}/checkout`}>إتمام الطلب</Link>
           </Button>

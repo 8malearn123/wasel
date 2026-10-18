@@ -3,18 +3,13 @@ import { Smartphone, Package, ArrowRight } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { cn } from "@/lib/utils";
 import type { RecentSale } from "@/hooks/useDashboardData";
+import { paymentMethodLabel } from "@/lib/payments";
 import { Badge } from "@/components/ui/badge";
 
 interface RecentActivityProps {
   sales: RecentSale[];
   loading: boolean;
 }
-
-const paymentLabels: Record<string, { ar: string; en: string }> = {
-  cash: { ar: "نقداً", en: "Cash" },
-  card: { ar: "بطاقة", en: "Card" },
-  bank_transfer: { ar: "تحويل", en: "Transfer" },
-};
 
 export function RecentActivity({ sales, loading }: RecentActivityProps) {
   const { t, isRTL } = useLanguage();
@@ -61,7 +56,7 @@ export function RecentActivity({ sales, loading }: RecentActivityProps) {
               </div>
 
               <Badge variant="outline" className="text-xs">
-                {paymentLabels[item.paymentMethod]?.[isRTL ? 'ar' : 'en'] || item.paymentMethod}
+                {paymentMethodLabel(item.paymentMethod, isRTL)}
               </Badge>
 
               <div className={cn("text-right hidden sm:block", isRTL && "text-left")}>

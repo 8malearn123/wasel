@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Wallet, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
+import { tenderBreakdown } from "@/lib/payments";
 import { useAuth } from "@/hooks/useAuth";
 import { subDays, startOfDay } from "date-fns";
 
@@ -27,7 +28,7 @@ export function FinancialSummary() {
 
     const { data: sales } = await supabase
       .from('sales')
-      .select('total_amount, payment_method')
+      .select('total_amount, payment_method, payments:sale_payments(method, amount)')
       .eq('merchant_id', merchant.id)
       .gte('sale_date', thirtyDaysAgo);
 
@@ -56,9 +57,13 @@ export function FinancialSummary() {
     }
 
     const totalSales = (sales || []).reduce((s, r) => s + Number(r.total_amount || 0), 0);
-    const cashSales = (sales || []).filter(s => s.payment_method === 'cash').reduce((s, r) => s + Number(r.total_amount || 0), 0);
-    const cardSales = (sales || []).filter(s => s.payment_method === 'card').reduce((s, r) => s + Number(r.total_amount || 0), 0);
-    const transferSales = (sales || []).filter(s => s.payment_method === 'bank_transfer').reduce((s, r) => s + Number(r.total_amount || 0), 0);
+    let cashSales = 0, cardSales = 0, transferSales = 0;
+    for (const sale of sales || []) {
+      const tenders = tenderBreakdown(sale);
+      cashSales += tenders.cash;
+      cardSales += tenders.card;
+      transferSales += tenders.bank_transfer;
+    }
 
     setData({
       totalSalesMonth: totalSales,

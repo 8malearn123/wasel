@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTabParam } from '@/hooks/useTabParam';
 import { ShoppingCart, FileText } from "lucide-react";
 import type { Device, Accessory, PaymentMethod } from "@/types/database";
+import type { PaymentLine } from "@/lib/payments";
 import { toast } from "sonner";
 
 interface InvoiceData {
@@ -25,6 +26,8 @@ interface InvoiceData {
   discount: number;
   total: number;
   paymentMethod: PaymentMethod;
+  payments?: PaymentLine[];
+  saleDateISO?: string;
   customerName?: string;
   customerPhone?: string;
   merchantName: string;
@@ -163,33 +166,39 @@ export default function POSPage() {
     setCart(prev => prev.filter(item => item.id !== id));
   };
 
-  const handleCompleteSale = async (customerName: string, customerPhone: string, discount: number) => {
+  const handleCompleteSale = async (customerName: string, customerPhone: string, discount: number, payments: PaymentLine[]) => {
     if (!selectedPayment || cart.length === 0) return;
 
     setIsProcessing(true);
     try {
-      const result = await createSale(cart, selectedPayment, customerName || undefined, customerPhone || undefined, discount);
-      if (!result.error && result.data) {
-        const totalBeforeDiscount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-        const total = totalBeforeDiscount - discount;
-        const tax = total - (total / 1.15);
-        const subtotal = total - tax;
+      const result = await createSale(cart, payments, customerName || undefined, customerPhone || undefined, discount);
+      if (result.error || !result.data) {
+        // The server refused (e.g. a unit was just sold elsewhere): refresh what's on the shelf.
+        await refetch();
+        return;
+      }
+      if (result.data) {
+        // Totals come from pos_checkout, the single source of truth for the invoice.
+        const sale = result.data;
+        const saleDate = new Date(sale.sale_date);
 
         setInvoiceData({
-          saleId: result.data.id,
-          invoiceNumber: result.data.invoice_number,
+          saleId: sale.sale_id,
+          invoiceNumber: sale.invoice_number,
           items: [...cart],
-          subtotal,
-          tax,
-          discount,
-          total,
-          paymentMethod: selectedPayment,
+          subtotal: Number(sale.subtotal),
+          tax: Number(sale.tax_amount),
+          discount: Number(sale.discount_amount),
+          total: Number(sale.total_amount),
+          paymentMethod: sale.payment_method,
+          payments,
+          saleDateISO: sale.sale_date,
           customerName: customerName || undefined,
           customerPhone: customerPhone || undefined,
           merchantName: merchant?.name || "Store",
           branchName: currentBranch?.name || "Main",
-          date: new Date().toLocaleString(),
-          deliveryDate: new Date().toLocaleDateString(),
+          date: saleDate.toLocaleString(),
+          deliveryDate: saleDate.toLocaleDateString(),
         });
 
         setCart([]);

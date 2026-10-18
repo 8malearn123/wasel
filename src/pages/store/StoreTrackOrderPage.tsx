@@ -4,7 +4,7 @@ import { Loader2, Package, Truck, CheckCircle2, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { trackPublicOrder, type OnlineOrder, type OnlineOrderItem, type StoreSettings } from '@/hooks/useOnlineStore';
+import { trackPublicOrder, type OnlineOrderItem, type PublicOrderView, type StoreSettings } from '@/hooks/useOnlineStore';
 import { StoreSEO } from '@/components/store/StoreSEO';
 import { carrierById, trackingUrl } from '@/lib/shipping';
 import { toast } from 'sonner';
@@ -21,14 +21,14 @@ export function StoreTrackOrderPage({ store }: { store: StoreSettings }) {
   const [orderNumber, setOrderNumber] = useState(paramOrder || '');
   const [last4, setLast4] = useState('');
   const [loading, setLoading] = useState(false);
-  const [order, setOrder] = useState<OnlineOrder | null>(null);
+  const [order, setOrder] = useState<PublicOrderView | null>(null);
   const [items, setItems] = useState<OnlineOrderItem[]>([]);
   const currency = store.currency_symbol || 'ر.س';
 
   const search = async () => {
     if (!orderNumber.trim() || last4.length !== 4) { toast.error('عبّئ رقم الطلب وآخر 4 أرقام من الجوال'); return; }
     setLoading(true);
-    const res = await trackPublicOrder(orderNumber.trim(), last4);
+    const res = await trackPublicOrder(store.slug, orderNumber.trim(), last4);
     setLoading(false);
     if (res.error) { toast.error(res.error); setOrder(null); return; }
     setOrder(res.order!); setItems(res.items || []);
