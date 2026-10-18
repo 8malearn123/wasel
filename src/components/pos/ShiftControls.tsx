@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Lock, Unlock, ArrowDownToLine, ArrowUpFromLine, Receipt, Wallet, Clock, CheckCircle2 } from "lucide-react";
+import { Lock, Unlock, ArrowDownToLine, ArrowUpFromLine, Receipt, Wallet, Clock, CheckCircle2, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,9 @@ import { cn } from "@/lib/utils";
 import { paymentMethodLabel } from "@/lib/payments";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import { printShiftReport } from "@/services/shiftReportPrint";
+import { getPrinterConfig } from "@/services/thermalPrinter";
 import {
   CASH_MOVEMENT_LABELS, SHIFT_STATUS_LABELS,
   type CashMovementType, type ShiftReport,
@@ -21,6 +24,15 @@ const parseAmount = (v: string) => {
   return Number.isFinite(n) ? Math.round(n * 100) / 100 : NaN;
 };
 const formatTime = (iso: string | null) => (iso ? new Date(iso).toLocaleString("ar-SA") : "-");
+
+/** Prints a shift report (X while open, Z once closed) on the receipt printer. */
+export function usePrintShiftReport() {
+  const { merchant } = useAuth();
+  return (report: ShiftReport) => {
+    const result = printShiftReport(report, merchant?.name || "");
+    if (!result.ok) toast.error("تعذرت طباعة التقرير", { description: result.reason });
+  };
+}
 
 /** Shown instead of the POS while the branch has no open shift. */
 export function OpenShiftPanel({ onOpen }: { onOpen: (openingCash: number, notes?: string) => Promise<unknown> }) {
@@ -169,6 +181,20 @@ export function ShiftBar({ report, onMovement, onClose, onClosed }: ShiftBarProp
   const { shift } = report;
   const [showMovement, setShowMovement] = useState(false);
   const [showClose, setShowClose] = useState(false);
+  const [printing, setPrinting] = useState(false);
+  const print = usePrintShiftReport();
+
+  // X report: fetch fresh figures (sales made since the bar last refreshed).
+  const printX = async () => {
+    setPrinting(true);
+    const { data, error } = await supabase.rpc("shift_report", { _shift_id: shift.id });
+    setPrinting(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    print(data as unknown as ShiftReport);
+  };
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-card px-4 py-2.5">
@@ -184,6 +210,10 @@ export function ShiftBar({ report, onMovement, onClose, onClosed }: ShiftBarProp
         </span>
       </div>
       <div className="flex items-center gap-2">
+        <Button variant="outline" size="sm" disabled={printing} onClick={printX}>
+          <Printer className="w-4 h-4 ml-1.5" />
+          تقرير X
+        </Button>
         <Button variant="outline" size="sm" onClick={() => setShowMovement(true)}>
           <Wallet className="w-4 h-4 ml-1.5" />
           حركة نقدية
@@ -287,6 +317,7 @@ function CloseShiftDialog({
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<ShiftReport | null>(null);
+  const print = usePrintShiftReport();
   const value = parseAmount(counted);
   const valid = counted !== "" && value >= 0;
 
@@ -309,6 +340,8 @@ function CloseShiftDialog({
     if (closed) {
       setResult(closed);
       onOpenChange(false);
+      // Same switch as invoices: print the Z report automatically when auto-print is on.
+      if (getPrinterConfig().autoPrint) print(closed);
     }
   };
 
@@ -347,6 +380,10 @@ function CloseShiftDialog({
             )}
             <ShiftReportView report={result} />
             <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => print(result)}>
+                <Printer className="w-4 h-4 ml-1.5" />
+                طباعة التقرير
+              </Button>
               {result.can_approve && (
                 <Button disabled={busy} onClick={approveNow}>
                   <CheckCircle2 className="w-4 h-4 ml-1.5" />

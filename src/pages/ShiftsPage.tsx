@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CheckCircle2, Eye, RefreshCw } from "lucide-react";
+import { CheckCircle2, Eye, Printer, RefreshCw } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ShiftReportView } from "@/components/pos/ShiftControls";
+import { ShiftReportView, usePrintShiftReport } from "@/components/pos/ShiftControls";
 import { SHIFT_STATUS_LABELS, useShiftsList, type ShiftReport, type ShiftStatus } from "@/hooks/useShift";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +26,7 @@ export default function ShiftsPage() {
   const [report, setReport] = useState<ShiftReport | null>(null);
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
+  const print = usePrintShiftReport();
 
   const openDetails = async (id: string) => {
     const r = await getReport(id);
@@ -160,6 +161,10 @@ export default function ShiftsPage() {
               )}
               <DialogFooter className="gap-2">
                 <Button variant="outline" onClick={() => setReport(null)}>إغلاق</Button>
+                <Button variant="outline" onClick={() => print(report)}>
+                  <Printer className="w-4 h-4 ml-1.5" />
+                  طباعة
+                </Button>
                 {report.can_approve && (
                   <Button disabled={busy} onClick={approve}>
                     <CheckCircle2 className="w-4 h-4 ml-1.5" />

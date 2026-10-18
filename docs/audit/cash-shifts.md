@@ -48,6 +48,32 @@ functions, which is what keeps the count blind. Errors carry a code in `HINT`
 close therefore waits for sales in progress and includes them, and a sale arriving during a close is
 refused with `NO_OPEN_SHIFT`.
 
+## Printing the shift report (X / Z)
+
+`src/services/shiftReportPrint.ts` builds the report as receipt-width HTML (80 mm or 58 mm, taken
+from the POS printer settings) and prints it through a hidden iframe, so it isn't blocked as a pop-up.
+
+- **X report:** from the shift bar in the POS (**تقرير X**), with fresh figures while the shift is open.
+- **Z report:** from the close dialog (**طباعة التقرير**). It also prints automatically after closing
+  when auto-print is on in the printer settings (the same switch as for invoices).
+- **Reprint:** any shift can be reprinted from the shifts page (**طباعة**).
+- **Content:** header, opened and closed times and who did it, the drawer breakdown, expected,
+  counted, shortage or surplus, sales by payment method, every movement with its reason, approval
+  status, and cashier and manager signature lines.
+- **Blind count on paper:** the report uses `shift_report()`, so a cashier's printout has no
+  expected amount or difference until the shift is approved.
+
+**Printer path.** The report always goes through the browser's print on the till's installed
+printer ("system" printer type). Direct-IP printing (the Epson/Star options in the printer settings)
+does not work today, for invoices either, for three reasons found while building this:
+
+1. The XML it sends is invalid: attributes are written as `\"…\"`, and text is not XML-escaped.
+2. Epson ePOS text mode has no Arabic shaping.
+3. Browsers block an HTTPS page from calling `http://<printer-ip>` (mixed content).
+
+For silent printing on a dedicated till, set the thermal printer as the default printer and run
+Chrome with `--kiosk-printing`.
+
 ## Daily closing = sum of the day's shifts
 
 Migration: `supabase/migrations/20261018100500_daily_closing_from_shifts.sql`.
@@ -89,4 +115,3 @@ shifts, and that clients can no longer write closings.
 
 - Cash refunds don't exist in the system yet; when returns are built they must count as cash out
   of the shift.
-- No printed shift report yet; the report is shown on screen.
