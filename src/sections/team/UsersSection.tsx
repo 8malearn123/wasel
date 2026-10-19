@@ -308,6 +308,17 @@ export default function UsersSection() {
             ))}
           </div>
         )}
+
+        {/* The shop's own roles — in the same box as the people they go to */}
+        {canManageRoles && (
+          <CustomRolesPanel
+            roles={customRoles}
+            catalog={catalog}
+            onCreate={() => openRoleEditor(null)}
+            onEdit={(role) => openRoleEditor(role)}
+            onDelete={handleDeleteRole}
+          />
+        )}
       </motion.div>
 
       {/* Edit User Dialog */}
@@ -349,17 +360,6 @@ export default function UsersSection() {
         customRoles={customRoles}
         onCreateRole={canManageRoles ? (onSaved) => openRoleEditor(null, onSaved) : undefined}
       />
-
-      {/* The shop's own roles — the owner builds them here */}
-      {canManageRoles && (
-        <CustomRolesPanel
-          roles={customRoles}
-          catalog={catalog}
-          onCreate={() => openRoleEditor(null)}
-          onEdit={(role) => openRoleEditor(role)}
-          onDelete={handleDeleteRole}
-        />
-      )}
 
       <RoleEditorDialog
         key={roleEditor ? (roleEditor.role?.id ?? 'new') : 'closed'}
@@ -1138,13 +1138,8 @@ function CustomRolesPanel({
   const nameOf = new Map(catalog.map(p => [p.key, p.name]));
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.25 }}
-      className="mt-6 bg-card rounded-xl border border-border shadow-md overflow-hidden"
-    >
-      <div className="p-4 flex items-center justify-between border-b border-border">
+    <div className="border-t border-border">
+      <div className="p-4 flex items-center justify-between border-b border-border bg-muted/20">
         <div>
           <p className="font-semibold text-foreground">الأدوار المخصصة</p>
           <p className="text-sm text-muted-foreground">أدوار بأسماء تختارها، وصلاحيات تحددها بنفسك</p>
@@ -1200,7 +1195,7 @@ function CustomRolesPanel({
           ))}
         </div>
       )}
-    </motion.div>
+    </div>
   );
 }
 
