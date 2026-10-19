@@ -11,7 +11,6 @@ import { StoreSEO } from '@/components/store/StoreSEO';
 import type { StoreSettings } from '@/hooks/useOnlineStore';
 import { toast } from 'sonner';
 import { saveOrder } from '@/lib/storeOrdersHistory';
-import { supabase } from '@/integrations/supabase/client';
 
 interface Props {
   store: StoreSettings;
@@ -65,6 +64,7 @@ export function StoreCheckoutPage({ store, placeOrder }: Props) {
     });
     setSubmitting(false);
     if (result?.orderNumber) {
+      // The receipt shows what the server charged, not what the cart guessed
       const orderSnapshot = {
         order_number: result.orderNumber,
         created_at: new Date().toISOString(),
@@ -76,40 +76,20 @@ export function StoreCheckoutPage({ store, placeOrder }: Props) {
         payment_method: payment,
         payment_status: 'unpaid',
         status: 'pending',
-        subtotal,
-        tax_amount: tax,
-        shipping_cost: shipping,
-        total_amount: total,
-        items: orderItems.map((i, idx) => ({ id: String(idx), item_name: i.item_name, quantity: i.quantity, unit_price: i.unit_price })),
+        subtotal: result.subtotal,
+        tax_amount: result.taxAmount,
+        shipping_cost: result.shippingCost,
+        total_amount: result.totalAmount,
+        items: result.items.map((i, idx) => ({ id: String(idx), item_name: i.item_name, quantity: i.quantity, unit_price: i.unit_price })),
       };
       clear();
       if (slug) saveOrder(slug, orderSnapshot as any);
-
-      // Award loyalty points (server checks plan + store opt-in)
-      let loyaltyAwarded: { points: number; total_points: number; tier: string } | null = null;
-      try {
-        const { data: lr } = await supabase.functions.invoke('award-loyalty', {
-          body: {
-            merchant_id: store.merchant_id,
-            order_number: result.orderNumber,
-            customer_name: name,
-            customer_phone: phone,
-            customer_email: email || null,
-          },
-        });
-        if (lr?.awarded) {
-          loyaltyAwarded = { points: lr.points, total_points: lr.total_points, tier: lr.tier };
-          toast.success(`حصلت على ${lr.points} نقطة ولاء!`);
-        }
-      } catch {
-        /* loyalty is optional */
-      }
-
+      // Loyalty points are added once the order is paid or delivered, from
+      // the merchant's dashboard — not at checkout
+      const loyaltyAwarded = null;
       navigate(`/store/${slug}/thank-you/${result.orderNumber}`, {
         state: { order: orderSnapshot, loyalty: loyaltyAwarded },
       });
-    } else {
-      toast.error('فشل إرسال الطلب، حاول مرة أخرى');
     }
   };
 

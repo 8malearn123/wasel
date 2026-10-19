@@ -141,7 +141,7 @@ export function usePlatformAdmin() {
         ] = await Promise.all([
           supabase.from('subscriptions').select('*').eq('merchant_id', m.id).maybeSingle(),
           supabase.from('branches').select('*', { count: 'exact', head: true }).eq('merchant_id', m.id).eq('is_active', true),
-          supabase.from('merchant_users').select('*', { count: 'exact', head: true }).eq('merchant_id', m.id).eq('is_active', true),
+          supabase.from('merchant_users').select('id', { count: 'exact', head: true }).eq('merchant_id', m.id).eq('is_active', true),
           supabase.from('devices').select('*', { count: 'exact', head: true }).eq('merchant_id', m.id),
           supabase.from('repair_orders').select('*', { count: 'exact', head: true }).eq('merchant_id', m.id),
         ]);

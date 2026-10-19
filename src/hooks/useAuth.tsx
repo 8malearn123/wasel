@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, createContext, useContext, ReactNode } fro
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { MerchantUser, Merchant, Subscription, Branch } from '@/types/database';
+import { MERCHANT_USER_COLUMNS } from '@/lib/merchantUsers';
 
 interface AuthContextType {
   user: User | null;
@@ -40,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Get merchant user
       const { data: merchantUserData } = await supabase
         .from('merchant_users')
-        .select('*')
+        .select(MERCHANT_USER_COLUMNS)
         .eq('user_id', userId)
         .eq('is_active', true)
         .maybeSingle();
