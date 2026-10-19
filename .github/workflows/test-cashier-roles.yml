@@ -44,7 +44,12 @@ jobs:
             CODE=$(curl -sS -o /dev/null -w '%{http_code}' "$SUPA/rest/v1/$T?select=*&limit=0" "${H[@]}")
             echo "table $T: HTTP $CODE"
           done
-          echo "rpc get_subscription_state: $(curl -sS -o /dev/null -w '%{http_code}' -X POST "$SUPA/rest/v1/rpc/get_subscription_state" "${H[@]}" -d '{}')"
+          for F in get_subscription_state merchant_subscription_active login_code_recent_failures check_category_cycle can_supply_wholesale can_buy_wholesale has_permission save_custom_role; do
+            R=$(curl -sS -X POST "$SUPA/rest/v1/rpc/$F" "${H[@]}" -d '{}')
+            if echo "$R" | grep -q PGRST202; then echo "rpc $F: MISSING"; else echo "rpc $F: present"; fi
+          done
+          echo "merchant_categories.parent_id: $(curl -sS -o /dev/null -w '%{http_code}' "$SUPA/rest/v1/merchant_categories?select=parent_id&limit=0" "${H[@]}")"
+          echo "plans names:"; curl -sS "$SUPA/rest/v1/plans?select=name,name_ar" "${H[@]}"; echo
 
           echo "== roles visible to the cashier"
           curl -sS "$SUPA/rest/v1/roles?select=key,name_ar,is_system,merchant_id" "${H[@]}"; echo
