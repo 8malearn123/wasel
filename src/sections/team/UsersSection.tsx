@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { 
   Users, 
@@ -517,6 +517,19 @@ function RegenerateCodeDialog({
 }) {
   const [loading, setLoading] = useState(false);
   const [newCode, setNewCode] = useState<string | null>(null);
+  const [currentCode, setCurrentCode] = useState<string | null>(null);
+
+  // The list no longer carries login codes (the column is not readable from
+  // the browser); the current one is asked for here, and the server answers
+  // only an owner/admin of the same merchant.
+  useEffect(() => {
+    if (!open || !user?.user_id) { setCurrentCode(null); return; }
+    let cancelled = false;
+    supabase
+      .rpc('get_user_login_code', { _user_id: user.user_id })
+      .then(({ data }) => { if (!cancelled) setCurrentCode(data ?? null); });
+    return () => { cancelled = true; };
+  }, [open, user?.user_id]);
   const [customCode, setCustomCode] = useState('');
   const [codeMode, setCodeMode] = useState<'auto' | 'custom'>('auto');
   const [copied, setCopied] = useState(false);
@@ -588,10 +601,10 @@ function RegenerateCodeDialog({
             </p>
           </div>
 
-          {user?.login_code && !newCode && (
+          {currentCode && !newCode && (
             <div className="bg-muted/50 rounded-lg p-3 border border-border text-center">
               <p className="text-xs text-muted-foreground mb-1">الكود الحالي</p>
-              <p className="text-xl font-mono font-bold text-foreground tracking-[0.3em]">{user.login_code}</p>
+              <p className="text-xl font-mono font-bold text-foreground tracking-[0.3em]">{currentCode}</p>
             </div>
           )}
 
