@@ -314,8 +314,7 @@ export default function UsersSection() {
           <CustomRolesPanel
             roles={customRoles}
             catalog={catalog}
-            onCreate={() => openRoleEditor(null)}
-            onEdit={(role) => openRoleEditor(role)}
+              onEdit={(role) => openRoleEditor(role)}
             onDelete={handleDeleteRole}
           />
         )}
@@ -1125,30 +1124,21 @@ function groupByModule(catalog: CatalogPermission[]) {
 function CustomRolesPanel({
   roles,
   catalog,
-  onCreate,
   onEdit,
   onDelete,
 }: {
   roles: CustomRole[];
   catalog: CatalogPermission[];
-  onCreate: () => void;
   onEdit: (role: CustomRole) => void;
   onDelete: (role: CustomRole) => void;
 }) {
   const nameOf = new Map(catalog.map(p => [p.key, p.name]));
 
+  // Roles are made from «إضافة مستخدم» → «إنشاء دور مخصص»; the list appears once there is one
+  if (roles.length === 0) return null;
+
   return (
     <div className="border-t border-border">
-      <div className="p-4 flex items-center justify-between border-b border-border bg-muted/20">
-        <div>
-          <p className="font-semibold text-foreground">الأدوار المخصصة</p>
-          <p className="text-sm text-muted-foreground">أدوار بأسماء تختارها، وصلاحيات تحددها بنفسك</p>
-        </div>
-        <Button variant="outline" onClick={onCreate}>
-          <Plus className="w-4 h-4 ml-2" /> دور جديد
-        </Button>
-      </div>
-
       {roles.length === 0 ? (
         <div className="text-center py-10">
           <Tag className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
