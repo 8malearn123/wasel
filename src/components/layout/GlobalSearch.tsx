@@ -161,7 +161,7 @@ export function GlobalSearch() {
           if (e.key === "Enter" && results.length > 0) go(results[0]);
         }}
         className={cn(
-          "w-80 bg-muted/50 border-transparent focus:border-primary",
+          "w-56 2xl:w-80 bg-muted/50 border-transparent focus:border-primary",
           isRTL ? "pr-9" : "pl-9"
         )}
       />
