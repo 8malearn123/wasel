@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-import { permissionsForLegacyRole } from '@/lib/legacyRolePermissions';
+import { permissionsForLegacyRole, CUSTOM_ROLE_FORBIDDEN } from '@/lib/legacyRolePermissions';
 
 /**
  * What the signed-in user may do, as the database sees it.
@@ -58,7 +58,10 @@ export function usePermissions() {
         '[permissions] my_permissions unavailable, falling back to the role map:',
         error.message,
       );
-      setPermissions(permissionsForLegacyRole(merchantUser.role));
+      // a custom role kept in the app's store carries its own list
+      setPermissions(merchantUser.role === 'custom'
+        ? (merchantUser.customRole?.permissions ?? []).filter(k => !CUSTOM_ROLE_FORBIDDEN.has(k))
+        : permissionsForLegacyRole(merchantUser.role));
     } else {
       setPermissions((data as unknown as string[]) || []);
     }

@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import type { Branch, MerchantUser, Profile } from '@/types/database';
 import { toast } from 'sonner';
+import { loadCustomRolesConfig, storedRoleFor, CUSTOM_ROLE_BASE } from '@/lib/customRolesStore';
 
 export function useBranches() {
   const { merchant, refreshMerchantData } = useAuth();
@@ -151,6 +152,20 @@ export function useMerchantUsers() {
             customRoles.set(g.merchant_user_id, { id: g.role.id, name: g.role.name_ar });
           }
         }
+      }
+
+      // No user_roles table yet: the custom roles are in the app's store, on
+      // members the database still calls cashiers
+      const { error: noRolesTable } = await supabase.from('roles' as never).select('id').limit(1);
+      if (noRolesTable) {
+        const config = await loadCustomRolesConfig(merchant.id);
+        setUsers(usersWithProfiles.map(u => {
+          const stored = u.role === CUSTOM_ROLE_BASE ? storedRoleFor(config, u.id) : null;
+          return stored
+            ? { ...u, role: 'custom', customRole: { id: stored.id, name: stored.name } }
+            : { ...u, customRole: null };
+        }) as MerchantUser[]);
+        return;
       }
 
       setUsers(usersWithProfiles.map(u => ({

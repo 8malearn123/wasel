@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, createContext, useContext, ReactNode } fro
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { MerchantUser, Merchant, Subscription, Branch } from '@/types/database';
+import { loadCustomRolesConfig, storedRoleFor, CUSTOM_ROLE_BASE } from '@/lib/customRolesStore';
 
 interface AuthContextType {
   user: User | null;
@@ -46,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (merchantUserData) {
-        setMerchantUser(merchantUserData as MerchantUser);
+        setMerchantUser(await withStoredCustomRole(merchantUserData as MerchantUser));
 
         // Get merchant
         const { data: merchantData } = await supabase
@@ -243,4 +244,20 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
+}
+
+/**
+ * A cashier the owner gave a custom role while roles live in the app's store
+ * (no custom-roles migration yet) is that custom role to the app. Once the
+ * migration is applied the roles table exists, merchant_users.role says
+ * 'custom' itself, and the store is not read.
+ */
+async function withStoredCustomRole(member: MerchantUser): Promise<MerchantUser> {
+  if (member.role !== CUSTOM_ROLE_BASE) return member;
+  const { error: noRolesTable } = await supabase.from('roles' as never).select('id').limit(1);
+  if (!noRolesTable) return member;
+  const role = storedRoleFor(await loadCustomRolesConfig(member.merchant_id), member.id);
+  return role
+    ? { ...member, role: 'custom', customRole: { id: role.id, name: role.name, permissions: role.permissions } }
+    : member;
 }

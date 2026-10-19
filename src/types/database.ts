@@ -59,7 +59,7 @@ export interface MerchantUser {
   profile?: Profile;
   branch?: Branch;
   /** the shop's own role, when role is 'custom' */
-  customRole?: { id: string; name: string } | null;
+  customRole?: { id: string; name: string; permissions?: string[] } | null;
 }
 
 export interface Branch {
