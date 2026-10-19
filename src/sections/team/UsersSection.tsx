@@ -124,7 +124,7 @@ export default function UsersSection() {
   const { branches } = useBranches();
   const { can } = usePermissions();
   const canManageRoles = can('roles.manage');
-  const { roles: customRoles, catalog, saveRole, deleteRole } = useCustomRoles();
+  const { roles: customRoles, catalog, databaseReady, saveRole, deleteRole } = useCustomRoles();
   // The role editor: which role (null = new), and who asked — the add-user
   // dialog wants the new role selected once it is saved
   const [roleEditor, setRoleEditor] = useState<{ role: CustomRole | null; onSaved?: (id: string) => void } | null>(null);
@@ -355,6 +355,7 @@ export default function UsersSection() {
         <CustomRolesPanel
           roles={customRoles}
           catalog={catalog}
+          databaseReady={databaseReady}
           onCreate={() => openRoleEditor(null)}
           onEdit={(role) => openRoleEditor(role)}
           onDelete={handleDeleteRole}
@@ -367,6 +368,7 @@ export default function UsersSection() {
         onOpenChange={(open) => !open && setRoleEditor(null)}
         role={roleEditor?.role ?? null}
         catalog={catalog}
+        databaseReady={databaseReady}
         onSave={async (name, description, permissions) => {
           const result = await saveRole(roleEditor?.role?.id ?? null, name, description, permissions);
           if (!result.error && result.id) {
@@ -1125,12 +1127,14 @@ function groupByModule(catalog: CatalogPermission[]) {
 function CustomRolesPanel({
   roles,
   catalog,
+  databaseReady,
   onCreate,
   onEdit,
   onDelete,
 }: {
   roles: CustomRole[];
   catalog: CatalogPermission[];
+  databaseReady: boolean;
   onCreate: () => void;
   onEdit: (role: CustomRole) => void;
   onDelete: (role: CustomRole) => void;
@@ -1153,6 +1157,8 @@ function CustomRolesPanel({
           <Plus className="w-4 h-4 ml-2" /> دور جديد
         </Button>
       </div>
+
+      {!databaseReady && <DatabaseNotice className="m-4" />}
 
       {roles.length === 0 ? (
         <div className="text-center py-10">
@@ -1209,12 +1215,14 @@ function RoleEditorDialog({
   onOpenChange,
   role,
   catalog,
+  databaseReady,
   onSave,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   role: CustomRole | null;
   catalog: CatalogPermission[];
+  databaseReady: boolean;
   /** resolves to an error message, or nothing when saved */
   onSave: (name: string, description: string, permissions: string[]) => Promise<string | undefined>;
 }) {
@@ -1305,6 +1313,7 @@ function RoleEditorDialog({
                 </div>
               ))}
             </div>
+            {!databaseReady && <DatabaseNotice />}
             {error && <p className="text-sm text-destructive">{error}</p>}
           </div>
           <DialogFooter>
@@ -1317,5 +1326,14 @@ function RoleEditorDialog({
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** Shown until the custom-roles migration is on the database: saving would fail */
+function DatabaseNotice({ className }: { className?: string }) {
+  return (
+    <div className={cn("rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm text-foreground", className)}>
+      حفظ الأدوار المخصصة يحتاج تحديث قاعدة البيانات أولًا (ملف wasel-custom-roles-live.sql في Supabase → SQL Editor).
+    </div>
   );
 }

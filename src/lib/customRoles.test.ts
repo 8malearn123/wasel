@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { LEGACY_ROLE_PERMISSIONS, CUSTOM_ROLE_FORBIDDEN } from './legacyRolePermissions';
 import { firstOpenSection } from './sectionAccess';
+import { CUSTOM_ROLE_CATALOG } from './permissionCatalog';
 import type { PermissionKey } from '@/hooks/usePermissions';
 
 // Read from source, like navConsistency.test.ts: the pages and the sidebar pull
@@ -38,6 +39,18 @@ describe('the role map in the app and in the database', () => {
       expect(CUSTOM_ROLE_FORBIDDEN.has(key)).toBe(true);
     }
     expect(LEGACY_ROLE_PERMISSIONS.custom).toEqual([]);
+  });
+
+  it('the built-in list a role is chosen from is the catalogue less what custom roles may not hold', () => {
+    const keys = new Set<string>();
+    for (const file of ['20261004100200_rbac.sql', '20261020100100_custom_roles.sql']) {
+      const sql = read(`supabase/migrations/${file}`);
+      const insert = sql.slice(sql.indexOf('INSERT INTO public.permissions'));
+      for (const m of insert.slice(0, insert.indexOf('ON CONFLICT')).matchAll(/\('([a-z_.]+)',/g)) keys.add(m[1]);
+    }
+    const assignable = [...keys].filter(k => !CUSTOM_ROLE_FORBIDDEN.has(k));
+    expect(new Set(CUSTOM_ROLE_CATALOG.map(p => p.key))).toEqual(new Set(assignable));
+    expect(assignable).toContain('reports.view');
   });
 
   it('roles.manage stays the owner’s alone', () => {
