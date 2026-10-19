@@ -61,7 +61,7 @@ describe('custom roles in users & permissions', () => {
   it('the owner manages roles; the member shows the role by its name', () => {
     permissions = ['roles.manage', 'users.view', 'users.update'];
     render(<UsersSection />);
-    expect(screen.getByText('الأدوار المخصصة')).toBeInTheDocument();
+    expect(screen.getByTitle('تعديل')).toBeInTheDocument();
     // the role's row and the member's badge both carry its name
     expect(screen.getAllByText('محاسب').length).toBeGreaterThanOrEqual(2);
   });
@@ -69,7 +69,7 @@ describe('custom roles in users & permissions', () => {
   it('an admin, who cannot manage roles, is not offered the editor', () => {
     permissions = ['users.view', 'users.update'];
     render(<UsersSection />);
-    expect(screen.queryByText('الأدوار المخصصة')).not.toBeInTheDocument();
+    expect(screen.queryByTitle('تعديل')).not.toBeInTheDocument();
   });
 
   it('saves a new role with exactly the permissions ticked', async () => {
@@ -77,8 +77,10 @@ describe('custom roles in users & permissions', () => {
     saveRole.mockResolvedValue({ id: 'r2' });
     render(<UsersSection />);
 
-    fireEvent.click(screen.getByText('دور جديد'));
-    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(screen.getByText('إضافة مستخدم جديد'));
+    fireEvent.click(await screen.findByText('إنشاء دور مخصص'));
+    const dialogs = await screen.findAllByRole('dialog');
+    const dialog = dialogs[dialogs.length - 1];
     fireEvent.change(within(dialog).getByLabelText('اسم الدور'), { target: { value: 'مراجع' } });
     fireEvent.click(within(dialog).getByText('الاطلاع على الفواتير'));
     fireEvent.click(within(dialog).getByText('حفظ الدور'));
@@ -89,8 +91,10 @@ describe('custom roles in users & permissions', () => {
   it('refuses to save a role with no permissions', async () => {
     permissions = ['roles.manage'];
     render(<UsersSection />);
-    fireEvent.click(screen.getByText('دور جديد'));
-    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(screen.getByText('إضافة مستخدم جديد'));
+    fireEvent.click(await screen.findByText('إنشاء دور مخصص'));
+    const dialogs = await screen.findAllByRole('dialog');
+    const dialog = dialogs[dialogs.length - 1];
     fireEvent.change(within(dialog).getByLabelText('اسم الدور'), { target: { value: 'فارغ' } });
     fireEvent.click(within(dialog).getByText('حفظ الدور'));
     expect(await within(dialog).findByText('اختر صلاحية واحدة على الأقل')).toBeInTheDocument();
@@ -101,8 +105,10 @@ describe('custom roles in users & permissions', () => {
     permissions = ['roles.manage'];
     databaseReady = false;
     render(<UsersSection />);
-    fireEvent.click(screen.getByText('دور جديد'));
-    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(screen.getByText('إضافة مستخدم جديد'));
+    fireEvent.click(await screen.findByText('إنشاء دور مخصص'));
+    const dialogs = await screen.findAllByRole('dialog');
+    const dialog = dialogs[dialogs.length - 1];
     expect(within(dialog).getByText('عرض التقارير المالية')).toBeInTheDocument();
     expect(within(dialog).queryByText(/يحتاج تحديث قاعدة البيانات/)).not.toBeInTheDocument();
     databaseReady = true;
