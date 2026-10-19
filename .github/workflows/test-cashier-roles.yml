@@ -18,6 +18,7 @@ jobs:
           SUPA: https://ynwddyxzypbcftlevuam.supabase.co
           # Public anon key (already committed in .env) — RLS still applies
           ANON: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlud2RkeXh6eXBiY2Z0bGV2dWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5MjE1OTQsImV4cCI6MjA4NTQ5NzU5NH0.PsNDqovuzo7NmTiwsH4swskkIF3FdMlBXjYUy3MJkyA
+        shell: bash
         run: |
           set -uo pipefail
           SESSION=$(curl -sS "$SUPA/functions/v1/login-by-code" \
@@ -38,8 +39,15 @@ jobs:
           curl -sS -X POST "$SUPA/rest/v1/rpc/has_permission" "${H[@]}" -d '{"_permission":"roles.manage"}'; echo
           curl -sS -X POST "$SUPA/rest/v1/rpc/has_permission" "${H[@]}" -d '{"_permission":"users.update"}'; echo
 
+          echo "== which of the repo's migrations the live database has"
+          for T in login_code_attempts product_media roles permissions user_roles employees; do
+            CODE=$(curl -sS -o /dev/null -w '%{http_code}' "$SUPA/rest/v1/$T?select=*&limit=0" "${H[@]}")
+            echo "table $T: HTTP $CODE"
+          done
+          echo "rpc get_subscription_state: $(curl -sS -o /dev/null -w '%{http_code}' -X POST "$SUPA/rest/v1/rpc/get_subscription_state" "${H[@]}" -d '{}')"
+
           echo "== roles visible to the cashier"
-          curl -sS "$SUPA/rest/v1/roles?select=key,name_ar,is_system,merchant_id" "${H[@]}" | jq -c '[.[] | {key, is_system, own: (.merchant_id != null)}]'
+          curl -sS "$SUPA/rest/v1/roles?select=key,name_ar,is_system,merchant_id" "${H[@]}"; echo
 
           echo "== is the custom-roles migration live? (save_custom_role must refuse a cashier)"
           curl -sS -X POST "$SUPA/rest/v1/rpc/save_custom_role" "${H[@]}" \
