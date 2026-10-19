@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { CUSTOM_ROLE_FORBIDDEN } from '@/lib/legacyRolePermissions';
+import { CUSTOM_ROLE_CATALOG } from '@/lib/permissionCatalog';
 
 export interface CustomRole {
   id: string;
@@ -51,8 +52,11 @@ export function roleErrorMessage(message?: string): string {
 export function useCustomRoles() {
   const { merchant } = useAuth();
   const [roles, setRoles] = useState<CustomRole[]>([]);
-  const [catalog, setCatalog] = useState<CatalogPermission[]>([]);
+  const [catalog, setCatalog] = useState<CatalogPermission[]>(CUSTOM_ROLE_CATALOG);
   const [loading, setLoading] = useState(true);
+  // false until the custom-roles migration is on this database: the editor
+  // still shows the list, and says saving needs the update
+  const [databaseReady, setDatabaseReady] = useState(true);
 
   const load = useCallback(async () => {
     if (!merchant) return;
@@ -86,9 +90,14 @@ export function useCustomRoles() {
       memberCount: (r.user_roles || []).filter(u => u.merchant_user?.is_active).length,
     })));
 
-    setCatalog(((catalogRes.data as unknown as PermRow[]) || [])
+    const fromDb = ((catalogRes.data as unknown as PermRow[]) || [])
       .filter(p => !CUSTOM_ROLE_FORBIDDEN.has(p.key))
-      .map(p => ({ key: p.key, module: p.module, name: p.name_ar, description: p.description })));
+      .map(p => ({ key: p.key, module: p.module, name: p.name_ar, description: p.description }));
+    // The screen permissions come with the custom-roles migration; a database
+    // without them (or without the table at all) is not ready to save roles
+    const ready = !rolesRes.error && !catalogRes.error && fromDb.some(p => p.key === 'reports.view');
+    setDatabaseReady(ready);
+    setCatalog(ready ? fromDb : CUSTOM_ROLE_CATALOG);
 
     setLoading(false);
   }, [merchant]);
@@ -116,7 +125,7 @@ export function useCustomRoles() {
     return {};
   };
 
-  return { roles, catalog, loading, refresh: load, saveRole, deleteRole };
+  return { roles, catalog, loading, databaseReady, refresh: load, saveRole, deleteRole };
 }
 
 /** Give a member one of the shop's custom roles (system roles keep their own path). */

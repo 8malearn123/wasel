@@ -9,6 +9,7 @@ const deleteRole = vi.fn();
 const assignCustomRole = vi.fn();
 let permissions: string[] = [];
 let members: MerchantUser[] = [];
+let databaseReady = true;
 
 vi.mock('@/hooks/useBranches', () => ({
   useMerchantUsers: () => ({
@@ -28,7 +29,7 @@ vi.mock('@/hooks/useCustomRoles', () => ({
       { key: 'invoices.view', module: 'finance', name: 'الاطلاع على الفواتير', description: null },
       { key: 'pos.access', module: 'sales', name: 'نقطة البيع', description: null },
     ],
-    loading: false, refresh: vi.fn(), saveRole, deleteRole,
+    loading: false, databaseReady, refresh: vi.fn(), saveRole, deleteRole,
   }),
   assignCustomRole: (...a: unknown[]) => assignCustomRole(...a),
   assignSystemRole: vi.fn(),
@@ -94,6 +95,17 @@ describe('custom roles in users & permissions', () => {
     fireEvent.click(within(dialog).getByText('حفظ الدور'));
     expect(await within(dialog).findByText('اختر صلاحية واحدة على الأقل')).toBeInTheDocument();
     expect(saveRole).not.toHaveBeenCalled();
+  });
+
+  it('before the database update the permissions are still listed, with a notice', async () => {
+    permissions = ['roles.manage'];
+    databaseReady = false;
+    render(<UsersSection />);
+    fireEvent.click(screen.getByText('دور جديد'));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('عرض التقارير المالية')).toBeInTheDocument();
+    expect(within(dialog).getByText(/يحتاج تحديث قاعدة البيانات/)).toBeInTheDocument();
+    databaseReady = true;
   });
 
   it('a role still held by someone cannot be deleted from the list', () => {

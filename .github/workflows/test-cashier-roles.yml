@@ -6,7 +6,7 @@ name: Test custom roles with the demo cashier
 on:
   workflow_dispatch:
   push:
-    branches: [claude/sweet-knuth-u4nbzm-custom-roles]
+    branches: [claude/sweet-knuth-u4nbzm-custom-roles, claude/sweet-knuth-u4nbzm-roles-catalog]
     paths: ['.github/workflows/test-cashier-roles.yml']
 
 jobs:
