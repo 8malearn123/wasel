@@ -28,11 +28,40 @@ export interface ShiftReport {
     approved_by_name: string | null;
     approved_at: string | null;
     approval_notes: string | null;
+    /** Offline sales synced after the close (expected cash was recomputed). */
+    late_sales_count: number;
+    late_synced_at: string | null;
+    /** Tills that hadn't synced when the shift was closed anyway. */
+    unsynced_tills: UnsyncedTill[] | null;
   };
   sales: { count: number; total: number; by_method: { method: string; amount: number }[] };
   cash: { opening: number; sales: number; cash_in: number; cash_out: number; expenses: number; expected: number | null };
   movements: { id: string; type: CashMovementType; amount: number; reason: string; created_by_name: string | null; created_at: string }[];
   can_approve: boolean;
+}
+
+/** A till that may still hold offline sales for the shift (close_shift's TILLS_NOT_SYNCED). */
+export interface UnsyncedTill {
+  id: string;
+  code: string;
+  name: string | null;
+  last_seen_at: string;
+  pending_count: number;
+}
+
+/** close_shift(): the closed shift, or the tills to confirm before closing anyway. */
+export type CloseShiftOutcome = { report: ShiftReport } | { unsyncedTills: UnsyncedTill[] } | null;
+
+/** Notes on a shift touched by offline tills, for the report screen and the printout. */
+export function shiftOfflineNotes(shift: Pick<ShiftReport['shift'], 'late_sales_count' | 'unsynced_tills'>): string[] {
+  const notes: string[] = [];
+  if (shift.unsynced_tills?.length) {
+    notes.push(`أُغلقت قبل مزامنة الصناديق: ${shift.unsynced_tills.map((t) => t.code).join('، ')}`);
+  }
+  if (shift.late_sales_count > 0) {
+    notes.push(`أُضيفت ${shift.late_sales_count} فاتورة بدون إنترنت بعد الإغلاق، وأُعيد حساب المتوقع`);
+  }
+  return notes;
 }
 
 /** One row of list_shifts(). */
@@ -52,6 +81,7 @@ export interface ShiftSummary {
   difference: number | null;
   approved_at: string | null;
   approved_by_name: string | null;
+  late_sales_count: number;
   sales_total: number;
 }
 
@@ -132,19 +162,29 @@ export function useShift() {
   /**
    * Submits the counted total; the shift then waits for a manager. The hook keeps the
    * closed shift until refresh() so the caller can show the result first.
+   * When another till of the branch may still hold offline sales for the shift, the
+   * server refuses and the tills come back for the closer to confirm (force).
    */
-  const closeShift = async (countedCash: number, notes?: string) => {
+  const closeShift = async (countedCash: number, notes?: string, force = false): Promise<CloseShiftOutcome> => {
     if (!shift) return null;
     const { data, error } = await supabase.rpc('close_shift', {
       _shift_id: shift.shift.id,
       _counted_cash: countedCash,
       _notes: notes || undefined,
+      _force: force || undefined,
     });
     if (error) {
+      if (error.hint === 'TILLS_NOT_SYNCED') {
+        try {
+          return { unsyncedTills: JSON.parse(error.details) as UnsyncedTill[] };
+        } catch {
+          return { unsyncedTills: [] };
+        }
+      }
       toast.error(error.message);
       return null;
     }
-    return data as unknown as ShiftReport;
+    return { report: data as unknown as ShiftReport };
   };
 
   return { shift, loading, refresh, openShift, recordMovement, closeShift };

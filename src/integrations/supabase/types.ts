@@ -1331,6 +1331,7 @@ export type Database = {
           created_at: string
           id: string
           last_seen_at: string
+          pending_count: number
           merchant_id: string
           name: string | null
           registered_by: string | null
@@ -1341,6 +1342,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_seen_at?: string
+          pending_count?: number
           merchant_id: string
           name?: string | null
           registered_by?: string | null
@@ -1351,6 +1353,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_seen_at?: string
+          pending_count?: number
           merchant_id?: string
           name?: string | null
           registered_by?: string | null
@@ -3001,7 +3004,12 @@ export type Database = {
         Returns: Json
       }
       close_shift: {
-        Args: { _counted_cash: number; _notes?: string; _shift_id: string }
+        Args: {
+          _counted_cash: number
+          _force?: boolean
+          _notes?: string
+          _shift_id: string
+        }
         Returns: Json
       }
       current_shift: { Args: { _branch_id: string }; Returns: Json }
@@ -3116,6 +3124,10 @@ export type Database = {
           _terminal_id: string
         }
         Returns: Json
+      }
+      terminal_heartbeat: {
+        Args: { _pending?: number; _terminal_id: string }
+        Returns: undefined
       }
       terminal_state: { Args: { _terminal_id: string }; Returns: Json }
       track_public_order: {

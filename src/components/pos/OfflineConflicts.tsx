@@ -23,6 +23,7 @@ const HINT_TEXT: Record<string, string> = {
   INSUFFICIENT_STOCK: "نفدت الكمية أثناء الانقطاع",
   NO_OPEN_SHIFT: "لم تكن هناك وردية مفتوحة عند المزامنة",
   DUPLICATE_INVOICE_NUMBER: "رقم الفاتورة مستخدم مسبقاً",
+  DAY_CLOSED: "وصلت بعد إغلاق يوم العمل الذي تمت فيه",
 };
 
 /**

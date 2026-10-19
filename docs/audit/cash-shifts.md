@@ -35,7 +35,7 @@ A new shift can be opened while the previous one waits for approval, so selling 
 | `open_shift(_branch_id, _opening_cash, _notes?)` | staff of the branch | Opens the branch's shift |
 | `current_shift(_branch_id)` | staff of the branch | Open shift report, or `null` |
 | `record_cash_movement(_shift_id, _type, _amount, _reason)` | staff of the branch | `cash_in` / `cash_out` / `expense` |
-| `close_shift(_shift_id, _counted_cash, _notes?)` | staff of the branch | Snapshot of totals, then `pending_approval` |
+| `close_shift(_shift_id, _counted_cash, _notes?, _force?)` | staff of the branch | Snapshot of totals, then `pending_approval`. Refuses with `TILLS_NOT_SYNCED` while another till may hold offline sales for the shift, unless `_force` (see `offline-selling.md`) |
 | `approve_shift(_shift_id, _notes?)` | managers | `pending_approval` → `closed` |
 | `shift_report(_shift_id)` | staff | X/Z report: cash breakdown, sales by method, movements |
 | `list_shifts(_status?, _limit?)` | staff | History; cashiers and branch managers bound to a branch see only it |
@@ -47,6 +47,11 @@ functions, which is what keeps the count blind. Errors carry a code in `HINT`
 **Concurrency.** A sale takes a share lock on its shift, and closing takes an exclusive lock. A
 close therefore waits for sales in progress and includes them, and a sale arriving during a close is
 refused with `NO_OPEN_SHIFT`.
+
+**Offline sales synced late.** An offline sale is attached to the shift that was open when it was
+made, even if that shift was closed since. Its expected cash and difference are then recomputed,
+`late_sales_count` goes up, and an approved shift goes back to `pending_approval`. Details in
+`offline-selling.md` → *Several tills on one shift*.
 
 ## Printing the shift report (X / Z)
 

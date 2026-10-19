@@ -99,12 +99,12 @@ export default function POSPage() {
   useEffect(() => { attemptRef.current = null; }, [cart]);
 
   // The shift can't be closed while offline sales are still waiting to sync.
-  const closeShiftWhenSynced: typeof closeShift = async (counted, notes) => {
+  const closeShiftWhenSynced: typeof closeShift = async (counted, notes, force) => {
     if (offline.pending > 0) {
       toast.error("توجد مبيعات بدون إنترنت لم تُزامن بعد؛ انتظر المزامنة ثم أغلق الوردية");
       return null;
     }
-    return closeShift(counted, notes);
+    return closeShift(counted, notes, force);
   };
 
   const focusMode = useFocusMode();

@@ -15,7 +15,9 @@ Migration: `supabase/migrations/20261018100600_offline_sales.sql`. It also relie
   never used by offline sales.
 - **Sync.** When the connection is back, the queued sales sync automatically: on reconnect, every
   minute while any are waiting, or with **مزامنة الآن**. The banner shows how many are waiting.
-- **Shift close.** A shift can't be closed while offline sales are still waiting to sync.
+- **Shift close.** A shift can't be closed from a till whose own offline sales are still waiting
+  to sync. Because the shift is shared by every till of the branch, see also
+  [Several tills on one shift](#several-tills-on-one-shift).
 - **Lost response.** If the connection drops in the middle of a normal sale, the cart stays. Pressing
   **إتمام البيع** again saves it offline under the same attempt id. If the first attempt did reach
   the server, the sync recognises it and nothing is sold twice.
@@ -33,6 +35,37 @@ Migration: `supabase/migrations/20261018100600_offline_sales.sql`. It also relie
 | Refusals | Stored in `offline_sale_conflicts` with the full payload and reason. Managers see them at the top of **الورديات**, settle them (refund, manual sale, ...) and record how (`resolve_offline_conflict()`) |
 | Connectivity | Browser online/offline events, plus a probe every 15 s while offline, because Wi-Fi can be up while the internet is down. Any request failing for lack of connection switches the till to offline |
 
+## Several tills on one shift
+
+The shift belongs to the branch, so till T1 can close it while till T2 is still offline with sales
+in its queue. Two safeguards cover this:
+
+1. **Warning before closing.** Every till sends a heartbeat each minute while online
+   (`terminal_heartbeat(_terminal_id, _pending)`), with the number of sales in its queue, and again
+   whenever that number changes. `close_shift()` refuses with `TILLS_NOT_SYNCED` when another till
+   of the branch reports queued sales, or checked in during the shift and has been silent for more
+   than 3 minutes. The server can't tell an offline till from one that was switched off, so the
+   dialog lists those tills and the closer may **إغلاق رغم ذلك** (`_force`). The list is kept on
+   the shift (`unsynced_tills`) and shown on its report.
+2. **Each sale goes to the shift it was made in.** `sync_offline_sale()` looks for the branch
+   shift that was open at the sale's offline time (`opened_at ≤ sold_at ≤ closed_at`) and attaches
+   the sale to it, not to whichever shift is open at sync time. The cash went into that drawer and
+   was counted with it.
+   - If that shift is waiting for approval, its expected cash and difference are recomputed (the
+     counted amount stays) and `late_sales_count` goes up.
+   - If it was already approved, it also goes back to **بانتظار الاعتماد** and the approval is
+     cleared, so the manager approves the corrected figures.
+   - If the day was already closed, the sale becomes a conflict for review (`DAY_CLOSED`); closed
+     books are never changed.
+   - If no shift covers that time (till clock off), the branch's open shift takes it, as before.
+
+The report, its printout and the shifts list show "أُضيفت N فاتورة بدون إنترنت بعد الإغلاق" and
+"أُغلقت قبل مزامنة الصناديق: T2".
+
+**Invoice order.** Numbers are per till (`OFF-T1-…`, `OFF-T2-…`), so tills syncing together never
+compete for a number. Chronological order across tills comes from the stored sale time
+(`sale_date` = offline time), not from the number or the sync order.
+
 ## Limits of this version
 
 - **Reloading the page while offline is not supported.** The app itself isn't cached on the device
@@ -48,8 +81,11 @@ Migration: `supabase/migrations/20261018100600_offline_sales.sql`. It also relie
 
 ## Tests
 
-- `supabase/tests/db/offline-sales.test.ts` (16): terminals, sync keeping the `OFF-` number and time,
+- `supabase/tests/db/offline-sales.test.ts` (27): terminals, sync keeping the `OFF-` number and time,
   no use of the `INV-` series, idempotent replays, a lost online response followed by an offline
-  replay, every conflict type with stock untouched, manager resolution, and server-side restrictions.
+  replay, every conflict type with stock untouched, manager resolution, server-side restrictions,
+  tills syncing in parallel, and the shared shift: heartbeats, closing refused for a silent till or
+  one with queued sales (and closing anyway), late sales landing in their own shift (pending or
+  approved), a closed day, and the fallback to the open shift.
 - `src/test/offline-sales.test.ts` (12): building the sale and its restrictions, stock updates, the
   number series, and the sync loop (order, network drop, other errors).

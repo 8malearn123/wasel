@@ -9,6 +9,7 @@ function report(overrides: Partial<ShiftReport["shift"]> = {}, cash: Partial<Shi
       opening_cash: 500, opening_notes: null, opened_by_name: "سارة", opened_at: "2026-10-18T06:00:00Z",
       counted_cash: 1590, closing_notes: null, closed_by_name: "سارة", closed_at: "2026-10-18T14:00:00Z",
       expected_cash: 1600, difference: -10, approved_by_name: null, approved_at: null, approval_notes: null,
+      late_sales_count: 0, late_synced_at: null, unsynced_tills: null,
       ...overrides,
     },
     sales: { count: 2, total: 1380, by_method: [{ method: "cash", amount: 1250 }, { method: "mada", amount: 130 }] },
@@ -47,6 +48,16 @@ describe("shift report print", () => {
   it("labels a surplus and an exact match", () => {
     expect(text(buildShiftReportHTML(report({ difference: 5 }), { merchantName: "م" }))).toMatch(/زيادة\s*5\.00/);
     expect(text(buildShiftReportHTML(report({ difference: 0 }), { merchantName: "م" }))).toContain("مطابق");
+  });
+
+  it("flags a shift closed before every till synced, and sales added after the close", () => {
+    expect(text(buildShiftReportHTML(report(), { merchantName: "م" }))).not.toContain("تنبيهات");
+    const t = text(buildShiftReportHTML(report({
+      late_sales_count: 2, late_synced_at: "2026-10-18T15:00:00Z",
+      unsynced_tills: [{ id: "t2", code: "T2", name: null, last_seen_at: "2026-10-18T13:00:00Z", pending_count: 0 }],
+    }), { merchantName: "م" }));
+    expect(t).toContain("أُغلقت قبل مزامنة الصناديق: T2");
+    expect(t).toContain("أُضيفت 2 فاتورة بدون إنترنت بعد الإغلاق");
   });
 
   it("escapes text typed by users", () => {

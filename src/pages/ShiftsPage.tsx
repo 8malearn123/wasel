@@ -104,6 +104,9 @@ export default function ShiftsPage() {
                     <TableCell>{s.shift_no}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className={statusClass[s.status]}>{SHIFT_STATUS_LABELS[s.status].ar}</Badge>
+                      {s.late_sales_count > 0 && (
+                        <div className="text-[11px] text-amber-600 mt-1">+{s.late_sales_count} فاتورة بعد الإغلاق</div>
+                      )}
                     </TableCell>
                     <TableCell className="text-xs">
                       {formatTime(s.opened_at)}

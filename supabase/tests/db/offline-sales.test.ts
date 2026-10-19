@@ -8,7 +8,7 @@ import {
 } from "./fixtures";
 
 interface Terminal { id: string; code: string; invoice_prefix: string; last_offline_number: number }
-interface SyncResult { status: "synced" | "conflict"; sale_id?: string; invoice_number?: string; reason?: string; hint?: string; replayed?: boolean }
+interface SyncResult { status: "synced" | "conflict"; sale_id?: string; shift_id?: string; late?: boolean; invoice_number?: string; reason?: string; hint?: string; replayed?: boolean }
 
 describe("offline sales", () => {
   const db = useTestDb();
@@ -219,6 +219,116 @@ describe("offline sales", () => {
         _branch_id: BRANCH_MAIN, _items: [accessory(ACCESSORIES.charger.id)], _payments: [pay("cash", 115)],
       });
       expect(sale.invoice_number).toBe("INV-B1-000001");
+    });
+  });
+  describe("several tills sharing the branch's shift", () => {
+    const mainShift = async () => (await db().one("SELECT id FROM cash_shifts WHERE branch_id = $1 ORDER BY opened_at DESC LIMIT 1", [BRANCH_MAIN])).id as string;
+    const close = (id: string, counted: number, force?: boolean) =>
+      db().as(user(CASHIER)).rpc("close_shift", { _shift_id: id, _counted_cash: counted, _force: force });
+    const heartbeat = (t: Terminal, pending: number, who = CASHIER) =>
+      db().as(user(who)).rpc("terminal_heartbeat", { _terminal_id: t.id, _pending: pending });
+    const shiftRow = (id: string) =>
+      db().one(
+        `SELECT status::text, expected_cash, difference, late_sales_count, late_synced_at IS NOT NULL AS flagged,
+                approved_by, approved_at, unsynced_tills FROM cash_shifts WHERE id = $1`,
+        [id],
+      );
+    // The shift began at 10:00; the offline sales below were made at 10:15.
+    beforeEach(() => db().sql("UPDATE cash_shifts SET opened_at = '2026-10-18T10:00:00Z' WHERE branch_id = $1", [BRANCH_MAIN]));
+
+    describe("closing waits for the other tills", () => {
+      it("records each till's heartbeat and queue size", async () => {
+        const t = await register();
+        await db().sql("UPDATE pos_terminals SET last_seen_at = now() - interval '1 hour'");
+        await heartbeat(t, 3);
+        expect(await db().one("SELECT pending_count, last_seen_at > now() - interval '1 minute' AS fresh FROM pos_terminals WHERE id = $1", [t.id]))
+          .toEqual({ pending_count: 3, fresh: true });
+        await expect(heartbeat(t, 0, OTHER_OWNER)).rejects.toMatchObject({ hint: "INVALID_BRANCH" });
+      });
+
+      it("refuses while a till still has sales queued", async () => {
+        const t = await register();
+        await heartbeat(t, 2);
+        await expect(close(await mainShift(), 500)).rejects.toMatchObject({ hint: "TILLS_NOT_SYNCED", message: expect.stringContaining("T1") });
+      });
+
+      it("refuses while a till that checked in during the shift has gone silent", async () => {
+        await register();
+        await db().sql("UPDATE pos_terminals SET last_seen_at = now() - interval '5 minutes'");
+        const err = await close(await mainShift(), 500).catch((e) => e);
+        expect(err).toMatchObject({ hint: "TILLS_NOT_SYNCED" });
+        expect(JSON.parse(err.detail)).toMatchObject([{ code: "T1", pending_count: 0 }]);
+      });
+
+      it("ignores tills not seen during the shift and tills of other branches", async () => {
+        const [here, there] = [await register(), await register(OWNER, BRANCH_MALL)];
+        await db().sql("UPDATE pos_terminals SET last_seen_at = '2026-10-18T09:00:00Z' WHERE id = $1", [here.id]);
+        await heartbeat(there, 4, OWNER);
+        await expect(close(await mainShift(), 500)).resolves.toBeTruthy();
+      });
+
+      it("closes anyway when confirmed, and keeps which tills were missing", async () => {
+        const t = await register();
+        await heartbeat(t, 2);
+        const id = await mainShift();
+        await close(id, 500, true);
+        expect(await shiftRow(id)).toMatchObject({
+          status: "pending_approval", unsynced_tills: [{ code: "T1", pending_count: 2 }],
+        });
+      });
+    });
+
+    describe("a sale synced after its shift was closed", () => {
+      it("goes to the shift it was made in, whose expected cash is corrected", async () => {
+        const t = await register();
+        const id = await mainShift();
+        await close(id, 500 + 1150); // the offline sale's cash was in the drawer
+        expect(await shiftRow(id)).toMatchObject({ difference: 1150, late_sales_count: 0 });
+
+        const r = await sync(t, 1, [device(DEVICES.iphone13.id)], [pay("cash", 1150)]);
+        expect(r).toMatchObject({ status: "synced", shift_id: id, late: true });
+        expect(await shiftRow(id)).toMatchObject({
+          status: "pending_approval", expected_cash: 1650, difference: 0, late_sales_count: 1, flagged: true,
+        });
+      });
+
+      it("sends an approved shift back to the manager", async () => {
+        const t = await register();
+        const id = await mainShift();
+        await close(id, 500);
+        await db().as(user(OWNER)).rpc("approve_shift", { _shift_id: id });
+
+        await sync(t, 1, [accessory(ACCESSORIES.charger.id)], [pay("mada", 115)]);
+        expect(await shiftRow(id)).toMatchObject({
+          status: "pending_approval", approved_by: null, approved_at: null, difference: 0, late_sales_count: 1,
+        });
+      });
+
+      it("goes to review once the day was closed, and leaves the closed books alone", async () => {
+        const t = await register();
+        const id = await mainShift();
+        await close(id, 500);
+        await db().as(user(OWNER)).rpc("approve_shift", { _shift_id: id });
+        const date = (await db().one("SELECT business_date::text AS d FROM cash_shifts WHERE id = $1", [id])).d;
+        await db().as(user(OWNER)).rpc("close_day", { _branch_id: BRANCH_MAIN, _date: date, _notes: null });
+
+        const r = await sync(t, 1, [device(DEVICES.iphone13.id)], [pay("cash", 1150)]);
+        expect(r).toMatchObject({ status: "conflict", hint: "DAY_CLOSED" });
+        expect(await shiftRow(id)).toMatchObject({ status: "closed", late_sales_count: 0 });
+        expect(await db().one("SELECT status::text FROM devices WHERE id = $1", [DEVICES.iphone13.id])).toEqual({ status: "available" });
+      });
+
+      it("falls back to the open shift when no shift covers the sale time (till clock off)", async () => {
+        const t = await register();
+        const old = await mainShift();
+        await close(old, 500);
+        await db().as(user(OWNER)).rpc("open_shift", { _branch_id: BRANCH_MAIN, _opening_cash: 500 });
+        const current = await mainShift();
+
+        const r = await sync(t, 1, [accessory(ACCESSORIES.charger.id)], [pay("cash", 115)], { _sold_at: "2026-10-18T08:00:00Z" });
+        expect(r).toMatchObject({ status: "synced", shift_id: current, late: false });
+        expect(await shiftRow(old)).toMatchObject({ late_sales_count: 0 });
+      });
     });
   });
 });

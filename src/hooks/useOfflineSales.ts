@@ -20,6 +20,8 @@ interface TerminalState {
 
 const PROBE_INTERVAL_MS = 15_000;
 const SYNC_INTERVAL_MS = 60_000;
+/** close_shift() treats a till silent for 3 minutes as possibly offline. */
+const HEARTBEAT_INTERVAL_MS = 60_000;
 
 /**
  * Offline selling for the POS: registers this device as a till (once per branch, while
@@ -152,6 +154,22 @@ export function useOfflineSales({ onSynced }: { onSynced?: () => void } = {}) {
     if (!online) return;
     ensureTerminal().then(syncNow);
   }, [online, ensureTerminal, syncNow, refreshPending]);
+
+  // Heartbeat with the queue size, so closing the branch's shared shift on another
+  // till knows whether this one still holds sales for it (TILLS_NOT_SYNCED).
+  // Re-sent at once whenever the queue size changes.
+  useEffect(() => {
+    if (!online || !terminalReady || !currentBranch) return;
+    const beat = async () => {
+      const terminal = loadTerminal(currentBranch.id);
+      if (!terminal) return;
+      const { error } = await supabase.rpc('terminal_heartbeat', { _terminal_id: terminal.id, _pending: pending });
+      if (error && isNetworkError(error)) setOnline(false);
+    };
+    beat();
+    const id = setInterval(beat, HEARTBEAT_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [online, terminalReady, currentBranch, pending]);
 
   useEffect(() => {
     if (!online || pending === 0) return;

@@ -48,6 +48,11 @@ CREATE TABLE public.cash_shifts (
     approved_by    uuid,
     approved_at    timestamptz,
     approval_notes text,
+    -- Offline sales synced after the close (they were in the drawer when it was counted)
+    late_sales_count integer NOT NULL DEFAULT 0,
+    late_synced_at   timestamptz,
+    -- Tills that hadn't synced when the shift was closed anyway (see check_tills_synced)
+    unsynced_tills   jsonb,
     created_at     timestamptz NOT NULL DEFAULT now(),
     updated_at     timestamptz NOT NULL DEFAULT now(),
     UNIQUE (branch_id, shift_no)
@@ -149,6 +154,19 @@ BEGIN
         RETURN NEW;
     END IF;
 
+    -- sync_offline_sale() attaches a sale made offline to the shift that was open when
+    -- it was made (passed through a transaction-local setting the API can't set).
+    IF NULLIF(current_setting('wasel.sale_shift', true), '') IS NOT NULL THEN
+        SELECT id INTO NEW.shift_id
+        FROM public.cash_shifts
+        WHERE id = current_setting('wasel.sale_shift', true)::uuid AND branch_id = NEW.branch_id
+        FOR SHARE;
+        IF NEW.shift_id IS NULL THEN
+            RAISE EXCEPTION 'الوردية غير موجودة' USING HINT = 'SHIFT_NOT_FOUND';
+        END IF;
+        RETURN NEW;
+    END IF;
+
     SELECT id INTO NEW.shift_id
     FROM public.cash_shifts
     WHERE branch_id = NEW.branch_id AND status = 'open'
@@ -164,6 +182,57 @@ $$;
 CREATE TRIGGER sales_attach_shift
     BEFORE INSERT ON public.sales
     FOR EACH ROW EXECUTE FUNCTION public.attach_sale_to_shift();
+
+
+-- ---------------------------------------------------------------------
+-- 3b. Helpers for offline tills (filled in by the offline-selling migration)
+-- ---------------------------------------------------------------------
+-- check_tills_synced(): called by close_shift(). Returns the tills that may still
+-- hold unsynced sales for this shift (empty here); raises TILLS_NOT_SYNCED unless
+-- the closer confirms with _force. 20261018100600_offline_sales.sql replaces it.
+CREATE OR REPLACE FUNCTION public.check_tills_synced(_branch_id uuid, _since timestamptz, _force boolean)
+RETURNS jsonb
+LANGUAGE sql
+STABLE
+AS $$ SELECT '[]'::jsonb $$;
+REVOKE ALL ON FUNCTION public.check_tills_synced(uuid, timestamptz, boolean) FROM PUBLIC, anon, authenticated;
+
+-- recompute_shift_totals(): refreshes the snapshot of a counted shift after sales were
+-- added to it late (offline sales synced after the close). The counted cash stays:
+-- that cash was in the drawer when it was counted.
+CREATE OR REPLACE FUNCTION public.recompute_shift_totals(_shift_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    _cash     numeric;
+    _cash_in  numeric;
+    _cash_out numeric;
+    _expenses numeric;
+BEGIN
+    SELECT COALESCE(SUM(p.amount), 0) INTO _cash
+    FROM public.sales s JOIN public.sale_payments p ON p.sale_id = s.id
+    WHERE s.shift_id = _shift_id AND p.method = 'cash';
+
+    SELECT COALESCE(SUM(amount) FILTER (WHERE type = 'cash_in'), 0),
+           COALESCE(SUM(amount) FILTER (WHERE type = 'cash_out'), 0),
+           COALESCE(SUM(amount) FILTER (WHERE type = 'expense'), 0)
+    INTO _cash_in, _cash_out, _expenses
+    FROM public.cash_movements WHERE shift_id = _shift_id;
+
+    UPDATE public.cash_shifts
+    SET cash_sales    = _cash,
+        cash_in       = _cash_in,
+        cash_out      = _cash_out,
+        expenses      = _expenses,
+        expected_cash = opening_cash + _cash + _cash_in - _cash_out - _expenses,
+        difference    = counted_cash - (opening_cash + _cash + _cash_in - _cash_out - _expenses)
+    WHERE id = _shift_id AND status <> 'open';
+END;
+$$;
+REVOKE ALL ON FUNCTION public.recompute_shift_totals(uuid) FROM PUBLIC, anon, authenticated;
 
 
 -- ---------------------------------------------------------------------
@@ -232,7 +301,9 @@ BEGIN
             'expected_cash', CASE WHEN _show THEN _s.expected_cash END,
             'difference',    CASE WHEN _show THEN _s.difference END,
             'approved_by', _s.approved_by, 'approved_by_name', (SELECT full_name FROM public.profiles WHERE id = _s.approved_by),
-            'approved_at', _s.approved_at, 'approval_notes', _s.approval_notes
+            'approved_at', _s.approved_at, 'approval_notes', _s.approval_notes,
+            'late_sales_count', _s.late_sales_count, 'late_synced_at', _s.late_synced_at,
+            'unsynced_tills', _s.unsynced_tills
         ),
         'sales', _sales || jsonb_build_object('by_method', _by_method),
         'cash', jsonb_build_object(
@@ -369,10 +440,13 @@ $$;
 -- ---------------------------------------------------------------------
 -- 8. close_shift(): counted total in, waits for a manager
 -- ---------------------------------------------------------------------
+-- _force: close even though a till may still hold unsynced offline sales for this
+-- shift (they'll be added to it when they sync; see check_tills_synced).
 CREATE OR REPLACE FUNCTION public.close_shift(
     _shift_id     uuid,
     _counted_cash numeric,
-    _notes        text DEFAULT NULL
+    _notes        text DEFAULT NULL,
+    _force        boolean DEFAULT false
 ) RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -386,6 +460,7 @@ DECLARE
     _cash_out numeric;
     _expenses numeric;
     _expected numeric;
+    _unsynced jsonb;
 BEGIN
     -- FOR UPDATE waits for in-flight sales (they hold FOR SHARE) and blocks
     -- new ones until this transaction ends, so the totals are final.
@@ -403,6 +478,8 @@ BEGIN
     IF _counted_cash IS NULL OR _counted_cash < 0 THEN
         RAISE EXCEPTION 'المبلغ المعدود غير صالح' USING HINT = 'INVALID_AMOUNT';
     END IF;
+
+    _unsynced := public.check_tills_synced(_s.branch_id, _s.opened_at, COALESCE(_force, false));
 
     SELECT COALESCE(SUM(p.amount), 0) INTO _cash
     FROM public.sales s JOIN public.sale_payments p ON p.sale_id = s.id
@@ -426,6 +503,7 @@ BEGIN
         expected_cash = _expected,
         difference    = ROUND(_counted_cash, 2) - _expected,
         closing_notes = NULLIF(TRIM(_notes), ''),
+        unsynced_tills = NULLIF(_unsynced, '[]'::jsonb),
         closed_by     = auth.uid(),
         closed_at     = now()
     WHERE id = _shift_id;
@@ -519,6 +597,7 @@ BEGIN
                 'expected_cash', CASE WHEN _is_manager OR s.status = 'closed' THEN s.expected_cash END,
                 'difference',    CASE WHEN _is_manager OR s.status = 'closed' THEN s.difference END,
                 'approved_at', s.approved_at, 'approved_by_name', pa.full_name,
+                'late_sales_count', s.late_sales_count,
                 'sales_total', (SELECT COALESCE(SUM(total_amount), 0) FROM public.sales WHERE shift_id = s.id)
             ) AS row
             FROM public.cash_shifts s
@@ -545,13 +624,13 @@ REVOKE ALL ON FUNCTION public.shift_report(uuid)                          FROM P
 REVOKE ALL ON FUNCTION public.open_shift(uuid, numeric, text)             FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.current_shift(uuid)                         FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.record_cash_movement(uuid, text, numeric, text) FROM PUBLIC, anon;
-REVOKE ALL ON FUNCTION public.close_shift(uuid, numeric, text)            FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.close_shift(uuid, numeric, text, boolean)   FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.approve_shift(uuid, text)                   FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.list_shifts(text, integer)                  FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.shift_report(uuid)                          TO authenticated;
 GRANT EXECUTE ON FUNCTION public.open_shift(uuid, numeric, text)             TO authenticated;
 GRANT EXECUTE ON FUNCTION public.current_shift(uuid)                         TO authenticated;
 GRANT EXECUTE ON FUNCTION public.record_cash_movement(uuid, text, numeric, text) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.close_shift(uuid, numeric, text)            TO authenticated;
+GRANT EXECUTE ON FUNCTION public.close_shift(uuid, numeric, text, boolean)   TO authenticated;
 GRANT EXECUTE ON FUNCTION public.approve_shift(uuid, text)                   TO authenticated;
 GRANT EXECUTE ON FUNCTION public.list_shifts(text, integer)                  TO authenticated;

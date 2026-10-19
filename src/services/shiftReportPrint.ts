@@ -9,7 +9,7 @@
  * a cashier's report has no expected amount or difference until a manager approves.
  */
 import type { ShiftReport } from "@/hooks/useShift";
-import { CASH_MOVEMENT_LABELS } from "@/hooks/useShift";
+import { CASH_MOVEMENT_LABELS, shiftOfflineNotes } from "@/hooks/useShift";
 import { paymentMethodLabel } from "@/lib/payments";
 import { getPrinterConfig, type PaperWidth } from "@/services/thermalPrinter";
 
@@ -42,6 +42,7 @@ export function buildShiftReportHTML(report: ShiftReport, opts: ShiftReportPrint
   const row = (label: string, value: string, cls = "") =>
     `<div class="row ${cls}"><span>${esc(label)}</span><span>${esc(value)}</span></div>`;
 
+  const offlineNotes = shiftOfflineNotes(shift);
   const diff = shift.difference;
   const diffRow =
     diff === null || shift.counted_cash === null
@@ -111,6 +112,7 @@ export function buildShiftReportHTML(report: ShiftReport, opts: ShiftReportPrint
       : ""
   }
 
+  ${offlineNotes.length > 0 ? `<h2>تنبيهات</h2>${offlineNotes.map((n) => `<div class="small b">${esc(n)}</div>`).join("")}` : ""}
   ${shift.closing_notes ? `<h2>ملاحظات الإغلاق</h2><div class="small">${esc(shift.closing_notes)}</div>` : ""}
   ${shift.approval_notes ? `<h2>ملاحظات المدير</h2><div class="small">${esc(shift.approval_notes)}</div>` : ""}
 

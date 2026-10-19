@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Lock, Unlock, ArrowDownToLine, ArrowUpFromLine, Receipt, Wallet, Clock, CheckCircle2, Printer } from "lucide-react";
+import { Lock, Unlock, ArrowDownToLine, ArrowUpFromLine, Receipt, Wallet, Clock, CheckCircle2, Printer, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,8 +14,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { printShiftReport } from "@/services/shiftReportPrint";
 import { getPrinterConfig } from "@/services/thermalPrinter";
 import {
-  CASH_MOVEMENT_LABELS, SHIFT_STATUS_LABELS,
-  type CashMovementType, type ShiftReport,
+  CASH_MOVEMENT_LABELS, SHIFT_STATUS_LABELS, shiftOfflineNotes,
+  type CashMovementType, type CloseShiftOutcome, type ShiftReport, type UnsyncedTill,
 } from "@/hooks/useShift";
 
 const sar = (n: number | null | undefined) => `${Number(n ?? 0).toFixed(2)} ر.س`;
@@ -90,8 +90,19 @@ export function OpenShiftPanel({ onOpen }: { onOpen: (openingCash: number, notes
 export function ShiftReportView({ report }: { report: ShiftReport }) {
   const { shift, cash, sales, movements } = report;
   const diff = shift.difference;
+  const offlineNotes = shiftOfflineNotes(shift);
   return (
     <div className="space-y-4 text-sm">
+      {offlineNotes.length > 0 && (
+        <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-3 text-xs space-y-1">
+          {offlineNotes.map((n) => (
+            <p key={n} className="flex gap-2">
+              <AlertTriangle className="w-3.5 h-3.5 mt-0.5 text-amber-600 shrink-0" />
+              {n}
+            </p>
+          ))}
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
         <div>الفرع: <span className="text-foreground font-medium">{shift.branch_name}</span></div>
         <div>رقم الوردية: <span className="text-foreground font-medium">#{shift.shift_no}</span></div>
@@ -171,7 +182,7 @@ function Row({ label, value, bold }: { label: string; value: string; bold?: bool
 interface ShiftBarProps {
   report: ShiftReport;
   onMovement: (type: CashMovementType, amount: number, reason: string) => Promise<unknown>;
-  onClose: (countedCash: number, notes?: string) => Promise<ShiftReport | null>;
+  onClose: (countedCash: number, notes?: string, force?: boolean) => Promise<CloseShiftOutcome>;
   /** Called once the close result has been dismissed (the POS then asks for a new shift). */
   onClosed: () => void;
 }
@@ -310,13 +321,14 @@ function CloseShiftDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   report: ShiftReport;
-  onClose: (countedCash: number, notes?: string) => Promise<ShiftReport | null>;
+  onClose: (countedCash: number, notes?: string, force?: boolean) => Promise<CloseShiftOutcome>;
   onClosed: () => void;
 }) {
   const [counted, setCounted] = useState("");
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<ShiftReport | null>(null);
+  const [unsynced, setUnsynced] = useState<UnsyncedTill[] | null>(null);
   const print = usePrintShiftReport();
   const value = parseAmount(counted);
   const valid = counted !== "" && value >= 0;
@@ -327,22 +339,28 @@ function CloseShiftDialog({
       setCounted("");
       setNotes("");
       setResult(null);
+      setUnsynced(null);
       if (wasClosed) onClosed();
     }
     onOpenChange(next);
   };
 
-  const submit = async () => {
+  const submit = async (force = false) => {
     if (!valid) return;
     setBusy(true);
-    const closed = await onClose(value, notes.trim() || undefined);
+    const outcome = await onClose(value, notes.trim() || undefined, force);
     setBusy(false);
-    if (closed) {
-      setResult(closed);
-      onOpenChange(false);
-      // Same switch as invoices: print the Z report automatically when auto-print is on.
-      if (getPrinterConfig().autoPrint) print(closed);
+    if (!outcome) return;
+    if ("unsyncedTills" in outcome) {
+      setUnsynced(outcome.unsyncedTills);
+      return;
     }
+    const closed = outcome.report;
+    setUnsynced(null);
+    setResult(closed);
+    onOpenChange(false);
+    // Same switch as invoices: print the Z report automatically when auto-print is on.
+    if (getPrinterConfig().autoPrint) print(closed);
   };
 
   const approveNow = async () => {
@@ -415,12 +433,39 @@ function CloseShiftDialog({
               <Label>ملاحظات (اختياري)</Label>
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
             </div>
+            {unsynced && (
+              <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-3 text-sm space-y-2">
+                <p className="flex gap-2 font-semibold">
+                  <AlertTriangle className="w-4 h-4 mt-0.5 text-amber-600 shrink-0" />
+                  صناديق أخرى في الفرع قد تحمل مبيعات بدون إنترنت لهذه الوردية
+                </p>
+                <ul className="text-xs space-y-1 pr-6">
+                  {unsynced.map((t) => (
+                    <li key={t.id}>
+                      <span className="font-medium">{t.code}{t.name ? ` (${t.name})` : ""}</span>
+                      {" — "}
+                      {t.pending_count > 0 ? `${t.pending_count} عملية بانتظار المزامنة` : `لم يتصل منذ ${formatTime(t.last_seen_at)}`}
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-xs text-muted-foreground">
+                  الأفضل الانتظار حتى يعود الاتصال وتتم المزامنة. إن كان الصندوق مطفأً، أغلق رغم ذلك: أي فاتورة تصل لاحقاً تُضاف لهذه الوردية ويُعاد حساب المتوقع وتعود للمدير.
+                </p>
+              </div>
+            )}
             <DialogFooter className="gap-2">
               <Button variant="outline" onClick={() => reset(false)}>إلغاء</Button>
-              <Button variant="destructive" disabled={!valid || busy} onClick={submit}>
-                <Lock className="w-4 h-4 ml-1.5" />
-                {busy ? "جاري الإغلاق..." : "إغلاق الوردية"}
-              </Button>
+              {unsynced ? (
+                <Button variant="destructive" disabled={!valid || busy} onClick={() => submit(true)}>
+                  <Lock className="w-4 h-4 ml-1.5" />
+                  {busy ? "جاري الإغلاق..." : "إغلاق رغم ذلك"}
+                </Button>
+              ) : (
+                <Button variant="destructive" disabled={!valid || busy} onClick={() => submit()}>
+                  <Lock className="w-4 h-4 ml-1.5" />
+                  {busy ? "جاري الإغلاق..." : "إغلاق الوردية"}
+                </Button>
+              )}
             </DialogFooter>
           </div>
         )}

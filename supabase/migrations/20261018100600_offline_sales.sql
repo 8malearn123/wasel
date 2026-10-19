@@ -17,6 +17,12 @@
 --     offline_sale_conflicts for a manager to review.
 --   * Offline restrictions (also enforced here): cash / standalone card
 --     terminal (mada, card) only, and no discount.
+--   * Several tills share the branch's shift. A sale is attached to the shift
+--     that was open when it was made, even if that shift was closed since:
+--     its expected cash is recomputed and it goes back to the manager.
+--     Tills report a heartbeat with their queue size, and close_shift()
+--     warns while a till that sold during the shift is silent or still has
+--     sales queued (TILLS_NOT_SYNCED; the closer may close anyway).
 -- =====================================================================
 
 
@@ -33,6 +39,7 @@ CREATE TABLE public.pos_terminals (
     name         text,
     registered_by uuid,
     last_seen_at timestamptz NOT NULL DEFAULT now(),
+    pending_count integer NOT NULL DEFAULT 0,   -- sales queued on the till at last_seen_at
     created_at   timestamptz NOT NULL DEFAULT now(),
     UNIQUE (merchant_id, code)
 );
@@ -132,11 +139,78 @@ END;
 $$;
 
 
+-- terminal_heartbeat(): the till checks in (every minute while online) with the
+-- number of sales still queued on it.
+CREATE OR REPLACE FUNCTION public.terminal_heartbeat(_terminal_id uuid, _pending integer DEFAULT 0)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    _t     public.pos_terminals%ROWTYPE;
+    _actor record;
+BEGIN
+    SELECT * INTO _t FROM public.pos_terminals WHERE id = _terminal_id;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'الصندوق غير مسجّل' USING HINT = 'TERMINAL_NOT_FOUND';
+    END IF;
+    SELECT * INTO _actor FROM public.shift_actor(_t.branch_id);
+    IF _actor.merchant_id <> _t.merchant_id THEN
+        RAISE EXCEPTION 'الصندوق غير مسجّل' USING HINT = 'TERMINAL_NOT_FOUND';
+    END IF;
+
+    UPDATE public.pos_terminals
+    SET last_seen_at = now(), pending_count = GREATEST(COALESCE(_pending, 0), 0)
+    WHERE id = _terminal_id;
+END;
+$$;
+
+-- check_tills_synced(): replaces the stub from the cash-shifts migration; called by
+-- close_shift(). A till of the branch may still hold sales for the shift when it
+-- reported sales queued, or when it checked in during the shift and then went
+-- silent (offline, or simply switched off: the server can't tell, so the closer
+-- decides). Returns those tills; raises TILLS_NOT_SYNCED unless _force.
+CREATE OR REPLACE FUNCTION public.check_tills_synced(_branch_id uuid, _since timestamptz, _force boolean)
+RETURNS jsonb
+LANGUAGE plpgsql
+STABLE
+SET search_path = public
+AS $$
+DECLARE
+    _tills jsonb;
+BEGIN
+    SELECT COALESCE(jsonb_agg(jsonb_build_object(
+               'id', id, 'code', code, 'name', name,
+               'last_seen_at', last_seen_at, 'pending_count', pending_count) ORDER BY code), '[]'::jsonb)
+    INTO _tills
+    FROM public.pos_terminals
+    WHERE branch_id = _branch_id
+      AND (pending_count > 0
+           OR (last_seen_at >= _since AND last_seen_at < now() - interval '3 minutes'));
+
+    IF _tills <> '[]'::jsonb AND NOT _force THEN
+        RAISE EXCEPTION 'صناديق لم تُزامن مبيعاتها بعد: %',
+            (SELECT string_agg(t->>'code', '، ') FROM jsonb_array_elements(_tills) t)
+            USING HINT = 'TILLS_NOT_SYNCED', DETAIL = _tills::text;
+    END IF;
+    RETURN _tills;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.check_tills_synced(uuid, timestamptz, boolean) FROM PUBLIC, anon, authenticated;
+
+
 -- ---------------------------------------------------------------------
 -- 3. sync_offline_sale(): replay one queued sale (idempotent)
 -- ---------------------------------------------------------------------
 -- Returns {status: 'synced' | 'conflict', ...}. Authorization and malformed
 -- input still raise; business refusals become a conflict for review.
+--
+-- The sale goes to the shift that was open at _sold_at (the cash went into that
+-- drawer). If that shift was closed since, its expected cash and difference are
+-- recomputed, it is flagged (late_sales_count) and goes back to pending approval.
+-- If its day was closed, the sale becomes a conflict (DAY_CLOSED). If no shift
+-- covers _sold_at (till clock off), the branch's open shift takes it, as online.
 CREATE OR REPLACE FUNCTION public.sync_offline_sale(
     _terminal_id    uuid,
     _client_ref     uuid,
@@ -160,6 +234,7 @@ DECLARE
     _result jsonb;
     _msg    text;
     _hint   text;
+    _target public.cash_shifts%ROWTYPE;
 BEGIN
     SELECT * INTO _t FROM public.pos_terminals WHERE id = _terminal_id;
     IF NOT FOUND THEN
@@ -194,18 +269,53 @@ BEGIN
             RAISE EXCEPTION 'رقم الفاتورة مستخدم مسبقاً' USING HINT = 'DUPLICATE_INVOICE_NUMBER';
         END IF;
 
+        SELECT * INTO _target
+        FROM public.cash_shifts
+        WHERE branch_id = _t.branch_id AND opened_at <= _sold_at
+          AND (closed_at IS NULL OR closed_at >= _sold_at)
+        ORDER BY opened_at DESC
+        LIMIT 1;
+
+        IF _target.id IS NOT NULL AND _target.status <> 'open' THEN
+            -- Same order as close_day() (branch, then shifts): the day can't be closed
+            -- while this lands, and the shift is locked before any stock row.
+            PERFORM 1 FROM public.branches WHERE id = _t.branch_id FOR SHARE;
+            SELECT * INTO _target FROM public.cash_shifts WHERE id = _target.id FOR UPDATE;
+            IF EXISTS (SELECT 1 FROM public.daily_closings
+                       WHERE branch_id = _t.branch_id AND closing_date = _target.business_date
+                         AND status = 'closed') THEN
+                RAISE EXCEPTION 'تم إغلاق يوم العمل الذي تمت فيه هذه البيعة' USING HINT = 'DAY_CLOSED';
+            END IF;
+        END IF;
+
         PERFORM set_config('wasel.offline_invoice', _invoice_number, true);
+        PERFORM set_config('wasel.sale_shift', COALESCE(_target.id::text, ''), true);
         _result := public.pos_checkout(
             _t.branch_id, _items, _payments, 0, NULL,
             _customer_name, _customer_phone, 'بيع بدون إنترنت', _client_ref);
         PERFORM set_config('wasel.offline_invoice', '', true);
+        PERFORM set_config('wasel.sale_shift', '', true);
 
         UPDATE public.sales
         SET terminal_id = _t.id, offline_created_at = _sold_at, sale_date = _sold_at
         WHERE id = (_result->>'sale_id')::uuid;
 
+        IF _target.id IS NOT NULL AND _target.status <> 'open' THEN
+            -- The counted cash already included this sale; reopen the review.
+            UPDATE public.cash_shifts
+            SET late_sales_count = late_sales_count + 1,
+                late_synced_at   = now(),
+                status           = 'pending_approval',
+                approved_by      = NULL,
+                approved_at      = NULL
+            WHERE id = _target.id;
+            PERFORM public.recompute_shift_totals(_target.id);
+        END IF;
+
         RETURN jsonb_build_object('status', 'synced', 'sale_id', _result->>'sale_id',
-                                  'invoice_number', _invoice_number, 'total_amount', _result->'total_amount');
+                                  'invoice_number', _invoice_number, 'total_amount', _result->'total_amount',
+                                  'shift_id', (SELECT shift_id FROM public.sales WHERE id = (_result->>'sale_id')::uuid),
+                                  'late', COALESCE(_target.status <> 'open', false));
     EXCEPTION WHEN OTHERS THEN
         -- Everything above is rolled back (stock, sale, the offline number setting).
         GET STACKED DIAGNOSTICS _msg = MESSAGE_TEXT, _hint = PG_EXCEPTION_HINT;
@@ -270,9 +380,11 @@ $$;
 -- ---------------------------------------------------------------------
 REVOKE ALL ON FUNCTION public.register_terminal(uuid, text) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.terminal_state(uuid) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.terminal_heartbeat(uuid, integer) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.sync_offline_sale(uuid, uuid, text, timestamptz, jsonb, jsonb, text, text, numeric) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.resolve_offline_conflict(uuid, text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.register_terminal(uuid, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.terminal_state(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.terminal_heartbeat(uuid, integer) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.sync_offline_sale(uuid, uuid, text, timestamptz, jsonb, jsonb, text, text, numeric) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.resolve_offline_conflict(uuid, text) TO authenticated;
