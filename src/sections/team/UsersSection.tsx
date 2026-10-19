@@ -255,7 +255,10 @@ export default function UsersSection() {
       </motion.div>
 
       {/* Edit User Dialog */}
+      {/* Keyed by user so the form starts from that user's role and branch —
+          the dialog is mounted once, and useState only reads its initial value */}
       <EditUserDialog
+        key={editing?.id ?? 'none'}
         open={!!editing}
         onOpenChange={(open) => !open && setEditing(null)}
         user={editing}
@@ -307,7 +310,7 @@ function EditUserDialog({
 }) {
   const [loading, setLoading] = useState(false);
   const [role, setRole] = useState<UserRole>(user?.role || 'cashier');
-  const [branchId, setBranchId] = useState(user?.branch_id || '');
+  const [branchId, setBranchId] = useState(user?.branch_id || 'all');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -317,7 +320,7 @@ function EditUserDialog({
     if (role !== user.role) {
       await onSaveRole(user.id, role);
     }
-    if (branchId !== user.branch_id) {
+    if ((branchId === 'all' ? null : branchId) !== (user.branch_id ?? null)) {
       await onSaveBranch(user.id, branchId === 'all' ? null : branchId || null);
     }
     setLoading(false);
@@ -345,6 +348,7 @@ function EditUserDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  {user?.role === 'owner' && <SelectItem value="owner">Owner</SelectItem>}
                   <SelectItem value="admin">Admin</SelectItem>
                   <SelectItem value="branch_manager">Branch Manager</SelectItem>
                   <SelectItem value="cashier">Cashier</SelectItem>
