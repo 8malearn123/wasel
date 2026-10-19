@@ -121,6 +121,8 @@ export function ActivityLogDialog({ open, onOpenChange }: { open: boolean; onOpe
       .from("activity_logs")
       .select("id, action, entity_type, created_at")
       .eq("merchant_id", merchant.id)
+      // the custom-roles snapshots kept here are settings, not activity
+      .or("entity_type.is.null,entity_type.neq.custom_roles")
       .order("created_at", { ascending: false })
       .limit(25)
       .then(({ data }) => {

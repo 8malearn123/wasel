@@ -97,14 +97,14 @@ describe('custom roles in users & permissions', () => {
     expect(saveRole).not.toHaveBeenCalled();
   });
 
-  it('before the database update the permissions are still listed, with a notice', async () => {
+  it('the permissions are listed even before the database has its table', async () => {
     permissions = ['roles.manage'];
     databaseReady = false;
     render(<UsersSection />);
     fireEvent.click(screen.getByText('دور جديد'));
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText('عرض التقارير المالية')).toBeInTheDocument();
-    expect(within(dialog).getByText(/يحتاج تحديث قاعدة البيانات/)).toBeInTheDocument();
+    expect(within(dialog).queryByText(/يحتاج تحديث قاعدة البيانات/)).not.toBeInTheDocument();
     databaseReady = true;
   });
 

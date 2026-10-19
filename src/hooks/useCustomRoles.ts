@@ -3,6 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { CUSTOM_ROLE_FORBIDDEN } from '@/lib/legacyRolePermissions';
 import { CUSTOM_ROLE_CATALOG } from '@/lib/permissionCatalog';
+import {
+  loadCustomRolesConfig,
+  saveCustomRolesConfig,
+  CUSTOM_ROLE_BASE,
+  type CustomRolesConfig,
+} from '@/lib/customRolesStore';
 
 export interface CustomRole {
   id: string;
@@ -33,12 +39,13 @@ const ERRORS: Record<string, string> = {
   invalid_role: 'الدور المختار غير صالح',
 };
 
+/** The function or table is not there: the database has not had the migration. */
+export function isMissingInDatabase(message?: string): boolean {
+  return !!message && /schema cache|PGRST20[25]|does not exist/i.test(message);
+}
+
 export function roleErrorMessage(message?: string): string {
   if (!message) return 'حدث خطأ';
-  // the function or table is not there: the database has not had the migration
-  if (/schema cache|PGRST20[25]|does not exist/i.test(message)) {
-    return 'الأدوار المخصصة تحتاج تحديث قاعدة البيانات أولًا (custom roles migration)';
-  }
   const known = Object.keys(ERRORS).find(k => message.includes(k));
   return known ? ERRORS[known] : message;
 }
@@ -99,6 +106,17 @@ export function useCustomRoles() {
     setDatabaseReady(ready);
     setCatalog(ready ? fromDb : CUSTOM_ROLE_CATALOG);
 
+    // Without the migration the roles live in the app's own store
+    if (!ready) {
+      const config = await loadCustomRolesConfig(merchant.id);
+      const active = await activeMemberIds(merchant.id);
+      setRoles(config.roles.map(r => ({
+        ...r,
+        memberCount: Object.entries(config.assignments)
+          .filter(([member, role]) => role === r.id && active.has(member)).length,
+      })));
+    }
+
     setLoading(false);
   }, [merchant]);
 
@@ -110,6 +128,11 @@ export function useCustomRoles() {
     description: string,
     permissions: string[],
   ): Promise<{ id?: string; error?: string }> => {
+    if (!databaseReady && merchant) {
+      const result = await saveRoleInStore(merchant.id, roleId, name, description, permissions);
+      if (!result.error) await load();
+      return result;
+    }
     const { data, error } = await supabase.rpc('save_custom_role' as never, {
       _role_id: roleId, _name: name, _description: description, _permissions: permissions,
     } as never);
@@ -119,6 +142,19 @@ export function useCustomRoles() {
   };
 
   const deleteRole = async (roleId: string): Promise<{ error?: string }> => {
+    if (!databaseReady && merchant) {
+      const config = await loadCustomRolesConfig(merchant.id);
+      const active = await activeMemberIds(merchant.id);
+      if (Object.entries(config.assignments).some(([m, r]) => r === roleId && active.has(m))) {
+        return { error: ERRORS.role_in_use };
+      }
+      const result = await saveCustomRolesConfig(merchant.id, {
+        roles: config.roles.filter(r => r.id !== roleId),
+        assignments: Object.fromEntries(Object.entries(config.assignments).filter(([, r]) => r !== roleId)),
+      });
+      if (!result.error) await load();
+      return result;
+    }
     const { error } = await supabase.rpc('delete_custom_role' as never, { _role_id: roleId } as never);
     if (error) return { error: roleErrorMessage(error.message) };
     await load();
@@ -133,6 +169,7 @@ export async function assignCustomRole(memberId: string, customRoleId: string): 
   const { error } = await supabase.rpc('assign_member_role' as never, {
     _member_id: memberId, _role: 'custom', _custom_role_id: customRoleId,
   } as never);
+  if (error && isMissingInDatabase(error.message)) return assignInStore(memberId, customRoleId);
   return error ? { error: roleErrorMessage(error.message) } : {};
 }
 
@@ -141,5 +178,92 @@ export async function assignSystemRole(memberId: string, role: string): Promise<
   const { error } = await supabase.rpc('assign_member_role' as never, {
     _member_id: memberId, _role: role, _custom_role_id: null,
   } as never);
+  if (error && isMissingInDatabase(error.message)) return assignInStore(memberId, null, role);
   return error ? { error: roleErrorMessage(error.message) } : {};
+}
+
+// ── Without the migration ──────────────────────────────────────────────────
+// The same rules save_custom_role / assign_member_role enforce, applied here.
+
+async function activeMemberIds(merchantId: string): Promise<Set<string>> {
+  const { data } = await supabase
+    .from('merchant_users')
+    .select('id')
+    .eq('merchant_id', merchantId)
+    .eq('is_active', true);
+  return new Set((data || []).map(m => m.id));
+}
+
+const SYSTEM_ROLE_NAMES = ['صاحب المتجر', 'مالك', 'مدير', 'مدير فرع', 'مسؤول المخزون', 'مدير مخزون', 'كاشير'];
+
+async function saveRoleInStore(
+  merchantId: string,
+  roleId: string | null,
+  name: string,
+  description: string,
+  permissions: string[],
+): Promise<{ id?: string; error?: string }> {
+  const clean = name.trim();
+  const perms = [...new Set(permissions)];
+  const known = new Set(CUSTOM_ROLE_CATALOG.map(p => p.key));
+  if (!clean || clean.length > 60) return { error: ERRORS.invalid_name };
+  if (perms.length === 0) return { error: ERRORS.no_permissions };
+  if (perms.some(k => CUSTOM_ROLE_FORBIDDEN.has(k) || !known.has(k))) return { error: ERRORS.invalid_permission };
+
+  const config = await loadCustomRolesConfig(merchantId);
+  const lower = clean.toLowerCase();
+  if (SYSTEM_ROLE_NAMES.includes(clean)
+      || config.roles.some(r => r.id !== roleId && r.name.trim().toLowerCase() === lower)) {
+    return { error: ERRORS.duplicate_name };
+  }
+
+  let id = roleId;
+  let roles: CustomRolesConfig['roles'];
+  if (roleId) {
+    if (!config.roles.some(r => r.id === roleId)) return { error: ERRORS.not_found };
+    roles = config.roles.map(r => r.id === roleId
+      ? { ...r, name: clean, description: description.trim() || null, permissions: perms }
+      : r);
+  } else {
+    id = crypto.randomUUID();
+    roles = [...config.roles, { id, name: clean, description: description.trim() || null, permissions: perms }];
+  }
+
+  const result = await saveCustomRolesConfig(merchantId, { roles, assignments: config.assignments });
+  return result.error ? result : { id: id! };
+}
+
+async function assignInStore(memberId: string, customRoleId: string | null, systemRole?: string): Promise<{ error?: string }> {
+  const { data: member } = await supabase
+    .from('merchant_users')
+    .select('id, merchant_id, role')
+    .eq('id', memberId)
+    .maybeSingle();
+  if (!member) return { error: ERRORS.not_found };
+  if (member.role === 'owner') return { error: ERRORS.owner_locked };
+
+  const config = await loadCustomRolesConfig(member.merchant_id);
+  if (customRoleId && !config.roles.some(r => r.id === customRoleId)) return { error: ERRORS.invalid_role };
+
+  // The database keeps the least it grants (cashier) for a custom-role member;
+  // a system role is written as before. The policy on merchant_users decides
+  // who may do either — owner and admin.
+  const dbRole = customRoleId ? CUSTOM_ROLE_BASE : systemRole;
+  if (!dbRole || !['admin', 'branch_manager', 'inventory_manager', 'cashier'].includes(dbRole)) {
+    return { error: ERRORS.invalid_role };
+  }
+  if (member.role !== dbRole) {
+    const { data: updated, error } = await supabase
+      .from('merchant_users')
+      .update({ role: dbRole as never })
+      .eq('id', memberId)
+      .select('id');
+    if (error) return { error: error.message };
+    if (!updated || updated.length === 0) return { error: ERRORS.forbidden };
+  }
+
+  const assignments = { ...config.assignments };
+  if (customRoleId) assignments[memberId] = customRoleId;
+  else delete assignments[memberId];
+  return saveCustomRolesConfig(member.merchant_id, { roles: config.roles, assignments });
 }
