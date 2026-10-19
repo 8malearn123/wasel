@@ -12,6 +12,7 @@ import { type FeatureKey } from "@/lib/planAccess";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import type { UserRole } from "@/types/database";
 import { usePermissions, type PermissionKey } from "@/hooks/usePermissions";
+import { firstOpenSection } from "@/lib/sectionAccess";
 import { useVersionCheck } from "./hooks/useVersionCheck";
 import { useSubscription } from "./hooks/useSubscription";
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -134,8 +135,8 @@ function RoleRoute({ allow, children }: { allow: UserRole[]; children: React.Rea
 // A page gated on a permission. Like FeatureRoute this only saves the user a
 // blank screen — the data behind it is gated by RLS calling has_permission()
 // for the same key.
-function PermissionRoute({ require, children }: { require: PermissionKey; children: React.ReactNode }) {
-  const { can, loading } = usePermissions();
+function PermissionRoute({ require, children }: { require: PermissionKey | PermissionKey[]; children: React.ReactNode }) {
+  const { canAny, loading } = usePermissions();
 
   if (loading) {
     return (
@@ -145,11 +146,34 @@ function PermissionRoute({ require, children }: { require: PermissionKey; childr
     );
   }
 
-  if (!can(require)) {
+  if (!canAny(...(Array.isArray(require) ? require : [require]))) {
     return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
+}
+
+// "/" for someone without the dashboard — a custom role made for the books,
+// say — goes to the first section their role opens instead
+function DashboardRoute({ children }: { children: React.ReactNode }) {
+  const { can, loading } = usePermissions();
+  const { allows, loading: plansLoading } = useFeatureAccess();
+
+  if (!loading && can('dashboard.view')) {
+    return <>{children}</>;
+  }
+
+  // Only someone being sent elsewhere waits for the plan, to pick a section
+  // that really has a screen for them
+  if (loading || plansLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return <Navigate to={firstOpenSection(can, allows)} replace />;
 }
 
 function CashierRedirect({ children }: { children: React.ReactNode }) {
@@ -179,7 +203,9 @@ function HomeRoute() {
   return (
     <ProtectedRoute>
       <CashierRedirect>
-        <Dashboard />
+        <DashboardRoute>
+          <Dashboard />
+        </DashboardRoute>
       </CashierRedirect>
     </ProtectedRoute>
   );
@@ -199,21 +225,21 @@ function AppRoutes() {
       <Route path="/.lovable/oauth/consent" element={<OAuthConsentPage />} />
       <Route path="/locked" element={<LockedRoute><LockedPage /></LockedRoute>} />
       <Route path="/" element={<HomeRoute />} />
-      <Route path="/pos" element={<ProtectedRoute><POSPage /></ProtectedRoute>} />
+      <Route path="/pos" element={<ProtectedRoute><PermissionRoute require="pos.access"><POSPage /></PermissionRoute></ProtectedRoute>} />
 
       {/* ---- The nine sections ---- */}
       <Route path="/products" element={<ProtectedRoute><ProductsPage /></ProtectedRoute>} />
       <Route path="/sales" element={<ProtectedRoute><SalesPage /></ProtectedRoute>} />
-      <Route path="/shipping" element={<ProtectedRoute><CashierRedirect><ShippingPage /></CashierRedirect></ProtectedRoute>} />
-      <Route path="/reports" element={<ProtectedRoute><FeatureRoute feature="reports"><CashierRedirect><ReportsPage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />
+      <Route path="/shipping" element={<ProtectedRoute><CashierRedirect><PermissionRoute require="shipping.manage"><ShippingPage /></PermissionRoute></CashierRedirect></ProtectedRoute>} />
+      <Route path="/reports" element={<ProtectedRoute><FeatureRoute feature="reports"><CashierRedirect><PermissionRoute require={["reports.view", "invoices.view"]}><ReportsPage /></PermissionRoute></CashierRedirect></FeatureRoute></ProtectedRoute>} />
       <Route path="/team" element={<ProtectedRoute><TeamPage /></ProtectedRoute>} />
-      <Route path="/ai-insights" element={<ProtectedRoute><CashierRedirect><AIInsightsPage /></CashierRedirect></ProtectedRoute>} />
+      <Route path="/ai-insights" element={<ProtectedRoute><CashierRedirect><PermissionRoute require="ai_insights.view"><AIInsightsPage /></PermissionRoute></CashierRedirect></ProtectedRoute>} />
       <Route path="/subscription" element={<ProtectedRoute><RoleRoute allow={["owner", "admin"]}><CashierRedirect><SubscriptionPage /></CashierRedirect></RoleRoute></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
       <Route path="/organization" element={<ProtectedRoute><OrganizationPage /></ProtectedRoute>} />
 
       {/* A customer's own page stays a route of its own, not a tab */}
-      <Route path="/customers/:id" element={<ProtectedRoute><FeatureRoute feature="customers"><CashierRedirect><CustomerDetailPage /></CashierRedirect></FeatureRoute></ProtectedRoute>} />
+      <Route path="/customers/:id" element={<ProtectedRoute><FeatureRoute feature="customers"><CashierRedirect><PermissionRoute require="customers.manage"><CustomerDetailPage /></PermissionRoute></CashierRedirect></FeatureRoute></ProtectedRoute>} />
 
       {/* ---- Paths from before the consolidation. None of them is removed. ---- */}
       <Route path="/inventory" element={<LegacyRedirect to="/products" tab="inventory" />} />

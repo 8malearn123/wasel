@@ -21,7 +21,13 @@ export type PermissionKey =
   | 'products.media.upload' | 'products.media.delete' | 'categories.manage'
   | 'employees.view' | 'employees.create' | 'employees.update' | 'employees.delete'
   | 'users.view' | 'users.create' | 'users.update' | 'users.delete'
-  | 'roles.view' | 'roles.manage';
+  | 'roles.view' | 'roles.manage'
+  | 'dashboard.view' | 'pos.access' | 'invoices.view' | 'reports.view' | 'closings.manage'
+  | 'suppliers.manage' | 'repairs.manage' | 'online_orders.manage' | 'store.manage'
+  | 'customers.manage' | 'marketing.manage' | 'wholesale.manage' | 'stocktake.manage'
+  | 'transfers.manage' | 'shipping.manage' | 'ai_insights.view' | 'attendance.manage'
+  | 'payroll.manage' | 'branches.manage' | 'settings.manage' | 'policy.manage'
+  | 'subscription.manage';
 
 export function usePermissions() {
   const { user, merchantUser } = useAuth();
@@ -61,7 +67,17 @@ export function usePermissions() {
 
   useEffect(() => { load(); }, [load]);
 
-  const set = useMemo(() => new Set(permissions), [permissions]);
+  // A system role always has its map, whatever the database answered: the
+  // screen permissions are newer than my_permissions() on a database that has
+  // not had the custom-roles migration yet, and has_permission() unions the
+  // same map anyway. A custom role has only what its own rows grant.
+  const role = merchantUser?.role;
+  const set = useMemo(
+    () => new Set(role && role !== 'custom'
+      ? [...permissions, ...permissionsForLegacyRole(role)]
+      : permissions),
+    [permissions, role],
+  );
 
   const can = useCallback((permission: PermissionKey) => set.has(permission), [set]);
   const canAny = useCallback(
@@ -69,5 +85,8 @@ export function usePermissions() {
     [set],
   );
 
-  return { permissions, can, canAny, loading, refresh: load };
+  // For a system role the map is known with the session, so nothing waits on
+  // the round trip; a custom role, or a session not read yet, does
+  const settled = role && role !== 'custom' ? false : loading;
+  return { permissions: [...set], can, canAny, loading: settled, refresh: load };
 }

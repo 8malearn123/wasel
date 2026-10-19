@@ -133,7 +133,30 @@ export function useMerchantUsers() {
           return { ...mu, profile: profile as Profile | undefined };
         })
       );
-      setUsers(usersWithProfiles as MerchantUser[]);
+
+      // Which custom role each 'custom' member holds, for the list and the
+      // edit dialog. Read through user_roles, which every member may read.
+      const customIds = (data || []).filter(mu => (mu.role as string) === 'custom').map(mu => mu.id);
+      const customRoles = new Map<string, { id: string; name: string }>();
+      if (customIds.length > 0) {
+        const { data: grants } = await supabase
+          .from('user_roles' as never)
+          .select('merchant_user_id, role:roles(id, name_ar, is_system)')
+          .in('merchant_user_id', customIds);
+        for (const g of (grants as unknown as {
+          merchant_user_id: string;
+          role: { id: string; name_ar: string; is_system: boolean } | null;
+        }[]) || []) {
+          if (g.role && !g.role.is_system) {
+            customRoles.set(g.merchant_user_id, { id: g.role.id, name: g.role.name_ar });
+          }
+        }
+      }
+
+      setUsers(usersWithProfiles.map(u => ({
+        ...u,
+        customRole: customRoles.get(u.id) ?? null,
+      })) as MerchantUser[]);
     } catch (err) {
       setError(err as Error);
       console.error('Error fetching users:', err);

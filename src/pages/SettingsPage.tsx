@@ -32,6 +32,7 @@ export default function SettingsPage() {
           title: isRTL ? 'الإعدادات' : 'Settings',
           subtitle: isRTL ? 'تكوين النظام والتفضيلات' : 'System configuration & preferences',
           denyRoles: ['cashier'],
+          permission: 'settings.manage',
           render: () => <GeneralSettingsSection />,
         },
         {
@@ -41,6 +42,7 @@ export default function SettingsPage() {
           title: t.notifications.title,
           subtitle: t.notifications.subtitle,
           denyRoles: ['cashier'],
+          permission: 'settings.manage',
           render: () => <NotificationsSection />,
         },
         {
@@ -50,6 +52,7 @@ export default function SettingsPage() {
           title: isRTL ? 'سياسة العمل' : 'Business policy',
           subtitle: isRTL ? 'التعديلات وخدمات التسويق' : 'Modifications and marketing services',
           denyRoles: ['cashier', 'branch_manager', 'inventory_manager'],
+          permission: 'policy.manage',
           render: () => <BusinessPolicySection />,
         },
       ],

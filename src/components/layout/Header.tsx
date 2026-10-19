@@ -17,6 +17,8 @@ import {
 import { GlobalSearch } from "@/components/layout/GlobalSearch";
 import { ProfileDialog, ActivityLogDialog } from "@/components/layout/AccountDialogs";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
+import { sectionPermitted } from "@/lib/sectionAccess";
 import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "@/hooks/useTheme";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -54,10 +56,15 @@ export function Header({ title, subtitle }: HeaderProps) {
   const { signOut, merchantUser, merchant, user } = useAuth();
   const navigate = useNavigate();
 
+  const { can } = usePermissions();
   const isCashier = merchantUser?.role === "cashier";
+  // A custom role is offered the sections its permissions open, and never
+  // the owner/admin-only subscription page
   const visibleSections = isCashier
     ? SECTIONS.filter((s) => CASHIER_PATHS.has(s.path))
-    : SECTIONS;
+    : merchantUser?.role === "custom"
+      ? SECTIONS.filter((s) => s.path !== "/subscription" && sectionPermitted(s.path, can))
+      : SECTIONS;
 
   const { notifications } = useNotifications();
   const urgentCount = notifications.filter((n) => n.type === "urgent").length;

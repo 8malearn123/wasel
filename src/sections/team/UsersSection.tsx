@@ -15,7 +15,10 @@ import {
   KeyRound,
   UserPlus,
   Copy,
-  Check
+  Check,
+  Tag,
+  Plus,
+  Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -39,13 +42,26 @@ import { toast } from "sonner";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n";
 import { useMerchantUsers, useBranches } from "@/hooks/useBranches";
+import { usePermissions } from "@/hooks/usePermissions";
+import {
+  useCustomRoles,
+  assignCustomRole,
+  assignSystemRole,
+  type CustomRole,
+  type CatalogPermission,
+} from "@/hooks/useCustomRoles";
 import type { MerchantUser, UserRole } from "@/types/database";
 
 const roleIcons: Record<UserRole, React.ReactNode> = {
@@ -53,7 +69,8 @@ const roleIcons: Record<UserRole, React.ReactNode> = {
   admin: <ShieldCheck className="w-4 h-4" />,
   branch_manager: <Store className="w-4 h-4" />,
   cashier: <Wallet className="w-4 h-4" />,
-  inventory_manager: <Building2 className="w-4 h-4" />
+  inventory_manager: <Building2 className="w-4 h-4" />,
+  custom: <Tag className="w-4 h-4" />
 };
 
 const roleColors: Record<UserRole, string> = {
@@ -61,7 +78,8 @@ const roleColors: Record<UserRole, string> = {
   admin: "bg-primary/10 text-primary border-primary/20",
   branch_manager: "bg-primary/10 text-primary border-primary/20",
   cashier: "bg-success/10 text-success border-success/20",
-  inventory_manager: "bg-primary/10 text-primary border-primary/20"
+  inventory_manager: "bg-primary/10 text-primary border-primary/20",
+  custom: "bg-muted text-foreground border-border"
 };
 
 const roleLabels: Record<UserRole, string> = {
@@ -69,8 +87,32 @@ const roleLabels: Record<UserRole, string> = {
   admin: "Admin",
   branch_manager: "Branch Manager",
   cashier: "Cashier",
-  inventory_manager: "Inventory Manager"
+  inventory_manager: "Inventory Manager",
+  custom: "Custom role"
 };
+
+// A role select's value: a system role key, or "custom:<role id>"
+const CUSTOM_PREFIX = 'custom:';
+
+function roleValueOf(user: MerchantUser): string {
+  return user.role === 'custom' && user.customRole ? CUSTOM_PREFIX + user.customRole.id : user.role;
+}
+
+/** The shop's own roles, as a group under the system ones in a role select. */
+function CustomRoleOptions({ roles }: { roles: CustomRole[] }) {
+  if (roles.length === 0) return null;
+  return (
+    <>
+      <SelectSeparator />
+      <SelectGroup>
+        <SelectLabel>أدوار مخصصة</SelectLabel>
+        {roles.map(r => (
+          <SelectItem key={r.id} value={CUSTOM_PREFIX + r.id}>{r.name}</SelectItem>
+        ))}
+      </SelectGroup>
+    </>
+  );
+}
 
 export default function UsersSection() {
   const [editing, setEditing] = useState<MerchantUser | null>(null);
@@ -80,6 +122,20 @@ export default function UsersSection() {
   const { t } = useLanguage();
   const { users, loading, updateUserRole, updateUserBranch, deactivateUser, refetch } = useMerchantUsers();
   const { branches } = useBranches();
+  const { can } = usePermissions();
+  const canManageRoles = can('roles.manage');
+  const { roles: customRoles, catalog, saveRole, deleteRole } = useCustomRoles();
+  // The role editor: which role (null = new), and who asked — the add-user
+  // dialog wants the new role selected once it is saved
+  const [roleEditor, setRoleEditor] = useState<{ role: CustomRole | null; onSaved?: (id: string) => void } | null>(null);
+  const openRoleEditor = (role: CustomRole | null, onSaved?: (id: string) => void) => setRoleEditor({ role, onSaved });
+
+  const handleDeleteRole = async (role: CustomRole) => {
+    if (!confirm(`حذف الدور «${role.name}»؟`)) return;
+    const { error } = await deleteRole(role.id);
+    if (error) toast.error(error);
+    else toast.success('تم حذف الدور');
+  };
 
   const activeUsers = users.filter(u => u.is_active);
   const roleCounts = activeUsers.reduce((acc, u) => {
@@ -208,7 +264,7 @@ export default function UsersSection() {
                         roleColors[user.role]
                       )}>
                         {roleIcons[user.role]}
-                        {roleLabels[user.role]}
+                        {user.role === 'custom' ? (user.customRole?.name ?? roleLabels.custom) : roleLabels[user.role]}
                       </span>
                       {user.branch && (
                         <span className="text-xs text-muted-foreground">
@@ -263,8 +319,10 @@ export default function UsersSection() {
         onOpenChange={(open) => !open && setEditing(null)}
         user={editing}
         branches={branches}
+        customRoles={customRoles}
         onSaveRole={updateUserRole}
         onSaveBranch={updateUserBranch}
+        onSaved={refetch}
       />
 
       {/* Reset Password Dialog */}
@@ -288,6 +346,38 @@ export default function UsersSection() {
         onOpenChange={setShowAddUser}
         branches={branches}
         onSuccess={refetch}
+        customRoles={customRoles}
+        onCreateRole={canManageRoles ? (onSaved) => openRoleEditor(null, onSaved) : undefined}
+      />
+
+      {/* The shop's own roles — the owner builds them here */}
+      {canManageRoles && (
+        <CustomRolesPanel
+          roles={customRoles}
+          catalog={catalog}
+          onCreate={() => openRoleEditor(null)}
+          onEdit={(role) => openRoleEditor(role)}
+          onDelete={handleDeleteRole}
+        />
+      )}
+
+      <RoleEditorDialog
+        key={roleEditor ? (roleEditor.role?.id ?? 'new') : 'closed'}
+        open={!!roleEditor}
+        onOpenChange={(open) => !open && setRoleEditor(null)}
+        role={roleEditor?.role ?? null}
+        catalog={catalog}
+        onSave={async (name, description, permissions) => {
+          const result = await saveRole(roleEditor?.role?.id ?? null, name, description, permissions);
+          if (!result.error && result.id) {
+            toast.success(roleEditor?.role ? 'تم تحديث الدور' : 'تم إنشاء الدور');
+            roleEditor?.onSaved?.(result.id);
+            setRoleEditor(null);
+            // a member's badge shows the role's name
+            refetch();
+          }
+          return result.error;
+        }}
       />
     </>
   );
@@ -298,18 +388,22 @@ function EditUserDialog({
   onOpenChange,
   user,
   branches,
+  customRoles,
   onSaveRole,
-  onSaveBranch
+  onSaveBranch,
+  onSaved
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user: MerchantUser | null;
   branches: { id: string; name: string }[];
+  customRoles: CustomRole[];
   onSaveRole: (userId: string, role: UserRole) => Promise<any>;
   onSaveBranch: (userId: string, branchId: string | null) => Promise<any>;
+  onSaved: () => void;
 }) {
   const [loading, setLoading] = useState(false);
-  const [role, setRole] = useState<UserRole>(user?.role || 'cashier');
+  const [role, setRole] = useState<string>(user ? roleValueOf(user) : 'cashier');
   const [branchId, setBranchId] = useState(user?.branch_id || 'all');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -317,8 +411,23 @@ function EditUserDialog({
     if (!user) return;
     
     setLoading(true);
-    if (role !== user.role) {
-      await onSaveRole(user.id, role);
+    if (role !== roleValueOf(user)) {
+      if (role.startsWith(CUSTOM_PREFIX)) {
+        // A custom role is given by assign_member_role, which checks it is
+        // this shop's and that the member is not the owner
+        const { error } = await assignCustomRole(user.id, role.slice(CUSTOM_PREFIX.length));
+        if (error) { toast.error(error); setLoading(false); return; }
+        toast.success('User role updated');
+        onSaved();
+      } else if (user.role === 'custom') {
+        // Leaving a custom role: the same function drops its grant
+        const { error } = await assignSystemRole(user.id, role);
+        if (error) { toast.error(error); setLoading(false); return; }
+        toast.success('User role updated');
+        onSaved();
+      } else {
+        await onSaveRole(user.id, role as UserRole);
+      }
     }
     if ((branchId === 'all' ? null : branchId) !== (user.branch_id ?? null)) {
       await onSaveBranch(user.id, branchId === 'all' ? null : branchId || null);
@@ -353,6 +462,7 @@ function EditUserDialog({
                   <SelectItem value="branch_manager">Branch Manager</SelectItem>
                   <SelectItem value="cashier">Cashier</SelectItem>
                   <SelectItem value="inventory_manager">Inventory Manager</SelectItem>
+                  <CustomRoleOptions roles={customRoles} />
                 </SelectContent>
               </Select>
               {user?.role === 'owner' && (
@@ -695,11 +805,16 @@ function AddUserDialog({
   onOpenChange,
   branches,
   onSuccess,
+  customRoles,
+  onCreateRole,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   branches: { id: string; name: string }[];
   onSuccess: () => void;
+  customRoles: CustomRole[];
+  /** opens the role editor; the saved role's id comes back to select it */
+  onCreateRole?: (onSaved: (id: string) => void) => void;
 }) {
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
@@ -748,7 +863,9 @@ function AddUserDialog({
             email,
             password,
             full_name: fullName,
-            role,
+            ...(role.startsWith(CUSTOM_PREFIX)
+              ? { role: 'custom', custom_role_id: role.slice(CUSTOM_PREFIX.length) }
+              : { role }),
             branch_id: branchId && branchId !== 'all' ? branchId : null,
           }),
         }
@@ -896,8 +1013,20 @@ function AddUserDialog({
                   <SelectItem value="branch_manager">مدير فرع</SelectItem>
                   <SelectItem value="cashier">كاشير</SelectItem>
                   <SelectItem value="inventory_manager">مدير مخزون</SelectItem>
+                  <CustomRoleOptions roles={customRoles} />
                 </SelectContent>
               </Select>
+              {onCreateRole && (
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0"
+                  onClick={() => onCreateRole((id) => setRole(CUSTOM_PREFIX + id))}
+                >
+                  <Plus className="w-3.5 h-3.5 ml-1" /> إنشاء دور مخصص
+                </Button>
+              )}
             </div>
             <div className="space-y-2">
               <Label>الفرع</Label>
@@ -923,6 +1052,224 @@ function AddUserDialog({
             <Button type="submit" disabled={loading}>
               {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               إنشاء المستخدم
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Arabic names for the catalogue's modules
+const MODULE_LABELS: Record<string, string> = {
+  dashboard: 'لوحة التحكم',
+  sales: 'المبيعات والمتجر',
+  finance: 'المالية',
+  products: 'المنتجات والمخزون',
+  shipping: 'الشحن',
+  insights: 'التحليلات',
+  employees: 'الموظفون',
+  settings: 'الإعدادات',
+};
+
+function groupByModule(catalog: CatalogPermission[]) {
+  const groups = new Map<string, CatalogPermission[]>();
+  for (const p of catalog) {
+    groups.set(p.module, [...(groups.get(p.module) ?? []), p]);
+  }
+  return [...groups.entries()];
+}
+
+function CustomRolesPanel({
+  roles,
+  catalog,
+  onCreate,
+  onEdit,
+  onDelete,
+}: {
+  roles: CustomRole[];
+  catalog: CatalogPermission[];
+  onCreate: () => void;
+  onEdit: (role: CustomRole) => void;
+  onDelete: (role: CustomRole) => void;
+}) {
+  const nameOf = new Map(catalog.map(p => [p.key, p.name]));
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.25 }}
+      className="mt-6 bg-card rounded-xl border border-border shadow-md overflow-hidden"
+    >
+      <div className="p-4 flex items-center justify-between border-b border-border">
+        <div>
+          <p className="font-semibold text-foreground">الأدوار المخصصة</p>
+          <p className="text-sm text-muted-foreground">أدوار بأسماء تختارها، وصلاحيات تحددها بنفسك</p>
+        </div>
+        <Button variant="outline" onClick={onCreate}>
+          <Plus className="w-4 h-4 ml-2" /> دور جديد
+        </Button>
+      </div>
+
+      {roles.length === 0 ? (
+        <div className="text-center py-10">
+          <Tag className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+          <p className="text-sm text-muted-foreground">لا توجد أدوار مخصصة بعد — مثال: «محاسب» يرى التقارير والفواتير فقط</p>
+        </div>
+      ) : (
+        <div className="divide-y divide-border">
+          {roles.map(role => (
+            <div key={role.id} className="p-4 flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold text-foreground">{role.name}</p>
+                  <span className="text-xs text-muted-foreground">
+                    {role.memberCount} مستخدم
+                  </span>
+                </div>
+                {role.description && (
+                  <p className="text-sm text-muted-foreground mt-0.5">{role.description}</p>
+                )}
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {role.permissions.map(key => (
+                    <span key={key} className="px-2 py-0.5 rounded-full text-xs bg-muted text-muted-foreground border border-border">
+                      {nameOf.get(key) ?? key}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <Button variant="ghost" size="icon" onClick={() => onEdit(role)} title="تعديل">
+                  <Edit className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-destructive"
+                  onClick={() => onDelete(role)}
+                  title={role.memberCount > 0 ? 'مسند لمستخدمين — غيّر أدوارهم أولًا' : 'حذف'}
+                  disabled={role.memberCount > 0}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+function RoleEditorDialog({
+  open,
+  onOpenChange,
+  role,
+  catalog,
+  onSave,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  role: CustomRole | null;
+  catalog: CatalogPermission[];
+  /** resolves to an error message, or nothing when saved */
+  onSave: (name: string, description: string, permissions: string[]) => Promise<string | undefined>;
+}) {
+  const [name, setName] = useState(role?.name ?? '');
+  const [description, setDescription] = useState(role?.description ?? '');
+  const [selected, setSelected] = useState<Set<string>>(new Set(role?.permissions ?? []));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const toggle = (key: string, on: boolean) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (on) next.add(key); else next.delete(key);
+      return next;
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (!name.trim()) { setError('اسم الدور مطلوب'); return; }
+    if (selected.size === 0) { setError('اختر صلاحية واحدة على الأقل'); return; }
+    setSaving(true);
+    const failure = await onSave(name.trim(), description.trim(), [...selected]);
+    setSaving(false);
+    if (failure) setError(failure);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Tag className="w-5 h-5" /> {role ? 'تعديل الدور' : 'دور مخصص جديد'}
+          </DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="roleName">اسم الدور</Label>
+              <Input
+                id="roleName"
+                placeholder="مثال: محاسب"
+                value={name}
+                maxLength={60}
+                onChange={(e) => setName(e.target.value)}
+                disabled={saving}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="roleDescription">الوصف (اختياري)</Label>
+              <Textarea
+                id="roleDescription"
+                rows={2}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                disabled={saving}
+              />
+            </div>
+            <div className="space-y-3">
+              <div>
+                <Label>الصلاحيات</Label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  لا يرى صاحب هذا الدور إلا ما تختاره هنا. إدارة المستخدمين والأدوار والاشتراك وإعدادات المنشأة تبقى للمالك والمدير.
+                </p>
+              </div>
+              {groupByModule(catalog).map(([module, perms]) => (
+                <div key={module} className="rounded-lg border border-border p-3">
+                  <p className="text-sm font-medium text-foreground mb-2">{MODULE_LABELS[module] ?? module}</p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {perms.map(p => (
+                      <label key={p.key} className="flex items-start gap-2 text-sm cursor-pointer">
+                        <Checkbox
+                          checked={selected.has(p.key)}
+                          onCheckedChange={(v) => toggle(p.key, v === true)}
+                          disabled={saving}
+                          className="mt-0.5"
+                        />
+                        <span>
+                          <span className="text-foreground">{p.name}</span>
+                          {p.description && (
+                            <span className="block text-xs text-muted-foreground">{p.description}</span>
+                          )}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>إلغاء</Button>
+            <Button type="submit" disabled={saving}>
+              {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              حفظ الدور
             </Button>
           </DialogFooter>
         </form>

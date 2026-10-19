@@ -1,0 +1,57 @@
+name: Test custom roles with the demo cashier
+
+# Read-only checks against the live project, signed in as the demo cashier
+# (login code 70035 on the sign-in page). Nothing here writes data: the only
+# write attempts are ones a cashier must be refused.
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/sweet-knuth-u4nbzm-custom-roles]
+    paths: ['.github/workflows/test-cashier-roles.yml']
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cashier 70035 — role, permissions, and what it is refused
+        env:
+          SUPA: https://ynwddyxzypbcftlevuam.supabase.co
+          # Public anon key (already committed in .env) — RLS still applies
+          ANON: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlud2RkeXh6eXBiY2Z0bGV2dWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5MjE1OTQsImV4cCI6MjA4NTQ5NzU5NH0.PsNDqovuzo7NmTiwsH4swskkIF3FdMlBXjYUy3MJkyA
+        run: |
+          set -uo pipefail
+          SESSION=$(curl -sS "$SUPA/functions/v1/login-by-code" \
+            -H "apikey: $ANON" -H "Authorization: Bearer $ANON" \
+            -H "Content-Type: application/json" -d '{"code":"70035"}')
+          TOKEN=$(echo "$SESSION" | jq -r '.session.access_token // empty')
+          [ -n "$TOKEN" ] || { echo "login failed: $SESSION"; exit 1; }
+          UID_=$(echo "$SESSION" | jq -r '.session.user.id')
+          H=(-H "apikey: $ANON" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json")
+
+          echo "== membership (role on merchant_users)"
+          curl -sS "$SUPA/rest/v1/merchant_users?select=id,role,is_active,merchant_id&user_id=eq.$UID_" "${H[@]}" | jq -c .
+
+          echo "== my_permissions()"
+          curl -sS -X POST "$SUPA/rest/v1/rpc/my_permissions" "${H[@]}" -d '{}' | jq -c .
+
+          echo "== has_permission(roles.manage) / (users.update)"
+          curl -sS -X POST "$SUPA/rest/v1/rpc/has_permission" "${H[@]}" -d '{"_permission":"roles.manage"}'; echo
+          curl -sS -X POST "$SUPA/rest/v1/rpc/has_permission" "${H[@]}" -d '{"_permission":"users.update"}'; echo
+
+          echo "== roles visible to the cashier"
+          curl -sS "$SUPA/rest/v1/roles?select=key,name_ar,is_system,merchant_id" "${H[@]}" | jq -c '[.[] | {key, is_system, own: (.merchant_id != null)}]'
+
+          echo "== is the custom-roles migration live? (save_custom_role must refuse a cashier)"
+          curl -sS -X POST "$SUPA/rest/v1/rpc/save_custom_role" "${H[@]}" \
+            -d '{"_role_id":null,"_name":"probe","_description":null,"_permissions":["reports.view"]}'; echo
+
+          echo "== assign_member_role on itself (must refuse a cashier)"
+          MID=$(curl -sS "$SUPA/rest/v1/merchant_users?select=id&user_id=eq.$UID_" "${H[@]}" | jq -r '.[0].id')
+          curl -sS -X POST "$SUPA/rest/v1/rpc/assign_member_role" "${H[@]}" \
+            -d "{\"_member_id\":\"$MID\",\"_role\":\"admin\"}"; echo
+
+          echo "== rows the cashier reads today (unchanged by the migration for system roles)"
+          for T in sales daily_closings repair_orders customers campaigns suppliers; do
+            N=$(curl -sS -I "$SUPA/rest/v1/$T?select=id" "${H[@]}" -H "Prefer: count=exact" -H "Range: 0-0" | grep -i content-range | tr -d '\r' | awk -F/ '{print $2}')
+            echo "$T: ${N:-?}"
+          done

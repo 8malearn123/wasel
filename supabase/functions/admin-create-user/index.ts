@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { email, password, full_name, role, branch_id } = await req.json();
+    const { email, password, full_name, role, branch_id, custom_role_id } = await req.json();
 
     if (!email || !password || !full_name || !role) {
       return new Response(JSON.stringify({ error: "email, password, full_name, and role are required" }), {
@@ -67,12 +67,32 @@ Deno.serve(async (req) => {
       });
     }
 
-    const validRoles = ["admin", "branch_manager", "cashier", "inventory_manager"];
+    const validRoles = ["admin", "branch_manager", "cashier", "inventory_manager", "custom"];
     if (!validRoles.includes(role)) {
       return new Response(JSON.stringify({ error: "Invalid role" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // A custom role must be one this shop made. Read as the caller, so RLS
+    // only shows system roles and the caller's own merchant's roles.
+    if (role === "custom") {
+      const { data: customRole } = custom_role_id
+        ? await supabaseUser
+            .from("roles")
+            .select("id")
+            .eq("id", custom_role_id)
+            .eq("merchant_id", callerRole.merchant_id)
+            .eq("is_system", false)
+            .maybeSingle()
+        : { data: null };
+      if (!customRole) {
+        return new Response(JSON.stringify({ error: "الدور المخصص غير موجود" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     const { data: subscription } = await supabaseUser
@@ -140,7 +160,7 @@ Deno.serve(async (req) => {
       attempts++;
     }
 
-    const { error: muError } = await supabaseAdmin
+    const { data: member, error: muError } = await supabaseAdmin
       .from("merchant_users")
       .insert({
         merchant_id: callerRole.merchant_id,
@@ -149,11 +169,21 @@ Deno.serve(async (req) => {
         branch_id: branch_id || null,
         is_active: true,
         login_code: loginCode,
-      });
+      })
+      .select("id")
+      .single();
 
-    if (muError) {
+    // The custom role's grant; without it the member would sign in to nothing
+    const { error: grantError } = !muError && role === "custom"
+      ? await supabaseAdmin
+          .from("user_roles")
+          .insert({ merchant_user_id: member.id, role_id: custom_role_id, granted_by: caller.id })
+      : { error: null };
+
+    if (muError || grantError) {
+      if (member) await supabaseAdmin.from("merchant_users").delete().eq("id", member.id);
       await supabaseAdmin.auth.admin.deleteUser(newUser.user.id);
-      return new Response(JSON.stringify({ error: muError.message }), {
+      return new Response(JSON.stringify({ error: (muError ?? grantError)!.message }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -167,7 +197,7 @@ Deno.serve(async (req) => {
         action: "create_user",
         entity_type: "merchant_users",
         entity_id: newUser.user.id,
-        new_data: { email, full_name, role, branch_id },
+        new_data: { email, full_name, role, branch_id, custom_role_id: role === "custom" ? custom_role_id : undefined },
       });
 
     return new Response(JSON.stringify({ 

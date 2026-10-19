@@ -12,7 +12,10 @@ describe('permissionsForLegacyRole', () => {
   });
 
   it('keeps a cashier out of the catalogue', () => {
-    expect(permissionsForLegacyRole('cashier')).toEqual(['products.view']);
+    // reads it to sell; the rest are the till, repairs and the day's closing
+    const cashier = permissionsForLegacyRole('cashier');
+    expect(cashier.filter(k => k.startsWith('products.') || k === 'categories.manage')).toEqual(['products.view']);
+    expect(new Set(cashier)).toEqual(new Set(['products.view', 'pos.access', 'repairs.manage', 'closings.manage']));
   });
 
   it('gives an admin everything an owner has except managing roles', () => {
