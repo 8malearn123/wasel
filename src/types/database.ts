@@ -5,7 +5,8 @@ export type PurchaseStatus = 'draft' | 'pending' | 'approved' | 'received' | 'ca
 export type PaymentStatus = 'paid' | 'unpaid' | 'partial';
 export type PaymentMethod = 'cash' | 'card' | 'bank_transfer' | 'mixed';
 export type SubscriptionStatus = 'trial' | 'active' | 'expired' | 'cancelled';
-export type UserRole = 'owner' | 'admin' | 'branch_manager' | 'cashier' | 'inventory_manager';
+// 'custom': the member's access is a role the shop made (user_roles → roles)
+export type UserRole = 'owner' | 'admin' | 'branch_manager' | 'cashier' | 'inventory_manager' | 'custom';
 
 export interface Merchant {
   id: string;
@@ -57,6 +58,8 @@ export interface MerchantUser {
   // Joined fields
   profile?: Profile;
   branch?: Branch;
+  /** the shop's own role, when role is 'custom' */
+  customRole?: { id: string; name: string } | null;
 }
 
 export interface Branch {

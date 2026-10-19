@@ -26,6 +26,7 @@ export default function ProductsPage() {
           title: t.inventory.title,
           subtitle: t.inventory.subtitle,
           denyRoles: ['cashier'],
+          permission: 'products.view',
           render: () => <InventorySection />,
         },
         {
@@ -36,6 +37,7 @@ export default function ProductsPage() {
           subtitle: isRTL ? 'جرد المخزون ومطابقة الكميات' : 'Count stock and reconcile quantities',
           feature: 'stocktake',
           denyRoles: ['cashier'],
+          permission: 'stocktake.manage',
           render: () => <StocktakeSection />,
         },
         {
@@ -46,6 +48,7 @@ export default function ProductsPage() {
           subtitle: t.transfers.subtitle,
           feature: 'transfers',
           denyRoles: ['cashier'],
+          permission: 'transfers.manage',
           render: () => <TransfersSection />,
         },
       ],
@@ -61,6 +64,7 @@ export default function ProductsPage() {
           subtitle: isRTL ? 'إدارة الموردين والمشتريات والمديونيات' : 'Manage suppliers, purchases & debts',
           feature: 'suppliers',
           denyRoles: ['cashier'],
+          permission: 'suppliers.manage',
           render: () => <SuppliersSection />,
         },
         {
@@ -70,6 +74,7 @@ export default function ProductsPage() {
           title: t.labels.title,
           subtitle: t.labels.subtitle,
           denyRoles: ['cashier'],
+          permission: 'products.view',
           render: () => <LabelsSection />,
         },
       ],

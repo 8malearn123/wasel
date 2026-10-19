@@ -34,6 +34,7 @@ export default function SalesPage() {
           subtitle: isRTL ? 'إدارة الطلبات الإلكترونية' : 'Manage online orders',
           feature: 'onlineStore',
           denyRoles: ['cashier'],
+          permission: 'online_orders.manage',
           render: () => <OnlineOrdersSection />,
         },
         {
@@ -43,6 +44,7 @@ export default function SalesPage() {
           title: isRTL ? 'الإصلاحات والصيانة' : 'Repairs & maintenance',
           subtitle: isRTL ? 'إدارة طلبات الإصلاح وتتبع حالتها' : 'Track repair tickets and their state',
           feature: 'repairs',
+          permission: 'repairs.manage',
           render: () => <RepairsSection />,
         },
         {
@@ -51,6 +53,7 @@ export default function SalesPage() {
           icon: Calculator,
           title: isRTL ? 'الإغلاق اليومي' : 'Daily Closings',
           subtitle: isRTL ? 'تقرير شامل لمبيعات اليوم وحركة الكاش' : 'Comprehensive daily sales & cash report',
+          permission: 'closings.manage',
           render: () => <DailyClosingsSection />,
         },
       ],
@@ -66,6 +69,7 @@ export default function SalesPage() {
           subtitle: isRTL ? 'إدارة وتخصيص احترافي لمتجرك' : 'Manage and customise your store',
           feature: 'onlineStore',
           denyRoles: ['cashier'],
+          permission: 'store.manage',
           render: () => <OnlineStoreSection />,
         },
         {
@@ -76,6 +80,7 @@ export default function SalesPage() {
           subtitle: isRTL ? 'ظهور المتجر في نتائج البحث' : 'How the store appears in search results',
           feature: 'onlineStore',
           denyRoles: ['cashier'],
+          permission: 'store.manage',
           render: () => <StoreSeoSection />,
         },
       ],
@@ -90,6 +95,7 @@ export default function SalesPage() {
           title: isRTL ? 'قاعدة العملاء' : 'Customers',
           feature: 'customers',
           denyRoles: ['cashier'],
+          permission: 'customers.manage',
           render: () => <CustomersSection />,
         },
         {
@@ -100,6 +106,7 @@ export default function SalesPage() {
           subtitle: t.marketing.subtitle,
           feature: 'marketing',
           denyRoles: ['cashier'],
+          permission: 'marketing.manage',
           render: () => <MarketingSection />,
         },
       ],
@@ -116,6 +123,7 @@ export default function SalesPage() {
             ? 'السوق، منتجاتك، الطلبات والمديونيات في صفحة واحدة'
             : 'Marketplace, listings, orders and credits in one place',
           denyRoles: ['cashier'],
+          permission: 'wholesale.manage',
           render: () => <WholesaleSection />,
         },
       ],

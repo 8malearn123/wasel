@@ -9,6 +9,7 @@ import { SectionNav } from '@/components/layout/SectionNav';
 import { useTabParam } from '@/hooks/useTabParam';
 import { useLanguage } from '@/i18n';
 import { useReports } from '@/hooks/useReports';
+import { usePermissions } from '@/hooks/usePermissions';
 import { ReportTable } from '@/components/reports/ReportTable';
 import { ReportPanel } from '@/components/reports/ReportShell';
 import { SalesDashboard } from '@/components/reports/panels/SalesDashboard';
@@ -45,6 +46,7 @@ export default function ReportsPage() {
   const r = t.reports;
   const [period, setPeriod] = useState<'daily' | 'monthly'>('daily');
   const [activeTab, setActiveTab] = useTabParam('sales');
+  const { can } = usePermissions();
 
   const {
     loading, error, refetch,
@@ -214,7 +216,16 @@ export default function ReportsPage() {
     },
   ];
 
-  const all = groups.flatMap(g => g.items);
+  // Every report needs reports.view except the sales detail, which is the
+  // invoice list and opens on invoices.view too. The system roles hold both.
+  const permitted = groups
+    .map(g => ({
+      ...g,
+      items: g.items.filter(item => item.key === 'table-sales' ? can('invoices.view') : can('reports.view')),
+    }))
+    .filter(g => g.items.length > 0);
+
+  const all = permitted.flatMap(g => g.items);
   const current = all.find(item => item.key === activeTab) ?? all[0];
 
   return (
@@ -224,7 +235,7 @@ export default function ReportsPage() {
         ? 'متابعة الأداء والمبيعات والمخزون من مكان واحد'
         : 'Performance, sales and stock, from one place'}
     >
-      <SectionNav groups={groups} value={current.key} onChange={setActiveTab} />
+      <SectionNav groups={permitted} value={current.key} onChange={setActiveTab} />
 
       {/* Only the selected report is rendered: ten mounted panels would mean
           ten chart trees and ten tables living behind one visible screen */}

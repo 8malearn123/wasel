@@ -36,6 +36,7 @@ export default function TeamPage() {
           title: isRTL ? 'الحضور والانصراف' : 'Attendance',
           subtitle: isRTL ? 'حضور الموظفين وسجلّه' : 'Employee attendance and its record',
           denyRoles: ['cashier'],
+          permission: 'attendance.manage',
           render: () => <AttendanceSection />,
         },
         {
@@ -47,6 +48,7 @@ export default function TeamPage() {
             ? 'الأجهزة المرتبطة بالنظام وحالتها'
             : 'Devices linked to the system, and their state',
           denyRoles: ['cashier'],
+          permission: 'attendance.manage',
           render: () => <DevicesSection />,
         },
         {
@@ -58,6 +60,7 @@ export default function TeamPage() {
             ? 'معلومات الموظفين والرواتب والأداء'
             : 'Employee info, salaries and performance',
           denyRoles: ['cashier', 'branch_manager', 'inventory_manager'],
+          permission: 'payroll.manage',
           render: () => <HRSection />,
         },
       ],
@@ -72,6 +75,7 @@ export default function TeamPage() {
           title: t.users.title,
           subtitle: t.users.subtitle,
           denyRoles: ['cashier', 'branch_manager', 'inventory_manager'],
+          permission: 'users.view',
           render: () => <UsersSection />,
         },
       ],

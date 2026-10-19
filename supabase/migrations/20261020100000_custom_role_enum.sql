@@ -1,0 +1,11 @@
+-- =============================================================================
+-- Custom roles · 1/2 · the enum value
+--
+-- A member whose access comes from a role the shop made gets role = 'custom'
+-- on merchant_users. 'custom' implies nothing in legacy_role_permissions(), so
+-- such a member can do exactly what their role grants and nothing else.
+--
+-- On its own file because a new enum value cannot be used in the transaction
+-- that adds it.
+-- =============================================================================
+ALTER TYPE public.user_role ADD VALUE IF NOT EXISTS 'custom';

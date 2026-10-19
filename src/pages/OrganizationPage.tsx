@@ -27,6 +27,7 @@ export default function OrganizationPage() {
           title: t.branches.title,
           subtitle: t.branches.subtitle,
           denyRoles: ['cashier'],
+          permission: 'branches.manage',
           render: () => <BranchesSection />,
         },
         {
