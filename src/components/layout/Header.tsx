@@ -84,20 +84,22 @@ export function Header({ title, subtitle }: HeaderProps) {
 
   return (
     <header className="min-h-16 bg-card border-b border-border flex items-center justify-between gap-4 px-6 py-2 sticky top-0 z-40">
-      <div className="flex flex-col min-w-0">
-        <h1 className="text-lg font-semibold text-foreground">{title}</h1>
+      {/* The title takes the room the toolbar leaves and stays on one line —
+          without flex-1 it shrank to a few characters and wrapped word by word */}
+      <div className="flex flex-col flex-1 min-w-0">
+        <h1 className="text-lg font-semibold text-foreground truncate" title={title}>{title}</h1>
         {subtitle && (
-          <p className="text-sm text-muted-foreground">{subtitle}</p>
+          <p className="text-sm text-muted-foreground truncate" title={subtitle}>{subtitle}</p>
         )}
       </div>
 
-      <div className="flex items-center gap-4 shrink-0">
+      <div className="flex items-center gap-2 xl:gap-4 shrink-0">
         {/* Browse Sections */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="gap-2 touch-target">
               <LayoutGrid className="w-4 h-4" />
-              <span className="hidden sm:inline">
+              <span className="hidden 2xl:inline">
                 {language === 'ar' ? 'تصفح الأقسام' : 'Browse Sections'}
               </span>
             </Button>
@@ -166,7 +168,7 @@ export function Header({ title, subtitle }: HeaderProps) {
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="gap-2 touch-target">
               <Building2 className="w-4 h-4" />
-              <span className="hidden sm:inline">{t.common.mainStore}</span>
+              <span className="hidden xl:inline">{t.common.mainStore}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
@@ -254,7 +256,7 @@ export function Header({ title, subtitle }: HeaderProps) {
               <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center">
                 <User className="w-4 h-4 text-white" />
               </div>
-              <span className="hidden sm:inline text-sm font-medium">{t.common.admin}</span>
+              <span className="hidden xl:inline text-sm font-medium">{t.common.admin}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
