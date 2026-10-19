@@ -871,8 +871,50 @@ function AddUserDialog({
         }
       );
 
-      const result = await response.json();
-      if (!response.ok) {
+      let result = await response.json();
+
+      // admin-create-user from before custom roles refuses role 'custom'.
+      // Create the account as a cashier, then give it the custom role through
+      // assign_member_role. The new user has not signed in yet, so the cashier
+      // step is never used; if the role cannot be given the account is
+      // switched off rather than left with access nobody chose.
+      const customRoleId = role.startsWith(CUSTOM_PREFIX) ? role.slice(CUSTOM_PREFIX.length) : null;
+      if (!response.ok && customRoleId && result.error === 'Invalid role') {
+        const retry = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session?.access_token}`,
+            },
+            body: JSON.stringify({
+              email,
+              password,
+              full_name: fullName,
+              role: 'cashier',
+              branch_id: branchId && branchId !== 'all' ? branchId : null,
+            }),
+          }
+        );
+        result = await retry.json();
+        if (!retry.ok) {
+          setError(result.error || 'حدث خطأ');
+          return;
+        }
+        const { data: member } = await supabase
+          .from('merchant_users')
+          .select('id')
+          .eq('user_id', result.user_id)
+          .maybeSingle();
+        const assigned = member ? await assignCustomRole(member.id, customRoleId) : { error: 'تعذر إيجاد المستخدم' };
+        if (assigned.error) {
+          if (member) await supabase.from('merchant_users').update({ is_active: false }).eq('id', member.id);
+          setError(`تعذر إسناد الدور المخصص، وعُطّل الحساب: ${assigned.error}`);
+          onSuccess();
+          return;
+        }
+      } else if (!response.ok) {
         setError(result.error || 'حدث خطأ');
         return;
       }

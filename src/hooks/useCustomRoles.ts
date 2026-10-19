@@ -34,6 +34,10 @@ const ERRORS: Record<string, string> = {
 
 export function roleErrorMessage(message?: string): string {
   if (!message) return 'حدث خطأ';
+  // the function or table is not there: the database has not had the migration
+  if (/schema cache|PGRST20[25]|does not exist/i.test(message)) {
+    return 'الأدوار المخصصة تحتاج تحديث قاعدة البيانات أولًا (custom roles migration)';
+  }
   const known = Object.keys(ERRORS).find(k => message.includes(k));
   return known ? ERRORS[known] : message;
 }
