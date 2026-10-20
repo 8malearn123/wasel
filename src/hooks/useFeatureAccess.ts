@@ -13,8 +13,11 @@ import type { FeatureKey } from '@/lib/planAccess';
  * sidebar flickers on every page load.
  */
 export function useFeatureAccess() {
-  const { subscription } = useAuth();
-  const { plans, loading } = usePlans();
+  const { subscription, memberLoading } = useAuth();
+  const { plans, loading: plansLoading } = usePlans();
+  // the subscription arrives with the member's data, after the session: until
+  // then every feature would read as missing and send owners to the upsell
+  const loading = plansLoading || memberLoading;
 
   const plan = useMemo(
     () => plans.find(p => p.id === subscription?.plan_id) ?? null,

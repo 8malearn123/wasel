@@ -15,9 +15,9 @@ interface AuthContextType {
   setCurrentBranch: (branch: Branch) => void;
   loading: boolean;
   /**
-   * The member row (and so the role) is still being read. `loading` turns
-   * false as soon as the session is known, a moment before this does — a
-   * guard deciding on the role must wait for both.
+   * The member row, the merchant and its subscription are still being read.
+   * `loading` turns false as soon as the session is known, a moment before
+   * this does — a guard deciding on the role or the plan must wait for both.
    */
   memberLoading: boolean;
   isLocked: boolean;
@@ -53,10 +53,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq('is_active', true)
         .maybeSingle();
 
-      if (!merchantUserData) setMemberLoading(false);
       if (merchantUserData) {
         setMerchantUser(await withStoredCustomRole(merchantUserData as MerchantUser));
-        setMemberLoading(false);
 
         // Get merchant
         const { data: merchantData } = await supabase
@@ -101,6 +99,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('Error fetching merchant data:', error);
+    } finally {
+      // role, merchant, subscription and branches are all in place now
       setMemberLoading(false);
     }
   };
