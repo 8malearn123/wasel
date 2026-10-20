@@ -61,14 +61,17 @@ for (const [label, viewport] of [['desktop', { width: 1920, height: 1080 }], ['m
     await page.goto(`${SITE}/pos`);
     await page.waitForLoadState('networkidle').catch(() => {});
     await page.waitForTimeout(1500);
-    await logShot(page, 'pos');
-    const menu = page.getByRole('button', { name: /القائمة|Menu/ }).first();
-    if (await menu.count()) {
-      await menu.click();
-      await page.waitForTimeout(600);
-      await logShot(page, 'pos-menu');
+    // one device into the cart (nothing is written until a sale is completed)
+    await page.getByText(/356789104563218|Apple iPhone 15 Pro/).first().click().catch(e => console.log('[pos] add', e.message.split('\n')[0]));
+    await page.waitForTimeout(800);
+    await logShot(page, 'pos-cart');
+    const options = page.getByRole('button', { name: /الكوبون وطريقة الدفع|Coupon & payment/ }).first();
+    if (await options.count()) {
+      await options.click();
+      await page.waitForTimeout(700);
+      await logShot(page, 'pos-options');
     } else {
-      console.log('[pos] no menu button');
+      console.log('[pos] no options button');
     }
   }
   await context.close();

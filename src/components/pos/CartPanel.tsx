@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ShoppingCart, X, Minus, Plus, CreditCard, Banknote, Building2, Percent, Receipt, User, Phone, ShieldCheck
+  ShoppingCart, X, Minus, Plus, CreditCard, Banknote, Building2, Percent, Receipt, User, Phone, ShieldCheck,
+  SlidersHorizontal
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,6 +67,9 @@ export function CartPanel({
   const [cashReceived, setCashReceived] = useState("");
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  // Coupon and payment method sit behind a button at the top of the cart, so
+  // the items get the room; the payment dialog asks for the method anyway
+  const [showOptions, setShowOptions] = useState(false);
   const discount = couponDiscount;
   const totalBeforeDiscount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const total = totalBeforeDiscount - discount;
@@ -116,6 +120,25 @@ export function CartPanel({
           <span className="text-xs text-muted-foreground">({cart.length})</span>
         </div>
         <div className="flex items-center gap-1">
+          {/* Coupon & payment method */}
+          <Button
+            variant={showOptions ? "default" : "outline"}
+            size="icon"
+            className={cn(
+              "h-7 w-7 relative",
+              showOptions && "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20"
+            )}
+            onClick={() => setShowOptions(v => !v)}
+            title={isRTL ? "الكوبون وطريقة الدفع" : "Coupon & payment method"}
+            aria-label={isRTL ? "الكوبون وطريقة الدفع" : "Coupon & payment method"}
+            aria-expanded={showOptions}
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            {/* something is set while the panel is closed */}
+            {!showOptions && (appliedCoupon || selectedPayment) && (
+              <span className="absolute -top-0.5 -end-0.5 w-2 h-2 rounded-full bg-primary" />
+            )}
+          </Button>
           {/* Add Customer Button */}
           <Button
             variant={hasCustomer ? "default" : "outline"}
@@ -138,6 +161,45 @@ export function CartPanel({
           )}
         </div>
       </div>
+
+      {/* Coupon & payment method, opened from the header */}
+      <AnimatePresence initial={false}>
+        {showOptions && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="border-b border-border bg-muted/10 overflow-hidden"
+          >
+            <div className="p-3 space-y-2.5">
+              <CouponApply
+                subtotal={subtotal}
+                onApply={(d, code) => { setCouponDiscount(d); setAppliedCoupon(code); }}
+                onRemove={() => { setCouponDiscount(0); setAppliedCoupon(null); }}
+                appliedCoupon={appliedCoupon}
+                isRTL={isRTL}
+              />
+              <div className="grid grid-cols-4 gap-1.5">
+                {paymentMethods.map((method) => (
+                  <button
+                    key={method.id}
+                    onClick={() => onSelectPayment(method.id)}
+                    className={cn(
+                      "py-2 rounded-lg border flex flex-col items-center gap-0.5 transition-all",
+                      selectedPayment === method.id
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-card text-muted-foreground hover:border-primary/50"
+                    )}
+                  >
+                    <method.icon className="w-4 h-4" />
+                    <span className="text-[10px] font-medium">{method.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Cart Items */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
@@ -213,15 +275,6 @@ export function CartPanel({
 
       {/* Cart Footer */}
       <div className="border-t border-border p-3 space-y-2.5 bg-muted/10">
-        {/* Coupon */}
-        <CouponApply
-          subtotal={subtotal}
-          onApply={(d, code) => { setCouponDiscount(d); setAppliedCoupon(code); }}
-          onRemove={() => { setCouponDiscount(0); setAppliedCoupon(null); }}
-          appliedCoupon={appliedCoupon}
-          isRTL={isRTL}
-        />
-
         {/* Totals */}
         <div className="space-y-1 text-xs">
           <div className="flex justify-between">
@@ -242,25 +295,6 @@ export function CartPanel({
             <span className="font-semibold">{t.pos.total}</span>
             <span className="font-bold text-primary">{total.toFixed(2)} ر.س</span>
           </div>
-        </div>
-
-        {/* Payment Methods */}
-        <div className="grid grid-cols-4 gap-1.5">
-          {paymentMethods.map((method) => (
-            <button
-              key={method.id}
-              onClick={() => onSelectPayment(method.id)}
-              className={cn(
-                "py-2 rounded-lg border flex flex-col items-center gap-0.5 transition-all",
-                selectedPayment === method.id
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border bg-card text-muted-foreground hover:border-primary/50"
-              )}
-            >
-              <method.icon className="w-4 h-4" />
-              <span className="text-[10px] font-medium">{method.label}</span>
-            </button>
-          ))}
         </div>
 
         {/* Complete Sale */}
