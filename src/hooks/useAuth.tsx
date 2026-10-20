@@ -14,6 +14,12 @@ interface AuthContextType {
   currentBranch: Branch | null;
   setCurrentBranch: (branch: Branch) => void;
   loading: boolean;
+  /**
+   * The member row, the merchant and its subscription are still being read.
+   * `loading` turns false as soon as the session is known, a moment before
+   * this does — a guard deciding on the role or the plan must wait for both.
+   */
+  memberLoading: boolean;
   isLocked: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
@@ -32,6 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [currentBranch, setCurrentBranch] = useState<Branch | null>(null);
   const [loading, setLoading] = useState(true);
+  const [memberLoading, setMemberLoading] = useState(true);
 
   const isLocked = subscription?.status === 'expired' || 
     (subscription?.status === 'trial' && subscription?.trial_ends_at && new Date(subscription.trial_ends_at) < new Date());
@@ -92,6 +99,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('Error fetching merchant data:', error);
+    } finally {
+      // role, merchant, subscription and branches are all in place now
+      setMemberLoading(false);
     }
   };
 
@@ -110,6 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // تشغيله هنا كان يسبب أحداث توثيق متكررة تحدّث الصفحة الأم باستمرار
     if (new URLSearchParams(window.location.search).get('preview') === '1') {
       setLoading(false);
+      setMemberLoading(false);
       return;
     }
 
@@ -123,6 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (uid) {
           if (uid !== lastFetchedUid.current) {
             lastFetchedUid.current = uid;
+            setMemberLoading(true);
             // Defer Supabase calls
             setTimeout(() => {
               fetchMerchantData(uid);
@@ -130,6 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         } else {
           lastFetchedUid.current = null;
+          setMemberLoading(false);
           setMerchantUser(null);
           setMerchant(null);
           setSubscription(null);
@@ -147,8 +160,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const uid = session?.user?.id ?? null;
       if (uid && uid !== lastFetchedUid.current) {
         lastFetchedUid.current = uid;
+        setMemberLoading(true);
         fetchMerchantData(uid);
       }
+      if (!uid) setMemberLoading(false);
       setLoading(false);
     });
 
@@ -227,6 +242,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       currentBranch,
       setCurrentBranch,
       loading,
+      memberLoading,
       isLocked,
       signIn,
       signUp,

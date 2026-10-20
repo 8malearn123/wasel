@@ -19,6 +19,7 @@ import { ProfileDialog, ActivityLogDialog } from "@/components/layout/AccountDia
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { sectionPermitted } from "@/lib/sectionAccess";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "@/hooks/useTheme";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -57,14 +58,16 @@ export function Header({ title, subtitle }: HeaderProps) {
   const navigate = useNavigate();
 
   const { can } = usePermissions();
+  const { allows, loading: plansLoading } = useFeatureAccess();
   const isCashier = merchantUser?.role === "cashier";
-  // A custom role is offered the sections its permissions open, and never
-  // the owner/admin-only subscription page
+  // Everyone else is offered what the sidebar offers: the sections their role
+  // and the shop's plan open, and the subscription page only to owner/admin
+  const canSeeSubscription = merchantUser?.role === "owner" || merchantUser?.role === "admin";
   const visibleSections = isCashier
     ? SECTIONS.filter((s) => CASHIER_PATHS.has(s.path))
-    : merchantUser?.role === "custom"
-      ? SECTIONS.filter((s) => s.path !== "/subscription" && sectionPermitted(s.path, can))
-      : SECTIONS;
+    : SECTIONS.filter((s) => (s.path === "/subscription"
+        ? canSeeSubscription
+        : sectionPermitted(s.path, can, plansLoading ? undefined : allows)));
 
   const { notifications } = useNotifications();
   const urgentCount = notifications.filter((n) => n.type === "urgent").length;

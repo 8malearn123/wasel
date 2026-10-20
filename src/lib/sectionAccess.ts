@@ -62,9 +62,16 @@ export function firstOpenSection(
   return '/organization';
 }
 
-/** Whether any door of a section is open on permissions alone (for menus). */
-export function sectionPermitted(path: string, can: (permission: PermissionKey) => boolean): boolean {
+/**
+ * Whether a section opens for this user: a door whose permission they hold
+ * and whose leaf their plan has. Without `allows`, permissions alone.
+ */
+export function sectionPermitted(
+  path: string,
+  can: (permission: PermissionKey) => boolean,
+  allows?: (feature: FeatureKey) => boolean,
+): boolean {
   const doors = SECTION_ACCESS[path];
   if (!doors || doors.length === 0) return true;
-  return doors.some(d => can(d.permission));
+  return doors.some(d => can(d.permission) && (!d.feature || !allows || allows(d.feature)));
 }
