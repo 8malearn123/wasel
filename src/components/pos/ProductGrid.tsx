@@ -125,17 +125,21 @@ export function ProductGrid({ devices, accessories, loading, onAddDevice, onAddA
   const { t, isRTL } = useLanguage();
   const { categories } = useCategories();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  // Phones or accessories first, then the shop's own categories within that
+  const [kind, setKind] = useState<'all' | 'device' | 'accessory'>('all');
 
-  // Filter products by selected category
+  // Filter products by kind and selected category
   const filteredDevices = useMemo(() => {
+    if (kind === 'accessory') return [];
     if (!selectedCategory) return devices;
     return devices.filter(d => d.category === selectedCategory);
-  }, [devices, selectedCategory]);
+  }, [devices, selectedCategory, kind]);
 
   const filteredAccessories = useMemo(() => {
+    if (kind === 'device') return [];
     if (!selectedCategory) return accessories;
     return accessories.filter(a => a.category === selectedCategory);
-  }, [accessories, selectedCategory]);
+  }, [accessories, selectedCategory, kind]);
 
   if (loading) {
     return (
@@ -160,40 +164,54 @@ export function ProductGrid({ devices, accessories, loading, onAddDevice, onAddA
     );
   }
 
-  // Build category tabs from merchant categories
-  const activeCategories = categories.filter(c => c.is_active);
+  // The shop's categories that fit the chosen kind
+  const activeCategories = categories.filter(
+    c => c.is_active && (kind === 'all' || c.type === 'all' || c.type === kind)
+  );
+
+  const chip = (active: boolean) => cn(
+    "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all border",
+    active
+      ? "bg-primary text-primary-foreground border-primary"
+      : "bg-muted/50 text-muted-foreground border-border hover:border-primary/50"
+  );
+
+  const kinds: { key: 'all' | 'device' | 'accessory'; label: string; count: number }[] = [
+    { key: 'all', label: isRTL ? "الكل" : "All", count: devices.length + accessories.length },
+    { key: 'device', label: isRTL ? "الأجهزة" : "Devices", count: devices.length },
+    { key: 'accessory', label: isRTL ? "الإكسسوارات" : "Accessories", count: accessories.length },
+  ];
 
   return (
     <div className="flex-1 overflow-y-auto space-y-3">
-      {/* Category Filter Tabs */}
-      {activeCategories.length > 0 && (
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+      {/* Filter: kind, then the shop's own categories */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        {kinds.map(k => (
           <button
-            onClick={() => setSelectedCategory(null)}
-            className={cn(
-              "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all border",
-              !selectedCategory
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-muted/50 text-muted-foreground border-border hover:border-primary/50"
-            )}
+            key={k.key}
+            onClick={() => { setKind(k.key); setSelectedCategory(null); }}
+            className={chip(kind === k.key && !selectedCategory)}
           >
-            {isRTL ? "الكل" : "All"}
+            {k.label}
+            <span className="ms-1.5 opacity-70">{k.count}</span>
           </button>
-          {activeCategories.map(cat => (
-            <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(selectedCategory === cat.name ? null : cat.name)}
-              className={cn(
-                "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all border",
-                selectedCategory === cat.name
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-muted/50 text-muted-foreground border-border hover:border-primary/50"
-              )}
-            >
-              {isRTL && cat.name_ar ? cat.name_ar : cat.name}
-            </button>
-          ))}
-        </div>
+        ))}
+        {activeCategories.length > 0 && <span className="w-px h-5 bg-border shrink-0" aria-hidden />}
+        {activeCategories.map(cat => (
+          <button
+            key={cat.id}
+            onClick={() => setSelectedCategory(selectedCategory === cat.name ? null : cat.name)}
+            className={chip(selectedCategory === cat.name)}
+          >
+            {isRTL && cat.name_ar ? cat.name_ar : cat.name}
+          </button>
+        ))}
+      </div>
+
+      {filteredDevices.length === 0 && filteredAccessories.length === 0 && (
+        <p className="text-sm text-muted-foreground text-center py-10">
+          {isRTL ? "لا توجد منتجات في هذا التصنيف" : "Nothing in this category"}
+        </p>
       )}
 
       {/* Devices */}
