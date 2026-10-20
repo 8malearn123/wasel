@@ -1,4 +1,5 @@
-import { DollarSign, Download, Package, Smartphone } from 'lucide-react';
+import { Download, Package, Smartphone } from 'lucide-react';
+import { RiyalSign } from "@/components/icons/RiyalSign";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { Accessory } from '@/types/database';
@@ -28,7 +29,7 @@ export function InventoryDashboard({ inventory, lowStock, onExport }: Props) {
     },
     {
       key: 'deviceValue', label: r.deviceValue, value: fmtMoney(inventory.deviceValue, isRTL),
-      hint: isRTL ? 'بالتكلفة' : 'at cost', icon: DollarSign,
+      hint: isRTL ? 'بالتكلفة' : 'at cost', icon: RiyalSign,
     },
     {
       key: 'accessories', label: r.totalAccessories, value: fmtCount(inventory.totalAccessories),
@@ -37,7 +38,7 @@ export function InventoryDashboard({ inventory, lowStock, onExport }: Props) {
     },
     {
       key: 'accessoryValue', label: r.accessoryValue, value: fmtMoney(inventory.accessoryValue, isRTL),
-      hint: isRTL ? 'بالتكلفة' : 'at cost', icon: DollarSign,
+      hint: isRTL ? 'بالتكلفة' : 'at cost', icon: RiyalSign,
     },
   ];
 

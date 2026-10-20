@@ -2,10 +2,11 @@ import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Building2, Users, CreditCard, DollarSign, Smartphone, Globe,
+  Building2, Users, CreditCard, Smartphone, Globe,
   TrendingUp, Wrench, Activity, Shield, Loader2, AlertTriangle,
   CheckCircle, XCircle, Clock, ArrowUpRight, LifeBuoy,
 } from 'lucide-react';
+import { RiyalSign } from "@/components/icons/RiyalSign";
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -81,7 +82,7 @@ export default function AdminDashboardPage() {
     { icon: CheckCircle, label: 'اشتراكات نشطة', value: stats.activeSubs, color: 'text-success', bg: 'bg-success/10' },
     { icon: Clock, label: 'تجريبي', value: stats.trialSubs, color: 'text-warning', bg: 'bg-warning/10' },
     { icon: XCircle, label: 'منتهي/موقوف', value: stats.expiredSubs, color: 'text-destructive', bg: 'bg-destructive/10' },
-    { icon: DollarSign, label: 'إجمالي المبيعات', value: `${(stats.totalRevenue / 1000).toFixed(0)}K ر.س`, color: 'text-primary', bg: 'bg-primary/10' },
+    { icon: RiyalSign, label: 'إجمالي المبيعات', value: `${(stats.totalRevenue / 1000).toFixed(0)}K ر.س`, color: 'text-primary', bg: 'bg-primary/10' },
     { icon: Smartphone, label: 'إجمالي الأجهزة', value: stats.totalDevices, color: 'text-accent-foreground', bg: 'bg-accent/10' },
     { icon: Wrench, label: 'إجمالي الإصلاحات', value: stats.totalRepairs, color: 'text-warning', bg: 'bg-warning/10' },
     { icon: TrendingUp, label: 'انضموا هذا الأسبوع', value: stats.recentSignups, color: 'text-success', bg: 'bg-success/10' },
@@ -116,7 +117,7 @@ export default function AdminDashboardPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-primary" /> أعلى الشركات مبيعاً
+              <RiyalSign className="w-4 h-4 text-primary" /> أعلى الشركات مبيعاً
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -243,7 +244,7 @@ export default function AdminDashboardPage() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-success" /> مدفوعات معلقة
+                <RiyalSign className="w-4 h-4 text-success" /> مدفوعات معلقة
               </CardTitle>
               {pendingPayoutsList.length > 0 && <Badge variant="destructive">{pendingPayoutsList.length}</Badge>}
             </div>

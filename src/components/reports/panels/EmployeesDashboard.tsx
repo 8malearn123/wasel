@@ -1,4 +1,5 @@
-import { DollarSign, Download, TrendingUp, Users } from 'lucide-react';
+import { Download, TrendingUp, Users } from 'lucide-react';
+import { RiyalSign } from "@/components/icons/RiyalSign";
 import {
   Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
@@ -41,7 +42,7 @@ export function EmployeesDashboard({ rows, onExport }: { rows: EmployeeRow[]; on
   const cards: ReportStatCard[] = [
     { key: 'count', label: isRTL ? 'موظفون لديهم مبيعات' : 'Employees with sales', value: fmtCount(rows.length), icon: Users },
     { key: 'sales', label: isRTL ? 'عدد المبيعات' : 'Sales', value: fmtCount(sales), icon: TrendingUp },
-    { key: 'revenue', label: r.revenue, value: fmtMoney(revenue, isRTL), icon: DollarSign, tone: 'positive' },
+    { key: 'revenue', label: r.revenue, value: fmtMoney(revenue, isRTL), icon: RiyalSign, tone: 'positive' },
     {
       key: 'top', label: isRTL ? 'الأعلى إيراداً' : 'Top by revenue', value: best.userName,
       hint: fmtMoney(best.totalRevenue, isRTL), icon: Users,

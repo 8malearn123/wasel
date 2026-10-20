@@ -4,10 +4,11 @@ import { motion } from 'framer-motion';
 import {
   Building2, Users, CreditCard, Clock, Shield, AlertTriangle,
   CheckCircle, XCircle, Loader2, ChevronDown, ChevronUp,
-  Calendar, FileText, DollarSign, Package, Search,
+  Calendar, FileText, Package, Search,
   BarChart3, ShoppingCart, Wrench, Smartphone, Globe,
   Activity, Wallet, TrendingUp, Eye, Download, LifeBuoy, MessageSquare, Send
 } from 'lucide-react';
+import { RiyalSign } from "@/components/icons/RiyalSign";
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -218,7 +219,7 @@ export default function PlatformAdminPage() {
         {[
           { icon: Building2, label: 'إجمالي الشركات', value: stats.totalMerchants, color: 'text-primary', bg: 'bg-primary/10' },
           { icon: CheckCircle, label: 'اشتراكات نشطة', value: stats.activeSubs, color: 'text-success', bg: 'bg-success/10' },
-          { icon: DollarSign, label: 'إجمالي المبيعات', value: `${(stats.totalRevenue / 1000).toFixed(0)}K`, color: 'text-primary', bg: 'bg-primary/10' },
+          { icon: RiyalSign, label: 'إجمالي المبيعات', value: `${(stats.totalRevenue / 1000).toFixed(0)}K`, color: 'text-primary', bg: 'bg-primary/10' },
           { icon: Smartphone, label: 'إجمالي الأجهزة', value: stats.totalDevices, color: 'text-accent-foreground', bg: 'bg-accent/10' },
           { icon: Globe, label: 'طلبات أونلاين', value: stats.totalOnlineOrders, color: 'text-primary', bg: 'bg-primary/10' },
           { icon: TrendingUp, label: 'انضموا هذا الأسبوع', value: stats.recentSignups, color: 'text-success', bg: 'bg-success/10' },
@@ -356,7 +357,7 @@ export default function PlatformAdminPage() {
                         <p className="text-xs text-muted-foreground">إصلاحات</p>
                       </div>
                       <div className="p-3 rounded-lg bg-card border border-border text-center">
-                        <DollarSign className="w-4 h-4 mx-auto text-success mb-1" />
+                        <RiyalSign className="w-4 h-4 mx-auto text-success mb-1" />
                         <p className="font-bold">{company.sales_total.toLocaleString()}</p>
                         <p className="text-xs text-muted-foreground">مبيعات (ر.س)</p>
                       </div>
@@ -396,7 +397,7 @@ export default function PlatformAdminPage() {
                         <Calendar className="w-4 h-4 ml-1" /> تمديد
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => setActionDialog({ type: 'fee', target: company })}>
-                        <DollarSign className="w-4 h-4 ml-1" /> تعديل العمولة
+                        <RiyalSign className="w-4 h-4 ml-1" /> تعديل العمولة
                       </Button>
                       {company.subscription.status !== 'cancelled' ? (
                         <Button size="sm" variant="outline" className="text-destructive" onClick={() => setActionDialog({ type: 'suspend', target: company })}>
@@ -454,7 +455,7 @@ export default function PlatformAdminPage() {
                           <XCircle className="w-4 h-4 ml-1" /> رفض
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => setActionDialog({ type: 'invoice_branch', target: req })}>
-                          <DollarSign className="w-4 h-4 ml-1" /> إصدار فاتورة
+                          <RiyalSign className="w-4 h-4 ml-1" /> إصدار فاتورة
                         </Button>
                       </>
                     )}
