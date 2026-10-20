@@ -3,7 +3,9 @@ export type DeviceStatus = 'available' | 'reserved' | 'sold' | 'transferred' | '
 export type TransferStatus = 'pending' | 'approved' | 'dispatched' | 'received' | 'cancelled';
 export type PurchaseStatus = 'draft' | 'pending' | 'approved' | 'received' | 'cancelled';
 export type PaymentStatus = 'paid' | 'unpaid' | 'partial';
-export type PaymentMethod = 'cash' | 'card' | 'bank_transfer' | 'mixed';
+// 'apple_pay' is chosen at the till; the sales table records it as 'card'
+// (its payment_method enum has no Apple Pay value yet) with the note "Apple Pay"
+export type PaymentMethod = 'cash' | 'card' | 'bank_transfer' | 'mixed' | 'apple_pay';
 export type SubscriptionStatus = 'trial' | 'active' | 'expired' | 'cancelled';
 // 'custom': the member's access is a role the shop made (user_roles → roles)
 export type UserRole = 'owner' | 'admin' | 'branch_manager' | 'cashier' | 'inventory_manager' | 'custom';
