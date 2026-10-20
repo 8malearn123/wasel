@@ -2,7 +2,7 @@ name: Screenshot check
 
 on:
   push:
-    branches: [claude/sweet-knuth-u4nbzm-device-dialog, claude/sweet-knuth-u4nbzm-pos-fullwidth, claude/sweet-knuth-u4nbzm-cart-options, claude/sweet-knuth-u4nbzm-options-by-x, claude/sweet-knuth-u4nbzm-options-below, claude/sweet-knuth-u4nbzm-payment-methods]
+    branches: [claude/sweet-knuth-u4nbzm-device-dialog, claude/sweet-knuth-u4nbzm-pos-fullwidth, claude/sweet-knuth-u4nbzm-cart-options, claude/sweet-knuth-u4nbzm-options-by-x, claude/sweet-knuth-u4nbzm-options-below, claude/sweet-knuth-u4nbzm-payment-methods, claude/sweet-knuth-u4nbzm-pay-dialog]
     paths: ['src/**', 'e2e/shot.mjs', '.github/workflows/e2e-shot.yml']
 
 jobs:

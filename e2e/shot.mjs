@@ -65,13 +65,13 @@ for (const [label, viewport] of [['desktop', { width: 1920, height: 1080 }], ['m
     await page.getByText(/356789104563218|Apple iPhone 15 Pro/).first().click().catch(e => console.log('[pos] add', e.message.split('\n')[0]));
     await page.waitForTimeout(800);
     await logShot(page, 'pos-cart');
-    const options = page.getByRole('button', { name: /الكوبون وطريقة الدفع|Coupon & payment/ }).first();
-    if (await options.count()) {
-      await options.click();
-      await page.waitForTimeout(700);
-      await logShot(page, 'pos-options');
+    const pay = page.getByRole('button', { name: /إتمام البيع|Complete Sale/ }).first();
+    if (await pay.count()) {
+      await pay.click();
+      await page.waitForTimeout(800);
+      await logShot(page, 'pos-pay');
     } else {
-      console.log('[pos] no options button');
+      console.log('[pos] no complete-sale button');
     }
   }
   await context.close();
