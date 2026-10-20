@@ -1042,14 +1042,14 @@ function DeviceDialog({
                   onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
                   placeholder="Apple"
                 />
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none]">
                   {brandChoices.map(brand => (
                     <button
                       key={brand}
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, brand }))}
                       className={cn(
-                        "h-6 px-2.5 rounded-full border text-[11px] leading-none transition-colors",
+                        "h-6 px-2 shrink-0 rounded-full border text-[11px] leading-none transition-colors",
                         formData.brand === brand
                           ? "bg-primary text-primary-foreground border-primary"
                           : "bg-muted/40 border-border hover:border-primary/50"
@@ -1068,14 +1068,14 @@ function DeviceDialog({
                   onChange={(e) => setFormData({ ...formData, storage: e.target.value })}
                   placeholder="256GB"
                 />
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none]">
                   {STORAGE_OPTIONS.map(size => (
                     <button
                       key={size}
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, storage: size }))}
                       className={cn(
-                        "h-6 px-2.5 rounded-full border text-[11px] leading-none transition-colors",
+                        "h-6 px-2 shrink-0 rounded-full border text-[11px] leading-none transition-colors",
                         formData.storage === size
                           ? "bg-primary text-primary-foreground border-primary"
                           : "bg-muted/40 border-border hover:border-primary/50"
@@ -1095,9 +1095,9 @@ function DeviceDialog({
                   value={formData.color}
                   onChange={(e) => setFormData({ ...formData, color: e.target.value })}
                   placeholder={isRTL ? "اختر لوناً أو اكتبه" : "Pick a colour or type one"}
-                  className="sm:w-48 shrink-0"
+                  className="sm:w-40 shrink-0"
                 />
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-1.5">
                   {DEVICE_COLORS.map(option => {
                     const name = isRTL ? option.nameAr : option.nameEn;
                     const selected = formData.color === name;
