@@ -85,10 +85,13 @@ function sidebarOffers(w: Who): string[] {
   return [...pos, ...SIDEBAR.filter(s => ok(s.gate) && (s.children.length === 0 || s.children.some(ok))).map(s => s.path)];
 }
 
-/** Header's sections menu for a custom role (system roles keep the full list) */
+/** Header's sections menu, as Header.tsx builds it */
 function menuOffers(w: Who): string[] {
-  const all = ['/', '/pos', '/products', '/sales', '/shipping', '/reports', '/team', '/ai-insights', '/settings', '/organization'];
-  return all.filter(p => sectionPermitted(p, k => w.perms.has(k), f => w.features.has(f)));
+  if (w.role === 'cashier') return ['/pos', '/sales', '/organization'];
+  const all = ['/', '/pos', '/products', '/sales', '/shipping', '/reports', '/team', '/ai-insights', '/subscription', '/settings', '/organization'];
+  return all.filter(p => p === '/subscription'
+    ? ['owner', 'admin'].includes(w.role)
+    : sectionPermitted(p, k => w.perms.has(k), f => w.features.has(f)));
 }
 
 /** Follow App.tsx's guards from a path until a page renders; null on a loop. */
@@ -147,7 +150,7 @@ function check(w: Who, label: string) {
   for (const p of sidebarOffers(w)) {
     expect(opens(p), `${label}: sidebar offers ${p}, which lands on ${land(p, w)}`).toBe(true);
   }
-  if (w.role === 'custom') {
+  {
     for (const p of menuOffers(w)) {
       expect(land(p, w), `${label}: sections menu offers ${p}, which lands on ${land(p, w)}`).toBe(p);
     }
