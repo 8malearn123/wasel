@@ -77,11 +77,11 @@ export function CartPanel({
   const subtotal = total - tax;
 
   // Installments (Tabby / Tamara) are shown but not yet switched on
-  const paymentMethods: { id: PaymentMethod | "installments"; icon: typeof Banknote; label: string; soon?: boolean }[] = [
+  const paymentMethods: { id: PaymentMethod | "installments"; icon: typeof Banknote; label: string; hint?: string; soon?: boolean }[] = [
     { id: "cash", icon: Banknote, label: isRTL ? "كاش" : "Cash" },
     { id: "card", icon: CreditCard, label: isRTL ? "مدى والبطاقات" : "Mada & cards" },
     { id: "apple_pay", icon: Smartphone, label: "Apple Pay" },
-    { id: "installments", icon: CalendarClock, label: isRTL ? "تقسيط · تابي/تمارا" : "Tabby / Tamara", soon: true },
+    { id: "installments", icon: CalendarClock, label: isRTL ? "تقسيط" : "Installments", hint: isRTL ? "تابي · تمارا" : "Tabby · Tamara", soon: true },
   ];
 
   const handleComplete = () => {
@@ -267,6 +267,7 @@ export function CartPanel({
                     >
                       <method.icon className="w-4 h-4" />
                       <span className="text-[10px] font-medium leading-tight text-center px-0.5">{method.label}</span>
+                      {method.hint && <span className="text-[8px] leading-none opacity-80">{method.hint}</span>}
                       {method.soon && (
                         <span className="absolute -top-1.5 start-1 text-[8px] px-1 rounded bg-muted border border-border text-muted-foreground">
                           {isRTL ? "قريباً" : "Soon"}
@@ -357,6 +358,7 @@ export function CartPanel({
                   >
                     <method.icon className="w-4 h-4" />
                     <span className="text-[10px] font-medium leading-tight text-center px-0.5">{method.label}</span>
+                      {method.hint && <span className="text-[8px] leading-none opacity-80">{method.hint}</span>}
                     {method.soon && (
                       <span className="absolute -top-1.5 start-1 text-[8px] px-1 rounded bg-muted border border-border text-muted-foreground">
                         {isRTL ? "قريباً" : "Soon"}
