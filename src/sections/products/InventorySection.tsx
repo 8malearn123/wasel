@@ -1042,14 +1042,14 @@ function DeviceDialog({
                   onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
                   placeholder="Apple"
                 />
-                <div className="flex gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none]">
+                <div className="flex flex-wrap gap-1">
                   {brandChoices.map(brand => (
                     <button
                       key={brand}
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, brand }))}
                       className={cn(
-                        "h-6 px-2 shrink-0 rounded-full border text-[11px] leading-none transition-colors",
+                        "h-6 px-1.5 rounded-full border text-[11px] leading-none transition-colors",
                         formData.brand === brand
                           ? "bg-primary text-primary-foreground border-primary"
                           : "bg-muted/40 border-border hover:border-primary/50"
@@ -1068,14 +1068,14 @@ function DeviceDialog({
                   onChange={(e) => setFormData({ ...formData, storage: e.target.value })}
                   placeholder="256GB"
                 />
-                <div className="flex gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none]">
+                <div className="flex flex-wrap gap-1">
                   {STORAGE_OPTIONS.map(size => (
                     <button
                       key={size}
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, storage: size }))}
                       className={cn(
-                        "h-6 px-2 shrink-0 rounded-full border text-[11px] leading-none transition-colors",
+                        "h-6 px-1.5 rounded-full border text-[11px] leading-none transition-colors",
                         formData.storage === size
                           ? "bg-primary text-primary-foreground border-primary"
                           : "bg-muted/40 border-border hover:border-primary/50"
