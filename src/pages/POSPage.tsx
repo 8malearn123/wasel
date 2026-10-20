@@ -191,14 +191,27 @@ export default function POSPage() {
     setCart(prev => dropOrphanWarranties(prev.filter(item => item.id !== id)));
   };
 
-  const handleCompleteSale = async (customerName: string, customerPhone: string, discount: number) => {
+  const handleCompleteSale = async (customerName: string, customerPhone: string, discount: number, deliveryFee = 0) => {
     if (!selectedPayment || cart.length === 0) return;
+
+    // Delivery is sold as its own line, so it is on the invoice and in the sale's total
+    const saleCart: POSCartItem[] = deliveryFee > 0
+      ? [...cart, {
+          id: 'delivery',
+          type: 'service',
+          name: isRTL ? 'رسوم توصيل' : 'Delivery fee',
+          identifier: isRTL ? 'توصيل' : 'Delivery',
+          price: deliveryFee,
+          cost: 0,
+          quantity: 1,
+        }]
+      : cart;
 
     setIsProcessing(true);
     try {
-      const result = await createSale(cart, selectedPayment, customerName || undefined, customerPhone || undefined, discount);
+      const result = await createSale(saleCart, selectedPayment, customerName || undefined, customerPhone || undefined, discount);
       if (!result.error && result.data) {
-        const totalBeforeDiscount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+        const totalBeforeDiscount = saleCart.reduce((sum, item) => sum + item.price * item.quantity, 0);
         const total = totalBeforeDiscount - discount;
         const tax = total - (total / 1.15);
         const subtotal = total - tax;
@@ -206,7 +219,7 @@ export default function POSPage() {
         setInvoiceData({
           saleId: result.data.id,
           invoiceNumber: result.data.invoice_number,
-          items: [...cart],
+          items: [...saleCart],
           subtotal,
           tax,
           discount,

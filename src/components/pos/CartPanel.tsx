@@ -7,6 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +22,7 @@ import type { Accessory, PaymentMethod } from "@/types/database";
 
 export interface POSCartItem {
   id: string;
-  type: 'device' | 'accessory' | 'warranty';
+  type: 'device' | 'accessory' | 'warranty' | 'service';
   name: string;
   identifier: string;
   price: number;
@@ -45,7 +46,7 @@ interface CartPanelProps {
   onAddAccessory?: (accessory: Accessory) => void;
   accessories?: Accessory[];
   onClearCart: () => void;
-  onCompleteSale: (customerName: string, customerPhone: string, discount: number) => void;
+  onCompleteSale: (customerName: string, customerPhone: string, discount: number, deliveryFee: number) => void;
   isProcessing: boolean;
 }
 
@@ -67,11 +68,20 @@ export function CartPanel({
   const [cashReceived, setCashReceived] = useState("");
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  // Delivery to the customer, added in the payment dialog (15 ر.س unless changed)
+  const [withDelivery, setWithDelivery] = useState(false);
+  const [deliveryFeeInput, setDeliveryFeeInput] = useState("15");
   const discount = couponDiscount;
   const totalBeforeDiscount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const total = totalBeforeDiscount - discount;
   const tax = total - (total / 1.15);
   const subtotal = total - tax;
+  // A coupon makes delivery free
+  const freeDelivery = withDelivery && !!appliedCoupon;
+  const deliveryFee = withDelivery && !freeDelivery ? Math.max(0, parseFloat(deliveryFeeInput) || 0) : 0;
+  // What the customer pays in the dialog: the cart, less the coupon, plus delivery
+  const amountDue = total + deliveryFee;
+  const amountDueTax = amountDue - (amountDue / 1.15);
 
   // Installments (Tabby / Tamara) are shown but not yet switched on
   const paymentMethods: { id: PaymentMethod | "installments"; icon: typeof Banknote; label: string; hint?: string; soon?: boolean }[] = [
@@ -84,23 +94,25 @@ export function CartPanel({
   const handleComplete = () => {
     setShowPaymentDialog(false);
     setCashReceived("");
-    onCompleteSale(customerName, customerPhone, discount);
+    onCompleteSale(customerName, customerPhone, discount, deliveryFee);
     setCustomerName("");
     setCustomerPhone("");
     setCouponDiscount(0);
     setAppliedCoupon(null);
+    setWithDelivery(false);
+    setDeliveryFeeInput("15");
   };
 
   const receivedAmount = parseFloat(cashReceived) || 0;
-  const changeDue = receivedAmount - total;
-  const cashInsufficient = selectedPayment === "cash" && cashReceived !== "" && receivedAmount < total;
+  const changeDue = receivedAmount - amountDue;
+  const cashInsufficient = selectedPayment === "cash" && cashReceived !== "" && receivedAmount < amountDue;
   const canConfirmPayment =
-    !!selectedPayment && (selectedPayment !== "cash" || cashReceived === "" || receivedAmount >= total);
+    !!selectedPayment && (selectedPayment !== "cash" || cashReceived === "" || receivedAmount >= amountDue);
 
   // Sensible quick-tender suggestions for cash payments
   const quickAmounts = Array.from(
-    new Set([Math.ceil(total), Math.ceil(total / 50) * 50, Math.ceil(total / 100) * 100, Math.ceil(total / 500) * 500])
-  ).filter((v) => v >= total).slice(0, 4);
+    new Set([Math.ceil(amountDue), Math.ceil(amountDue / 50) * 50, Math.ceil(amountDue / 100) * 100, Math.ceil(amountDue / 500) * 500])
+  ).filter((v) => v >= amountDue).slice(0, 4);
 
   const hasCustomer = customerName.trim() || customerPhone.trim();
 
@@ -263,16 +275,48 @@ export function CartPanel({
             {/* Amount due */}
             <div className="rounded-xl bg-primary/5 border border-primary/20 p-4 text-center">
               <p className="text-xs text-muted-foreground mb-1">{isRTL ? "المبلغ المستحق" : "Amount Due"}</p>
-              <p className="text-3xl font-bold text-primary">{total.toFixed(2)} <span className="text-base">ر.س</span></p>
+              <p className="text-3xl font-bold text-primary">{amountDue.toFixed(2)} <span className="text-base">ر.س</span></p>
               <p className="text-[11px] text-muted-foreground mt-1">
-                {isRTL ? `شامل ضريبة القيمة المضافة ${tax.toFixed(2)} ر.س` : `Includes VAT ${tax.toFixed(2)} SAR`}
+                {isRTL ? `شامل ضريبة القيمة المضافة ${amountDueTax.toFixed(2)} ر.س` : `Includes VAT ${amountDueTax.toFixed(2)} SAR`}
               </p>
+              {deliveryFee > 0 && (
+                <p className="text-[11px] text-foreground font-medium mt-1">
+                  {isRTL ? `منها رسوم توصيل ${deliveryFee.toFixed(2)} ر.س` : `Including ${deliveryFee.toFixed(2)} SAR delivery`}
+                </p>
+              )}
               {discount > 0 && (
                 <p className="text-[11px] text-primary font-medium mt-1">
                   {isRTL
                     ? `بعد خصم الكوبون ${discount.toFixed(2)} ر.س (قبل الخصم ${totalBeforeDiscount.toFixed(2)})`
                     : `After a ${discount.toFixed(2)} SAR coupon (was ${totalBeforeDiscount.toFixed(2)})`}
                 </p>
+              )}
+            </div>
+
+            {/* Delivery fee */}
+            <div className="flex items-center gap-3 rounded-lg border border-border px-3 py-2">
+              <Switch id="delivery" checked={withDelivery} onCheckedChange={setWithDelivery} />
+              <Label htmlFor="delivery" className="text-sm flex-1 cursor-pointer">
+                {isRTL ? "توصيل للعميل" : "Delivery"}
+              </Label>
+              {freeDelivery && (
+                <span className="text-xs font-semibold text-success bg-success/10 border border-success/20 rounded-full px-2 py-0.5">
+                  {isRTL ? "مجاني مع الكوبون" : "Free with coupon"}
+                </span>
+              )}
+              {withDelivery && !freeDelivery && (
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    value={deliveryFeeInput}
+                    onChange={(e) => setDeliveryFeeInput(e.target.value)}
+                    className="h-8 w-20 text-center font-semibold"
+                    aria-label={isRTL ? "رسوم التوصيل" : "Delivery fee"}
+                  />
+                  <span className="text-xs text-muted-foreground">ر.س</span>
+                </div>
               )}
             </div>
 
@@ -329,7 +373,7 @@ export function CartPanel({
                   inputMode="decimal"
                   value={cashReceived}
                   onChange={(e) => setCashReceived(e.target.value)}
-                  placeholder={total.toFixed(2)}
+                  placeholder={amountDue.toFixed(2)}
                   className={cn("text-lg font-bold text-center", cashInsufficient && "border-destructive")}
                 />
                 <div className="flex gap-1.5">
@@ -346,7 +390,7 @@ export function CartPanel({
                 {cashReceived !== "" && (
                   cashInsufficient ? (
                     <p className="text-sm text-destructive font-medium text-center">
-                      {isRTL ? `المبلغ ناقص ${(total - receivedAmount).toFixed(2)} ر.س` : `Short by ${(total - receivedAmount).toFixed(2)} SAR`}
+                      {isRTL ? `المبلغ ناقص ${(amountDue - receivedAmount).toFixed(2)} ر.س` : `Short by ${(amountDue - receivedAmount).toFixed(2)} SAR`}
                     </p>
                   ) : (
                     <div className="flex justify-between items-center rounded-lg bg-success/10 border border-success/20 px-3 py-2">
