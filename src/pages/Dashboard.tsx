@@ -6,9 +6,10 @@ import { AlertsWidget } from "@/components/dashboard/AlertsWidget";
 import { TopProductsWidget } from "@/components/dashboard/TopProductsWidget";
 import { FinancialSummary } from "@/components/dashboard/FinancialSummary";
 import {
-  DollarSign, ShoppingCart, Package, Smartphone, Wrench, Truck, FileText,
+  ShoppingCart, Package, Smartphone, Wrench, Truck, FileText,
   TrendingUp, TrendingDown, Building2,
 } from "lucide-react";
+import { RiyalSign } from "@/components/icons/RiyalSign";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n";
 import { useDashboardData } from "@/hooks/useDashboardData";
@@ -96,7 +97,7 @@ export default function Dashboard() {
           en="Today's Revenue" ar="إيرادات اليوم"
           value={loading ? "..." : fmt(metrics?.todaysRevenue || 0)} unit="ر.س"
           change={Number(revenueChange.toFixed(0))} changeLabel={t.dashboard.vsYesterday}
-          icon={DollarSign} />
+          icon={RiyalSign} />
         <KpiCard index={1}
           en="Units Sold" ar="الوحدات المباعة"
           value={loading ? "..." : String(metrics?.unitsSoldToday || 0)}

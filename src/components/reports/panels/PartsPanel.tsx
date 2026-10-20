@@ -1,4 +1,5 @@
-import { AlertTriangle, DollarSign, Download, Package, Wrench } from 'lucide-react';
+import { AlertTriangle, Download, Package, Wrench } from 'lucide-react';
+import { RiyalSign } from "@/components/icons/RiyalSign";
 import {
   Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
@@ -40,7 +41,7 @@ export function PartsPanel({ consumption, dailyUsage, summary, onExport }: Props
     {
       key: 'cost', label: r.totalPartsCost, value: fmtMoney(summary.totalCost, isRTL),
       hint: `${r.avgPerRepair} ${fmtMoney(summary.avgCostPerRepair, isRTL)}`,
-      icon: DollarSign, tone: 'positive',
+      icon: RiyalSign, tone: 'positive',
     },
     {
       key: 'low', label: r.lowStockParts, value: fmtCount(summary.lowStockCount),
@@ -109,7 +110,7 @@ export function PartsPanel({ consumption, dailyUsage, summary, onExport }: Props
         <ReportCard title={r.dailyPartsCost}>
           <div className="h-64 p-4">
             {dailyUsage.length === 0 ? (
-              <PanelEmpty icon={DollarSign} text={r.noPartsUsed} />
+              <PanelEmpty icon={RiyalSign} text={r.noPartsUsed} />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={dailyUsage}>

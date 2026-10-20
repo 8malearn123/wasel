@@ -14,7 +14,7 @@ import { CashierSalesHistory } from "@/components/pos/CashierSalesHistory";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTabParam } from '@/hooks/useTabParam';
 import { cn } from "@/lib/utils";
-import { ShoppingCart, FileText, Receipt } from "lucide-react";
+import { ShoppingCart, FileText, ReceiptText } from "lucide-react";
 import type { Device, Accessory, PaymentMethod } from "@/types/database";
 import { toast } from "sonner";
 
@@ -260,7 +260,7 @@ export default function POSPage() {
         <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-muted/50 border border-border mb-4">
           {[
             { key: 'pos', ar: 'المنتجات', en: 'Products', icon: ShoppingCart },
-            { key: 'history', ar: 'سجل المبيعات', en: 'Sales history', icon: Receipt },
+            { key: 'history', ar: 'سجل المبيعات', en: 'Sales history', icon: ReceiptText },
           ].map(option => (
             <button
               key={option.key}

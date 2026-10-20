@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Loader2, TrendingUp, DollarSign, Building2, ShoppingBag, Wrench, Smartphone, Download } from 'lucide-react';
+import { Loader2, TrendingUp, Building2, ShoppingBag, Wrench, Smartphone, Download } from 'lucide-react';
+import { RiyalSign } from "@/components/icons/RiyalSign";
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -102,7 +103,7 @@ export default function AdminReportsPage() {
 
   const kpis = [
     { label: 'إجمالي الشركات', value: platformStats.totalMerchants, icon: Building2, color: 'text-primary' },
-    { label: 'إجمالي المبيعات', value: fmtMoney(platformStats.totalRevenue), icon: DollarSign, color: 'text-success' },
+    { label: 'إجمالي المبيعات', value: fmtMoney(platformStats.totalRevenue), icon: RiyalSign, color: 'text-success' },
     { label: 'الأجهزة المسجلة', value: platformStats.totalDevices, icon: Smartphone, color: 'text-warning' },
     { label: 'طلبات الصيانة', value: platformStats.totalRepairs, icon: Wrench, color: 'text-accent' },
     { label: 'الطلبات الإلكترونية', value: platformStats.totalOnlineOrders, icon: ShoppingBag, color: 'text-primary' },

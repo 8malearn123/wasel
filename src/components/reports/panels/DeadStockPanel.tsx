@@ -1,4 +1,5 @@
-import { Archive, Clock, DollarSign, Download, Smartphone } from 'lucide-react';
+import { Archive, Clock, Download, Smartphone } from 'lucide-react';
+import { RiyalSign } from "@/components/icons/RiyalSign";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { Device } from '@/types/database';
@@ -28,7 +29,7 @@ export function DeadStockPanel({ rows, onExport }: { rows: DeadStockDevice[]; on
 
   const cards: ReportStatCard[] = [
     { key: 'count', label: isRTL ? 'أجهزة راكدة' : 'Dead stock units', value: fmtCount(rows.length), icon: Smartphone, tone: 'warning' },
-    { key: 'tied', label: isRTL ? 'رأس مال محتجز (تكلفة)' : 'Capital tied up (cost)', value: fmtMoney(tiedUp, isRTL), icon: DollarSign, tone: 'danger' },
+    { key: 'tied', label: isRTL ? 'رأس مال محتجز (تكلفة)' : 'Capital tied up (cost)', value: fmtMoney(tiedUp, isRTL), icon: RiyalSign, tone: 'danger' },
     { key: 'never', label: r.neverSold, value: fmtCount(neverSold.length), icon: Archive },
   ];
   // Only meaningful when some row actually carries a day count

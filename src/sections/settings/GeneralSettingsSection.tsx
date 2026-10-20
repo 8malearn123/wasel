@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   Building2, Key, CreditCard, Loader2, AlertTriangle, Printer,
-  Receipt, Globe, Shield, Save, Percent, Code2, Copy, Check, ExternalLink,
+  ReceiptText, Globe, Shield, Save, Percent, Code2, Copy, Check, ExternalLink,
   Upload, Image as ImageIcon, Store, Plug
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -184,7 +184,7 @@ export default function GeneralSettingsSection() {
         groups={[{
           items: [
             { key: 'business', label: isRTL ? 'المتجر' : 'Business', icon: Store },
-            { key: 'tax-invoice', label: isRTL ? 'الضريبة والفاتورة' : 'Tax & invoice', icon: Receipt },
+            { key: 'tax-invoice', label: isRTL ? 'الضريبة والفاتورة' : 'Tax & invoice', icon: ReceiptText },
             { key: 'printer', label: isRTL ? 'الطابعة' : 'Printer', icon: Printer },
             { key: 'subscription', label: isRTL ? 'الاشتراك' : 'Subscription', icon: CreditCard },
             { key: 'api', label: isRTL ? 'API المحاسبي' : 'Accounting API', icon: Plug },
@@ -306,7 +306,7 @@ export default function GeneralSettingsSection() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
               className="bg-card rounded-xl border border-border p-6 shadow-md">
               <div className="flex items-center gap-2 mb-4">
-                <Receipt className="w-5 h-5 text-primary" />
+                <ReceiptText className="w-5 h-5 text-primary" />
                 <h3 className="font-semibold text-foreground">{isRTL ? "إعدادات الفاتورة" : "Invoice Settings"}</h3>
               </div>
               <div className="space-y-1">

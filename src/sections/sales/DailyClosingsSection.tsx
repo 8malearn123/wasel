@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
   Banknote, CreditCard, Building2, ShoppingBag, Smartphone, Package,
   CheckCircle, Clock, Calculator, FileText, Printer, Download,
-  TrendingUp, TrendingDown, Receipt, Award, Activity, ArrowLeftRight,
+  TrendingUp, TrendingDown, ReceiptText, Award, Activity, ArrowLeftRight,
 } from "lucide-react";
 import { format, subDays } from "date-fns";
 import {
@@ -383,7 +383,7 @@ export default function DailyClosingsSection() {
               {/* Stats */}
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 <Card><CardContent className="p-3 text-center">
-                  <Receipt className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
+                  <ReceiptText className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
                   <p className="text-xl font-bold">{daySales.transactionsCount}</p>
                   <p className="text-xs text-muted-foreground">{isRTL ? 'الفواتير' : 'Invoices'}</p>
                 </CardContent></Card>

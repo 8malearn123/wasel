@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Building2, Search, Download, ChevronDown, ChevronUp, Eye, CreditCard,
-  Calendar, DollarSign, FileText, XCircle, CheckCircle, Smartphone,
+  Calendar, FileText, XCircle, CheckCircle, Smartphone,
   Wrench, Shield, Loader2, Users,
 } from 'lucide-react';
+import { RiyalSign } from "@/components/icons/RiyalSign";
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -179,7 +180,7 @@ export default function AdminCompaniesPage() {
                     <Wrench className="w-4 h-4 mx-auto text-warning mb-1" /><p className="font-bold">{company.repair_count}</p><p className="text-xs text-muted-foreground">إصلاحات</p>
                   </div>
                   <div className="p-3 rounded-lg bg-card border border-border text-center">
-                    <DollarSign className="w-4 h-4 mx-auto text-success mb-1" /><p className="font-bold">{company.sales_total.toLocaleString()}</p><p className="text-xs text-muted-foreground">مبيعات</p>
+                    <RiyalSign className="w-4 h-4 mx-auto text-success mb-1" /><p className="font-bold">{company.sales_total.toLocaleString()}</p><p className="text-xs text-muted-foreground">مبيعات</p>
                   </div>
                   <div className="p-3 rounded-lg bg-card border border-border text-center">
                     <Shield className="w-4 h-4 mx-auto text-accent-foreground mb-1" /><p className="font-bold">{company.platform_fee_percentage || 5}%</p><p className="text-xs text-muted-foreground">عمولة</p>
@@ -203,7 +204,7 @@ export default function AdminCompaniesPage() {
                   <Button size="sm" onClick={() => navigate(`/platform-admin/merchant/${company.id}`)}><Eye className="w-4 h-4 ml-1" /> تفاصيل</Button>
                   <Button size="sm" variant="outline" onClick={() => setActionDialog({ type: 'upgrade', target: company })}><CreditCard className="w-4 h-4 ml-1" /> ترقية</Button>
                   <Button size="sm" variant="outline" onClick={() => setActionDialog({ type: 'extend', target: company })}><Calendar className="w-4 h-4 ml-1" /> تمديد</Button>
-                  <Button size="sm" variant="outline" onClick={() => setActionDialog({ type: 'fee', target: company })}><DollarSign className="w-4 h-4 ml-1" /> عمولة</Button>
+                  <Button size="sm" variant="outline" onClick={() => setActionDialog({ type: 'fee', target: company })}><RiyalSign className="w-4 h-4 ml-1" /> عمولة</Button>
                   {company.subscription.status !== 'cancelled' ? (
                     <Button size="sm" variant="outline" className="text-destructive" onClick={() => setActionDialog({ type: 'suspend', target: company })}><XCircle className="w-4 h-4 ml-1" /> تعليق</Button>
                   ) : (

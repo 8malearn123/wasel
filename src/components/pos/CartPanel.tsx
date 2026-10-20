@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ShoppingCart, X, Minus, Plus, CreditCard, Banknote, Receipt, User, Phone, ShieldCheck,
+  ShoppingCart, X, Minus, Plus, CreditCard, Banknote, ReceiptText, User, Phone, ShieldCheck,
   SlidersHorizontal, Smartphone, CalendarClock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -312,7 +312,7 @@ export function CartPanel({
           disabled={cart.length === 0 || isProcessing}
           onClick={() => setShowPaymentDialog(true)}
         >
-          <Receipt className={cn("w-4 h-4", isRTL ? "ml-2" : "mr-2")} />
+          <ReceiptText className={cn("w-4 h-4", isRTL ? "ml-2" : "mr-2")} />
           {isProcessing ? (isRTL ? "جاري البيع..." : "Processing...") : t.pos.completeSale}
         </Button>
       </div>
@@ -417,7 +417,7 @@ export function CartPanel({
               disabled={!canConfirmPayment || isProcessing}
               onClick={handleComplete}
             >
-              <Receipt className={cn("w-4 h-4", isRTL ? "ml-2" : "mr-2")} />
+              <ReceiptText className={cn("w-4 h-4", isRTL ? "ml-2" : "mr-2")} />
               {isRTL ? "تأكيد الدفع وإصدار الفاتورة" : "Confirm & Issue Invoice"}
             </Button>
           </DialogFooter>

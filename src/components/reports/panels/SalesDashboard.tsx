@@ -1,7 +1,8 @@
 import { motion } from 'framer-motion';
 import {
-  BarChart3, DollarSign, Download, Package, Smartphone, TrendingDown, TrendingUp,
+  BarChart3, Download, Package, Smartphone, TrendingDown, TrendingUp,
 } from 'lucide-react';
+import { RiyalSign } from "@/components/icons/RiyalSign";
 import {
   Area, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
@@ -71,7 +72,7 @@ export function SalesDashboard({
     {
       key: 'today', label: r.todayRevenue, value: fmtMoney(stats.todayRevenue, isRTL),
       hint: `${r.todayProfit}: ${fmtMoney(stats.todayProfit, isRTL)}`,
-      icon: DollarSign, tone: 'positive',
+      icon: RiyalSign, tone: 'positive',
     },
     {
       key: 'month', label: r.monthlyRevenue, value: fmtMoney(stats.thisMonthRevenue, isRTL),

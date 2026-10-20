@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, Package, CheckCircle, XCircle, DollarSign } from 'lucide-react';
+import { Loader2, Package, CheckCircle, XCircle } from 'lucide-react';
+import { RiyalSign } from "@/components/icons/RiyalSign";
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -82,7 +83,7 @@ export default function AdminBranchRequestsPage() {
                 <>
                   <Button size="sm" onClick={() => setActionDialog({ type: 'approve', target: req })}><CheckCircle className="w-4 h-4 ml-1" /> موافقة</Button>
                   <Button size="sm" variant="outline" className="text-destructive" onClick={() => setActionDialog({ type: 'reject', target: req })}><XCircle className="w-4 h-4 ml-1" /> رفض</Button>
-                  <Button size="sm" variant="outline" onClick={() => setActionDialog({ type: 'invoice', target: req })}><DollarSign className="w-4 h-4 ml-1" /> فاتورة</Button>
+                  <Button size="sm" variant="outline" onClick={() => setActionDialog({ type: 'invoice', target: req })}><RiyalSign className="w-4 h-4 ml-1" /> فاتورة</Button>
                 </>
               )}
               {req.status === 'pending_payment' && (

@@ -2,10 +2,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowRight, Building2, Users, Smartphone, Package, ShoppingCart,
-  Wrench, Loader2, Shield, ShieldOff, DollarSign, MapPin,
+  Wrench, Loader2, Shield, ShieldOff, MapPin,
   Phone, Mail, Calendar, Crown, ShieldCheck, Store, Wallet, KeyRound,
   CheckCircle, XCircle, Globe, Activity, TrendingUp, AlertTriangle,
 } from 'lucide-react';
+import { RiyalSign } from "@/components/icons/RiyalSign";
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -160,7 +161,7 @@ export default function MerchantDetailPage() {
           { icon: Store, label: 'الفروع', value: branches.length, sub: `/${subscription?.max_branches || '∞'}`, color: 'text-primary' },
           { icon: Users, label: 'المستخدمين', value: users.length, sub: `/${subscription?.max_users || '∞'}`, color: 'text-primary' },
           { icon: Smartphone, label: 'الأجهزة', value: `${availableDevices}/${totalDevices}`, sub: '', color: 'text-primary' },
-          { icon: DollarSign, label: 'مبيعات محلية', value: totalSalesAmount.toLocaleString(), sub: ' ر.س', color: 'text-success' },
+          { icon: RiyalSign, label: 'مبيعات محلية', value: totalSalesAmount.toLocaleString(), sub: ' ر.س', color: 'text-success' },
           { icon: Globe, label: 'مبيعات أونلاين', value: totalOnlineAmount.toLocaleString(), sub: ' ر.س', color: 'text-primary' },
           { icon: Wrench, label: 'إصلاحات نشطة', value: activeRepairs, sub: '', color: 'text-warning' },
           { icon: TrendingUp, label: 'قيمة المخزون', value: inventoryValue.toLocaleString(), sub: ' ر.س', color: 'text-primary' },

@@ -2,9 +2,10 @@ import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import { 
   Truck, Plus, Loader2, MoreHorizontal, Edit, Trash2, Phone, Mail,
-  DollarSign, FileText, Package, CheckCircle2, Clock, Send, Eye,
+  FileText, Package, CheckCircle2, Clock, Send, Eye,
   AlertTriangle, CreditCard, PackageCheck, Printer
 } from "lucide-react";
+import { RiyalSign } from "@/components/icons/RiyalSign";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -125,7 +126,7 @@ export default function SuppliersSection() {
       <div className="grid gap-4 sm:grid-cols-4 mb-6">
         <StatCard icon={Truck} value={activeSuppliers.length} label={isRTL ? 'الموردين النشطين' : 'Active Suppliers'} color="primary" delay={0} />
         <StatCard icon={FileText} value={orders.length} label={isRTL ? 'أوامر الشراء' : 'Purchase Orders'} color="primary" delay={0.05} />
-        <StatCard icon={DollarSign} value={`${totalOwed.toLocaleString()} ر.س`} label={isRTL ? 'إجمالي المديونيات' : 'Total Owed'} color="destructive" delay={0.1} />
+        <StatCard icon={RiyalSign} value={`${totalOwed.toLocaleString()} ر.س`} label={isRTL ? 'إجمالي المديونيات' : 'Total Owed'} color="destructive" delay={0.1} />
         <StatCard icon={PackageCheck} value={pendingReceiveCount} label={isRTL ? 'بانتظار الاستلام' : 'Pending Receive'} color="warning" delay={0.15} />
       </div>
 

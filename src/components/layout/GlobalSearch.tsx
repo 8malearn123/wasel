@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Smartphone, Package, User, Wrench, Receipt, Loader2 } from "lucide-react";
+import { Search, Smartphone, Package, User, Wrench, ReceiptText, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ProductThumb } from "@/components/common/ProductThumb";
 import { cn } from "@/lib/utils";
@@ -125,7 +125,7 @@ export function GlobalSearch() {
       }
       for (const s of sales.data || []) {
         found.push({
-          id: `s-${s.id}`, icon: Receipt,
+          id: `s-${s.id}`, icon: ReceiptText,
           title: `#${s.invoice_number}`,
           subtitle: `${s.customer_name || ""} — ${Number(s.total_amount).toLocaleString()} ر.س`,
           path: "/pos",

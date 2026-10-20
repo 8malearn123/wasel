@@ -15,7 +15,6 @@ import {
   MoreHorizontal,
   ArrowRight,
   Package,
-  DollarSign,
   User,
   FileText,
   Truck,
@@ -26,6 +25,7 @@ import {
   Printer,
   Trash2,
 } from "lucide-react";
+import { RiyalSign } from "@/components/icons/RiyalSign";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -186,7 +186,7 @@ export default function RepairsSection() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="p-4 rounded-xl bg-card border border-border shadow-sm">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
-              <DollarSign className="w-5 h-5 text-warning" />
+              <RiyalSign className="w-5 h-5 text-warning" />
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">{totalRevenue.toLocaleString()} ر.س</p>
