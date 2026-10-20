@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   Building2, Key, CreditCard, Loader2, AlertTriangle, Printer,
-  Receipt, DollarSign, Globe, Shield, Save, Percent, Code2, Copy, Check, ExternalLink,
+  Receipt, Globe, Shield, Save, Percent, Code2, Copy, Check, ExternalLink,
   Upload, Image as ImageIcon, Store, Plug
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -278,31 +278,6 @@ export default function GeneralSettingsSection() {
             </div>
           </motion.div>
 
-          {/* Currency Settings */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-            className="bg-card rounded-xl border border-border p-6 shadow-md mt-6">
-            <div className="flex items-center gap-2 mb-4">
-              <DollarSign className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold text-foreground">{isRTL ? "العملة" : "Currency"}</h3>
-            </div>
-            <div className="max-w-lg space-y-1">
-              <SettingRow label={isRTL ? "العملة" : "Currency"} desc={isRTL ? "العملة المستخدمة في الفواتير" : "Currency used in invoices"}>
-                <Select value={storeSettings.currency} onValueChange={(v) => {
-                  updateSetting('currency', v);
-                  updateSetting('currencySymbol', v === 'SAR' ? 'ر.س' : v === 'USD' ? '$' : v === 'EUR' ? '€' : v === 'AED' ? 'د.إ' : v === 'KWD' ? 'د.ك' : v);
-                }}>
-                  <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="SAR">SAR - ر.س</SelectItem>
-                    <SelectItem value="AED">AED - د.إ</SelectItem>
-                    <SelectItem value="KWD">KWD - د.ك</SelectItem>
-                    <SelectItem value="USD">USD - $</SelectItem>
-                    <SelectItem value="EUR">EUR - €</SelectItem>
-                  </SelectContent>
-                </Select>
-              </SettingRow>
-            </div>
-          </motion.div>
         </TabsContent>
 
         {/* Tax & Invoice Settings */}
