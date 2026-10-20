@@ -120,25 +120,6 @@ export function CartPanel({
           <span className="text-xs text-muted-foreground">({cart.length})</span>
         </div>
         <div className="flex items-center gap-1">
-          {/* Coupon & payment method */}
-          <Button
-            variant={showOptions ? "default" : "outline"}
-            size="icon"
-            className={cn(
-              "h-7 w-7 relative",
-              showOptions && "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20"
-            )}
-            onClick={() => setShowOptions(v => !v)}
-            title={isRTL ? "الكوبون وطريقة الدفع" : "Coupon & payment method"}
-            aria-label={isRTL ? "الكوبون وطريقة الدفع" : "Coupon & payment method"}
-            aria-expanded={showOptions}
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            {/* something is set while the panel is closed */}
-            {!showOptions && (appliedCoupon || selectedPayment) && (
-              <span className="absolute -top-0.5 -end-0.5 w-2 h-2 rounded-full bg-primary" />
-            )}
-          </Button>
           {/* Add Customer Button */}
           <Button
             variant={hasCustomer ? "default" : "outline"}
@@ -229,6 +210,24 @@ export function CartPanel({
                     <p className="font-medium text-sm text-foreground truncate">{item.name}</p>
                     <p className="text-[11px] text-muted-foreground font-mono">{item.identifier}</p>
                   </div>
+                  {/* Coupon & payment method, beside the remove button */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "h-6 w-6 shrink-0 relative",
+                      showOptions ? "text-primary bg-primary/10 hover:bg-primary/20" : "text-muted-foreground hover:text-primary"
+                    )}
+                    onClick={() => setShowOptions(v => !v)}
+                    title={isRTL ? "الكوبون وطريقة الدفع" : "Coupon & payment method"}
+                    aria-label={isRTL ? "الكوبون وطريقة الدفع" : "Coupon & payment method"}
+                    aria-expanded={showOptions}
+                  >
+                    <SlidersHorizontal className="w-3.5 h-3.5" />
+                    {!showOptions && (appliedCoupon || selectedPayment) && (
+                      <span className="absolute -top-0.5 -end-0.5 w-1.5 h-1.5 rounded-full bg-primary" />
+                    )}
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
