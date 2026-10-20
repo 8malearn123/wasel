@@ -15,6 +15,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { CouponApply } from "./CouponApply";
 import { useLanguage } from "@/i18n";
 import type { Accessory, PaymentMethod } from "@/types/database";
 
@@ -65,6 +66,7 @@ export function CartPanel({
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [cashReceived, setCashReceived] = useState("");
   const [couponDiscount, setCouponDiscount] = useState(0);
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
   const discount = couponDiscount;
   const totalBeforeDiscount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const total = totalBeforeDiscount - discount;
@@ -86,6 +88,7 @@ export function CartPanel({
     setCustomerName("");
     setCustomerPhone("");
     setCouponDiscount(0);
+    setAppliedCoupon(null);
   };
 
   const receivedAmount = parseFloat(cashReceived) || 0;
@@ -247,8 +250,9 @@ export function CartPanel({
 
       {/* Payment Dialog */}
       <Dialog open={showPaymentDialog} onOpenChange={(open) => { setShowPaymentDialog(open); if (!open) setCashReceived(""); }}>
-        <DialogContent className="sm:max-w-[420px]" dir={isRTL ? "rtl" : "ltr"}>
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[440px]" dir={isRTL ? "rtl" : "ltr"}>
+          {/* the close button sits in the right corner; the title keeps clear of it */}
+          <DialogHeader className="pr-8">
             <DialogTitle className="flex items-center gap-2">
               <CreditCard className="w-5 h-5 text-primary" />
               {isRTL ? "الدفع" : "Payment"}
@@ -263,6 +267,25 @@ export function CartPanel({
               <p className="text-[11px] text-muted-foreground mt-1">
                 {isRTL ? `شامل ضريبة القيمة المضافة ${tax.toFixed(2)} ر.س` : `Includes VAT ${tax.toFixed(2)} SAR`}
               </p>
+              {discount > 0 && (
+                <p className="text-[11px] text-primary font-medium mt-1">
+                  {isRTL
+                    ? `بعد خصم الكوبون ${discount.toFixed(2)} ر.س (قبل الخصم ${totalBeforeDiscount.toFixed(2)})`
+                    : `After a ${discount.toFixed(2)} SAR coupon (was ${totalBeforeDiscount.toFixed(2)})`}
+                </p>
+              )}
+            </div>
+
+            {/* Coupon — the customer's code, applied before paying */}
+            <div>
+              <Label className="text-xs mb-2 block">{isRTL ? "كوبون الخصم" : "Coupon"}</Label>
+              <CouponApply
+                subtotal={totalBeforeDiscount}
+                onApply={(d, code) => { setCouponDiscount(d); setAppliedCoupon(code); }}
+                onRemove={() => { setCouponDiscount(0); setAppliedCoupon(null); }}
+                appliedCoupon={appliedCoupon}
+                isRTL={isRTL}
+              />
             </div>
 
             {/* Payment method */}
@@ -286,7 +309,7 @@ export function CartPanel({
                   >
                     <method.icon className="w-4 h-4" />
                     <span className="text-[10px] font-medium leading-tight text-center px-0.5">{method.label}</span>
-                      {method.hint && <span className="text-[8px] leading-none opacity-80">{method.hint}</span>}
+                    {method.hint && <span className="text-[8px] leading-none opacity-80">{method.hint}</span>}
                     {method.soon && (
                       <span className="absolute -top-1.5 start-1 text-[8px] px-1 rounded bg-muted border border-border text-muted-foreground">
                         {isRTL ? "قريباً" : "Soon"}
