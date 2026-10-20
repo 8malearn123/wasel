@@ -30,7 +30,7 @@ export type PermissionKey =
   | 'subscription.manage';
 
 export function usePermissions() {
-  const { user, merchantUser } = useAuth();
+  const { user, merchantUser, memberLoading } = useAuth();
   const [permissions, setPermissions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -90,6 +90,6 @@ export function usePermissions() {
 
   // For a system role the map is known with the session, so nothing waits on
   // the round trip; a custom role, or a session not read yet, does
-  const settled = role && role !== 'custom' ? false : loading;
+  const settled = memberLoading || (role && role !== 'custom' ? false : loading);
   return { permissions: [...set], can, canAny, loading: settled, refresh: load };
 }

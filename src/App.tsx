@@ -115,9 +115,9 @@ function FeatureRoute({ feature, children }: { feature: FeatureKey; children: Re
 
 // Pages only certain roles may open, by the role on the merchant_users row.
 function RoleRoute({ allow, children }: { allow: UserRole[]; children: React.ReactNode }) {
-  const { merchantUser, loading } = useAuth();
+  const { merchantUser, loading, memberLoading } = useAuth();
 
-  if (loading) {
+  if (loading || memberLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />

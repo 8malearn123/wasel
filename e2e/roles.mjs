@@ -98,15 +98,20 @@ async function signIn() {
     if (!s.access_token) throw new Error(`sign-in failed: ${JSON.stringify(s)}`);
     return s;
   }
-  // cashier and the custom profiles all sign in as the demo cashier
-  const r = await fetch(`${SUPA}/functions/v1/login-by-code`, {
-    method: 'POST',
-    headers: { apikey: ANON, Authorization: `Bearer ${ANON}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code: '70035' }),
-  });
-  const j = await r.json();
-  if (!j.session?.access_token) throw new Error(`code sign-in failed: ${JSON.stringify(j)}`);
-  return j.session;
+  // cashier and the custom profiles all sign in as the demo cashier; several
+  // runs signing in with one code at once are refused, so retry with a pause
+  let last;
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const r = await fetch(`${SUPA}/functions/v1/login-by-code`, {
+      method: 'POST',
+      headers: { apikey: ANON, Authorization: `Bearer ${ANON}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: '70035' }),
+    });
+    last = await r.json();
+    if (last.session?.access_token) return last.session;
+    await new Promise(res => setTimeout(res, 4000 + Math.random() * 6000));
+  }
+  throw new Error(`code sign-in failed: ${JSON.stringify(last)}`);
 }
 
 async function memberOf(session) {
@@ -141,6 +146,17 @@ await context.route(`${SUPA}/**`, async (route) => {
     const row = { new_data: config };
     const single = (req.headers()['accept'] || '').includes('vnd.pgrst.object');
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(single ? row : [row]) });
+  }
+
+  // The demo cashier's shop has an expired trial, which locks every screen.
+  // For the roles test the session sees the subscription as active; nothing
+  // in the database changes.
+  if (!OWNERS[PROFILE] && method === 'GET' && url.includes('/rest/v1/subscriptions')) {
+    const res = await route.fetch();
+    let body = await res.json().catch(() => null);
+    const unlock = (row) => row && ({ ...row, status: 'active', subscription_ends_at: new Date(Date.now() + 365 * 864e5).toISOString() });
+    body = Array.isArray(body) ? body.map(unlock) : unlock(body);
+    return route.fulfill({ response: res, body: JSON.stringify(body) });
   }
 
   const isWrite = ['POST', 'PATCH', 'PUT', 'DELETE'].includes(method)
