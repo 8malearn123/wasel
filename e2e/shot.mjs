@@ -22,7 +22,10 @@ async function logShot(page, label) {
 const browser = await chromium.launch();
 for (const [label, viewport] of [['desktop', { width: 1920, height: 1080 }], ['mobile', { width: 390, height: 844 }]]) {
   const context = await browser.newContext({ locale: 'ar', viewport });
-  await context.addInitScript(([k, v]) => localStorage.setItem(k, v), ['sb-ynwddyxzypbcftlevuam-auth-token', JSON.stringify(session)]);
+  await context.addInitScript(([k, v]) => {
+    localStorage.setItem(k, v);
+    localStorage.setItem('language', 'ar');
+  }, ['sb-ynwddyxzypbcftlevuam-auth-token', JSON.stringify(session)]);
   await context.route(`${SUPA}/**`, route => {
     const m = route.request().method();
     const u = route.request().url();
@@ -36,10 +39,10 @@ for (const [label, viewport] of [['desktop', { width: 1920, height: 1080 }], ['m
   await page.waitForLoadState('networkidle').catch(() => {});
   await page.waitForTimeout(1500);
   try {
-    const add = page.locator('button', { hasText: 'إضافة' }).filter({ hasNotText: 'مستخدم' }).first();
+    const add = page.getByRole('button', { name: /^\s*(إضافة|Add)\s*$/ }).first();
     await add.waitFor({ timeout: 20000 });
     await add.click();
-    await page.getByRole('menuitem', { name: /إضافة جهاز/ }).click();
+    await page.getByRole('menuitem', { name: /إضافة جهاز|Add Device/i }).click();
     await page.waitForTimeout(800);
   } catch (e) {
     console.log(`[${label}] ${e.message.split('\n')[0]} — at ${page.url()}`);
