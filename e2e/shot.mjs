@@ -56,6 +56,21 @@ for (const [label, viewport] of [['desktop', { width: 1920, height: 1080 }], ['m
     await page.screenshot({ path: 'shot-laptop.png' });
     await logShot(page, 'laptop');
   }
+  if (label === 'desktop') {
+    await page.setViewportSize(viewport);
+    await page.goto(`${SITE}/pos`);
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.waitForTimeout(1500);
+    await logShot(page, 'pos');
+    const menu = page.getByRole('button', { name: /القائمة|Menu/ }).first();
+    if (await menu.count()) {
+      await menu.click();
+      await page.waitForTimeout(600);
+      await logShot(page, 'pos-menu');
+    } else {
+      console.log('[pos] no menu button');
+    }
+  }
   await context.close();
 }
 await browser.close();

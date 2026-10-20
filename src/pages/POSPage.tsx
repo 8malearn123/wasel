@@ -252,7 +252,7 @@ export default function POSPage() {
     : sales;
 
   return (
-    <AppLayout title={t.pos.title} subtitle={t.pos.subtitle}>
+    <AppLayout title={t.pos.title} subtitle={t.pos.subtitle} hideSidebar>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="h-[calc(100vh-140px)]">
         {/* سجل المبيعات used to be reachable only from the sidebar's own
             sub-entry under the till. The sidebar now opens the till directly,

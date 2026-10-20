@@ -1,7 +1,7 @@
 import {
   Bell, User, Building2, Languages, Sun, Moon, LayoutGrid,
   LayoutDashboard, ShoppingCart, Package, Truck, BarChart3, ShoppingBag,
-  CreditCard, Briefcase, Settings, Sparkles,
+  CreditCard, Briefcase, Settings, Sparkles, Menu,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -29,6 +29,8 @@ import { cn } from "@/lib/utils";
 interface HeaderProps {
   title: string;
   subtitle?: string;
+  /** Set on pages that hide the sidebar (the till): opens it as an overlay */
+  onMenuClick?: () => void;
 }
 
 // The launcher mirrors the sidebar: ten sections, not the thirty pages they
@@ -51,7 +53,7 @@ const SECTIONS = [
 // (support, the one leaf a cashier has outside selling, is in المنشأة والدعم)
 const CASHIER_PATHS = new Set(["/pos", "/sales", "/organization"]);
 
-export function Header({ title, subtitle }: HeaderProps) {
+export function Header({ title, subtitle, onMenuClick }: HeaderProps) {
   const { t, language, setLanguage, isRTL } = useLanguage();
   const { isDark, toggleTheme } = useTheme();
   const { signOut, merchantUser, merchant, user } = useAuth();
@@ -96,6 +98,18 @@ export function Header({ title, subtitle }: HeaderProps) {
     <header className="min-h-16 bg-card border-b border-border flex items-center justify-between gap-4 px-6 py-2 sticky top-0 z-40">
       {/* The title takes the room the toolbar leaves and stays on one line —
           without flex-1 it shrank to a few characters and wrapped word by word */}
+      {onMenuClick && (
+        <Button
+          variant="outline"
+          size="icon"
+          className="shrink-0 touch-target"
+          onClick={onMenuClick}
+          title={isRTL ? "القائمة" : "Menu"}
+          aria-label={isRTL ? "القائمة" : "Menu"}
+        >
+          <Menu className="w-5 h-5" />
+        </Button>
+      )}
       <div className="flex flex-col flex-1 min-w-0">
         <h1 className="text-lg font-semibold text-foreground truncate" title={title}>{title}</h1>
         {subtitle && (

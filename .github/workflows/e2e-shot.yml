@@ -2,7 +2,7 @@ name: Screenshot check
 
 on:
   push:
-    branches: [claude/sweet-knuth-u4nbzm-device-dialog]
+    branches: [claude/sweet-knuth-u4nbzm-device-dialog, claude/sweet-knuth-u4nbzm-pos-fullwidth]
     paths: ['src/**', 'e2e/shot.mjs', '.github/workflows/e2e-shot.yml']
 
 jobs:
