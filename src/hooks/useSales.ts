@@ -82,7 +82,8 @@ export function useSales() {
         tax_amount: taxAmount,
         discount_amount: discountAmount,
         total_amount: totalAmount,
-        payment_method: paymentMethod,
+        payment_method: paymentMethod === 'apple_pay' ? 'card' : paymentMethod,
+        ...(paymentMethod === 'apple_pay' ? { notes: 'Apple Pay' } : {}),
         payment_status: 'paid',
         sold_by: user.id
       })
@@ -180,7 +181,8 @@ export function useSales() {
       customer_name?: string;
       customer_phone?: string;
       discount_amount?: number;
-      payment_method?: PaymentMethod;
+      // what the sales table stores (Apple Pay is saved as 'card')
+      payment_method?: Exclude<PaymentMethod, 'apple_pay'>;
       notes?: string;
     }
   ) => {

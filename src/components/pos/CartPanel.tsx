@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ShoppingCart, X, Minus, Plus, CreditCard, Banknote, Building2, Percent, Receipt, User, Phone, ShieldCheck,
-  SlidersHorizontal
+  ShoppingCart, X, Minus, Plus, CreditCard, Banknote, Receipt, User, Phone, ShieldCheck,
+  SlidersHorizontal, Smartphone, CalendarClock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,11 +76,12 @@ export function CartPanel({
   const tax = total - (total / 1.15);
   const subtotal = total - tax;
 
-  const paymentMethods: { id: PaymentMethod; icon: typeof Banknote; label: string }[] = [
-    { id: "cash", icon: Banknote, label: t.pos.cash },
-    { id: "card", icon: CreditCard, label: t.pos.card },
-    { id: "bank_transfer", icon: Building2, label: "Bank" },
-    { id: "mixed", icon: Percent, label: t.pos.mixed },
+  // Installments (Tabby / Tamara) are shown but not yet switched on
+  const paymentMethods: { id: PaymentMethod | "installments"; icon: typeof Banknote; label: string; soon?: boolean }[] = [
+    { id: "cash", icon: Banknote, label: isRTL ? "نقداً" : "Cash" },
+    { id: "card", icon: CreditCard, label: isRTL ? "مدى والبطاقات" : "Mada & cards" },
+    { id: "apple_pay", icon: Smartphone, label: "Apple Pay" },
+    { id: "installments", icon: CalendarClock, label: isRTL ? "تقسيط · تابي/تمارا" : "Tabby / Tamara", soon: true },
   ];
 
   const handleComplete = () => {
@@ -252,16 +253,25 @@ export function CartPanel({
                   {paymentMethods.map((method) => (
                     <button
                       key={method.id}
-                      onClick={() => onSelectPayment(method.id)}
+                      disabled={method.soon}
+                      onClick={() => !method.soon && onSelectPayment(method.id as PaymentMethod)}
+                      title={method.soon ? (isRTL ? "قريباً" : "Coming soon") : undefined}
                       className={cn(
-                        "py-2 rounded-lg border flex flex-col items-center gap-0.5 transition-all",
-                        selectedPayment === method.id
+                        "relative py-2 rounded-lg border flex flex-col items-center gap-0.5 transition-all",
+                        method.soon
+                          ? "border-dashed border-border bg-muted/30 text-muted-foreground/60 cursor-not-allowed"
+                          : selectedPayment === method.id
                           ? "border-primary bg-primary/10 text-primary"
                           : "border-border bg-card text-muted-foreground hover:border-primary/50"
                       )}
                     >
                       <method.icon className="w-4 h-4" />
-                      <span className="text-[10px] font-medium">{method.label}</span>
+                      <span className="text-[10px] font-medium leading-tight text-center px-0.5">{method.label}</span>
+                      {method.soon && (
+                        <span className="absolute -top-1.5 start-1 text-[8px] px-1 rounded bg-muted border border-border text-muted-foreground">
+                          {isRTL ? "قريباً" : "Soon"}
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -333,16 +343,25 @@ export function CartPanel({
                 {paymentMethods.map((method) => (
                   <button
                     key={method.id}
-                    onClick={() => onSelectPayment(method.id)}
+                    disabled={method.soon}
+                    onClick={() => !method.soon && onSelectPayment(method.id as PaymentMethod)}
+                    title={method.soon ? (isRTL ? "قريباً" : "Coming soon") : undefined}
                     className={cn(
-                      "py-2.5 rounded-lg border flex flex-col items-center gap-1 transition-all",
-                      selectedPayment === method.id
+                      "relative py-2.5 rounded-lg border flex flex-col items-center gap-1 transition-all",
+                      method.soon
+                        ? "border-dashed border-border bg-muted/30 text-muted-foreground/60 cursor-not-allowed"
+                        : selectedPayment === method.id
                         ? "border-primary bg-primary/10 text-primary"
                         : "border-border bg-card text-muted-foreground hover:border-primary/50"
                     )}
                   >
                     <method.icon className="w-4 h-4" />
-                    <span className="text-[10px] font-medium">{method.label}</span>
+                    <span className="text-[10px] font-medium leading-tight text-center px-0.5">{method.label}</span>
+                    {method.soon && (
+                      <span className="absolute -top-1.5 start-1 text-[8px] px-1 rounded bg-muted border border-border text-muted-foreground">
+                        {isRTL ? "قريباً" : "Soon"}
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
