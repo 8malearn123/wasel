@@ -981,9 +981,10 @@ function DeviceDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[640px] max-h-[92vh] overflow-y-auto p-0 gap-0">
+      {/* Fits the screen: the fields scroll, the title and the buttons stay put */}
+      <DialogContent className="sm:max-w-[640px] max-h-[90vh] p-0 gap-0 flex flex-col overflow-hidden">
         {/* the close button sits in the top corner; the title keeps clear of it */}
-        <DialogHeader className="px-6 pt-6 pb-4 pr-12 border-b border-border">
+        <DialogHeader className="px-6 pt-5 pb-4 pr-12 border-b border-border shrink-0">
           <DialogTitle className="flex items-center gap-3 text-lg">
             {device && (
               <ProductThumb
@@ -999,8 +1000,9 @@ function DeviceDialog({
             {device ? t.inventory.editDevice : t.inventory.addNewDevice}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="grid gap-5 px-6 py-5">
+        <form onSubmit={handleSubmit} className="flex flex-col min-h-0 flex-1">
+          <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="grid gap-4 px-6 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="imei">{t.inventory.imei} *</Label>
@@ -1173,10 +1175,11 @@ function DeviceDialog({
               </div>
             </div>
           </div>
-          <div className="px-6 pb-5">
+          <div className="px-6 pb-4">
             <ProductMediaManager itemType="device" itemId={device?.id} />
           </div>
-          <DialogFooter className="px-6 py-4 border-t border-border bg-muted/20 gap-2">
+          </div>
+          <DialogFooter className="px-6 py-3 border-t border-border bg-muted/20 gap-2 shrink-0">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t.inventory.cancel}
             </Button>

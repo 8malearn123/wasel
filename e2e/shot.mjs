@@ -26,10 +26,22 @@ for (const [label, viewport] of [['desktop', { width: 1920, height: 1080 }], ['m
   await page.goto(`${SITE}/products?tab=inventory`);
   await page.waitForLoadState('networkidle').catch(() => {});
   await page.waitForTimeout(1500);
-  await page.getByRole('button', { name: /^إضافة$/ }).first().click();
-  await page.getByRole('menuitem', { name: /إضافة جهاز/ }).click();
-  await page.waitForTimeout(800);
+  try {
+    const add = page.locator('button', { hasText: 'إضافة' }).filter({ hasNotText: 'مستخدم' }).first();
+    await add.waitFor({ timeout: 20000 });
+    await add.click();
+    await page.getByRole('menuitem', { name: /إضافة جهاز/ }).click();
+    await page.waitForTimeout(800);
+  } catch (e) {
+    console.log(`[${label}] ${e.message.split('\n')[0]} — at ${page.url()}`);
+  }
   await page.screenshot({ path: `shot-${label}.png` });
+  // a short laptop screen, where the old dialog ran off the bottom
+  if (label === 'desktop') {
+    await page.setViewportSize({ width: 1366, height: 680 });
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: 'shot-laptop.png' });
+  }
   await context.close();
 }
 await browser.close();
