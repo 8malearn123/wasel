@@ -10,6 +10,15 @@ const r = await fetch(`${SUPA}/auth/v1/token?grant_type=password`, {
   body: JSON.stringify({ email: 'demo-distributor@wasil.demo', password: 'demo1234' }),
 });
 const session = await r.json();
+// The artifact store is not reachable from every reviewer's machine, so each
+// shot is also printed into the job log, as a small JPEG in base64
+async function logShot(page, label) {
+  const jpg = await page.screenshot({ type: 'jpeg', quality: 45 });
+  console.log(`SHOT-BEGIN ${label}`);
+  for (let i = 0; i < jpg.toString('base64').length; i += 4000) console.log(jpg.toString('base64').slice(i, i + 4000));
+  console.log(`SHOT-END ${label}`);
+}
+
 const browser = await chromium.launch();
 for (const [label, viewport] of [['desktop', { width: 1920, height: 1080 }], ['mobile', { width: 390, height: 844 }]]) {
   const context = await browser.newContext({ locale: 'ar', viewport });
@@ -36,11 +45,13 @@ for (const [label, viewport] of [['desktop', { width: 1920, height: 1080 }], ['m
     console.log(`[${label}] ${e.message.split('\n')[0]} — at ${page.url()}`);
   }
   await page.screenshot({ path: `shot-${label}.png` });
+  await logShot(page, label);
   // a short laptop screen, where the old dialog ran off the bottom
   if (label === 'desktop') {
     await page.setViewportSize({ width: 1366, height: 680 });
     await page.waitForTimeout(400);
     await page.screenshot({ path: 'shot-laptop.png' });
+    await logShot(page, 'laptop');
   }
   await context.close();
 }
