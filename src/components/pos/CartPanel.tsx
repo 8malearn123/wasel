@@ -78,7 +78,7 @@ export function CartPanel({
 
   // Installments (Tabby / Tamara) are shown but not yet switched on
   const paymentMethods: { id: PaymentMethod | "installments"; icon: typeof Banknote; label: string; soon?: boolean }[] = [
-    { id: "cash", icon: Banknote, label: isRTL ? "نقداً" : "Cash" },
+    { id: "cash", icon: Banknote, label: isRTL ? "كاش" : "Cash" },
     { id: "card", icon: CreditCard, label: isRTL ? "مدى والبطاقات" : "Mada & cards" },
     { id: "apple_pay", icon: Smartphone, label: "Apple Pay" },
     { id: "installments", icon: CalendarClock, label: isRTL ? "تقسيط · تابي/تمارا" : "Tabby / Tamara", soon: true },

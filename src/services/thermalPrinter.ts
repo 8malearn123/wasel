@@ -376,7 +376,7 @@ export async function printReceipt(
 
 // Payment method labels
 export const paymentMethodLabels: Record<string, string> = {
-  cash: 'نقدي',
+  cash: 'كاش',
   card: 'مدى / بطاقة بنكية',
   apple_pay: 'Apple Pay',
   bank_transfer: 'تحويل بنكي',

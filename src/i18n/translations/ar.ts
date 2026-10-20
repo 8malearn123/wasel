@@ -84,7 +84,7 @@ export const ar: TranslationKeys = {
     subtotal: "المجموع الفرعي",
     tax: "الضريبة (15%)",
     total: "الإجمالي",
-    cash: "نقداً",
+    cash: "كاش",
     card: "بطاقة",
     mixed: "مختلط",
     completeSale: "إتمام البيع",
