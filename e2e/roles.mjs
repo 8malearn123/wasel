@@ -127,7 +127,7 @@ const member = await memberOf(session);
 const custom = CUSTOM[PROFILE];
 
 const browser = await chromium.launch();
-const context = await browser.newContext({ locale: 'ar', viewport: { width: 1440, height: 900 } });
+const context = await browser.newContext({ locale: 'ar', viewport: { width: 1680, height: 1000 } });
 const storageKey = 'sb-ynwddyxzypbcftlevuam-auth-token';
 await context.addInitScript(([k, v]) => { window.localStorage.setItem(k, v); }, [storageKey, JSON.stringify(session)]);
 
@@ -199,7 +199,8 @@ async function visit(url) {
   let outcome;
   if (final.pathname !== target.pathname) outcome = `→ ${final.pathname}${final.search}`;
   else if (denied) outcome = 'denied';
-  else if (wantedTab && tab && tab !== wantedTab) outcome = `→ ?tab=${tab}`;
+  // a section with no ?tab= left shows its default leaf: the asked one did not open
+  else if (wantedTab && tab !== wantedTab) outcome = `→ ?tab=${tab ?? '(default)'}`;
   else outcome = 'open';
   return { url, outcome, navigations, final: final.pathname + final.search };
 }
@@ -240,6 +241,7 @@ for (const p of menuPaths) if (!sectionOpens(p)) problems.push(`sections menu of
 for (const p of new Set(results.filter(r => r.outcome === 'open').map(r => new URL(SITE + r.url).pathname))) {
   if (p !== '/' && !sidebar.includes(p)) problems.push(`${p} opens but the sidebar does not offer it`);
 }
+if (menu.length === 0) problems.push('could not read the sections menu');
 if (sidebar.length && menuPaths.length) {
   const a = [...sidebar].filter(p => p !== '/pos').sort().join(' ');
   const b = [...menuPaths].filter(p => p !== '/pos').sort().join(' ');
