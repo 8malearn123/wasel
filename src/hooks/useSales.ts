@@ -6,7 +6,8 @@ import { toast } from 'sonner';
 
 interface CartItem {
   id: string;
-  type: 'device' | 'accessory' | 'warranty';
+  // 'service': a charge with no stock behind it, like delivery
+  type: 'device' | 'accessory' | 'warranty' | 'service';
   name: string;
   identifier: string;
   price: number;
