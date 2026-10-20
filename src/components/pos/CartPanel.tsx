@@ -143,45 +143,6 @@ export function CartPanel({
         </div>
       </div>
 
-      {/* Coupon & payment method, opened from the header */}
-      <AnimatePresence initial={false}>
-        {showOptions && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="border-b border-border bg-muted/10 overflow-hidden"
-          >
-            <div className="p-3 space-y-2.5">
-              <CouponApply
-                subtotal={subtotal}
-                onApply={(d, code) => { setCouponDiscount(d); setAppliedCoupon(code); }}
-                onRemove={() => { setCouponDiscount(0); setAppliedCoupon(null); }}
-                appliedCoupon={appliedCoupon}
-                isRTL={isRTL}
-              />
-              <div className="grid grid-cols-4 gap-1.5">
-                {paymentMethods.map((method) => (
-                  <button
-                    key={method.id}
-                    onClick={() => onSelectPayment(method.id)}
-                    className={cn(
-                      "py-2 rounded-lg border flex flex-col items-center gap-0.5 transition-all",
-                      selectedPayment === method.id
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border bg-card text-muted-foreground hover:border-primary/50"
-                    )}
-                  >
-                    <method.icon className="w-4 h-4" />
-                    <span className="text-[10px] font-medium">{method.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Cart Items */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
         <AnimatePresence mode="popLayout">
@@ -268,6 +229,44 @@ export function CartPanel({
                 </div>
               </motion.div>
             ))
+          )}
+        </AnimatePresence>
+        {/* Coupon & payment method, under the items — opened from ⚙ beside × */}
+        <AnimatePresence initial={false}>
+          {showOptions && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="rounded-lg border border-border bg-muted/10 overflow-hidden"
+            >
+              <div className="p-3 space-y-2.5">
+                <CouponApply
+                  subtotal={subtotal}
+                  onApply={(d, code) => { setCouponDiscount(d); setAppliedCoupon(code); }}
+                  onRemove={() => { setCouponDiscount(0); setAppliedCoupon(null); }}
+                  appliedCoupon={appliedCoupon}
+                  isRTL={isRTL}
+                />
+                <div className="grid grid-cols-4 gap-1.5">
+                  {paymentMethods.map((method) => (
+                    <button
+                      key={method.id}
+                      onClick={() => onSelectPayment(method.id)}
+                      className={cn(
+                        "py-2 rounded-lg border flex flex-col items-center gap-0.5 transition-all",
+                        selectedPayment === method.id
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border bg-card text-muted-foreground hover:border-primary/50"
+                      )}
+                    >
+                      <method.icon className="w-4 h-4" />
+                      <span className="text-[10px] font-medium">{method.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
           )}
         </AnimatePresence>
       </div>
