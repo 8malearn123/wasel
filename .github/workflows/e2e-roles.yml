@@ -1,0 +1,47 @@
+name: E2E roles and permissions
+
+# Opens every screen of the live site as each kind of member and checks that
+# the menus, the routes and the role rules agree. Read-only: writes are
+# blocked in the browser (see e2e/roles.mjs).
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/sweet-knuth-u4nbzm-roles-e2e]
+    paths: ['e2e/**', '.github/workflows/e2e-roles.yml']
+
+jobs:
+  roles:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        profile:
+          - owner-basic
+          - owner-professional
+          - owner-enterprise
+          - owner-distributor
+          - cashier
+          - custom-accountant
+          - custom-orders
+          - custom-pos
+          - custom-forged
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm i --no-save --no-package-lock playwright@1.48.2 && npx playwright install --with-deps chromium
+        working-directory: e2e
+      - name: Run ${{ matrix.profile }}
+        working-directory: e2e
+        env:
+          PROFILE: ${{ matrix.profile }}
+          # Public anon key (already committed in .env) — RLS still applies
+          ANON: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlud2RkeXh6eXBiY2Z0bGV2dWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5MjE1OTQsImV4cCI6MjA4NTQ5NzU5NH0.PsNDqovuzo7NmTiwsH4swskkIF3FdMlBXjYUy3MJkyA
+        run: node roles.mjs
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-${{ matrix.profile }}
+          path: |
+            e2e/reports/
+            e2e/report-*.png
