@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ShoppingCart, X, Minus, Plus, CreditCard, Banknote, ReceiptText, User, Phone, ShieldCheck,
-  SlidersHorizontal, Smartphone, CalendarClock
+  Smartphone, CalendarClock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,9 +67,6 @@ export function CartPanel({
   const [cashReceived, setCashReceived] = useState("");
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
-  // Coupon and payment method sit behind a button at the top of the cart, so
-  // the items get the room; the payment dialog asks for the method anyway
-  const [showOptions, setShowOptions] = useState(false);
   const discount = couponDiscount;
   const totalBeforeDiscount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const total = totalBeforeDiscount - discount;
@@ -172,24 +169,6 @@ export function CartPanel({
                     <p className="font-medium text-sm text-foreground truncate">{item.name}</p>
                     <p className="text-[11px] text-muted-foreground font-mono">{item.identifier}</p>
                   </div>
-                  {/* Coupon & payment method, beside the remove button */}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      "h-6 w-6 shrink-0 relative",
-                      showOptions ? "text-primary bg-primary/10 hover:bg-primary/20" : "text-muted-foreground hover:text-primary"
-                    )}
-                    onClick={() => setShowOptions(v => !v)}
-                    title={isRTL ? "الكوبون وطريقة الدفع" : "Coupon & payment method"}
-                    aria-label={isRTL ? "الكوبون وطريقة الدفع" : "Coupon & payment method"}
-                    aria-expanded={showOptions}
-                  >
-                    <SlidersHorizontal className="w-3.5 h-3.5" />
-                    {!showOptions && (appliedCoupon || selectedPayment) && (
-                      <span className="absolute -top-0.5 -end-0.5 w-1.5 h-1.5 rounded-full bg-primary" />
-                    )}
-                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -232,9 +211,9 @@ export function CartPanel({
             ))
           )}
         </AnimatePresence>
-        {/* Coupon & payment method, under the items — opened from ⚙ beside × */}
+        {/* Coupon & payment method, under the items */}
         <AnimatePresence initial={false}>
-          {showOptions && (
+          {cart.length > 0 && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
