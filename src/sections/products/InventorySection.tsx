@@ -981,9 +981,10 @@ function DeviceDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-3">
+      <DialogContent className="sm:max-w-[640px] max-h-[92vh] overflow-y-auto p-0 gap-0">
+        {/* the close button sits in the top corner; the title keeps clear of it */}
+        <DialogHeader className="px-6 pt-6 pb-4 pr-12 border-b border-border">
+          <DialogTitle className="flex items-center gap-3 text-lg">
             {device && (
               <ProductThumb
                 code={device.imei}
@@ -999,7 +1000,7 @@ function DeviceDialog({
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-5 px-6 py-5">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="imei">{t.inventory.imei} *</Label>
@@ -1039,14 +1040,14 @@ function DeviceDialog({
                   onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
                   placeholder="Apple"
                 />
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-1.5">
                   {brandChoices.map(brand => (
                     <button
                       key={brand}
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, brand }))}
                       className={cn(
-                        "px-2 py-0.5 rounded-full border text-[11px] transition-colors",
+                        "h-6 px-2.5 rounded-full border text-[11px] leading-none transition-colors",
                         formData.brand === brand
                           ? "bg-primary text-primary-foreground border-primary"
                           : "bg-muted/40 border-border hover:border-primary/50"
@@ -1065,14 +1066,14 @@ function DeviceDialog({
                   onChange={(e) => setFormData({ ...formData, storage: e.target.value })}
                   placeholder="256GB"
                 />
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-1.5">
                   {STORAGE_OPTIONS.map(size => (
                     <button
                       key={size}
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, storage: size }))}
                       className={cn(
-                        "px-2 py-0.5 rounded-full border text-[11px] transition-colors",
+                        "h-6 px-2.5 rounded-full border text-[11px] leading-none transition-colors",
                         formData.storage === size
                           ? "bg-primary text-primary-foreground border-primary"
                           : "bg-muted/40 border-border hover:border-primary/50"
@@ -1084,16 +1085,17 @@ function DeviceDialog({
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="color">{t.inventory.color}</Label>
-                <Input 
+            <div className="space-y-2">
+              <Label htmlFor="color">{t.inventory.color}</Label>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                <Input
                   id="color"
                   value={formData.color}
                   onChange={(e) => setFormData({ ...formData, color: e.target.value })}
                   placeholder={isRTL ? "اختر لوناً أو اكتبه" : "Pick a colour or type one"}
+                  className="sm:w-48 shrink-0"
                 />
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap items-center gap-2">
                   {DEVICE_COLORS.map(option => {
                     const name = isRTL ? option.nameAr : option.nameEn;
                     const selected = formData.color === name;
@@ -1105,8 +1107,8 @@ function DeviceDialog({
                         aria-label={name}
                         onClick={() => setFormData(prev => ({ ...prev, color: name }))}
                         className={cn(
-                          "w-6 h-6 rounded-full border transition-transform hover:scale-110",
-                          selected ? "ring-2 ring-primary ring-offset-1 border-primary" : "border-border"
+                          "w-7 h-7 rounded-full border transition-transform hover:scale-110",
+                          selected ? "ring-2 ring-primary ring-offset-2 ring-offset-background border-primary" : "border-border"
                         )}
                         style={{ backgroundColor: option.hex }}
                       />
@@ -1114,10 +1116,12 @@ function DeviceDialog({
                   })}
                 </div>
               </div>
+            </div>
+            <div className={cn("grid gap-4", categories.length > 0 ? "grid-cols-2" : "grid-cols-1")}>
               <div className="space-y-2">
                 <Label htmlFor="branch">{t.inventory.branch}</Label>
                 <Select value={formData.branch_id} onValueChange={(v) => setFormData({ ...formData, branch_id: v })}>
-                  <SelectTrigger>
+                  <SelectTrigger id="branch">
                     <SelectValue placeholder={t.inventory.selectBranch} />
                   </SelectTrigger>
                   <SelectContent>
@@ -1127,23 +1131,23 @@ function DeviceDialog({
                   </SelectContent>
                 </Select>
               </div>
+              {categories.length > 0 && (
+                <div className="space-y-2">
+                  <Label>{isRTL ? 'التصنيف' : 'Category'}</Label>
+                  <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v === '__none__' ? '' : v })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={isRTL ? 'اختر التصنيف' : 'Select category'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">{isRTL ? 'بدون تصنيف' : 'No category'}</SelectItem>
+                      {categories.map(c => (
+                        <SelectItem key={c.id} value={c.name}>{isRTL && c.name_ar ? c.name_ar : c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
-            {categories.length > 0 && (
-              <div className="space-y-2">
-                <Label>{isRTL ? 'التصنيف' : 'Category'}</Label>
-                <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v === '__none__' ? '' : v })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={isRTL ? 'اختر التصنيف' : 'Select category'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">{isRTL ? 'بدون تصنيف' : 'No category'}</SelectItem>
-                    {categories.map(c => (
-                      <SelectItem key={c.id} value={c.name}>{isRTL && c.name_ar ? c.name_ar : c.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="cost">{t.inventory.cost} *</Label>
@@ -1169,10 +1173,10 @@ function DeviceDialog({
               </div>
             </div>
           </div>
-          <div className="border-t border-border pt-4 mt-2">
+          <div className="px-6 pb-5">
             <ProductMediaManager itemType="device" itemId={device?.id} />
           </div>
-          <DialogFooter>
+          <DialogFooter className="px-6 py-4 border-t border-border bg-muted/20 gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t.inventory.cancel}
             </Button>
