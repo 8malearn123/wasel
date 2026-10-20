@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n";
-import { CouponApply } from "./CouponApply";
 import type { Accessory, PaymentMethod } from "@/types/database";
 
 export interface POSCartItem {
@@ -66,7 +65,6 @@ export function CartPanel({
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [cashReceived, setCashReceived] = useState("");
   const [couponDiscount, setCouponDiscount] = useState(0);
-  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
   const discount = couponDiscount;
   const totalBeforeDiscount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const total = totalBeforeDiscount - discount;
@@ -88,7 +86,6 @@ export function CartPanel({
     setCustomerName("");
     setCustomerPhone("");
     setCouponDiscount(0);
-    setAppliedCoupon(null);
   };
 
   const receivedAmount = parseFloat(cashReceived) || 0;
@@ -209,54 +206,6 @@ export function CartPanel({
                 </div>
               </motion.div>
             ))
-          )}
-        </AnimatePresence>
-        {/* Coupon & payment method, under the items */}
-        <AnimatePresence initial={false}>
-          {cart.length > 0 && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="rounded-lg border border-border bg-muted/10 overflow-hidden"
-            >
-              <div className="p-3 space-y-2.5">
-                <CouponApply
-                  subtotal={subtotal}
-                  onApply={(d, code) => { setCouponDiscount(d); setAppliedCoupon(code); }}
-                  onRemove={() => { setCouponDiscount(0); setAppliedCoupon(null); }}
-                  appliedCoupon={appliedCoupon}
-                  isRTL={isRTL}
-                />
-                <div className="grid grid-cols-4 gap-1.5">
-                  {paymentMethods.map((method) => (
-                    <button
-                      key={method.id}
-                      disabled={method.soon}
-                      onClick={() => !method.soon && onSelectPayment(method.id as PaymentMethod)}
-                      title={method.soon ? (isRTL ? "قريباً" : "Coming soon") : undefined}
-                      className={cn(
-                        "relative py-2 rounded-lg border flex flex-col items-center gap-0.5 transition-all",
-                        method.soon
-                          ? "border-dashed border-border bg-muted/30 text-muted-foreground/60 cursor-not-allowed"
-                          : selectedPayment === method.id
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border bg-card text-muted-foreground hover:border-primary/50"
-                      )}
-                    >
-                      <method.icon className="w-4 h-4" />
-                      <span className="text-[10px] font-medium leading-tight text-center px-0.5">{method.label}</span>
-                      {method.hint && <span className="text-[8px] leading-none opacity-80">{method.hint}</span>}
-                      {method.soon && (
-                        <span className="absolute -top-1.5 start-1 text-[8px] px-1 rounded bg-muted border border-border text-muted-foreground">
-                          {isRTL ? "قريباً" : "Soon"}
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
           )}
         </AnimatePresence>
       </div>
