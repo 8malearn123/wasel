@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
   push:
     branches: [claude/sweet-knuth-u4nbzm-roles-e2e]
-    paths: ['e2e/**', '.github/workflows/e2e-roles.yml']
+    paths: ['e2e/**', 'src/**', '.github/workflows/e2e-roles.yml']
 
 jobs:
   roles:
