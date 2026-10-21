@@ -550,7 +550,8 @@ export function usePublicStore(slug: string) {
 
     const subtotal = orderData.items.reduce((sum, i) => sum + i.unit_price * i.quantity, 0);
     const shippingCost = store.free_shipping_threshold && subtotal >= store.free_shipping_threshold ? 0 : store.shipping_cost;
-    const taxAmount = Math.round(subtotal * 0.15 * 100) / 100;
+    // VAT on the goods and on the delivery fee
+    const taxAmount = Math.round((subtotal + Number(shippingCost || 0)) * 0.15 * 100) / 100;
     const totalAmount = subtotal + taxAmount + shippingCost;
 
     const { data: order, error: orderErr } = await supabase
