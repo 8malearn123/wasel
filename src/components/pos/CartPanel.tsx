@@ -78,7 +78,11 @@ export function CartPanel({
   const subtotal = total - tax;
   // A coupon makes delivery free
   const freeDelivery = withDelivery && !!appliedCoupon;
-  const deliveryFee = withDelivery && !freeDelivery ? Math.max(0, parseFloat(deliveryFeeInput) || 0) : 0;
+  // The fee is entered before VAT (15 ر.س) and charged with it (17.25 ر.س),
+  // the same way the cart's prices already include VAT
+  const deliveryFeeBeforeVat = withDelivery && !freeDelivery ? Math.max(0, parseFloat(deliveryFeeInput) || 0) : 0;
+  const deliveryVat = Math.round(deliveryFeeBeforeVat * 0.15 * 100) / 100;
+  const deliveryFee = deliveryFeeBeforeVat + deliveryVat;
   // What the customer pays in the dialog: the cart, less the coupon, plus delivery
   const amountDue = total + deliveryFee;
   const amountDueTax = amountDue - (amountDue / 1.15);
@@ -281,7 +285,9 @@ export function CartPanel({
               </p>
               {deliveryFee > 0 && (
                 <p className="text-[11px] text-foreground font-medium mt-1">
-                  {isRTL ? `منها رسوم توصيل ${deliveryFee.toFixed(2)} ر.س` : `Including ${deliveryFee.toFixed(2)} SAR delivery`}
+                  {isRTL
+                    ? `منها توصيل ${deliveryFeeBeforeVat.toFixed(2)} + ضريبة ${deliveryVat.toFixed(2)} = ${deliveryFee.toFixed(2)} ر.س`
+                    : `Including delivery ${deliveryFeeBeforeVat.toFixed(2)} + VAT ${deliveryVat.toFixed(2)} = ${deliveryFee.toFixed(2)} SAR`}
                 </p>
               )}
               {discount > 0 && (
@@ -315,7 +321,9 @@ export function CartPanel({
                     className="h-8 w-20 text-center font-semibold"
                     aria-label={isRTL ? "رسوم التوصيل" : "Delivery fee"}
                   />
-                  <span className="text-xs text-muted-foreground">ر.س</span>
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    {isRTL ? `ر.س + ضريبة ${deliveryVat.toFixed(2)}` : `SAR + VAT ${deliveryVat.toFixed(2)}`}
+                  </span>
                 </div>
               )}
             </div>
@@ -330,6 +338,12 @@ export function CartPanel({
                 appliedCoupon={appliedCoupon}
                 isRTL={isRTL}
               />
+              {/* The coupon's perk, said to the customer */}
+              {appliedCoupon && (
+                <div className="mt-2 rounded-lg bg-success/10 border border-success/20 px-3 py-2 text-sm font-semibold text-success text-center">
+                  {isRTL ? "🎉 لقد حصلت على توصيل مجاني" : "🎉 You got free delivery"}
+                </div>
+              )}
             </div>
 
             {/* Payment method */}
