@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { StorePaymentOptions, AppleMark } from '@/components/store/StorePaymentOptions';
+import { storePaymentLabel } from '@/lib/storePayments';
 import { useStoreCart } from '@/components/store/StoreCart';
 import { StoreSEO } from '@/components/store/StoreSEO';
 import type { StoreSettings } from '@/hooks/useOnlineStore';
@@ -35,7 +36,7 @@ export function StoreCheckoutPage({ store, placeOrder }: Props) {
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
-  const [payment, setPayment] = useState('bank_transfer');
+  const [payment, setPayment] = useState<string>('apple_pay');
   const [location, setLocation] = useState<DeliveryPoint | null>(null);
   // The pin travels with the address as a maps link, so the order needs no new column
   const fullAddress = location ? `${address.trim()}\n📍 الموقع على الخريطة: ${mapsLink(location)}` : address;
@@ -171,25 +172,18 @@ export function StoreCheckoutPage({ store, placeOrder }: Props) {
         {step === 3 && (
           <div className="space-y-4">
             <h2 className="text-xl font-bold mb-2">طريقة الدفع</h2>
-            <RadioGroup value={payment} onValueChange={setPayment}>
-              <label className="flex items-center gap-3 p-4 border rounded-xl cursor-pointer hover:bg-muted/30">
-                <RadioGroupItem value="apple_pay" />
-                <span className="font-medium flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1 bg-black text-white text-sm font-semibold px-2.5 py-1 rounded-lg" dir="ltr">
-                     Pay
-                  </span> أبل باي
-                </span>
-              </label>
-              <label className="flex items-center gap-3 p-4 border rounded-xl cursor-pointer hover:bg-muted/30">
-                <RadioGroupItem value="bank_transfer" /> <span className="font-medium">تحويل بنكي</span>
-              </label>
-              <label className="flex items-center gap-3 p-4 border rounded-xl cursor-pointer hover:bg-muted/30">
-                <RadioGroupItem value="cod" /> <span className="font-medium">الدفع عند الاستلام</span>
-              </label>
-            </RadioGroup>
+            <StorePaymentOptions value={payment} onChange={setPayment} />
             {payment === 'apple_pay' && (
-              <p className="text-xs text-muted-foreground bg-muted/30 rounded-lg p-3"> بعد تأكيد الطلب بيتواصل معك المتجر بطلب الدفع عبر أبل باي لإتمام العملية.
-              </p>
+              <>
+                <button
+                  type="button"
+                  onClick={next}
+                  className="w-full h-12 rounded-xl bg-black text-white font-semibold flex items-center justify-center gap-1.5 hover:bg-black/85 transition-colors"
+                >
+                  دفع باستخدام <span className="inline-flex items-center gap-0.5" dir="ltr"><AppleMark className="w-4 h-4 -mt-0.5" />Pay</span>
+                </button>
+                <p className="text-xs text-muted-foreground bg-muted/30 rounded-lg p-3">بعد تأكيد الطلب يتواصل معك المتجر بطلب الدفع عبر Apple Pay لإتمام العملية.</p>
+              </>
             )}
           </div>
         )}
@@ -201,7 +195,7 @@ export function StoreCheckoutPage({ store, placeOrder }: Props) {
               <p><b>الجوال:</b> {phone}</p>
               <p><b>العنوان:</b> {address}, {city}</p>
               {location && <p><b>الموقع:</b> تم تحديده على الخريطة 📍</p>}
-              <p><b>الدفع:</b> {payment === 'bank_transfer' ? 'تحويل بنكي' : payment === 'apple_pay' ? 'أبل باي ( Pay)' : 'الدفع عند الاستلام'}</p>
+              <p><b>الدفع:</b> {storePaymentLabel(payment)}</p>
             </div>
             <hr />
             <div className="space-y-1 text-sm">

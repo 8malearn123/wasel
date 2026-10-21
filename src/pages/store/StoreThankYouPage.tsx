@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { storePaymentLabel } from '@/lib/storePayments';
 import { Link, useParams, useLocation } from 'react-router-dom';
 import { CheckCircle2, Loader2, Printer, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -173,7 +174,7 @@ export function StoreThankYouPage({ store }: { store: StoreSettings }) {
               </div>
               <div className="pt-3 flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">طريقة الدفع</span>
-                <span className="font-medium">{order.payment_method === 'bank_transfer' ? 'تحويل بنكي' : order.payment_method === 'apple_pay' ? 'أبل باي' : 'الدفع عند الاستلام'}</span>
+                <span className="font-medium">{storePaymentLabel(order.payment_method)}</span>
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">حالة الدفع</span>
