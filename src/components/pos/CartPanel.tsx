@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ShoppingCart, X, Minus, Plus, CreditCard, Banknote, ReceiptText, User, Phone, ShieldCheck,
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { CouponApply } from "./CouponApply";
+import { MadaMark, VisaMark, MastercardMark, ApplePayMark, TabbyMark, TamaraMark } from "@/components/icons/PaymentMarks";
 import { useLanguage } from "@/i18n";
 import type { Accessory, PaymentMethod } from "@/types/database";
 
@@ -78,13 +79,13 @@ export function CartPanel({
   const amountDueTax = amountDue - (amountDue / 1.15);
 
   // Installments (Tabby / Tamara) are shown but not yet switched on
-  const paymentMethods: { id: PaymentMethod | "installments"; icon: typeof Banknote; label: string; hint?: string; soon?: boolean }[] = [
+  const paymentMethods: { id: PaymentMethod | "installments"; icon: typeof Banknote; label: string; hint?: string; soon?: boolean; logos?: ReactNode }[] = [
     { id: "cash", icon: Banknote, label: isRTL ? "كاش" : "Cash" },
-    { id: "card", icon: CreditCard, label: isRTL ? "مدى والبطاقات" : "Mada & cards" },
-    { id: "apple_pay", icon: Smartphone, label: "Apple Pay" },
+    { id: "card", icon: CreditCard, label: isRTL ? "مدى والبطاقات" : "Mada & cards", logos: <><MadaMark /><VisaMark /><MastercardMark /></> },
+    { id: "apple_pay", icon: Smartphone, label: "Apple Pay", logos: <ApplePayMark /> },
     // part cash, part card — at the till only; the online store has its own methods
     { id: "mixed", icon: Layers, label: isRTL ? "مختلط" : "Mixed", hint: isRTL ? "كاش + بطاقة" : "Cash + card" },
-    { id: "installments", icon: CalendarClock, label: isRTL ? "تقسيط" : "Installments", hint: isRTL ? "تابي · تمارا" : "Tabby · Tamara", soon: true },
+    { id: "installments", icon: CalendarClock, label: isRTL ? "تقسيط" : "Installments", hint: isRTL ? "تابي · تمارا" : "Tabby · Tamara", soon: true, logos: <><TabbyMark /><TamaraMark /></> },
   ];
 
   const handleComplete = () => {
@@ -324,6 +325,9 @@ export function CartPanel({
                     <method.icon className="w-4 h-4" />
                     <span className="text-[10px] font-medium leading-tight text-center px-0.5">{method.label}</span>
                     {method.hint && <span className="text-[8px] leading-none opacity-80">{method.hint}</span>}
+                    {method.logos && (
+                      <span className={cn("flex items-center justify-center gap-1 h-3", method.soon && "opacity-60")}>{method.logos}</span>
+                    )}
                     {method.soon && (
                       <span className="absolute -top-1.5 start-1 text-[8px] px-1 rounded bg-muted border border-border text-muted-foreground">
                         {isRTL ? "قريباً" : "Soon"}
