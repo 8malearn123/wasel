@@ -299,8 +299,6 @@ export function CartPanel({
                 </div>
               )}
             </div>
-              )}
-            </div>
 
             {/* Payment method */}
             <div>
