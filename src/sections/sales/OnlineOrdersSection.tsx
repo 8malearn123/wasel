@@ -22,6 +22,7 @@ import { CARRIERS, trackingUrl } from "@/lib/shipping";
 import { useOnlineOrders, OnlineOrder, OnlineOrderItem } from "@/hooks/useOnlineStore";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import { locationFromAddress } from '@/lib/deliveryLocation';
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   pending: { label: "قيد الانتظار", color: "bg-warning/10 text-warning border-warning/20", icon: Clock },
@@ -236,7 +237,20 @@ export default function OnlineOrdersSection() {
                 <div className="p-3 rounded-lg bg-muted/30">
                   <p className="text-xs text-muted-foreground">العنوان</p>
                   <p className="font-medium text-foreground">{selectedOrder.shipping_city}</p>
-                  <p className="text-sm text-muted-foreground">{selectedOrder.shipping_address}</p>
+                  {(() => {
+                    // the customer's pin from the checkout map, as a link to open
+                    const { text, link } = locationFromAddress(selectedOrder.shipping_address);
+                    return (
+                      <>
+                        <p className="text-sm text-muted-foreground whitespace-pre-line">{text}</p>
+                        {link && (
+                          <a href={link} target="_blank" rel="noopener noreferrer" className="text-sm text-primary font-medium hover:underline">
+                            📍 فتح موقع التوصيل على الخريطة
+                          </a>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
               <div>
