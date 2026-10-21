@@ -283,6 +283,21 @@ export function CartPanel({
                 appliedCoupon={appliedCoupon}
                 isRTL={isRTL}
               />
+              {/* How much the coupon saved — as a percentage and in riyals */}
+              {appliedCoupon && discount > 0 && (
+                <div className="mt-2 rounded-lg bg-success/10 border border-success/20 px-3 py-2 text-center">
+                  <p className="text-sm font-semibold text-success">
+                    {(() => {
+                      const pct = totalBeforeDiscount > 0
+                        ? Math.round((discount / totalBeforeDiscount) * 100)
+                        : 0;
+                      return isRTL
+                        ? `🎉 حصلت على خصم ${pct}% — وفّرت ${discount.toFixed(2)} ر.س`
+                        : `🎉 ${pct}% off — you saved ${discount.toFixed(2)} SAR`;
+                    })()}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Payment method */}
