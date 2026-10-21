@@ -257,28 +257,30 @@ export function CartPanel({
 
       {/* Payment Dialog */}
       <Dialog open={showPaymentDialog} onOpenChange={(open) => { setShowPaymentDialog(open); if (!open) setCashReceived(""); }}>
-        <DialogContent className="sm:max-w-[440px]" dir={isRTL ? "rtl" : "ltr"}>
+        <DialogContent className="sm:max-w-[640px] p-6 sm:p-8 max-h-[92vh] overflow-y-auto" dir={isRTL ? "rtl" : "ltr"}>
           {/* the close button sits in the right corner; the title keeps clear of it */}
           <DialogHeader className="pr-8">
-            <DialogTitle className="flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-primary" />
+            <DialogTitle className="flex items-center gap-2.5 text-xl">
+              <span className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                <CreditCard className="w-5 h-5 text-primary" />
+              </span>
               {isRTL ? "الدفع" : "Payment"}
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
+          <div className="space-y-6 py-2">
             {/* Amount due */}
-            <div className="rounded-xl bg-primary/5 border border-primary/20 p-4 text-center">
-              <p className="text-xs text-muted-foreground mb-1">{isRTL ? "المبلغ المستحق" : "Amount Due"}</p>
-              <p className="text-3xl font-bold text-primary">{amountDue.toFixed(2)} <span className="text-base">ر.س</span></p>
-              <p className="text-[11px] text-muted-foreground mt-1">
+            <div className="rounded-2xl bg-primary/5 border border-primary/20 px-6 py-6 text-center">
+              <p className="text-sm text-muted-foreground mb-1.5">{isRTL ? "المبلغ المستحق" : "Amount Due"}</p>
+              <p className="text-5xl font-bold text-primary tracking-tight">{amountDue.toFixed(2)} <span className="text-xl">ر.س</span></p>
+              <p className="text-xs text-muted-foreground mt-2">
                 {isRTL ? `شامل ضريبة القيمة المضافة ${amountDueTax.toFixed(2)} ر.س` : `Includes VAT ${amountDueTax.toFixed(2)} SAR`}
               </p>
             </div>
 
             {/* Coupon — the customer's code, applied before paying */}
             <div>
-              <Label className="text-xs mb-2 block">{isRTL ? "كوبون الخصم" : "Coupon"}</Label>
+              <Label className="text-sm font-semibold mb-2.5 block">{isRTL ? "كوبون الخصم" : "Coupon"}</Label>
               <CouponApply
                 subtotal={totalBeforeDiscount}
                 onApply={(d, code) => { setCouponDiscount(d); setAppliedCoupon(code); }}
@@ -305,8 +307,8 @@ export function CartPanel({
 
             {/* Payment method */}
             <div>
-              <Label className="text-xs mb-2 block">{isRTL ? "طريقة الدفع" : "Payment Method"}</Label>
-              <div className="grid grid-cols-5 gap-1.5">
+              <Label className="text-sm font-semibold mb-2.5 block">{isRTL ? "طريقة الدفع" : "Payment Method"}</Label>
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2.5">
                 {paymentMethods.map((method) => (
                   <button
                     key={method.id}
@@ -314,7 +316,7 @@ export function CartPanel({
                     onClick={() => !method.soon && onSelectPayment(method.id as PaymentMethod)}
                     title={method.soon ? (isRTL ? "قريباً" : "Coming soon") : undefined}
                     className={cn(
-                      "relative py-2.5 rounded-lg border flex flex-col items-center gap-1 transition-all",
+                      "relative min-h-[112px] py-4 px-1 rounded-xl border-2 flex flex-col items-center justify-center gap-1.5 transition-all",
                       method.soon
                         ? "border-dashed border-border bg-muted/30 text-muted-foreground/60 cursor-not-allowed"
                         : selectedPayment === method.id
@@ -322,14 +324,14 @@ export function CartPanel({
                         : "border-border bg-card text-muted-foreground hover:border-primary/50"
                     )}
                   >
-                    <method.icon className="w-4 h-4" />
-                    <span className="text-[10px] font-medium leading-tight text-center px-0.5">{method.label}</span>
-                    {method.hint && <span className="text-[8px] leading-none opacity-80">{method.hint}</span>}
+                    <method.icon className="w-6 h-6" />
+                    <span className="text-[13px] font-semibold leading-tight text-center">{method.label}</span>
+                    {method.hint && <span className="text-[10px] leading-none opacity-80">{method.hint}</span>}
                     {method.logos && (
-                      <span className={cn("flex items-center justify-center gap-1 h-3", method.soon && "opacity-60")}>{method.logos}</span>
+                      <span className={cn("flex items-center justify-center gap-1 h-3 mt-0.5 [zoom:1.3]", method.soon && "opacity-60")}>{method.logos}</span>
                     )}
                     {method.soon && (
-                      <span className="absolute -top-1.5 start-1 text-[8px] px-1 rounded bg-muted border border-border text-muted-foreground">
+                      <span className="absolute -top-2 start-1.5 text-[10px] px-1.5 rounded-md bg-muted border border-border text-muted-foreground">
                         {isRTL ? "قريباً" : "Soon"}
                       </span>
                     )}
@@ -341,21 +343,21 @@ export function CartPanel({
             {/* Cash tender + change */}
             {selectedPayment === "cash" && (
               <div className="space-y-2">
-                <Label className="text-xs">{isRTL ? "المبلغ المستلم من العميل" : "Amount Received"}</Label>
+                <Label className="text-sm font-semibold">{isRTL ? "المبلغ المستلم من العميل" : "Amount Received"}</Label>
                 <Input
                   type="number"
                   inputMode="decimal"
                   value={cashReceived}
                   onChange={(e) => setCashReceived(e.target.value)}
                   placeholder={amountDue.toFixed(2)}
-                  className={cn("text-lg font-bold text-center", cashInsufficient && "border-destructive")}
+                  className={cn("h-12 text-xl font-bold text-center", cashInsufficient && "border-destructive")}
                 />
                 <div className="flex gap-1.5">
                   {quickAmounts.map((v) => (
                     <button
                       key={v}
                       onClick={() => setCashReceived(String(v))}
-                      className="flex-1 py-1.5 rounded-lg border border-border bg-muted/40 text-xs font-medium hover:border-primary/50 transition-all"
+                      className="flex-1 py-2.5 rounded-lg border border-border bg-muted/40 text-sm font-medium hover:border-primary/50 transition-all"
                     >
                       {v.toLocaleString()}
                     </button>
@@ -377,12 +379,12 @@ export function CartPanel({
             )}
           </div>
 
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowPaymentDialog(false)}>
+          <DialogFooter className="gap-2 pt-2">
+            <Button variant="outline" className="h-12 px-6 text-base" onClick={() => setShowPaymentDialog(false)}>
               {isRTL ? "إلغاء" : "Cancel"}
             </Button>
             <Button
-              className="bg-gradient-primary hover:opacity-90 flex-1"
+              className="bg-gradient-primary hover:opacity-90 flex-1 h-12 text-base font-semibold"
               disabled={!canConfirmPayment || isProcessing}
               onClick={handleComplete}
             >
