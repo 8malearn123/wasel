@@ -103,7 +103,7 @@ export default function PublicStorePage() {
             <Route path="device/:productId" element={<StoreProductDetailPage store={store} devices={devices} accessories={accessories} type="device" />} />
             <Route path="accessory/:productId" element={<StoreProductDetailPage store={store} devices={devices} accessories={accessories} type="accessory" />} />
             <Route path="cart" element={<StoreCartPage store={store} />} />
-            <Route path="checkout" element={<StoreCheckoutPage store={store} placeOrder={placeOrder} />} />
+            <Route path="checkout" element={<StoreCheckoutPage store={store} designExtras={designExtras} placeOrder={placeOrder} />} />
             <Route path="thank-you/:orderNumber" element={<StoreThankYouPage store={store} />} />
             <Route path="track" element={<StoreTrackOrderPage store={store} />} />
             <Route path="track/:orderNumber" element={<StoreTrackOrderPage store={store} />} />

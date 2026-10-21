@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { shippingOptions, shippingCost as shippingCostFor } from '@/lib/storeCheckout';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
@@ -539,6 +540,8 @@ export function usePublicStore(slug: string) {
     shipping_address: string;
     shipping_city: string;
     payment_method: string;
+    /** the shipping option chosen at checkout — its cost is looked up here, not taken from the page */
+    shipping_option?: string;
     items: { device_id?: string; accessory_id?: string; item_name: string; quantity: number; unit_price: number }[];
   }) => {
     if (!store) return null;
@@ -549,7 +552,8 @@ export function usePublicStore(slug: string) {
     const orderNumber = numData || `ORD-${Date.now()}`;
 
     const subtotal = orderData.items.reduce((sum, i) => sum + i.unit_price * i.quantity, 0);
-    const shippingCost = store.free_shipping_threshold && subtotal >= store.free_shipping_threshold ? 0 : store.shipping_cost;
+    const option = shippingOptions(store, designExtras?.carriers).find(o => o.id === orderData.shipping_option);
+    const shippingCost = shippingCostFor(option, subtotal, store);
     // VAT on the goods and on the delivery fee
     const taxAmount = Math.round((subtotal + Number(shippingCost || 0)) * 0.15 * 100) / 100;
     const totalAmount = subtotal + taxAmount + shippingCost;
