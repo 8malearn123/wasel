@@ -103,7 +103,7 @@ export function CouponApply({ subtotal, onApply, onRemove, appliedCoupon, isRTL 
 
   if (appliedCoupon) {
     return (
-      <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 border border-primary/20">
+      <div className="flex items-center gap-2 h-11 px-3 rounded-lg bg-primary/5 border border-primary/20">
         <Check className="w-4 h-4 text-primary flex-shrink-0" />
         <span className="text-sm text-primary font-medium flex-1">{appliedCoupon}</span>
         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onRemove}>
@@ -122,11 +122,11 @@ export function CouponApply({ subtotal, onApply, onRemove, appliedCoupon, isRTL 
             value={code}
             onChange={(e) => { setCode(e.target.value.toUpperCase()); setError(''); }}
             placeholder={isRTL ? "رمز الكوبون" : "Coupon code"}
-            className={cn("h-9 text-sm font-mono", isRTL ? "pr-9" : "pl-9")}
+            className={cn("h-11 text-base font-mono", isRTL ? "pr-10" : "pl-10")}
             onKeyDown={(e) => e.key === 'Enter' && handleApply()}
           />
         </div>
-        <Button variant="outline" size="sm" className="h-9 px-3" onClick={handleApply} disabled={loading || !code.trim()}>
+        <Button variant="outline" className="h-11 px-5" onClick={handleApply} disabled={loading || !code.trim()}>
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (isRTL ? "تطبيق" : "Apply")}
         </Button>
       </div>
