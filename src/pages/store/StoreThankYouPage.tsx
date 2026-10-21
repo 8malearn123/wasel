@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { StoreSEO } from '@/components/store/StoreSEO';
 import type { StoreSettings } from '@/hooks/useOnlineStore';
 import { supabase } from '@/integrations/supabase/client';
+import { locationFromAddress } from '@/lib/deliveryLocation';
 
 interface OrderItem {
   id: string;
@@ -134,7 +135,8 @@ export function StoreThankYouPage({ store }: { store: StoreSettings }) {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground mb-2 font-semibold">عنوان الشحن</p>
-                <p>{order.shipping_address}</p>
+                <p className="whitespace-pre-line">{locationFromAddress(order.shipping_address).text}</p>
+                {locationFromAddress(order.shipping_address).link && <p>📍 تم تحديد موقع التوصيل على الخريطة</p>}
                 <p className="text-muted-foreground">{order.shipping_city}</p>
               </div>
             </div>

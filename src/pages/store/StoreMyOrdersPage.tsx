@@ -8,6 +8,7 @@ import { StoreSEO } from '@/components/store/StoreSEO';
 import { getOrders, removeOrder, type SavedOrder } from '@/lib/storeOrdersHistory';
 import { trackPublicOrder } from '@/hooks/useOnlineStore';
 import type { StoreSettings } from '@/hooks/useOnlineStore';
+import { locationFromAddress } from '@/lib/deliveryLocation';
 
 interface OrderWithStatus extends SavedOrder {
   status?: string;
@@ -133,7 +134,7 @@ export function StoreMyOrdersPage({ store }: { store: StoreSettings }) {
                       <p className="text-muted-foreground">الاستلام</p>
                       <p className="font-medium">{o.customer_name}</p>
                       <p dir="ltr" className="text-right">{o.customer_phone}</p>
-                      <p>{o.shipping_address}, {o.shipping_city}</p>
+                      <p>{locationFromAddress(o.shipping_address).text}, {o.shipping_city}</p>
                     </div>
                     <div className="space-y-1">
                       <p className="text-muted-foreground">الدفع</p>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Loader2, ArrowRight, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,11 @@ import type { StoreSettings } from '@/hooks/useOnlineStore';
 import { toast } from 'sonner';
 import { saveOrder } from '@/lib/storeOrdersHistory';
 import { supabase } from '@/integrations/supabase/client';
+import { mapsLink, type DeliveryPoint } from '@/lib/deliveryLocation';
+
+// The map (and Leaflet) loads only when the customer reaches the shipping step
+const DeliveryMapPicker = lazy(() =>
+  import('@/components/store/DeliveryMapPicker').then(m => ({ default: m.DeliveryMapPicker })));
 
 interface Props {
   store: StoreSettings;
@@ -31,6 +36,9 @@ export function StoreCheckoutPage({ store, placeOrder }: Props) {
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [payment, setPayment] = useState('bank_transfer');
+  const [location, setLocation] = useState<DeliveryPoint | null>(null);
+  // The pin travels with the address as a maps link, so the order needs no new column
+  const fullAddress = location ? `${address.trim()}\n📍 الموقع على الخريطة: ${mapsLink(location)}` : address;
 
   const currency = store.currency_symbol || 'ر.س';
   const shipping = store.free_shipping_threshold && subtotal >= store.free_shipping_threshold ? 0 : Number(store.shipping_cost || 0);
@@ -61,7 +69,7 @@ export function StoreCheckoutPage({ store, placeOrder }: Props) {
     }));
     const result = await placeOrder({
       customer_name: name, customer_phone: phone, customer_email: email || undefined,
-      shipping_address: address, shipping_city: city, payment_method: payment,
+      shipping_address: fullAddress, shipping_city: city, payment_method: payment,
       items: orderItems,
     });
     setSubmitting(false);
@@ -72,7 +80,7 @@ export function StoreCheckoutPage({ store, placeOrder }: Props) {
         customer_name: name,
         customer_phone: phone,
         customer_email: email || null,
-        shipping_address: address,
+        shipping_address: fullAddress,
         shipping_city: city,
         payment_method: payment,
         payment_status: 'unpaid',
@@ -152,6 +160,12 @@ export function StoreCheckoutPage({ store, placeOrder }: Props) {
             <h2 className="text-xl font-bold mb-2">عنوان الشحن</h2>
             <div><Label>المدينة *</Label><Input value={city} onChange={(e) => setCity(e.target.value)} /></div>
             <div><Label>العنوان التفصيلي *</Label><Textarea value={address} onChange={(e) => setAddress(e.target.value)} rows={3} /></div>
+            <div>
+              <Label>الموقع على الخريطة</Label>
+              <Suspense fallback={<div className="h-64 rounded-xl border bg-muted/30 animate-pulse" />}>
+                <DeliveryMapPicker value={location} onChange={setLocation} />
+              </Suspense>
+            </div>
           </div>
         )}
         {step === 3 && (
@@ -186,6 +200,7 @@ export function StoreCheckoutPage({ store, placeOrder }: Props) {
               <p><b>الاسم:</b> {name}</p>
               <p><b>الجوال:</b> {phone}</p>
               <p><b>العنوان:</b> {address}, {city}</p>
+              {location && <p><b>الموقع:</b> تم تحديده على الخريطة 📍</p>}
               <p><b>الدفع:</b> {payment === 'bank_transfer' ? 'تحويل بنكي' : payment === 'apple_pay' ? 'أبل باي ( Pay)' : 'الدفع عند الاستلام'}</p>
             </div>
             <hr />
