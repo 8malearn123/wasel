@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Banknote } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { STORE_PAYMENT_METHODS, type StorePaymentMethod } from '@/lib/storePayments';
+import { STORE_PAYMENT_METHODS, isStorePaymentAvailable, type StorePaymentMethod } from '@/lib/storePayments';
 
 // The brands' marks, drawn here so the checkout needs no image files
 export const AppleMark = ({ className }: { className?: string }) => (
@@ -52,22 +52,23 @@ export function StorePaymentOptions({
   onChange: (method: StorePaymentMethod) => void;
 }) {
   return (
-    <div role="radiogroup" aria-label="طريقة الدفع" className="grid grid-cols-2 gap-3">
+    <div role="radiogroup" aria-label="طريقة الدفع" className="grid grid-cols-2 sm:grid-cols-3 gap-3">
       {STORE_PAYMENT_METHODS.map(m => {
         const selected = value === m.value;
+        const off = !isStorePaymentAvailable(m.value);
         return (
           <button
             key={m.value}
             type="button"
             role="radio"
             aria-checked={selected}
-            aria-disabled={m.soon || undefined}
-            disabled={m.soon}
+            aria-disabled={off || undefined}
+            disabled={off}
             onClick={() => onChange(m.value)}
             className={cn(
               'relative flex flex-col items-center justify-center gap-2 min-h-[104px] p-3 rounded-2xl border-2 bg-card transition-colors',
               selected ? 'border-[hsl(var(--store-primary))] bg-[hsl(var(--store-primary)/0.06)]' : 'border-border hover:border-muted-foreground/40',
-              m.soon && 'opacity-60 cursor-not-allowed hover:border-border',
+              off && 'opacity-60 cursor-not-allowed hover:border-border',
             )}
           >
             <span
@@ -78,7 +79,7 @@ export function StorePaymentOptions({
             >
               {selected && <span className="w-2.5 h-2.5 rounded-full bg-[hsl(var(--store-primary))]" />}
             </span>
-            {m.soon && (
+            {off && (
               <span className="absolute top-2.5 end-2.5 text-[10px] font-semibold bg-muted text-muted-foreground rounded-full px-2 py-0.5">قريباً</span>
             )}
             <span className="h-9 flex items-center">{LOGOS[m.value]}</span>
