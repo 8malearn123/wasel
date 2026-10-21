@@ -34,7 +34,8 @@ export function StoreCheckoutPage({ store, placeOrder }: Props) {
 
   const currency = store.currency_symbol || 'ر.س';
   const shipping = store.free_shipping_threshold && subtotal >= store.free_shipping_threshold ? 0 : Number(store.shipping_cost || 0);
-  const tax = Math.round(subtotal * 0.15 * 100) / 100;
+  // Delivery is charged on website orders only, and VAT applies to it as well
+  const tax = Math.round((subtotal + shipping) * 0.15 * 100) / 100;
   const total = subtotal + tax + shipping;
 
   if (items.length === 0) {

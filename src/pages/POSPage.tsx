@@ -191,21 +191,9 @@ export default function POSPage() {
     setCart(prev => dropOrphanWarranties(prev.filter(item => item.id !== id)));
   };
 
-  const handleCompleteSale = async (customerName: string, customerPhone: string, discount: number, deliveryFee = 0) => {
+  const handleCompleteSale = async (customerName: string, customerPhone: string, discount: number) => {
     if (!selectedPayment || cart.length === 0) return;
-
-    // Delivery is sold as its own line, so it is on the invoice and in the sale's total
-    const saleCart: POSCartItem[] = deliveryFee > 0
-      ? [...cart, {
-          id: 'delivery',
-          type: 'service',
-          name: isRTL ? 'رسوم توصيل' : 'Delivery fee',
-          identifier: isRTL ? 'توصيل' : 'Delivery',
-          price: deliveryFee,
-          cost: 0,
-          quantity: 1,
-        }]
-      : cart;
+    const saleCart = cart;
 
     setIsProcessing(true);
     try {

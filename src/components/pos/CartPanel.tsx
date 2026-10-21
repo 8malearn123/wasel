@@ -7,7 +7,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -46,7 +45,7 @@ interface CartPanelProps {
   onAddAccessory?: (accessory: Accessory) => void;
   accessories?: Accessory[];
   onClearCart: () => void;
-  onCompleteSale: (customerName: string, customerPhone: string, discount: number, deliveryFee: number) => void;
+  onCompleteSale: (customerName: string, customerPhone: string, discount: number) => void;
   isProcessing: boolean;
 }
 
@@ -68,23 +67,14 @@ export function CartPanel({
   const [cashReceived, setCashReceived] = useState("");
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
-  // Delivery to the customer, added in the payment dialog (15 ر.س unless changed)
-  const [withDelivery, setWithDelivery] = useState(false);
-  const [deliveryFeeInput, setDeliveryFeeInput] = useState("15");
   const discount = couponDiscount;
   const totalBeforeDiscount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const total = totalBeforeDiscount - discount;
   const tax = total - (total / 1.15);
   const subtotal = total - tax;
-  // A coupon makes delivery free
-  const freeDelivery = withDelivery && !!appliedCoupon;
-  // The fee is entered before VAT (15 ر.س) and charged with it (17.25 ر.س),
-  // the same way the cart's prices already include VAT
-  const deliveryFeeBeforeVat = withDelivery && !freeDelivery ? Math.max(0, parseFloat(deliveryFeeInput) || 0) : 0;
-  const deliveryVat = Math.round(deliveryFeeBeforeVat * 0.15 * 100) / 100;
-  const deliveryFee = deliveryFeeBeforeVat + deliveryVat;
-  // What the customer pays in the dialog: the cart, less the coupon, plus delivery
-  const amountDue = total + deliveryFee;
+  // What the customer pays at the till. Delivery is charged on website orders
+  // only (store settings → shipping cost), never in the shop
+  const amountDue = total;
   const amountDueTax = amountDue - (amountDue / 1.15);
 
   // Installments (Tabby / Tamara) are shown but not yet switched on
@@ -98,13 +88,11 @@ export function CartPanel({
   const handleComplete = () => {
     setShowPaymentDialog(false);
     setCashReceived("");
-    onCompleteSale(customerName, customerPhone, discount, deliveryFee);
+    onCompleteSale(customerName, customerPhone, discount);
     setCustomerName("");
     setCustomerPhone("");
     setCouponDiscount(0);
     setAppliedCoupon(null);
-    setWithDelivery(false);
-    setDeliveryFeeInput("15");
   };
 
   const receivedAmount = parseFloat(cashReceived) || 0;
@@ -283,49 +271,6 @@ export function CartPanel({
               <p className="text-[11px] text-muted-foreground mt-1">
                 {isRTL ? `شامل ضريبة القيمة المضافة ${amountDueTax.toFixed(2)} ر.س` : `Includes VAT ${amountDueTax.toFixed(2)} SAR`}
               </p>
-              {deliveryFee > 0 && (
-                <p className="text-[11px] text-foreground font-medium mt-1">
-                  {isRTL
-                    ? `منها توصيل ${deliveryFeeBeforeVat.toFixed(2)} + ضريبة ${deliveryVat.toFixed(2)} = ${deliveryFee.toFixed(2)} ر.س`
-                    : `Including delivery ${deliveryFeeBeforeVat.toFixed(2)} + VAT ${deliveryVat.toFixed(2)} = ${deliveryFee.toFixed(2)} SAR`}
-                </p>
-              )}
-              {discount > 0 && (
-                <p className="text-[11px] text-primary font-medium mt-1">
-                  {isRTL
-                    ? `بعد خصم الكوبون ${discount.toFixed(2)} ر.س (قبل الخصم ${totalBeforeDiscount.toFixed(2)})`
-                    : `After a ${discount.toFixed(2)} SAR coupon (was ${totalBeforeDiscount.toFixed(2)})`}
-                </p>
-              )}
-            </div>
-
-            {/* Delivery fee */}
-            <div className="flex items-center gap-3 rounded-lg border border-border px-3 py-2">
-              <Switch id="delivery" checked={withDelivery} onCheckedChange={setWithDelivery} />
-              <Label htmlFor="delivery" className="text-sm flex-1 cursor-pointer">
-                {isRTL ? "توصيل للعميل" : "Delivery"}
-              </Label>
-              {freeDelivery && (
-                <span className="text-xs font-semibold text-success bg-success/10 border border-success/20 rounded-full px-2 py-0.5">
-                  {isRTL ? "مجاني مع الكوبون" : "Free with coupon"}
-                </span>
-              )}
-              {withDelivery && !freeDelivery && (
-                <div className="flex items-center gap-1.5">
-                  <Input
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    value={deliveryFeeInput}
-                    onChange={(e) => setDeliveryFeeInput(e.target.value)}
-                    className="h-8 w-20 text-center font-semibold"
-                    aria-label={isRTL ? "رسوم التوصيل" : "Delivery fee"}
-                  />
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">
-                    {isRTL ? `ر.س + ضريبة ${deliveryVat.toFixed(2)}` : `SAR + VAT ${deliveryVat.toFixed(2)}`}
-                  </span>
-                </div>
-              )}
             </div>
 
             {/* Coupon — the customer's code, applied before paying */}
@@ -338,12 +283,6 @@ export function CartPanel({
                 appliedCoupon={appliedCoupon}
                 isRTL={isRTL}
               />
-              {/* The coupon's perk, said to the customer */}
-              {appliedCoupon && (
-                <div className="mt-2 rounded-lg bg-success/10 border border-success/20 px-3 py-2 text-sm font-semibold text-success text-center">
-                  {isRTL ? "🎉 لقد حصلت على توصيل مجاني" : "🎉 You got free delivery"}
-                </div>
-              )}
             </div>
 
             {/* Payment method */}
