@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { storePaymentLabel } from '@/lib/storePayments';
 import { trackingUrl } from '@/lib/shipping';
 import { Link, useParams } from 'react-router-dom';
 import { Package, ChevronDown, ChevronUp, ShoppingBag, Trash2, Truck, CheckCircle2, Clock, XCircle } from 'lucide-react';
@@ -138,7 +139,7 @@ export function StoreMyOrdersPage({ store }: { store: StoreSettings }) {
                     </div>
                     <div className="space-y-1">
                       <p className="text-muted-foreground">الدفع</p>
-                      <p>{o.payment_method === 'bank_transfer' ? 'تحويل بنكي' : o.payment_method === 'apple_pay' ? 'أبل باي' : 'الدفع عند الاستلام'}</p>
+                      <p>{storePaymentLabel(o.payment_method)}</p>
                       <p className="text-muted-foreground">حالة الدفع</p>
                       <p>{o.payment_status === 'paid' ? 'مدفوع' : 'غير مدفوع'}</p>
                       {o.tracking_number && (
