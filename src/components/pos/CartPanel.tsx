@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ShoppingCart, X, Minus, Plus, CreditCard, Banknote, ReceiptText, User, Phone, ShieldCheck,
-  Smartphone, CalendarClock
+  Smartphone, CalendarClock, Layers
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -82,6 +82,8 @@ export function CartPanel({
     { id: "cash", icon: Banknote, label: isRTL ? "كاش" : "Cash" },
     { id: "card", icon: CreditCard, label: isRTL ? "مدى والبطاقات" : "Mada & cards" },
     { id: "apple_pay", icon: Smartphone, label: "Apple Pay" },
+    // part cash, part card — at the till only; the online store has its own methods
+    { id: "mixed", icon: Layers, label: isRTL ? "مختلط" : "Mixed", hint: isRTL ? "كاش + بطاقة" : "Cash + card" },
     { id: "installments", icon: CalendarClock, label: isRTL ? "تقسيط" : "Installments", hint: isRTL ? "تابي · تمارا" : "Tabby · Tamara", soon: true },
   ];
 
@@ -303,7 +305,7 @@ export function CartPanel({
             {/* Payment method */}
             <div>
               <Label className="text-xs mb-2 block">{isRTL ? "طريقة الدفع" : "Payment Method"}</Label>
-              <div className="grid grid-cols-4 gap-1.5">
+              <div className="grid grid-cols-5 gap-1.5">
                 {paymentMethods.map((method) => (
                   <button
                     key={method.id}
