@@ -132,6 +132,20 @@ export default function UsersSection() {
   const [roleEditor, setRoleEditor] = useState<{ role: CustomRole | null; onSaved?: (id: string) => void; preset?: string[] } | null>(null);
   const openRoleEditor = (role: CustomRole | null, onSaved?: (id: string) => void, preset?: string[]) => setRoleEditor({ role, onSaved, preset });
 
+  // the permissions panel under the role select, in the add and edit dialogs
+  const permissionOptions: RolePermissionOptions = {
+    customRoles,
+    catalog,
+    canManageRoles,
+    onSavePermissions: async (role, permissions) => (await saveRole(role.id, role.name, role.description ?? '', permissions)).error,
+    onCustomise: canManageRoles ? (preset, onSaved) => openRoleEditor(null, onSaved, preset) : undefined,
+    systemRoles: systemRoles ?? {},
+    // the system roles are edited per shop only while roles live in the app's store
+    canEditSystemRoles: canManageRoles && !databaseReady,
+    holdersOf: (r) => users.filter(u => u.is_active && u.role === r).length,
+    onSaveSystemRole: async (r, permissions) => (await saveSystemRole(r, permissions)).error,
+  };
+
   const handleDeleteRole = async (role: CustomRole) => {
     if (!confirm(`حذف الدور «${role.name}»؟`)) return;
     const { error } = await deleteRole(role.id);
@@ -332,15 +346,7 @@ export default function UsersSection() {
         user={editing}
         branches={branches}
         customRoles={customRoles}
-        catalog={catalog}
-        canManageRoles={canManageRoles}
-        onSavePermissions={async (role, permissions) => (await saveRole(role.id, role.name, role.description ?? '', permissions)).error}
-        onCustomise={canManageRoles ? (preset, onSaved) => openRoleEditor(null, onSaved, preset) : undefined}
-        systemRoles={systemRoles ?? {}}
-        // the system roles are edited per shop only while roles live in the app's store
-        canEditSystemRoles={canManageRoles && !databaseReady}
-        holdersOf={(r) => users.filter(u => u.is_active && u.role === r).length}
-        onSaveSystemRole={async (r, permissions) => (await saveSystemRole(r, permissions)).error}
+        permissionOptions={permissionOptions}
         onSaveRole={updateUserRole}
         onSaveBranch={updateUserBranch}
         onSaved={refetch}
@@ -368,6 +374,7 @@ export default function UsersSection() {
         branches={branches}
         onSuccess={refetch}
         customRoles={customRoles}
+        permissionOptions={permissionOptions}
         onCreateRole={canManageRoles ? (onSaved) => openRoleEditor(null, onSaved) : undefined}
       />
 
@@ -394,28 +401,8 @@ export default function UsersSection() {
   );
 }
 
-function EditUserDialog({
-  open,
-  onOpenChange,
-  user,
-  branches,
-  customRoles,
-  catalog,
-  canManageRoles,
-  onSavePermissions,
-  onCustomise,
-  systemRoles,
-  canEditSystemRoles,
-  holdersOf,
-  onSaveSystemRole,
-  onSaveRole,
-  onSaveBranch,
-  onSaved
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  user: MerchantUser | null;
-  branches: { id: string; name: string }[];
+/** Everything the permissions panel under a role select needs from the section */
+interface RolePermissionOptions {
   customRoles: CustomRole[];
   catalog: CatalogPermission[];
   canManageRoles: boolean;
@@ -430,17 +417,17 @@ function EditUserDialog({
   holdersOf: (role: string) => number;
   /** null puts the role's own permissions back; resolves to an error message, or nothing */
   onSaveSystemRole: (role: EditableSystemRole, permissions: string[] | null) => Promise<string | undefined>;
-  onSaveRole: (userId: string, role: UserRole) => Promise<any>;
-  onSaveBranch: (userId: string, branchId: string | null) => Promise<any>;
-  onSaved: () => void;
-}) {
-  const [loading, setLoading] = useState(false);
-  const [role, setRole] = useState<string>(user ? roleValueOf(user) : 'cashier');
-  const [branchId, setBranchId] = useState(user?.branch_id || 'all');
+}
 
+/**
+ * The permissions of the role picked in a select (`role`: a system role or
+ * "custom:<id>"), for the user being edited — or null for one being added.
+ */
+function useRolePermissions(role: string, user: MerchantUser | null, opts: RolePermissionOptions) {
   // The selected role's permissions. A custom role's, and a branch manager's,
   // inventory manager's or cashier's (for the whole shop), can be changed
   // here; the admin holds everything and is shown as it is
+  const { customRoles, catalog, canManageRoles, systemRoles, canEditSystemRoles, holdersOf, onSavePermissions, onSaveSystemRole } = opts;
   const customRole = role.startsWith(CUSTOM_PREFIX)
     ? customRoles.find(r => r.id === role.slice(CUSTOM_PREFIX.length)) ?? null
     : null;
@@ -491,20 +478,105 @@ function EditUserDialog({
         ? 'الأدمن يملك كل الصلاحيات.'
         : '';
 
+  /** saves what was changed; resolves to an error message, or nothing */
+  const save = async (): Promise<string | undefined> => {
+    if (!permissionsChanged || !edited) return undefined;
+    if (edited.keys.size === 0) return 'اختر صلاحية واحدة على الأقل';
+    const keys = [...edited.keys];
+    return customRole
+      ? onSavePermissions(customRole, keys)
+      : systemRole
+        // back to the role's own list = nothing stored for it
+        ? onSaveSystemRole(systemRole, sameAs(edited.keys, roleDefault) ? null : keys)
+        : undefined;
+  };
+
+  return {
+    role, customRole, systemRole, roleDefault, ticked, editable, extraPowers, hint, inCatalog,
+    changed: permissionsChanged, toggle, save,
+    isDefault: sameAs(ticked, roleDefault),
+    resetToDefault: () => systemRole && setEdited({ key: systemRole, keys: new Set(roleDefault) }),
+  };
+}
+
+/** The panel itself: the role's permissions, ticked, and what can be done with them. */
+function RolePermissionsSection({
+  rp,
+  catalog,
+  disabled,
+  onCustomise,
+  onPickRole,
+}: {
+  rp: ReturnType<typeof useRolePermissions>;
+  catalog: CatalogPermission[];
+  disabled?: boolean;
+  onCustomise?: RolePermissionOptions['onCustomise'];
+  /** selects a role in the dialog's select ("custom:<id>") */
+  onPickRole: (role: string) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <Label>الصلاحيات</Label>
+          {rp.hint && <p className="text-xs text-muted-foreground mt-1">{rp.hint}</p>}
+        </div>
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          {rp.systemRole && rp.editable && !rp.isDefault && (
+            <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={rp.resetToDefault}>
+              الصلاحيات الافتراضية
+            </Button>
+          )}
+          {rp.systemRole && onCustomise && (
+            <Button type="button" variant="outline" size="sm" className="gap-1.5"
+              onClick={() => onCustomise([...rp.ticked].filter(rp.inCatalog), (id) => onPickRole(CUSTOM_PREFIX + id))}>
+              <Tag className="w-3.5 h-3.5" /> دور مخصص لهذا المستخدم
+            </Button>
+          )}
+        </div>
+      </div>
+      <PermissionChecklist catalog={catalog} selected={rp.ticked} onToggle={rp.toggle} disabled={disabled || !rp.editable} />
+      {rp.extraPowers.length > 0 && (
+        <p className="text-xs text-muted-foreground">وأيضاً: {rp.extraPowers.join('، ')}.</p>
+      )}
+    </div>
+  );
+}
+
+function EditUserDialog({
+  open,
+  onOpenChange,
+  user,
+  branches,
+  customRoles,
+  permissionOptions,
+  onSaveRole,
+  onSaveBranch,
+  onSaved
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  user: MerchantUser | null;
+  branches: { id: string; name: string }[];
+  customRoles: CustomRole[];
+  permissionOptions: RolePermissionOptions;
+  onSaveRole: (userId: string, role: UserRole) => Promise<any>;
+  onSaveBranch: (userId: string, branchId: string | null) => Promise<any>;
+  onSaved: () => void;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [role, setRole] = useState<string>(user ? roleValueOf(user) : 'cashier');
+  const [branchId, setBranchId] = useState(user?.branch_id || 'all');
+
+  const rp = useRolePermissions(role, user, permissionOptions);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
-    if (permissionsChanged && edited) {
-      if (edited.keys.size === 0) { toast.error('اختر صلاحية واحدة على الأقل'); return; }
+    if (rp.changed) {
       setLoading(true);
-      const keys = [...edited.keys];
-      const error = customRole
-        ? await onSavePermissions(customRole, keys)
-        : systemRole
-          // back to the role's own list = nothing stored for it
-          ? await onSaveSystemRole(systemRole, sameAs(edited.keys, roleDefault) ? null : keys)
-          : undefined;
+      const error = await rp.save();
       if (error) { toast.error(error); setLoading(false); return; }
       toast.success('تم تحديث صلاحيات الدور');
       onSaved();
@@ -570,37 +642,8 @@ function EditUserDialog({
               )}
             </div>
             {user?.role !== 'owner' && (
-              <div className="space-y-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <Label>الصلاحيات</Label>
-                    {hint && <p className="text-xs text-muted-foreground mt-1">{hint}</p>}
-                  </div>
-                  <div className="flex flex-col items-end gap-1 shrink-0">
-                    {systemRole && editable && !sameAs(ticked, roleDefault) && (
-                      <Button type="button" variant="ghost" size="sm" className="h-7 text-xs"
-                        onClick={() => setEdited({ key: systemRole, keys: new Set(roleDefault) })}>
-                        الصلاحيات الافتراضية
-                      </Button>
-                    )}
-                    {systemRole && onCustomise && (
-                      <Button type="button" variant="outline" size="sm" className="gap-1.5"
-                        onClick={() => onCustomise([...ticked].filter(inCatalog), (id) => setRole(CUSTOM_PREFIX + id))}>
-                        <Tag className="w-3.5 h-3.5" /> دور مخصص لهذا المستخدم
-                      </Button>
-                    )}
-                  </div>
-                </div>
-                <PermissionChecklist
-                  catalog={catalog}
-                  selected={ticked}
-                  onToggle={toggle}
-                  disabled={loading || !editable}
-                />
-                {extraPowers.length > 0 && (
-                  <p className="text-xs text-muted-foreground">وأيضاً: {extraPowers.join('، ')}.</p>
-                )}
-              </div>
+              <RolePermissionsSection rp={rp} catalog={permissionOptions.catalog} disabled={loading}
+                onCustomise={permissionOptions.onCustomise} onPickRole={setRole} />
             )}
             <div className="space-y-2">
               <Label>Assigned Branch</Label>
@@ -939,6 +982,7 @@ function AddUserDialog({
   branches,
   onSuccess,
   customRoles,
+  permissionOptions,
   onCreateRole,
 }: {
   open: boolean;
@@ -946,6 +990,7 @@ function AddUserDialog({
   branches: { id: string; name: string }[];
   onSuccess: () => void;
   customRoles: CustomRole[];
+  permissionOptions: RolePermissionOptions;
   /** opens the role editor; the saved role's id comes back to select it */
   onCreateRole?: (onSaved: (id: string) => void) => void;
 }) {
@@ -953,6 +998,7 @@ function AddUserDialog({
   const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<string>('cashier');
+  const rp = useRolePermissions(role, null, permissionOptions);
   const [branchId, setBranchId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -982,6 +1028,11 @@ function AddUserDialog({
     }
 
     setLoading(true);
+    // the role's permissions as ticked here, before the user is given the role
+    if (rp.changed) {
+      const failure = await rp.save();
+      if (failure) { setError(failure); setLoading(false); return; }
+    }
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const response = await fetch(
@@ -1130,7 +1181,7 @@ function AddUserDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[450px]">
+      <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="w-5 h-5" /> إضافة مستخدم جديد
@@ -1203,6 +1254,8 @@ function AddUserDialog({
                 </Button>
               )}
             </div>
+            <RolePermissionsSection rp={rp} catalog={permissionOptions.catalog} disabled={loading}
+              onCustomise={permissionOptions.onCustomise} onPickRole={setRole} />
             <div className="space-y-2">
               <Label>الفرع</Label>
               <Select value={branchId} onValueChange={setBranchId}>

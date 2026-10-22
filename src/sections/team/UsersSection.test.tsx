@@ -190,4 +190,35 @@ describe('custom roles in users & permissions', () => {
     }
     expect(within(dialog).getByText('الأدمن يملك كل الصلاحيات.')).toBeInTheDocument();
   });
+
+  it('adding a user: the chosen role shows its permissions, and changes are saved before the user is made', async () => {
+    permissions = ['roles.manage', 'users.view', 'users.update'];
+    databaseReady = false;
+    saveSystemRole.mockResolvedValue({});
+    const { supabase } = await import('@/integrations/supabase/client');
+    (supabase.auth.getSession as ReturnType<typeof vi.fn>).mockResolvedValue({ data: { session: { access_token: 't' } } });
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ success: true, login_code: '12345' }) });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<UsersSection />);
+    fireEvent.click(screen.getByText('إضافة مستخدم جديد'));
+    const dialogs = await screen.findAllByRole('dialog');
+    const dialog = dialogs[dialogs.length - 1];
+    // the default role, cashier: its own permissions, editable for the shop
+    const pos = within(dialog).getByRole('checkbox', { name: /نقطة البيع/ });
+    expect(pos).toHaveAttribute('data-state', 'checked');
+    expect(pos).not.toBeDisabled();
+    fireEvent.click(within(dialog).getByText('عرض التقارير المالية'));
+
+    fireEvent.change(within(dialog).getByLabelText('الاسم الكامل'), { target: { value: 'ريم' } });
+    fireEvent.change(within(dialog).getByLabelText('البريد الإلكتروني'), { target: { value: 'reem@x.sa' } });
+    fireEvent.change(within(dialog).getByLabelText('كلمة المرور'), { target: { value: 'secret1' } });
+    fireEvent.submit(within(dialog).getByLabelText('الاسم الكامل').closest('form')!);
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(saveSystemRole).toHaveBeenCalledWith('cashier', ['pos.access', 'reports.view']);
+    expect(saveSystemRole.mock.invocationCallOrder[0]).toBeLessThan(fetchMock.mock.invocationCallOrder[0]);
+    vi.unstubAllGlobals();
+    databaseReady = true;
+  });
 });

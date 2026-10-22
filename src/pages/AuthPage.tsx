@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Smartphone, Mail, Lock, User, AlertCircle, Loader2, KeyRound } from 'lucide-react';
@@ -22,6 +22,13 @@ export default function AuthPage() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [loginCode, setLoginCode] = useState('');
+  // which way of signing in is shown; a demo account switches to its own
+  const [loginTab, setLoginTab] = useState<'code' | 'email'>('code');
+  const formRef = useRef<HTMLDivElement>(null);
+  const showForm = (tab: 'code' | 'email') => {
+    setLoginTab(tab);
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { user, signIn, signUp } = useAuth();
@@ -150,8 +157,8 @@ export default function AuthPage() {
         </div>
 
         {/* Form Card */}
-        <div className="bg-card rounded-xl border border-border shadow-lg p-6">
-          <Tabs defaultValue="code" dir="rtl">
+        <div ref={formRef} className="bg-card rounded-xl border border-border shadow-lg p-6">
+          <Tabs value={loginTab} onValueChange={(v) => setLoginTab(v as 'code' | 'email')} dir="rtl">
             <TabsList className="w-full mb-6">
               <TabsTrigger value="code" className="flex-1 gap-2">
                 <KeyRound className="w-4 h-4" /> دخول بالكود
@@ -282,6 +289,7 @@ export default function AuthPage() {
               type="button"
               onClick={() => {
                 setLoginCode('70035');
+                showForm('code');
                 setError('');
               }}
               className="w-full flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors text-sm"
@@ -309,7 +317,7 @@ export default function AuthPage() {
               <button
                 key={p.email}
                 type="button"
-                onClick={() => { setEmail(p.email); setPassword('demo1234'); setIsLogin(true); setError(''); }}
+                onClick={() => { setEmail(p.email); setPassword('demo1234'); setIsLogin(true); setError(''); showForm('email'); }}
                 className="w-full flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors text-sm"
                 dir="rtl"
               >
