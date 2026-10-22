@@ -3,7 +3,7 @@ name: Demo login check
 on:
   push:
     branches: [claude/sweet-knuth-u4nbzm-demo-check]
-    paths: ['src/**', 'e2e/demo-login-check.mjs', '.github/workflows/demo-login-check.yml']
+    paths: ['src/**', 'e2e/*.mjs', '.github/workflows/demo-login-check.yml']
 
 jobs:
   check:
