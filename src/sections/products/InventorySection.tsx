@@ -345,10 +345,10 @@ export default function InventorySection() {
       >
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           {/* in Arabic the kinds sit on the right and add / favourites / search on the left */}
-          <div className="px-6 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="px-4 sm:px-6 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             {/* One kind on screen at a time — the three lists used to run down the
                 page together, which read as one long pile */}
-            <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-muted/50 border border-border self-start">
+            <div className="inline-flex flex-wrap items-center gap-1 p-1 rounded-xl bg-muted/50 border border-border self-start max-w-full">
               {kindOptions.map(option => (
                 <button
                   key={option.key}
@@ -392,8 +392,8 @@ export default function InventorySection() {
                 {isRTL ? "التصنيفات" : "Categories"}
               </button>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="relative">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative flex-1 min-w-0 sm:flex-none">
                 <Search className={cn(
                   "absolute top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground",
                   isRTL ? "right-3" : "left-3"
@@ -402,7 +402,7 @@ export default function InventorySection() {
                   placeholder={isRTL ? "ابحث في المخزون..." : "Search the stock..."}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className={cn("w-64", isRTL ? "pr-9" : "pl-9")}
+                  className={cn("w-full sm:w-64", isRTL ? "pr-9" : "pl-9")}
                 />
               </div>
               <Button

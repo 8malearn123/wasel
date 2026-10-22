@@ -165,8 +165,8 @@ export default function SuppliersSection() {
       <Tabs value={activeTab} onValueChange={setActiveTab} dir={isRTL ? 'rtl' : 'ltr'}>
         {/* Suppliers Tab */}
         <TabsContent value="suppliers">
-          <div className="flex justify-between items-center mb-4">
-            <Input placeholder={isRTL ? 'بحث عن مورد...' : 'Search suppliers...'} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-64" />
+          <div className="flex justify-between items-center gap-3 mb-4">
+            <Input placeholder={isRTL ? 'بحث عن مورد...' : 'Search suppliers...'} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full max-w-64 min-w-0" />
             <Button className="gap-2 bg-gradient-primary hover:opacity-90" onClick={() => setShowAdd(true)}>
               <Plus className="w-4 h-4" />
               {isRTL ? 'إضافة مورد' : 'Add Supplier'}
