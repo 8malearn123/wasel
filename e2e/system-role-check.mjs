@@ -48,7 +48,12 @@ async function look(label) {
   await page.goto(`${SITE}/reports?tab=sales`); await settle();
   const reports = new URL(page.url()).pathname;
   // the till is full-width with no sidebar; read it on the page that opened
-  const nav = [...new Set((await page.locator('aside a').allInnerTexts().catch(() => [])).map(t => t.trim().split('\n')[0]).filter(Boolean))];
+  const nav = [...new Set((await page.locator('aside a, nav a').allInnerTexts().catch(() => [])).map(t => t.trim().split('\n')[0]).filter(Boolean))];
+  const jpg = await page.screenshot({ type: 'jpeg', quality: 45 });
+  console.log(`SHOT-BEGIN ${label}`);
+  const b64 = jpg.toString('base64');
+  for (let i = 0; i < b64.length; i += 4000) console.log(b64.slice(i, i + 4000));
+  console.log(`SHOT-END ${label}`);
   await page.goto(`${SITE}/pos`); await settle();
   const pos = new URL(page.url()).pathname;
   console.log(`[${label}] home ${home} | /reports → ${reports} | /pos → ${pos} | sidebar: ${nav.join(' | ')}`);
