@@ -38,10 +38,9 @@ const OWNERS = {
   'employee-max': 'demo-employee@wasil.demo',
 };
 
-// A custom role saved in the shop itself (not mocked): what it was given
-const LIVE_CUSTOM = {
-  'employee-max': ['products.view', 'online_orders.manage', 'customers.manage', 'repairs.manage'],
-};
+// A custom role saved in the shop itself (not mocked): its permissions are
+// read from the shop when the run starts, since the owner may change them
+const LIVE_CUSTOM = { 'employee-max': null };
 
 // Everything a member can open: [url, permission the app gates it on]
 const TARGETS = [
@@ -134,6 +133,15 @@ async function memberOf(session) {
 const session = await signIn();
 const member = await memberOf(session);
 const custom = CUSTOM[PROFILE];
+if (PROFILE in LIVE_CUSTOM) {
+  const r = await fetch(`${SUPA}/rest/v1/activity_logs?select=new_data&merchant_id=eq.${member.merchant_id}&entity_type=eq.custom_roles&order=created_at.desc&limit=1`, {
+    headers: { apikey: ANON, Authorization: `Bearer ${session.access_token}` },
+  });
+  const config = (await r.json())[0]?.new_data;
+  const role = config?.roles?.find(x => x.id === config.assignments?.[member.id]);
+  LIVE_CUSTOM[PROFILE] = role?.permissions ?? [];
+  console.log(`live role «${role?.name}»: ${LIVE_CUSTOM[PROFILE].join(', ')}`);
+}
 
 const browser = await chromium.launch();
 const context = await browser.newContext({ locale: 'ar', viewport: { width: 1680, height: 1000 } });
@@ -231,6 +239,16 @@ const home = new URL(page.url()).pathname;
 const results = [];
 for (const [url, permission] of TARGETS) {
   results.push({ ...(await visit(url)), permission });
+}
+
+// The till is full-width with no sidebar: an account that lands there has its
+// sidebar read on another page it opens
+if (sidebar.length === 0 && home === '/pos') {
+  const other = results.find(r => r.outcome === 'open' && !r.url.startsWith('/pos'));
+  if (other) {
+    await visit(other.url);
+    sidebar.push(...await page.$$eval('aside a[href]', as => [...new Set(as.map(a => new URL(a.href).pathname))]));
+  }
 }
 
 await page.screenshot({ path: `report-${PROFILE}.png`, fullPage: false });
