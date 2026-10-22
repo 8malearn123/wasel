@@ -45,9 +45,10 @@ async function look(label) {
   };
   await page.goto(`${SITE}/`); await settle();
   const home = new URL(page.url()).pathname;
-  const nav = [...new Set((await page.locator('aside a').allInnerTexts().catch(() => [])).map(t => t.trim().split('\n')[0]).filter(Boolean))];
   await page.goto(`${SITE}/reports?tab=sales`); await settle();
   const reports = new URL(page.url()).pathname;
+  // the till is full-width with no sidebar; read it on the page that opened
+  const nav = [...new Set((await page.locator('aside a').allInnerTexts().catch(() => [])).map(t => t.trim().split('\n')[0]).filter(Boolean))];
   await page.goto(`${SITE}/pos`); await settle();
   const pos = new URL(page.url()).pathname;
   console.log(`[${label}] home ${home} | /reports → ${reports} | /pos → ${pos} | sidebar: ${nav.join(' | ')}`);
