@@ -32,6 +32,15 @@ const OWNERS = {
   'owner-professional': 'demo-professional@wasil.demo',
   'owner-enterprise': 'demo-enterprise@wasil.demo',
   'owner-distributor': 'demo-distributor@wasil.demo',
+  // the role demo accounts of the Max shop — signed into with a password too
+  'admin-max': 'demo-admin@wasil.demo',
+  'cashier-max': 'demo-cashier@wasil.demo',
+  'employee-max': 'demo-employee@wasil.demo',
+};
+
+// A custom role saved in the shop itself (not mocked): what it was given
+const LIVE_CUSTOM = {
+  'employee-max': ['products.view', 'online_orders.manage', 'customers.manage', 'repairs.manage'],
 };
 
 // Everything a member can open: [url, permission the app gates it on]
@@ -253,14 +262,15 @@ const role = member?.role;
 const must = (u) => { if (!opened(u)) problems.push(`must open ${u}, got ${results.find(r => r.url === u)?.outcome}`); };
 const mustNot = (u) => { if (opened(u)) problems.push(`must NOT open ${u}`); };
 
-if (custom) {
-  const grants = new Set(custom.permissions.filter(k => !['roles.view', 'roles.manage', 'users.view', 'users.create', 'users.update', 'users.delete', 'subscription.manage', 'settings.manage', 'policy.manage', 'branches.manage'].includes(k)));
+const grantedList = custom?.permissions ?? LIVE_CUSTOM[PROFILE];
+if (grantedList) {
+  const grants = new Set(grantedList.filter(k => !['roles.view', 'roles.manage', 'users.view', 'users.create', 'users.update', 'users.delete', 'subscription.manage', 'settings.manage', 'policy.manage', 'branches.manage'].includes(k)));
   for (const r of results) {
     if (r.permission && !grants.has(r.permission) && r.outcome === 'open') problems.push(`custom role opened ${r.url} without ${r.permission}`);
   }
   must('/organization?tab=support');
   ['/team?tab=users', '/subscription', '/settings?tab=general', '/settings?tab=policy', '/organization?tab=branches'].forEach(mustNot);
-} else if (PROFILE === 'cashier') {
+} else if (PROFILE === 'cashier' || PROFILE === 'cashier-max') {
   ['/', '/products?tab=inventory', '/shipping', '/reports?tab=sales', '/team?tab=employees', '/team?tab=users',
     '/ai-insights', '/subscription', '/settings?tab=general', '/organization?tab=branches', '/sales?tab=orders',
     '/sales?tab=customers'].forEach(mustNot);
