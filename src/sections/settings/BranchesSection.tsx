@@ -78,6 +78,9 @@ export default function BranchesSection() {
   const branchLimit = subscription?.max_branches || 1;
   const isAtLimit = activeBranches.length >= branchLimit;
   const isOwner = merchantUser?.role === 'owner';
+  // the database lets the owner and the admin edit branches (is_owner_or_admin);
+  // asking the platform for a new one stays with the owner (branch_requests policy)
+  const canEditBranches = isOwner || merchantUser?.role === 'admin';
 
   return (
     <>
@@ -245,7 +248,7 @@ export default function BranchesSection() {
                       </span>
                     </div>
                   </div>
-                  {isOwner && (
+                  {canEditBranches && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon">

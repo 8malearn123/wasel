@@ -53,7 +53,7 @@ export function roleErrorMessage(message?: string): string {
 /**
  * The shop's own roles and the permissions they may be built from. Writing
  * goes through save_custom_role / delete_custom_role / assign_member_role,
- * which check roles.manage (owner) or users.update in the database — the UI
+ * which check roles.manage (owner, admin) or users.update in the database — the UI
  * hiding a button is a convenience, not the lock.
  */
 export function useCustomRoles() {

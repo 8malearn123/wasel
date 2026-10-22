@@ -72,7 +72,7 @@ AS $$
       'products.media.upload','products.media.delete','categories.manage',
       'employees.view','employees.create','employees.update','employees.delete',
       'users.view','users.create','users.update','users.delete',
-      'roles.view',
+      'roles.view','roles.manage',
       'dashboard.view','pos.access','invoices.view','reports.view','closings.manage',
       'suppliers.manage','repairs.manage','online_orders.manage','store.manage',
       'customers.manage','marketing.manage','wholesale.manage','stocktake.manage',
@@ -187,8 +187,8 @@ $$;
 -- 3 · Changing roles
 -- ---------------------------------------------------------------------------
 
--- Create (_role_id NULL) or edit a role this merchant owns. Owner only:
--- roles.manage is held by the owner role alone and no custom role can hold it.
+-- Create (_role_id NULL) or edit a role this merchant owns. Owner and admin:
+-- roles.manage is held by those two system roles and no custom role can hold it.
 CREATE OR REPLACE FUNCTION public.save_custom_role(
   _role_id uuid,
   _name text,
