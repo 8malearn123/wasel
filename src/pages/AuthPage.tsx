@@ -301,6 +301,10 @@ export default function AuthPage() {
               { label: 'باقة لايت (Lite)', email: 'demo-basic@wasil.demo', desc: 'تجربة باقة لايت', letter: 'L', color: 'bg-primary/10 text-primary' },
               { label: 'باقة برو (Pro)', email: 'demo-enterprise@wasil.demo', desc: 'تجربة باقة برو', letter: 'P', color: 'bg-primary/10 text-primary' },
               { label: 'باقة ماكس (Max)', email: 'demo-distributor@wasil.demo', desc: 'تجربة باقة ماكس B2B', letter: 'M', color: 'bg-warning/10 text-warning' },
+              // members of the Max demo shop, one per role
+              { label: 'أدمن (Admin)', email: 'demo-admin@wasil.demo', desc: 'إدارة النظام • متجر ماكس', letter: 'أ', color: 'bg-success/10 text-success' },
+              { label: 'موظف مبيعات', email: 'demo-employee@wasil.demo', desc: 'دور مخصص • المنتجات والطلبات والعملاء والصيانة', letter: 'م', color: 'bg-success/10 text-success' },
+              { label: 'كاشير (Cashier)', email: 'demo-cashier@wasil.demo', desc: 'نقطة البيع • متجر ماكس', letter: 'ك', color: 'bg-success/10 text-success' },
             ].map((p) => (
               <button
                 key={p.email}
