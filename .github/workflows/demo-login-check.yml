@@ -8,6 +8,7 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -16,6 +17,7 @@ jobs:
       - run: (npx vite preview --port 4173 --strictPort > preview.log 2>&1 &) && sleep 5
       - run: npm i --no-save --no-package-lock playwright@1.48.2 && npx playwright install --with-deps chromium
         working-directory: e2e
+        timeout-minutes: 5
       - working-directory: e2e
         env:
           SITE: http://localhost:4173
