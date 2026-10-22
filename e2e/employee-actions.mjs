@@ -81,13 +81,17 @@ await crud('المتجر · تصنيف', 'store_categories', { name: 'E2E تصن
   if (acc) report('الكاشير · إنقاص كمية الإكسسوار', 'تعديل', 'pos.access', await api('PATCH', `accessories?id=eq.${acc.id}`, { quantity: 2 }));
   report('الكاشير · بحث المنتجات', 'قراءة', 'products.view', await api('GET', `devices?select=id&merchant_id=eq.${M}&limit=1`));
   // a closing on a day long gone, so no real day is touched
+  const pre = await api('DELETE', `daily_closings?branch_id=eq.${B0}&closing_date=eq.2000-01-01`, undefined, OH);
+  console.log(`leftover test closing removed by the owner: ${pre.ok ? 'yes' : `no (${pre.status} ${pre.err})`}`);
   const cl = await api('POST', 'daily_closings', { merchant_id: M, branch_id: B0, closing_date: '2000-01-01', cash_sales: 0, card_sales: 0, bank_transfer_sales: 0, total_sales: 0, total_tax: 0, total_discount: 0, transactions_count: 0, devices_sold: 0, accessories_sold: 0, closed_by: s.user.id, status: 'closed' });
   report('إغلاق اليوم', 'إضافة', 'closings.manage', cl);
   if (sid) {
     await api('DELETE', `sale_items?sale_id=eq.${sid}`, undefined, OH);
     await api('DELETE', `sales?id=eq.${sid}`, undefined, OH);
   }
-  await api('DELETE', `daily_closings?branch_id=eq.${B0}&closing_date=eq.2000-01-01`, undefined, OH);
+  const post = await api('DELETE', `daily_closings?branch_id=eq.${B0}&closing_date=eq.2000-01-01`, undefined, OH);
+  console.log(`test closing removed by the owner: ${post.ok ? 'yes' : `no (${post.status} ${post.err})`}`);
+  console.log(`test closings left: ${JSON.stringify((await api('GET', `daily_closings?select=id,closing_date&merchant_id=eq.${M}&closing_date=eq.2000-01-01`, undefined, OH)).data)}`);
   if (dev) await api('DELETE', `devices?id=eq.${dev.id}`, undefined, OH);
   if (acc) await api('DELETE', `accessories?id=eq.${acc.id}`, undefined, OH);
 }
