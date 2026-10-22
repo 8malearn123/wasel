@@ -1,28 +1,26 @@
-// One-off: which published stores exist, and which belongs to the Max demo shop
-import { chromium } from 'playwright';
-const SITE = process.env.SITE;
+// One-off: what the public store views return for each published store
 const SUPA = 'https://ynwddyxzypbcftlevuam.supabase.co';
 const ANON = process.env.ANON;
+const anon = { apikey: ANON, Authorization: `Bearer ${ANON}` };
+const get = async (path, headers = anon) => {
+  const r = await fetch(`${SUPA}/rest/v1/${path}`, { headers: { ...headers, Prefer: 'count=exact' } });
+  const body = await r.text();
+  return `${r.status} range=${r.headers.get('content-range')} ${body.slice(0, 300)}`;
+};
+const stores = JSON.parse((await (await fetch(`${SUPA}/rest/v1/store_settings?select=slug,merchant_id&is_published=eq.true`, { headers: anon })).text()));
+for (const s of stores) {
+  console.log(`== ${s.slug}`);
+  console.log(' devices view    :', await get(`public_store_devices?select=id,model,status&merchant_id=eq.${s.merchant_id}&limit=2`));
+  console.log(' accessories view:', await get(`public_store_accessories?select=id,name&merchant_id=eq.${s.merchant_id}&limit=2`));
+}
+// the Max shop's own stock, as its owner sees it
 const r = await fetch(`${SUPA}/auth/v1/token?grant_type=password`, {
   method: 'POST', headers: { apikey: ANON, 'Content-Type': 'application/json' },
   body: JSON.stringify({ email: 'demo-distributor@wasil.demo', password: 'demo1234' }),
 });
 const owner = await r.json();
-const h = { apikey: ANON, Authorization: `Bearer ${owner.access_token}` };
-const [m] = await (await fetch(`${SUPA}/rest/v1/merchant_users?select=merchant_id&user_id=eq.${owner.user.id}`, { headers: h })).json();
-console.log('MAX merchant', m.merchant_id);
-const mine = await (await fetch(`${SUPA}/rest/v1/store_settings?select=slug,store_name,is_published&merchant_id=eq.${m.merchant_id}`, { headers: h })).json();
-console.log('MAX store', JSON.stringify(mine));
-const pub = await (await fetch(`${SUPA}/rest/v1/store_settings?select=slug,store_name,merchant_id&is_published=eq.true`, { headers: { apikey: ANON, Authorization: `Bearer ${ANON}` } })).json();
-console.log('PUBLISHED', JSON.stringify(pub));
-const browser = await chromium.launch();
-for (const s of [...mine, ...pub].map(x => x.slug).filter((v, i, a) => v && a.indexOf(v) === i)) {
-  const page = await browser.newPage();
-  await page.goto(`${SITE}/store/${s}`);
-  await page.waitForLoadState('networkidle').catch(() => {});
-  await page.waitForTimeout(2500);
-  const products = await page.locator('a[href*="/device/"], a[href*="/accessory/"]').count();
-  console.log(`STORE ${s}: ${products} product links`);
-  await page.close();
-}
-await browser.close();
+const oh = { apikey: ANON, Authorization: `Bearer ${owner.access_token}` };
+const M = '6245ba37-9e68-4e5e-9e68-46ffee192fb4';
+console.log('MAX devices (owner) :', await get(`devices?select=id,model,status,show_in_store&merchant_id=eq.${M}&limit=3`, oh));
+console.log('MAX devices available:', await get(`devices?select=id&merchant_id=eq.${M}&status=eq.available&limit=1`, oh));
+console.log('MAX accessories      :', await get(`accessories?select=id,name,quantity&merchant_id=eq.${M}&limit=3`, oh));
