@@ -343,7 +343,8 @@ export default function InventorySection() {
         className="bg-card rounded-xl border border-border shadow-md overflow-hidden"
       >
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <div className="px-6 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          {/* the add / favourites / search group on the left, the kinds on the right */}
+          <div className="px-6 py-4 border-b border-border flex flex-col sm:flex-row-reverse sm:items-center justify-between gap-4">
             {/* One kind on screen at a time — the three lists used to run down the
                 page together, which read as one long pile */}
             <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-muted/50 border border-border self-start">

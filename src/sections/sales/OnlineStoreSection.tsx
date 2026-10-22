@@ -582,10 +582,6 @@ export default function OnlineStoreSection() {
               <Textarea value={val("description")} onChange={e => set("description", e.target.value)} className="mt-1" rows={2} placeholder="يظهر تحت اسم المتجر..." />
             </div>
             <div>
-              <Label>رمز العملة</Label>
-              <Input value={val("currency_symbol") || "ر.س"} onChange={e => set("currency_symbol", e.target.value)} className="mt-1 w-32" />
-            </div>
-            <div>
               <Label>سياسة الاسترجاع</Label>
               <Textarea value={val("return_policy")} onChange={e => set("return_policy", e.target.value)} className="mt-1" rows={3} />
             </div>
@@ -2792,12 +2788,21 @@ export default function OnlineStoreSection() {
         {/* CATEGORIES */}
         <TabsContent value="categories">
           <div className="bg-card rounded-xl border p-6 space-y-4">
-            <div className="flex gap-2">
+            {/* the button stays live (a faded one read as broken); Enter adds too */}
+            <form
+              className="flex gap-2"
+              onSubmit={e => {
+                e.preventDefault();
+                if (!newCat.trim()) { toast.error("اكتب اسم التصنيف أولاً"); return; }
+                addCategory(newCat.trim());
+                setNewCat("");
+              }}
+            >
               <Input value={newCat} onChange={e => setNewCat(e.target.value)} placeholder="اسم التصنيف الجديد..." />
-              <Button onClick={() => { if (newCat.trim()) { addCategory(newCat.trim()); setNewCat(""); } }} disabled={!newCat.trim()}>
+              <Button type="submit">
                 <Plus className="w-4 h-4 me-1" /> إضافة
               </Button>
-            </div>
+            </form>
             {categories.length === 0 ? (
               <p className="text-muted-foreground text-center py-8">لا توجد تصنيفات بعد</p>
             ) : (
