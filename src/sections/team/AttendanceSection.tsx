@@ -44,7 +44,7 @@ const TABS = [
 ] as const;
 
 const time = (iso: string | null, isRTL: boolean) =>
-  iso ? new Date(iso).toLocaleTimeString(isRTL ? 'ar-SA' : 'en-GB', { hour: '2-digit', minute: '2-digit' }) : '—';
+  iso ? new Date(iso).toLocaleTimeString(isRTL ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-GB', { hour: '2-digit', minute: '2-digit' }) : '—';
 
 const duration = (minutes: number | null, isRTL: boolean) => {
   if (minutes === null || minutes === undefined) return '—';
@@ -159,7 +159,7 @@ function TodayPanel() {
     <div className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Tile icon={CalendarDays} label={t ? 'التاريخ' : 'Date'}
-          value={new Date(today.date).toLocaleDateString(t ? 'ar-SA' : 'en-GB')} />
+          value={new Date(today.date).toLocaleDateString(t ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-GB')} />
         <Tile icon={LogIn} label={t ? 'وقت الحضور' : 'Checked in'} value={time(today.checkInAt, t)} />
         <Tile icon={LogOut} label={t ? 'وقت الانصراف' : 'Checked out'} value={time(today.checkOutAt, t)} />
         <Tile icon={Timer} label={t ? 'مدة العمل' : 'Worked'} value={duration(today.workedMinutes, t)} />
@@ -204,7 +204,7 @@ function TodayPanel() {
           <p className="text-xs text-muted-foreground mt-4 flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5" />
             {t ? 'آخر عملية: ' : 'Last punch: '}
-            {new Date(today.lastPunchAt).toLocaleString(t ? 'ar-SA' : 'en-GB')}
+            {new Date(today.lastPunchAt).toLocaleString(t ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-GB')}
             {today.lastPunchSource && ` · ${t ? (SOURCE_AR[today.lastPunchSource] ?? today.lastPunchSource) : today.lastPunchSource}`}
           </p>
         )}
@@ -358,7 +358,7 @@ function AttendanceLog({ employees }: { employees: { id: string; name: string }[
                     <TableRow key={row.id}>
                       <TableCell className="font-medium">{row.employeeName}</TableCell>
                       <TableCell className="text-center">
-                        {new Date(row.date).toLocaleDateString(t ? 'ar-SA' : 'en-GB')}
+                        {new Date(row.date).toLocaleDateString(t ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-GB')}
                       </TableCell>
                       <TableCell className="text-center tabular-nums">{time(row.checkInAt, t)}</TableCell>
                       <TableCell className="text-center tabular-nums">{time(row.checkOutAt, t)}</TableCell>

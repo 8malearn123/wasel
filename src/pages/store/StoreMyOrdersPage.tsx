@@ -106,7 +106,7 @@ export function StoreMyOrdersPage({ store }: { store: StoreSettings }) {
                   <div className="min-w-0">
                     <p className="font-mono font-semibold text-sm truncate">{o.order_number}</p>
                     <p className="text-xs text-muted-foreground">
-                      {new Date(o.created_at).toLocaleDateString('ar-SA')} • {o.items.length} منتج
+                      {new Date(o.created_at).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn')} • {o.items.length} منتج
                     </p>
                   </div>
                 </div>

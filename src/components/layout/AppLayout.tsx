@@ -28,8 +28,12 @@ export function AppLayout({ children, title, subtitle, hideSidebar = false }: Ap
 
   return (
     <div className="min-h-screen bg-background">
-      {(!hideSidebar || menuOpen) && <Sidebar />}
-      {hideSidebar && menuOpen && (
+      {/* On a computer the sidebar stands beside the page; on a tablet or a
+          phone (and on the till) it opens over the page from the menu button */}
+      <div className={cn(menuOpen ? "block" : hideSidebar ? "hidden" : "hidden lg:block")}>
+        <Sidebar />
+      </div>
+      {menuOpen && (
         <div
           className="fixed inset-0 z-[45] bg-black/40"
           onClick={() => setMenuOpen(false)}
@@ -37,18 +41,19 @@ export function AppLayout({ children, title, subtitle, hideSidebar = false }: Ap
         />
       )}
 
-      {/* Main Content */}
+      {/* Main Content — beside the sidebar, as wide as it is (--sidebar-w) */}
       <div className={cn(
-        "transition-all duration-300",
-        !hideSidebar && (isRTL ? "mr-[280px]" : "ml-[280px]")
+        "transition-all duration-300 min-w-0",
+        !hideSidebar && (isRTL ? "lg:mr-[var(--sidebar-w,280px)]" : "lg:ml-[var(--sidebar-w,280px)]")
       )}>
         <Header
           title={title}
           subtitle={subtitle}
-          onMenuClick={hideSidebar ? () => setMenuOpen(true) : undefined}
+          onMenuClick={() => setMenuOpen(true)}
+          menuOnSmallScreens={!hideSidebar}
         />
 
-        <main className={hideSidebar ? "p-4" : "p-6"}>
+        <main className={hideSidebar ? "p-4" : "p-4 lg:p-6"}>
           {children}
         </main>
       </div>

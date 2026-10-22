@@ -165,7 +165,7 @@ export default function AIInsightsPage() {
         <p className="text-xs text-muted-foreground mt-4">
           {providerLabel && `${t ? 'المزوّد: ' : 'Provider: '}${providerLabel}`}
           {providerLabel && lastRunAt && ' · '}
-          {lastRunAt && `${t ? 'آخر تحليل: ' : 'Last run: '}${new Date(lastRunAt).toLocaleString(t ? 'ar-SA' : 'en-GB')}`}
+          {lastRunAt && `${t ? 'آخر تحليل: ' : 'Last run: '}${new Date(lastRunAt).toLocaleString(t ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-GB')}`}
         </p>
       )}
     </AppLayout>

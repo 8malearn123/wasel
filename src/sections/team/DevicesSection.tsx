@@ -154,10 +154,10 @@ export default function DevicesSection() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-center text-sm text-muted-foreground">
-                          {device.lastSeenAt ? new Date(device.lastSeenAt).toLocaleString(t ? 'ar-SA' : 'en-GB') : '—'}
+                          {device.lastSeenAt ? new Date(device.lastSeenAt).toLocaleString(t ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-GB') : '—'}
                         </TableCell>
                         <TableCell className="text-center text-sm text-muted-foreground">
-                          {device.lastSyncAt ? new Date(device.lastSyncAt).toLocaleString(t ? 'ar-SA' : 'en-GB') : '—'}
+                          {device.lastSyncAt ? new Date(device.lastSyncAt).toLocaleString(t ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-GB') : '—'}
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1 justify-end">

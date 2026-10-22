@@ -83,7 +83,7 @@ export default function HRSection() {
   }, [merchant]);
 
   const fmtTime = (iso: string) =>
-    new Date(iso).toLocaleTimeString(isRTL ? "ar-SA" : "en-US", { hour: "2-digit", minute: "2-digit" });
+    new Date(iso).toLocaleTimeString(isRTL ? "ar-SA-u-ca-gregory-nu-latn" : "en-US", { hour: "2-digit", minute: "2-digit" });
 
   // دخول/انصراف اليوم لكل موظف: أول دخول وآخر انصراف
   const todayKey = new Date().toDateString();
@@ -276,7 +276,7 @@ export default function HRSection() {
                       <td className="px-4 py-3"><Badge variant="outline" className={role.cls}>{isRTL ? role.ar : role.en}</Badge></td>
                       <td className="px-4 py-3 text-sm text-muted-foreground font-mono" dir="ltr">{info.phone || "—"}</td>
                       <td className="px-4 py-3 text-sm font-semibold text-foreground">{info.salary ? `${info.salary.toLocaleString()} ر.س` : "—"}</td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground">{info.hireDate || new Date(u.created_at).toLocaleDateString("ar-SA")}</td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground">{info.hireDate || new Date(u.created_at).toLocaleDateString("ar-SA-u-ca-gregory-nu-latn")}</td>
                       <td className="px-4 py-3 text-sm font-semibold text-primary">{(monthSales[u.user_id] || 0).toLocaleString()} ر.س</td>
                       {isMax && (() => {
                         const isDaily = hrSettings.commission.period === 'daily';
@@ -385,7 +385,7 @@ export default function HRSection() {
                   return (
                     <tr key={`${rec.user_id}-${rec.day}`} className="hover:bg-muted/20">
                       <td className="px-4 py-3 text-sm text-foreground">
-                        {new Date(rec.in || rec.out || Date.now()).toLocaleDateString(isRTL ? "ar-SA" : "en-US", { weekday: "long", day: "numeric", month: "short" })}
+                        {new Date(rec.in || rec.out || Date.now()).toLocaleDateString(isRTL ? "ar-SA-u-ca-gregory-nu-latn" : "en-US", { weekday: "long", day: "numeric", month: "short" })}
                       </td>
                       <td className="px-4 py-3 text-sm font-medium text-foreground">{empName}</td>
                       <td className="px-4 py-3 text-sm font-semibold text-success" dir="ltr">{rec.in ? fmtTime(rec.in) : "—"}</td>
@@ -501,21 +501,21 @@ function AttendanceReportDialog({ open, onClose, users, merchantId, merchantName
 
       if (rows.length === 0) { toast.info("ما فيه سجلات حضور في هذه الفترة"); setBusy(false); return; }
 
-      const fmt = (iso?: string) => iso ? new Date(iso).toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" }) : "—";
+      const fmt = (iso?: string) => iso ? new Date(iso).toLocaleTimeString("ar-SA-u-ca-gregory-nu-latn", { hour: "2-digit", minute: "2-digit" }) : "—";
       let totalMs = 0;
       const trs = rows.map(r => {
         const name = users.find(u => u.user_id === r.user_id)?.profile?.full_name || "موظف";
         const ms = r.in && r.out ? Math.max(0, new Date(r.out).getTime() - new Date(r.in).getTime()) : 0;
         totalMs += ms;
         const dur = r.in && r.out ? `${Math.floor(ms / 3600000)}س ${Math.floor((ms % 3600000) / 60000)}د` : "—";
-        return `<tr><td>${new Date(r.in || r.day).toLocaleDateString("ar-SA", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</td>
+        return `<tr><td>${new Date(r.in || r.day).toLocaleDateString("ar-SA-u-ca-gregory-nu-latn", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</td>
           <td>${name}</td><td>${fmt(r.in)}</td><td>${fmt(r.out)}</td><td>${dur}</td></tr>`;
       }).join("");
 
       const empLabel = userId === "all" ? "جميع الموظفين" : (users.find(u => u.id === userId)?.profile?.full_name || "موظف");
       printHTML("كشف الحضور والانصراف", `
         <h1>${merchantName} — كشف الحضور والانصراف</h1>
-        <p class="sub">الموظف: ${empLabel} · الفترة: من ${new Date(from).toLocaleDateString("ar-SA")} إلى ${new Date(to).toLocaleDateString("ar-SA")} · تاريخ الطباعة: ${new Date().toLocaleDateString("ar-SA")}</p>
+        <p class="sub">الموظف: ${empLabel} · الفترة: من ${new Date(from).toLocaleDateString("ar-SA-u-ca-gregory-nu-latn")} إلى ${new Date(to).toLocaleDateString("ar-SA-u-ca-gregory-nu-latn")} · تاريخ الطباعة: ${new Date().toLocaleDateString("ar-SA-u-ca-gregory-nu-latn")}</p>
         <table>
           <thead><tr><th>اليوم</th><th>الموظف</th><th>الدخول</th><th>الانصراف</th><th>مدة الدوام</th></tr></thead>
           <tbody>${trs}</tbody>
@@ -640,10 +640,10 @@ function PayrollDialog({ open, onClose, users, hr, hrSettings, merchantId, merch
         </tr>`;
       }).join("");
 
-      const monthLabel = start.toLocaleDateString("ar-SA", { month: "long", year: "numeric" });
+      const monthLabel = start.toLocaleDateString("ar-SA-u-ca-gregory-nu-latn", { month: "long", year: "numeric" });
       printHTML("مسير الرواتب", `
         <h1>${merchantName} — مسير الرواتب</h1>
-        <p class="sub">الشهر: ${monthLabel} · العمولة محسوبة من ${hrSettings.commission.basis === "profit" ? "الأرباح" : "المبيعات"} · تاريخ الطباعة: ${new Date().toLocaleDateString("ar-SA")}</p>
+        <p class="sub">الشهر: ${monthLabel} · العمولة محسوبة من ${hrSettings.commission.basis === "profit" ? "الأرباح" : "المبيعات"} · تاريخ الطباعة: ${new Date().toLocaleDateString("ar-SA-u-ca-gregory-nu-latn")}</p>
         <table>
           <thead><tr><th>الموظف</th><th>المسمى الوظيفي</th><th>الراتب الأساسي</th><th>مبيعات الشهر</th><th>العمولة</th><th>الإجمالي المستحق</th></tr></thead>
           <tbody>${trs}</tbody>

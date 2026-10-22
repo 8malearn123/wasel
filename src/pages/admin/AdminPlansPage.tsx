@@ -34,7 +34,7 @@ export default function AdminPlansPage() {
                 <div><h3 className="font-bold text-foreground">{plan.name_ar}</h3><p className="text-sm text-muted-foreground">{plan.name}</p></div>
                 <Badge variant={plan.is_active ? "default" : "secondary"}>{plan.is_active ? 'نشطة' : 'معطلة'}</Badge>
               </div>
-              <p className="text-3xl font-bold text-primary mb-4">{Number(plan.price).toLocaleString('ar-SA')} <span className="text-sm font-normal text-muted-foreground">ر.س/شهر</span></p>
+              <p className="text-3xl font-bold text-primary mb-4">{Number(plan.price).toLocaleString('ar-SA-u-ca-gregory-nu-latn')} <span className="text-sm font-normal text-muted-foreground">ر.س/شهر</span></p>
               <div className="space-y-2 text-sm">
                 {/* 9999 in the table means "no ceiling" — it should never reach a screen as a number */}
                 <div className="flex justify-between"><span className="text-muted-foreground">الفروع</span><span className="font-medium">{describeBranchLimit(plan.branch_limit, true)}</span></div>

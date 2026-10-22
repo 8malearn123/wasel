@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { type FeatureKey } from "@/lib/planAccess";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { usePermissions, type PermissionKey } from "@/hooks/usePermissions";
@@ -171,6 +171,10 @@ const navItems: NavItem[] = [
 
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  // the page beside it keeps its width in step (AppLayout reads --sidebar-w)
+  useEffect(() => {
+    document.documentElement.style.setProperty('--sidebar-w', isCollapsed ? '80px' : '280px');
+  }, [isCollapsed]);
   const location = useLocation();
   const { t, isRTL } = useLanguage();
   const { merchant, merchantUser } = useAuth();
@@ -221,7 +225,7 @@ export function Sidebar() {
               <div className="flex flex-col gap-0.5">
                 {/* The sidebar is Midnight in both themes, so the light wordmark always */}
                 <img src="/brand/wordmark-white.svg" alt="PIXA" className="h-5 w-auto object-contain object-right" />
-                <span className="text-[10px] text-sidebar-foreground/50 tracking-wider">نظام محلات الجوالات</span>
+                <span className="text-[11px] text-sidebar-foreground/60 tracking-wide">نظام محلات الجوالات</span>
               </div>
             </motion.div>
           )}

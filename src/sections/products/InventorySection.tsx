@@ -294,7 +294,7 @@ export default function InventorySection() {
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">{accessoryStats.total}</p>
-              <p className="text-sm text-muted-foreground">{t.inventory.accessories} ({accessoryStats.skus} SKUs)</p>
+              <p className="text-sm text-muted-foreground">{t.inventory.accessories} ({accessoryStats.skus} {isRTL ? "صنف" : "SKUs"})</p>
             </div>
           </div>
         </motion.div>

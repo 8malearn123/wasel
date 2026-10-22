@@ -137,7 +137,7 @@ describe('custom roles in users & permissions', () => {
     expect(reports).toHaveAttribute('data-state', 'checked');
     expect(reports).not.toBeDisabled();
     fireEvent.click(within(dialog).getByText('الاطلاع على الفواتير'));
-    fireEvent.click(within(dialog).getByText('Save Changes'));
+    fireEvent.click(within(dialog).getByText('حفظ التغييرات'));
     await waitFor(() => expect(saveRole).toHaveBeenCalledWith('r1', 'محاسب', '', ['reports.view', 'invoices.view']));
   });
 
@@ -152,7 +152,7 @@ describe('custom roles in users & permissions', () => {
     expect(pos).toHaveAttribute('data-state', 'checked');
     expect(pos).not.toBeDisabled();
     fireEvent.click(within(dialog).getByText('عرض التقارير المالية'));
-    fireEvent.click(within(dialog).getByText('Save Changes'));
+    fireEvent.click(within(dialog).getByText('حفظ التغييرات'));
     // the cashier's own map (as far as the catalog goes) plus the report
     await waitFor(() => expect(saveSystemRole).toHaveBeenCalledWith('cashier', ['pos.access', 'reports.view']));
     databaseReady = true;
@@ -169,7 +169,7 @@ describe('custom roles in users & permissions', () => {
     fireEvent.click(within(dialog).getByText('الصلاحيات الافتراضية'));
     fireEvent.click(within(dialog).getByText('عرض التقارير المالية'));
     fireEvent.click(within(dialog).getByText('عرض التقارير المالية'));
-    fireEvent.click(within(dialog).getByText('Save Changes'));
+    fireEvent.click(within(dialog).getByText('حفظ التغييرات'));
     await waitFor(() => expect(saveSystemRole).not.toHaveBeenCalled());
     databaseReady = true;
   });

@@ -1304,9 +1304,43 @@ export const AR_EN: Record<string, string> = {
   "حالة الطلب": "Order Status",
   "نسبة الخصم": "Discount Rate",
   "طي": "Collapse",
+  // found by the layout review
+  "الأساسيات": "Basics",
+  "تصميم المتجر": "Store design",
+  "البيع": "Selling",
+  "تتبع الشحنة ↗": "Track shipment ↗",
+  "غير شامل ضريبة القيمة المضافة": "Excl. VAT",
+  "طلب تغيير الباقة": "Request plan change",
 };
 
 const ATTRS = ["placeholder", "title", "aria-label", "alt"] as const;
+
+// Text the dictionary cannot hold word for word: Arabic digits, month names,
+// and the few messages built around a number
+const AR_DIGITS = "٠١٢٣٤٥٦٧٨٩";
+const MONTHS: Record<string, string> = {
+  "يناير": "January", "فبراير": "February", "مارس": "March", "أبريل": "April", "إبريل": "April",
+  "مايو": "May", "يونيو": "June", "يوليو": "July", "أغسطس": "August", "سبتمبر": "September",
+  "أكتوبر": "October", "نوفمبر": "November", "ديسمبر": "December",
+};
+const PATTERNS: Array<[RegExp, string]> = [
+  [/^(\d+) تحويلات بانتظار الموافقة$/, "$1 transfers awaiting approval"],
+  [/^(\d+) فواتير غير مدفوعة$/, "$1 unpaid invoices"],
+  [/^(.+) - الكمية: (\d+) \(الحد الأدنى: (\d+)\)$/, "$1 - Qty: $2 (min: $3)"],
+  [/^(.+) - الكمية: (\d+)$/, "$1 - Qty: $2"],
+  [/^الكمية: (.+)$/, "Qty: $1"],
+];
+
+/** Arabic digits, month names and number-bearing messages, in English; null when nothing applies. */
+export function translatePatterns(text: string): string | null {
+  if (!/[\u0600-\u06FF\u0660-\u0669]/.test(text)) return null;
+  let out = text.replace(/[٠-٩]/g, d => String(AR_DIGITS.indexOf(d)));
+  out = out.replace(/[\u0600-\u06FF]+/g, w => MONTHS[w] ?? w);
+  for (const [re, en] of PATTERNS) {
+    if (re.test(out)) { out = out.replace(re, en); break; }
+  }
+  return out === text ? null : out;
+}
 
 function translateTextNode(node: Text) {
   // لا نلمس محتوى الحقول القابلة للتحرير حتى ما نفسد كتابة المستخدم
@@ -1319,8 +1353,16 @@ function translateTextNode(node: Text) {
   const hit = AR_EN[trimmed];
   if (hit) {
     node.nodeValue = raw.replace(trimmed, hit);
-  } else if (raw.includes("ر.س")) {
-    node.nodeValue = raw.split("ر.س").join("SAR");
+  } else {
+    let next = raw.includes("ر.س") ? raw.split("ر.س").join("SAR") : raw;
+    const t = next.trim();
+    const viaDict = AR_EN[t];
+    if (viaDict) next = next.replace(t, viaDict);
+    else {
+      const patterned = translatePatterns(t);
+      if (patterned) next = next.replace(t, patterned);
+    }
+    if (next !== raw) node.nodeValue = next;
   }
 }
 

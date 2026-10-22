@@ -179,7 +179,7 @@ export default function BranchesSection() {
                 className="bg-card rounded-lg border border-border p-3 flex items-center justify-between">
                 <div>
                   <p className="font-medium text-foreground">{req.branch_name}</p>
-                  <p className="text-sm text-muted-foreground">{req.city || '—'} • {new Date(req.created_at).toLocaleDateString('ar-SA')}</p>
+                  <p className="text-sm text-muted-foreground">{req.city || '—'} • {new Date(req.created_at).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn')}</p>
                   {req.admin_notes && req.status === 'rejected' && (
                     <p className="text-sm text-destructive mt-1">سبب الرفض: {req.admin_notes}</p>
                   )}

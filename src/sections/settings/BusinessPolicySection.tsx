@@ -110,7 +110,7 @@ export default function BusinessPolicySection() {
   const priceLabel = (item: PolicyItem) => {
     if (item.isFree) return t ? 'مجاني' : 'Free';
     if (item.price === null) return t ? 'غير محدد' : 'Not set';
-    return `${item.price.toLocaleString(t ? 'ar-SA' : 'en-US')} ${t ? 'ر.س' : 'SAR'}`;
+    return `${item.price.toLocaleString(t ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US')} ${t ? 'ر.س' : 'SAR'}`;
   };
 
   return (

@@ -158,7 +158,7 @@ export function ActivityLogDialog({ open, onOpenChange }: { open: boolean; onOpe
                     </p>
                   </div>
                   <span className="text-xs text-muted-foreground whitespace-nowrap">
-                    {new Date(r.created_at).toLocaleString("ar-SA", { dateStyle: "short", timeStyle: "short" })}
+                    {new Date(r.created_at).toLocaleString("ar-SA-u-ca-gregory-nu-latn", { dateStyle: "short", timeStyle: "short" })}
                   </span>
                 </div>
               ))}

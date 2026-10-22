@@ -198,7 +198,7 @@ export default function ShippingPage() {
                               {carrier.shipmentCount ?? '—'}
                             </TableCell>
                             <TableCell className="text-center text-sm text-muted-foreground">
-                              {new Date(carrier.createdAt).toLocaleDateString(t ? 'ar-SA' : 'en-GB')}
+                              {new Date(carrier.createdAt).toLocaleDateString(t ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-GB')}
                             </TableCell>
                             <TableCell>
                               <div className="flex gap-1 justify-end">
@@ -315,7 +315,7 @@ function ApiSettings({
                 <p className="text-xs text-muted-foreground">
                   {t ? 'آخر مزامنة: ' : 'Last sync: '}
                   {carrier.lastSyncAt
-                    ? new Date(carrier.lastSyncAt).toLocaleString(t ? 'ar-SA' : 'en-GB')
+                    ? new Date(carrier.lastSyncAt).toLocaleString(t ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-GB')
                     : (t ? 'لم تتم بعد' : 'never')}
                 </p>
               </div>

@@ -29,8 +29,10 @@ import { cn } from "@/lib/utils";
 interface HeaderProps {
   title: string;
   subtitle?: string;
-  /** Set on pages that hide the sidebar (the till): opens it as an overlay */
+  /** Opens the sidebar over the page */
   onMenuClick?: () => void;
+  /** The sidebar stands beside the page on a computer: the menu button is for smaller screens only */
+  menuOnSmallScreens?: boolean;
 }
 
 // The launcher mirrors the sidebar: ten sections, not the thirty pages they
@@ -61,7 +63,7 @@ const ROLE_LABELS: Record<string, { ar: string; en: string }> = {
   cashier: { ar: "كاشير", en: "Cashier" },
 };
 
-export function Header({ title, subtitle, onMenuClick }: HeaderProps) {
+export function Header({ title, subtitle, onMenuClick, menuOnSmallScreens }: HeaderProps) {
   const { t, language, setLanguage, isRTL } = useLanguage();
   const { isDark, toggleTheme } = useTheme();
   const { signOut, merchantUser, merchant, user } = useAuth();
@@ -108,14 +110,14 @@ export function Header({ title, subtitle, onMenuClick }: HeaderProps) {
   };
 
   return (
-    <header className="min-h-16 bg-card border-b border-border flex items-center justify-between gap-4 px-6 py-2 sticky top-0 z-40">
+    <header className="min-h-16 bg-card border-b border-border flex items-center justify-between gap-2 sm:gap-4 px-3 sm:px-6 py-2 sticky top-0 z-40">
       {/* The title takes the room the toolbar leaves and stays on one line —
           without flex-1 it shrank to a few characters and wrapped word by word */}
       {onMenuClick && (
         <Button
           variant="outline"
           size="icon"
-          className="shrink-0 touch-target"
+          className={cn("shrink-0 touch-target", menuOnSmallScreens && "lg:hidden")}
           onClick={onMenuClick}
           title={isRTL ? "القائمة" : "Menu"}
           aria-label={isRTL ? "القائمة" : "Menu"}
@@ -130,7 +132,7 @@ export function Header({ title, subtitle, onMenuClick }: HeaderProps) {
         )}
       </div>
 
-      <div className="flex items-center gap-2 xl:gap-4 shrink-0">
+      <div className="flex items-center gap-1 sm:gap-2 xl:gap-4 shrink-0">
         {/* Browse Sections */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -141,7 +143,7 @@ export function Header({ title, subtitle, onMenuClick }: HeaderProps) {
               </span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align={isRTL ? "start" : "end"} className="w-[420px]">
+          <DropdownMenuContent align={isRTL ? "start" : "end"} className="w-[min(420px,calc(100vw-1.5rem))]">
             <DropdownMenuLabel>
               {language === 'ar' ? 'أقسام النظام' : 'System Sections'}
             </DropdownMenuLabel>
@@ -168,7 +170,7 @@ export function Header({ title, subtitle, onMenuClick }: HeaderProps) {
         <Button
           variant="ghost"
           size="icon"
-          className="touch-target"
+          className="touch-target hidden sm:inline-flex"
           onClick={toggleTheme}
           title={isDark ? 'الوضع الفاتح' : 'الوضع الداكن'}
         >
@@ -178,7 +180,7 @@ export function Header({ title, subtitle, onMenuClick }: HeaderProps) {
         {/* Language Selector */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="touch-target">
+            <Button variant="ghost" size="icon" className="touch-target hidden sm:inline-flex">
               <Languages className="w-5 h-5" />
             </Button>
           </DropdownMenuTrigger>
@@ -203,7 +205,7 @@ export function Header({ title, subtitle, onMenuClick }: HeaderProps) {
         {/* Branch Selector */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="gap-2 touch-target">
+            <Button variant="outline" className="gap-2 touch-target hidden md:inline-flex">
               <Building2 className="w-4 h-4" />
               <span className="hidden xl:inline">{t.common.mainStore}</span>
             </Button>
@@ -237,7 +239,7 @@ export function Header({ title, subtitle, onMenuClick }: HeaderProps) {
               )}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align={isRTL ? "start" : "end"} className="w-[360px]">
+          <DropdownMenuContent align={isRTL ? "start" : "end"} className="w-[min(360px,calc(100vw-1.5rem))]">
             <DropdownMenuLabel className="flex items-center justify-between">
               <span>{language === "ar" ? "الإشعارات" : "Notifications"}</span>
               {notifications.length > 0 && (
@@ -310,6 +312,16 @@ export function Header({ title, subtitle, onMenuClick }: HeaderProps) {
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => setShowActivity(true)} className="cursor-pointer">
               {t.common.activityLog}
+            </DropdownMenuItem>
+            {/* on a phone the theme and language buttons live here */}
+            <DropdownMenuSeparator className="sm:hidden" />
+            <DropdownMenuItem onSelect={toggleTheme} className="cursor-pointer sm:hidden gap-2">
+              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {isDark ? (isRTL ? "الوضع الفاتح" : "Light mode") : (isRTL ? "الوضع الداكن" : "Dark mode")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setLanguage(language === "ar" ? "en" : "ar")} className="cursor-pointer sm:hidden gap-2">
+              <Languages className="w-4 h-4" />
+              {language === "ar" ? "English" : "العربية"}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-destructive" onClick={handleSignOut}>
