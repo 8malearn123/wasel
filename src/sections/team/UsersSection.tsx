@@ -138,7 +138,6 @@ export default function UsersSection() {
     catalog,
     canManageRoles,
     onSavePermissions: async (role, permissions) => (await saveRole(role.id, role.name, role.description ?? '', permissions)).error,
-    onCustomise: canManageRoles ? (preset, onSaved) => openRoleEditor(null, onSaved, preset) : undefined,
     systemRoles: systemRoles ?? {},
     // the system roles are edited per shop only while roles live in the app's store
     canEditSystemRoles: canManageRoles && !databaseReady,
@@ -408,8 +407,6 @@ interface RolePermissionOptions {
   canManageRoles: boolean;
   /** saves a custom role's permissions; resolves to an error message, or nothing */
   onSavePermissions: (role: CustomRole, permissions: string[]) => Promise<string | undefined>;
-  /** opens the role editor with these permissions ticked; the new role is selected once saved */
-  onCustomise?: (preset: string[], onSaved: (id: string) => void) => void;
   /** a system role's permissions as this shop changed them */
   systemRoles: Partial<Record<EditableSystemRole, string[]>>;
   canEditSystemRoles: boolean;
@@ -504,15 +501,10 @@ function RolePermissionsSection({
   rp,
   catalog,
   disabled,
-  onCustomise,
-  onPickRole,
 }: {
   rp: ReturnType<typeof useRolePermissions>;
   catalog: CatalogPermission[];
   disabled?: boolean;
-  onCustomise?: RolePermissionOptions['onCustomise'];
-  /** selects a role in the dialog's select ("custom:<id>") */
-  onPickRole: (role: string) => void;
 }) {
   return (
     <div className="space-y-3">
@@ -525,12 +517,6 @@ function RolePermissionsSection({
           {rp.systemRole && rp.editable && !rp.isDefault && (
             <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={rp.resetToDefault}>
               الصلاحيات الافتراضية
-            </Button>
-          )}
-          {rp.systemRole && onCustomise && (
-            <Button type="button" variant="outline" size="sm" className="gap-1.5"
-              onClick={() => onCustomise([...rp.ticked].filter(rp.inCatalog), (id) => onPickRole(CUSTOM_PREFIX + id))}>
-              <Tag className="w-3.5 h-3.5" /> دور مخصص لهذا المستخدم
             </Button>
           )}
         </div>
@@ -642,8 +628,7 @@ function EditUserDialog({
               )}
             </div>
             {user?.role !== 'owner' && (
-              <RolePermissionsSection rp={rp} catalog={permissionOptions.catalog} disabled={loading}
-                onCustomise={permissionOptions.onCustomise} onPickRole={setRole} />
+              <RolePermissionsSection rp={rp} catalog={permissionOptions.catalog} disabled={loading} />
             )}
             <div className="space-y-2">
               <Label>Assigned Branch</Label>
@@ -1254,8 +1239,7 @@ function AddUserDialog({
                 </Button>
               )}
             </div>
-            <RolePermissionsSection rp={rp} catalog={permissionOptions.catalog} disabled={loading}
-              onCustomise={permissionOptions.onCustomise} onPickRole={setRole} />
+            <RolePermissionsSection rp={rp} catalog={permissionOptions.catalog} disabled={loading} />
             <div className="space-y-2">
               <Label>الفرع</Label>
               <Select value={branchId} onValueChange={setBranchId}>
