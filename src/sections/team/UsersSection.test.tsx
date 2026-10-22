@@ -119,4 +119,40 @@ describe('custom roles in users & permissions', () => {
     render(<UsersSection />);
     expect(screen.getByTitle('مسند لمستخدمين — غيّر أدوارهم أولًا')).toBeDisabled();
   });
+
+  // the row's ⋯ menu → edit (opened from the keyboard: jsdom has no pointer events)
+  const openEdit = async (rowName: string) => {
+    const row = screen.getAllByText(rowName).map(e => e.closest('.justify-between.p-4, [class~="p-4"][class~="justify-between"]')).find(Boolean) as HTMLElement;
+    const trigger = within(row).getAllByRole('button').pop()!;
+    trigger.focus();
+    fireEvent.keyDown(trigger, { key: 'Enter' });
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Edit|تعديل/ }));
+    const dialogs = await screen.findAllByRole('dialog');
+    return dialogs[dialogs.length - 1];
+  };
+
+  it('editing a custom-role member shows its permissions to tick, and saves them to the role', async () => {
+    permissions = ['roles.manage', 'users.view', 'users.update'];
+    saveRole.mockResolvedValue({ id: 'r1' });
+    render(<UsersSection />);
+    const dialog = await openEdit('سارة');
+    const reports = within(dialog).getByRole('checkbox', { name: /عرض التقارير المالية/ });
+    expect(reports).toHaveAttribute('data-state', 'checked');
+    expect(reports).not.toBeDisabled();
+    fireEvent.click(within(dialog).getByText('الاطلاع على الفواتير'));
+    fireEvent.click(within(dialog).getByText('Save Changes'));
+    await waitFor(() => expect(saveRole).toHaveBeenCalledWith('r1', 'محاسب', '', ['reports.view', 'invoices.view']));
+  });
+
+  it('a system role\'s permissions are shown, not editable, with a way to customise them', async () => {
+    permissions = ['roles.manage', 'users.view', 'users.update'];
+    members = [...members, member('3', 'cashier', 'خالد')];
+    render(<UsersSection />);
+    const dialog = await openEdit('خالد');
+    const pos = within(dialog).getByRole('checkbox', { name: /نقطة البيع/ });
+    expect(pos).toHaveAttribute('data-state', 'checked');
+    expect(pos).toBeDisabled();
+    expect(within(dialog).getByRole('checkbox', { name: /عرض التقارير المالية/ })).toHaveAttribute('data-state', 'unchecked');
+    expect(within(dialog).getByText('تخصيص الصلاحيات')).toBeInTheDocument();
+  });
 });
