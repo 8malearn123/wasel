@@ -166,9 +166,9 @@ export function CashierSalesHistory({
   const formatDate = (value: string) => {
     const date = new Date(value);
     return (
-      date.toLocaleDateString("ar-SA", { month: "short", day: "numeric" }) +
+      date.toLocaleDateString("ar-SA-u-ca-gregory-nu-latn", { month: "short", day: "numeric" }) +
       " " +
-      date.toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" })
+      date.toLocaleTimeString("ar-SA-u-ca-gregory-nu-latn", { hour: "2-digit", minute: "2-digit" })
     );
   };
 

@@ -57,7 +57,7 @@ export default function LockedPage() {
         {endedAt && (
           <p className="text-xs text-muted-foreground mb-8">
             {isRTL ? 'تاريخ الانتهاء: ' : 'Ended on '}
-            {new Date(endedAt).toLocaleDateString(isRTL ? 'ar-SA' : 'en-GB')}
+            {new Date(endedAt).toLocaleDateString(isRTL ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-GB')}
           </p>
         )}
 

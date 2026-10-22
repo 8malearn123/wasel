@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, Fragment
 import { en, TranslationKeys } from "./translations/en";
 import { ar } from "./translations/ar";
 import { startAutoTranslate, stopAutoTranslate } from "./autoTranslate";
+import { DirectionProvider } from "@radix-ui/react-direction";
 
 type Language = "en" | "ar";
 
@@ -54,7 +55,11 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t: translations[language], isRTL }}>
-      <Fragment key={generation}>{children}</Fragment>
+      {/* Radix components (tabs, menus, radio groups…) read their direction
+          from here; without it they lay out left-to-right even in Arabic */}
+      <DirectionProvider dir={isRTL ? "rtl" : "ltr"}>
+        <Fragment key={generation}>{children}</Fragment>
+      </DirectionProvider>
     </LanguageContext.Provider>
   );
 }

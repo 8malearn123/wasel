@@ -165,8 +165,8 @@ export default function SuppliersSection() {
       <Tabs value={activeTab} onValueChange={setActiveTab} dir={isRTL ? 'rtl' : 'ltr'}>
         {/* Suppliers Tab */}
         <TabsContent value="suppliers">
-          <div className="flex justify-between items-center mb-4">
-            <Input placeholder={isRTL ? 'بحث عن مورد...' : 'Search suppliers...'} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-64" />
+          <div className="flex justify-between items-center gap-3 mb-4">
+            <Input placeholder={isRTL ? 'بحث عن مورد...' : 'Search suppliers...'} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full max-w-64 min-w-0" />
             <Button className="gap-2 bg-gradient-primary hover:opacity-90" onClick={() => setShowAdd(true)}>
               <Plus className="w-4 h-4" />
               {isRTL ? 'إضافة مورد' : 'Add Supplier'}
@@ -344,7 +344,7 @@ export default function SuppliersSection() {
                       <TableRow key={order.id}>
                         <TableCell className="font-mono font-medium">{order.order_number}</TableCell>
                         <TableCell>{order.supplier?.name || '-'}</TableCell>
-                        <TableCell className="text-muted-foreground">{new Date(order.order_date).toLocaleDateString('ar-SA')}</TableCell>
+                        <TableCell className="text-muted-foreground">{new Date(order.order_date).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn')}</TableCell>
                         <TableCell className="font-semibold">{Number(order.total_amount).toLocaleString()}</TableCell>
                         <TableCell className="text-success">{Number(order.paid_amount).toLocaleString()}</TableCell>
                         <TableCell className={remaining > 0 ? 'text-destructive font-semibold' : 'text-success'}>{remaining.toLocaleString()}</TableCell>
@@ -879,7 +879,7 @@ function PODetailsDialog({ open, onOpenChange, order, isRTL }: { open: boolean; 
       <div class="head">
         <div><h1>طلب شراء</h1><div class="muted">${merchant?.name || ''}</div></div>
         <div style="text-align:left"><div style="font-weight:bold">${order.order_number}</div>
-        <div class="muted">${new Date(order.order_date).toLocaleDateString('ar-SA')}</div></div>
+        <div class="muted">${new Date(order.order_date).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn')}</div></div>
       </div>
       <p>المورد: <b>${order.supplier?.name || '-'}</b> — الفرع: <b>${order.branch?.name || '-'}</b>
         <span class="badge">${sc.labelAr}</span><span class="badge">${pc.labelAr}</span></p>
@@ -906,7 +906,7 @@ function PODetailsDialog({ open, onOpenChange, order, isRTL }: { open: boolean; 
           <div className="grid grid-cols-2 gap-3">
             <div className="p-3 bg-muted rounded-lg"><p className="text-xs text-muted-foreground">{isRTL ? 'رقم الطلب' : 'Order #'}</p><p className="font-mono font-bold">{order.order_number}</p></div>
             <div className="p-3 bg-muted rounded-lg"><p className="text-xs text-muted-foreground">{isRTL ? 'المورد' : 'Supplier'}</p><p className="font-bold">{order.supplier?.name}</p></div>
-            <div className="p-3 bg-muted rounded-lg"><p className="text-xs text-muted-foreground">{isRTL ? 'التاريخ' : 'Date'}</p><p>{new Date(order.order_date).toLocaleDateString('ar-SA')}</p></div>
+            <div className="p-3 bg-muted rounded-lg"><p className="text-xs text-muted-foreground">{isRTL ? 'التاريخ' : 'Date'}</p><p>{new Date(order.order_date).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn')}</p></div>
             <div className="p-3 bg-muted rounded-lg"><p className="text-xs text-muted-foreground">{isRTL ? 'الفرع' : 'Branch'}</p><p>{order.branch?.name || '-'}</p></div>
           </div>
           <div className="flex gap-2"><Badge variant="outline" className={sc.color}>{isRTL ? sc.labelAr : sc.label}</Badge><Badge variant="outline" className={pc.color}>{isRTL ? pc.labelAr : pc.label}</Badge></div>

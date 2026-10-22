@@ -148,7 +148,7 @@ export default function TransfersSection() {
                         {transfer.from_branch?.name} ← {transfer.to_branch?.name}
                       </p>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {new Date(transfer.created_at).toLocaleDateString(isRTL ? "ar-SA" : "en-GB")}
+                        {new Date(transfer.created_at).toLocaleDateString(isRTL ? "ar-SA-u-ca-gregory-nu-latn" : "en-GB")}
                       </p>
                     </div>
 

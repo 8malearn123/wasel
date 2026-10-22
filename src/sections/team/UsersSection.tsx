@@ -83,7 +83,7 @@ const roleColors: Record<UserRole, string> = {
   custom: "bg-muted text-foreground border-border"
 };
 
-const roleLabels: Record<UserRole, string> = {
+const roleLabelsEn: Record<UserRole, string> = {
   owner: "Owner",
   admin: "Admin",
   branch_manager: "Branch Manager",
@@ -91,6 +91,15 @@ const roleLabels: Record<UserRole, string> = {
   inventory_manager: "Inventory Manager",
   custom: "Custom role"
 };
+const roleLabelsAr: Record<UserRole, string> = {
+  owner: "المالك",
+  admin: "أدمن",
+  branch_manager: "مدير فرع",
+  cashier: "كاشير",
+  inventory_manager: "مسؤول المخزون",
+  custom: "دور مخصص"
+};
+const roleLabelOf = (role: UserRole, isRTL: boolean) => (isRTL ? roleLabelsAr : roleLabelsEn)[role];
 
 // A role select's value: a system role key, or "custom:<role id>"
 const CUSTOM_PREFIX = 'custom:';
@@ -120,7 +129,7 @@ export default function UsersSection() {
   const [resettingUser, setResettingUser] = useState<MerchantUser | null>(null);
   const [regeneratingCode, setRegeneratingCode] = useState<MerchantUser | null>(null);
   const [showAddUser, setShowAddUser] = useState(false);
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const { users, loading, updateUserRole, updateUserBranch, deactivateUser, refetch } = useMerchantUsers();
   const { branches } = useBranches();
   const { can } = usePermissions();
@@ -172,7 +181,7 @@ export default function UsersSection() {
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">{activeUsers.length}</p>
-              <p className="text-sm text-muted-foreground">Total Users</p>
+              <p className="text-sm text-muted-foreground">{isRTL ? "إجمالي المستخدمين" : "Total Users"}</p>
             </div>
           </div>
         </motion.div>
@@ -189,7 +198,7 @@ export default function UsersSection() {
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">{roleCounts['owner'] || 0}</p>
-              <p className="text-sm text-muted-foreground">Owners</p>
+              <p className="text-sm text-muted-foreground">{isRTL ? "المالك" : "Owners"}</p>
             </div>
           </div>
         </motion.div>
@@ -206,7 +215,7 @@ export default function UsersSection() {
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">{roleCounts['admin'] || 0}</p>
-              <p className="text-sm text-muted-foreground">Admins</p>
+              <p className="text-sm text-muted-foreground">{isRTL ? "الأدمن" : "Admins"}</p>
             </div>
           </div>
         </motion.div>
@@ -223,7 +232,7 @@ export default function UsersSection() {
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">{roleCounts['cashier'] || 0}</p>
-              <p className="text-sm text-muted-foreground">Cashiers</p>
+              <p className="text-sm text-muted-foreground">{isRTL ? "الكاشير" : "Cashiers"}</p>
             </div>
           </div>
         </motion.div>
@@ -243,7 +252,7 @@ export default function UsersSection() {
         ) : activeUsers.length === 0 ? (
           <div className="text-center py-20">
             <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No users found</p>
+            <p className="text-muted-foreground">{isRTL ? "لا يوجد مستخدمون" : "No users found"}</p>
           </div>
         ) : (
           <div className="divide-y divide-border">
@@ -263,7 +272,7 @@ export default function UsersSection() {
                   </div>
                   <div>
                     <p className="font-semibold text-foreground">
-                      {user.profile?.full_name || 'Unknown User'}
+                      {user.profile?.full_name || (isRTL ? 'مستخدم بدون اسم' : 'Unknown User')}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className={cn(
@@ -271,7 +280,7 @@ export default function UsersSection() {
                         roleColors[user.role]
                       )}>
                         {roleIcons[user.role]}
-                        {user.role === 'custom' ? (user.customRole?.name ?? roleLabels.custom) : roleLabels[user.role]}
+                        {user.role === 'custom' ? (user.customRole?.name ?? roleLabelOf('custom', isRTL)) : roleLabelOf(user.role, isRTL)}
                       </span>
                       {user.branch && (
                         <span className="text-xs text-muted-foreground">
@@ -533,6 +542,7 @@ function EditUserDialog({
   onSaveBranch: (userId: string, branchId: string | null) => Promise<any>;
   onSaved: () => void;
 }) {
+  const { isRTL } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [role, setRole] = useState<string>(user ? roleValueOf(user) : 'cashier');
   const [branchId, setBranchId] = useState(user?.branch_id || 'all');
@@ -558,13 +568,13 @@ function EditUserDialog({
         // this shop's and that the member is not the owner
         const { error } = await assignCustomRole(user.id, role.slice(CUSTOM_PREFIX.length));
         if (error) { toast.error(error); setLoading(false); return; }
-        toast.success('User role updated');
+        toast.success(isRTL ? 'تم تحديث دور المستخدم' : 'User role updated');
         onSaved();
       } else if (user.role === 'custom') {
         // Leaving a custom role: the same function drops its grant
         const { error } = await assignSystemRole(user.id, role);
         if (error) { toast.error(error); setLoading(false); return; }
-        toast.success('User role updated');
+        toast.success(isRTL ? 'تم تحديث دور المستخدم' : 'User role updated');
         onSaved();
       } else {
         await onSaveRole(user.id, role as UserRole);
@@ -581,46 +591,46 @@ function EditUserDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit User</DialogTitle>
+          <DialogTitle>{isRTL ? "تعديل المستخدم" : "Edit User"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
-              <Label>User</Label>
+              <Label>{isRTL ? "المستخدم" : "User"}</Label>
               <p className="text-sm text-muted-foreground">
-                {user?.profile?.full_name || 'Unknown User'}
+                {user?.profile?.full_name || (isRTL ? 'مستخدم بدون اسم' : 'Unknown User')}
               </p>
             </div>
             <div className="space-y-2">
-              <Label>Role</Label>
+              <Label>{isRTL ? "الدور" : "Role"}</Label>
               <Select value={role} onValueChange={(v) => setRole(v as UserRole)} disabled={user?.role === 'owner'}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {user?.role === 'owner' && <SelectItem value="owner">Owner</SelectItem>}
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="branch_manager">Branch Manager</SelectItem>
-                  <SelectItem value="cashier">Cashier</SelectItem>
-                  <SelectItem value="inventory_manager">Inventory Manager</SelectItem>
+                  {user?.role === 'owner' && <SelectItem value="owner">{roleLabelOf('owner', isRTL)}</SelectItem>}
+                  <SelectItem value="admin">{roleLabelOf('admin', isRTL)}</SelectItem>
+                  <SelectItem value="branch_manager">{roleLabelOf('branch_manager', isRTL)}</SelectItem>
+                  <SelectItem value="cashier">{roleLabelOf('cashier', isRTL)}</SelectItem>
+                  <SelectItem value="inventory_manager">{roleLabelOf('inventory_manager', isRTL)}</SelectItem>
                   <CustomRoleOptions roles={customRoles} />
                 </SelectContent>
               </Select>
               {user?.role === 'owner' && (
-                <p className="text-xs text-muted-foreground">Owner role cannot be changed</p>
+                <p className="text-xs text-muted-foreground">{isRTL ? "لا يمكن تغيير دور المالك" : "Owner role cannot be changed"}</p>
               )}
             </div>
             {user?.role !== 'owner' && (
               <RolePermissionsSection rp={rp} catalog={permissionOptions.catalog} disabled={loading} />
             )}
             <div className="space-y-2">
-              <Label>Assigned Branch</Label>
+              <Label>{isRTL ? "الفرع" : "Assigned Branch"}</Label>
               <Select value={branchId} onValueChange={setBranchId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="All branches" />
+                  <SelectValue placeholder={isRTL ? "جميع الفروع" : "All branches"} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Branches</SelectItem>
+                  <SelectItem value="all">{isRTL ? "جميع الفروع" : "All Branches"}</SelectItem>
                   {branches.map(b => (
                     <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
                   ))}
@@ -630,11 +640,11 @@ function EditUserDialog({
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
+              {isRTL ? "إلغاء" : "Cancel"}
             </Button>
             <Button type="submit" disabled={loading}>
               {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Save Changes
+              {isRTL ? "حفظ التغييرات" : "Save Changes"}
             </Button>
           </DialogFooter>
         </form>

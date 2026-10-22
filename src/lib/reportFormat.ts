@@ -2,7 +2,7 @@
  * One way to write a number in a report.
  *
  * The dashboards used `val.toLocaleString()` and the tables used
- * `toLocaleString('ar-SA')`, so the same riyal figure appeared with Latin
+ * `toLocaleString('ar-SA-u-ca-gregory-nu-latn')`, so the same riyal figure appeared with Latin
  * digits in one tab and Arabic-Indic digits in the next. Reports are read
  * side by side and exported together, so they share one formatter — and it
  * keeps Latin digits, which is what the rest of وصل shows and what

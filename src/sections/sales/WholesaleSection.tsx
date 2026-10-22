@@ -225,7 +225,7 @@ export default function WholesaleSection() {
     );
   }
 
-  const money = (value: number) => `${value.toLocaleString(t ? 'ar-SA' : 'en-US')} ${t ? 'ر.س' : 'SAR'}`;
+  const money = (value: number) => `${value.toLocaleString(t ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US')} ${t ? 'ر.س' : 'SAR'}`;
 
   // Each tile opens the section it counts, on the right side of it
   const tiles: { id: string; section: Section; label: string; value: string; icon: typeof Package; tone: string; bg: string; open?: () => void }[] = [
@@ -477,7 +477,7 @@ export default function WholesaleSection() {
                             <TableCell>{(orderSide === 'mine' ? order.supplier_merchant?.name : order.buyer_merchant?.name) || '—'}</TableCell>
                             <TableCell className="text-center font-semibold tabular-nums">{money(order.total_amount)}</TableCell>
                             <TableCell className="text-center"><Badge className={statusColors[order.status] || 'bg-muted'}>{(t ? statusLabelsAr : statusLabelsEn)[order.status] || order.status}</Badge></TableCell>
-                            <TableCell className="text-center text-sm text-muted-foreground">{new Date(order.created_at).toLocaleDateString(t ? 'ar-SA' : 'en-US')}</TableCell>
+                            <TableCell className="text-center text-sm text-muted-foreground">{new Date(order.created_at).toLocaleDateString(t ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US')}</TableCell>
                             {orderSide === 'incoming' && (
                               <TableCell>
                                 <div className="flex gap-1 justify-end">
@@ -545,12 +545,12 @@ export default function WholesaleSection() {
                               <TableCell className="font-medium">{(creditSide === 'out' ? credit.buyer_merchant?.name : credit.supplier_merchant?.name) || '—'}</TableCell>
                               <TableCell className="text-center"><Badge variant="outline">{(t ? creditTypeAr : creditTypeEn)[credit.credit_type]}</Badge></TableCell>
                               <TableCell className="text-center tabular-nums">{money(credit.amount)}</TableCell>
-                              <TableCell className="text-center tabular-nums text-success">{credit.paid_amount.toLocaleString(t ? 'ar-SA' : 'en-US')}</TableCell>
-                              <TableCell className="text-center tabular-nums font-semibold text-destructive">{credit.remaining_amount.toLocaleString(t ? 'ar-SA' : 'en-US')}</TableCell>
+                              <TableCell className="text-center tabular-nums text-success">{credit.paid_amount.toLocaleString(t ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US')}</TableCell>
+                              <TableCell className="text-center tabular-nums font-semibold text-destructive">{credit.remaining_amount.toLocaleString(t ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US')}</TableCell>
                               <TableCell className="text-center text-sm">
                                 {credit.due_date ? (
                                   <span className={late ? 'text-destructive font-semibold' : 'text-muted-foreground'}>
-                                    {new Date(credit.due_date).toLocaleDateString(t ? 'ar-SA' : 'en-US')}
+                                    {new Date(credit.due_date).toLocaleDateString(t ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US')}
                                     {late && <AlertTriangle className="w-3 h-3 inline ms-1" />}
                                   </span>
                                 ) : '—'}

@@ -120,7 +120,7 @@ export function StoreThankYouPage({ store }: { store: StoreSettings }) {
                     {order.order_number}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {new Date(order.created_at).toLocaleString('ar-SA')}
+                    {new Date(order.created_at).toLocaleString('ar-SA-u-ca-gregory-nu-latn')}
                   </p>
                 </div>
               </div>

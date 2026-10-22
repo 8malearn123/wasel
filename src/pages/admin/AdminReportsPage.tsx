@@ -14,7 +14,7 @@ import {
   PieChart, Pie, Cell, Legend, LineChart, Line,
 } from 'recharts';
 
-const fmtMoney = (n: number) => new Intl.NumberFormat('ar-SA').format(Math.round(n)) + ' ر.س';
+const fmtMoney = (n: number) => new Intl.NumberFormat('ar-SA-u-ca-gregory-nu-latn').format(Math.round(n)) + ' ر.س';
 
 export default function AdminReportsPage() {
   const {

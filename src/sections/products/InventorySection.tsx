@@ -180,7 +180,8 @@ export default function InventorySection() {
   const DEVICES_PER_PAGE = 6;
   const [devicePage, setDevicePage] = useState(1);
   useEffect(() => { setDevicePage(1); }, [searchTerm, showFavsOnly, activeTab]);
-  const arNum = (n: number) => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[Number(d)]);
+  // the same digits as every other figure on the page
+  const arNum = (n: number) => n.toLocaleString('en-US');
 
   const toggleFav = (id: string) => {
     setFavIds(prev => {
@@ -293,7 +294,7 @@ export default function InventorySection() {
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">{accessoryStats.total}</p>
-              <p className="text-sm text-muted-foreground">{t.inventory.accessories} ({accessoryStats.skus} SKUs)</p>
+              <p className="text-sm text-muted-foreground">{t.inventory.accessories} ({accessoryStats.skus} {isRTL ? "صنف" : "SKUs"})</p>
             </div>
           </div>
         </motion.div>
@@ -343,11 +344,11 @@ export default function InventorySection() {
         className="bg-card rounded-xl border border-border shadow-md overflow-hidden"
       >
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          {/* the add / favourites / search group on the left, the kinds on the right */}
-          <div className="px-6 py-4 border-b border-border flex flex-col sm:flex-row-reverse sm:items-center justify-between gap-4">
+          {/* in Arabic the kinds sit on the right and add / favourites / search on the left */}
+          <div className="px-4 sm:px-6 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             {/* One kind on screen at a time — the three lists used to run down the
                 page together, which read as one long pile */}
-            <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-muted/50 border border-border self-start">
+            <div className="inline-flex flex-wrap items-center gap-1 p-1 rounded-xl bg-muted/50 border border-border self-start max-w-full">
               {kindOptions.map(option => (
                 <button
                   key={option.key}
@@ -391,8 +392,8 @@ export default function InventorySection() {
                 {isRTL ? "التصنيفات" : "Categories"}
               </button>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="relative">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative flex-1 min-w-0 sm:flex-none">
                 <Search className={cn(
                   "absolute top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground",
                   isRTL ? "right-3" : "left-3"
@@ -401,7 +402,7 @@ export default function InventorySection() {
                   placeholder={isRTL ? "ابحث في المخزون..." : "Search the stock..."}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className={cn("w-64", isRTL ? "pr-9" : "pl-9")}
+                  className={cn("w-full sm:w-64", isRTL ? "pr-9" : "pl-9")}
                 />
               </div>
               <Button
@@ -463,7 +464,6 @@ export default function InventorySection() {
                 {/* ترويسة ثنائية اللغة — من تصميم Devices Inventory */}
                 <div className="px-6 pt-5 pb-3 flex items-end justify-between flex-wrap gap-2">
                   <div>
-                    <p className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground/70" dir="ltr">Inventory · Devices</p>
                     <h2 className="text-lg font-bold text-foreground mt-0.5">{isRTL ? "الأجهزة في المخزون" : "Devices in Stock"}</h2>
                   </div>
                   <p className="text-xs text-muted-foreground">{arNum(filteredDevices.length)} {isRTL ? "جهازاً" : "devices"}</p>

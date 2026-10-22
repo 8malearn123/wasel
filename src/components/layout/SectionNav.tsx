@@ -50,7 +50,7 @@ export function SectionNav({
           )}
         >
           {captioned && (
-            <span className="px-1 text-[10px] font-semibold tracking-wider text-muted-foreground/70">
+            <span className="px-1 text-[11px] font-semibold tracking-wide text-muted-foreground/80">
               {group.label || ' '}
             </span>
           )}

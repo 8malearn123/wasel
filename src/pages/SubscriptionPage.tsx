@@ -154,9 +154,9 @@ export default function SubscriptionPage() {
             <div className="text-center p-3 rounded-lg bg-muted/30">
               <p className="text-sm font-medium text-foreground">
                 {subscription?.subscription_ends_at
-                  ? new Date(subscription.subscription_ends_at).toLocaleDateString('ar-SA')
+                  ? new Date(subscription.subscription_ends_at).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn')
                   : subscription?.trial_ends_at
-                    ? new Date(subscription.trial_ends_at).toLocaleDateString('ar-SA')
+                    ? new Date(subscription.trial_ends_at).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn')
                     : '—'}
               </p>
               <p className="text-xs text-muted-foreground">تاريخ الانتهاء</p>
@@ -216,7 +216,7 @@ export default function SubscriptionPage() {
                   <h3 className="text-xl font-bold text-foreground">{plan.name_ar}</h3>
                   <div className="mt-2">
                     <span className="text-3xl font-bold text-foreground">
-                      {Number(plan.price).toLocaleString('ar-SA')}
+                      {Number(plan.price).toLocaleString('ar-SA-u-ca-gregory-nu-latn')}
                     </span>
                     <span className="text-muted-foreground"> ر.س/شهر</span>
                     <p className="text-[11px] text-muted-foreground mt-1">غير شامل ضريبة القيمة المضافة</p>

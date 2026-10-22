@@ -234,7 +234,7 @@ export default function CustomersSection() {
                   <div key={tx.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                     <div>
                       <p className="text-sm font-medium">{tx.description || (tx.type === 'earn' ? (t ? 'كسب نقاط' : 'Earned') : (t ? 'استبدال' : 'Redeemed'))}</p>
-                      <p className="text-xs text-muted-foreground">{new Date(tx.created_at).toLocaleDateString(t ? 'ar-SA' : 'en-US')}</p>
+                      <p className="text-xs text-muted-foreground">{new Date(tx.created_at).toLocaleDateString(t ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US')}</p>
                     </div>
                     <span className={`font-bold ${tx.points > 0 ? 'text-success' : 'text-destructive'}`}>
                       {tx.points > 0 ? '+' : ''}{tx.points}
