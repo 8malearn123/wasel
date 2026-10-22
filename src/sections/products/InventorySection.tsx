@@ -180,7 +180,8 @@ export default function InventorySection() {
   const DEVICES_PER_PAGE = 6;
   const [devicePage, setDevicePage] = useState(1);
   useEffect(() => { setDevicePage(1); }, [searchTerm, showFavsOnly, activeTab]);
-  const arNum = (n: number) => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[Number(d)]);
+  // the same digits as every other figure on the page
+  const arNum = (n: number) => n.toLocaleString('en-US');
 
   const toggleFav = (id: string) => {
     setFavIds(prev => {
@@ -463,7 +464,6 @@ export default function InventorySection() {
                 {/* ترويسة ثنائية اللغة — من تصميم Devices Inventory */}
                 <div className="px-6 pt-5 pb-3 flex items-end justify-between flex-wrap gap-2">
                   <div>
-                    <p className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground/70" dir="ltr">Inventory · Devices</p>
                     <h2 className="text-lg font-bold text-foreground mt-0.5">{isRTL ? "الأجهزة في المخزون" : "Devices in Stock"}</h2>
                   </div>
                   <p className="text-xs text-muted-foreground">{arNum(filteredDevices.length)} {isRTL ? "جهازاً" : "devices"}</p>

@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/i18n";
 
 type StatusType = "available" | "reserved" | "sold" | "transferred" | "repair";
 
@@ -8,25 +9,30 @@ interface StatusBadgeProps {
   size?: "sm" | "md" | "lg";
 }
 
-const statusConfig: Record<StatusType, { label: string; className: string }> = {
+const statusConfig: Record<StatusType, { label: string; labelAr: string; className: string }> = {
   available: {
     label: "Available",
+    labelAr: "متاح",
     className: "status-available",
   },
   reserved: {
     label: "Reserved",
+    labelAr: "محجوز",
     className: "status-reserved",
   },
   sold: {
     label: "Sold",
+    labelAr: "مباع",
     className: "status-sold",
   },
   transferred: {
     label: "In Transfer",
+    labelAr: "قيد التحويل",
     className: "status-transferred",
   },
   repair: {
     label: "In Repair",
+    labelAr: "في الصيانة",
     className: "bg-primary/10 text-primary border-primary/20",
   },
 };
@@ -39,6 +45,7 @@ const sizeStyles = {
 
 export function StatusBadge({ status, size = "md" }: StatusBadgeProps) {
   const config = statusConfig[status];
+  const { isRTL } = useLanguage();
 
   return (
     <motion.span
@@ -50,8 +57,8 @@ export function StatusBadge({ status, size = "md" }: StatusBadgeProps) {
         sizeStyles[size]
       )}
     >
-      <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5" />
-      {config.label}
+      <span className="w-1.5 h-1.5 rounded-full bg-current me-1.5" />
+      {isRTL ? config.labelAr : config.label}
     </motion.span>
   );
 }
