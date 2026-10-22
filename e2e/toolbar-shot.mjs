@@ -25,7 +25,7 @@ for (const [label, width] of [['desktop', 1600], ['mobile', 390]]) {
     const bar = el.closest('.border-b'); const b = bar.getBoundingClientRect();
     return { x: 0, y: Math.max(0, b.top - 10), width: window.innerWidth, height: b.height + 20 };
   });
-  const jpg = await page.screenshot({ type: 'jpeg', quality: 60, clip: box });
+  const jpg = await page.screenshot({ type: 'jpeg', quality: 95, clip: box });
   console.log(`SHOT-BEGIN ${label}`);
   const b64 = jpg.toString('base64');
   for (let i = 0; i < b64.length; i += 4000) console.log(b64.slice(i, i + 4000));
