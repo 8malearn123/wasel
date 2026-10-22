@@ -60,12 +60,12 @@ describe('custom roles in users & permissions', () => {
     ];
   });
 
-  it('the owner manages roles; the member shows the role by its name', () => {
+  it('the member shows the role by its name; the roles are not listed under the users', () => {
     permissions = ['roles.manage', 'users.view', 'users.update'];
     render(<UsersSection />);
-    expect(screen.getByTitle('تعديل')).toBeInTheDocument();
-    // the role's row and the member's badge both carry its name
-    expect(screen.getAllByText('محاسب').length).toBeGreaterThanOrEqual(2);
+    // the member's badge carries the role's name, and nothing else lists it
+    expect(screen.getAllByText('محاسب')).toHaveLength(1);
+    expect(screen.queryByTitle('تعديل')).not.toBeInTheDocument();
   });
 
   it('an admin, who cannot manage roles, is not offered the editor', () => {
@@ -116,11 +116,6 @@ describe('custom roles in users & permissions', () => {
     databaseReady = true;
   });
 
-  it('a role still held by someone cannot be deleted from the list', () => {
-    permissions = ['roles.manage'];
-    render(<UsersSection />);
-    expect(screen.getByTitle('مسند لمستخدمين — غيّر أدوارهم أولًا')).toBeDisabled();
-  });
 
   // the row's ⋯ menu → edit (opened from the keyboard: jsdom has no pointer events)
   const openEdit = async (rowName: string) => {
