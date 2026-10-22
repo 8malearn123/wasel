@@ -23,7 +23,7 @@ jobs:
         if: always()
       - run: (npx vite preview --port 4173 --strictPort > preview.log 2>&1 &) && sleep 5
         if: always()
-      - run: npm i --no-save --no-package-lock playwright@1.48.2 && npx playwright install --with-deps chromium
+      - run: PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm i --no-save --no-package-lock playwright@1.48.2
         if: always()
         working-directory: e2e
         timeout-minutes: 5
@@ -33,5 +33,6 @@ jobs:
         env:
           PROFILE: employee-max
           SITE: http://localhost:4173
+          CHANNEL: chrome
           ANON: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlud2RkeXh6eXBiY2Z0bGV2dWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5MjE1OTQsImV4cCI6MjA4NTQ5NzU5NH0.PsNDqovuzo7NmTiwsH4swskkIF3FdMlBXjYUy3MJkyA
         run: node roles.mjs

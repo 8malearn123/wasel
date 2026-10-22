@@ -143,7 +143,7 @@ if (PROFILE in LIVE_CUSTOM) {
   console.log(`live role «${role?.name}»: ${LIVE_CUSTOM[PROFILE].join(', ')}`);
 }
 
-const browser = await chromium.launch();
+const browser = await chromium.launch(process.env.CHANNEL ? { channel: process.env.CHANNEL } : {});
 const context = await browser.newContext({ locale: 'ar', viewport: { width: 1680, height: 1000 } });
 const storageKey = 'sb-ynwddyxzypbcftlevuam-auth-token';
 await context.addInitScript(([k, v]) => { window.localStorage.setItem(k, v); }, [storageKey, JSON.stringify(session)]);
