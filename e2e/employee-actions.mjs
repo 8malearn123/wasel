@@ -7,7 +7,7 @@ const signIn = async (email) => (await (await fetch(`${SUPA}/auth/v1/token?grant
   method: 'POST', headers: { apikey: ANON, 'Content-Type': 'application/json' },
   body: JSON.stringify({ email, password: 'demo1234' }),
 })).json());
-const s = await signIn('demo-employee@wasil.demo');
+const s = await signIn(process.env.EMAIL || 'demo-employee@wasil.demo');
 const owner = await signIn('demo-distributor@wasil.demo');
 const mk = (tok) => ({ apikey: ANON, Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' });
 const H = mk(s.access_token), OH = mk(owner.access_token);
@@ -19,13 +19,15 @@ const api = async (method, path, body, headers = H) => {
   const ok = res.ok && (method === 'GET' || rows > 0);
   return { ok, status: res.status, data, err: res.ok ? (ok ? '' : 'لم يتأثر أي سجل (منعته قاعدة البيانات)') : (data?.message || text).slice(0, 140) };
 };
-const [me] = (await api('GET', `merchant_users?select=id,role,merchant_id&user_id=eq.${s.user.id}`)).data;
+const [me] = (await api('GET', `merchant_users?select=id,role,merchant_id,branch_id&user_id=eq.${s.user.id}`)).data;
 const M = me.merchant_id;
 const cfg = (await api('GET', `activity_logs?select=new_data&merchant_id=eq.${M}&entity_type=eq.custom_roles&order=created_at.desc&limit=1`)).data?.[0]?.new_data;
+// a custom role, else the system role as the shop changed it, else its defaults (legacyRolePermissions)
+const DEFAULTS = { cashier: ['products.view', 'pos.access', 'repairs.manage', 'closings.manage'] };
 const role = cfg?.roles?.find(r => r.id === cfg.assignments?.[me.id]);
-const perms = new Set(role?.permissions ?? []);
-console.log(`member: db role ${me.role} · app role «${role?.name}»: ${[...perms].join(', ')}`);
-const B0 = (await api('GET', `branches?select=id&merchant_id=eq.${M}&order=created_at&limit=1`)).data?.[0]?.id;
+const perms = new Set(role?.permissions ?? cfg?.systemRoles?.[me.role] ?? DEFAULTS[me.role] ?? []);
+console.log(`member: db role ${me.role} · app role «${role?.name ?? me.role}»${!role && cfg?.systemRoles?.[me.role] ? ' (changed by the shop)' : ''}: ${[...perms].join(', ')}`);
+const B0 = me.branch_id || (await api('GET', `branches?select=id&merchant_id=eq.${M}&order=created_at&limit=1`)).data?.[0]?.id;
 const ts = Date.now().toString().slice(-8);
 const rows = [];
 function report(area, action, perm, res) {
@@ -58,6 +60,36 @@ await crud('المتجر · تصنيف', 'store_categories', { name: 'E2E تصن
   if (o) {
     report('طلبات المتجر · تغيير الحالة', 'تعديل', 'online_orders.manage', await api('PATCH', `online_orders?id=eq.${o.id}`, { status: o.status }));
   } else report('طلبات المتجر', 'قراءة', 'online_orders.manage', { ok: false, status: 0, err: 'لا توجد طلبات' });
+}
+
+// the till: a sale of a test device and a test accessory, as the POS records it
+{
+  const dev = (await api('POST', 'devices', { merchant_id: M, imei: `97${ts}0000`, model: 'E2E جهاز بيع', price: 1, cost: 1, status: 'available', branch_id: B0 }, OH)).data?.[0];
+  const acc = (await api('POST', 'accessories', { merchant_id: M, name: 'E2E إكسسوار بيع', sku: `E2E-POS-${ts}`, price: 1, cost: 1, quantity: 3, branch_id: B0 }, OH)).data?.[0];
+  const inv = await api('POST', 'rpc/generate_invoice_number', { _merchant_id: M });
+  report('الكاشير · رقم فاتورة', 'إنشاء', 'pos.access', { ...inv, ok: inv.status === 200 && typeof inv.data === 'string' });
+  const sale = await api('POST', 'sales', { merchant_id: M, branch_id: B0, invoice_number: `E2E-${ts}`, subtotal: 2, tax_amount: 0.3, discount_amount: 0, total_amount: 2.3, payment_method: 'cash', payment_status: 'paid', sold_by: s.user.id });
+  report('الكاشير · فاتورة بيع', 'إضافة', 'pos.access', sale);
+  const sid = sale.data?.[0]?.id;
+  if (sid) {
+    report('الكاشير · بنود الفاتورة', 'إضافة', 'pos.access', await api('POST', 'sale_items', [
+      { sale_id: sid, device_id: dev?.id, quantity: 1, unit_price: 1, cost_at_sale: 1 },
+      { sale_id: sid, accessory_id: acc?.id, quantity: 1, unit_price: 1, cost_at_sale: 1 }]));
+    report('الكاشير · قراءة فواتيره', 'قراءة', 'pos.access', await api('GET', `sales?select=id&id=eq.${sid}`));
+  }
+  if (dev) report('الكاشير · الجهاز يصبح مباعًا', 'تعديل', 'pos.access', await api('PATCH', `devices?id=eq.${dev.id}`, { status: 'sold' }));
+  if (acc) report('الكاشير · إنقاص كمية الإكسسوار', 'تعديل', 'pos.access', await api('PATCH', `accessories?id=eq.${acc.id}`, { quantity: 2 }));
+  report('الكاشير · بحث المنتجات', 'قراءة', 'products.view', await api('GET', `devices?select=id&merchant_id=eq.${M}&limit=1`));
+  // a closing on a day long gone, so no real day is touched
+  const cl = await api('POST', 'daily_closings', { merchant_id: M, branch_id: B0, closing_date: '2000-01-01', cash_sales: 0, card_sales: 0, bank_transfer_sales: 0, total_sales: 0, total_tax: 0, total_discount: 0, transactions_count: 0, devices_sold: 0, accessories_sold: 0, closed_by: s.user.id, status: 'closed' });
+  report('إغلاق اليوم', 'إضافة', 'closings.manage', cl);
+  if (sid) {
+    await api('DELETE', `sale_items?sale_id=eq.${sid}`, undefined, OH);
+    await api('DELETE', `sales?id=eq.${sid}`, undefined, OH);
+  }
+  await api('DELETE', `daily_closings?branch_id=eq.${B0}&closing_date=eq.2000-01-01`, undefined, OH);
+  if (dev) await api('DELETE', `devices?id=eq.${dev.id}`, undefined, OH);
+  if (acc) await api('DELETE', `accessories?id=eq.${acc.id}`, undefined, OH);
 }
 // reading what the role opens
 report('الفواتير', 'قراءة', 'invoices.view', await api('GET', `sales?select=id&merchant_id=eq.${M}&limit=1`));
