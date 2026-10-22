@@ -17,8 +17,7 @@ import {
   Copy,
   Check,
   Tag,
-  Plus,
-  Trash2
+  Plus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -126,7 +125,7 @@ export default function UsersSection() {
   const { branches } = useBranches();
   const { can } = usePermissions();
   const canManageRoles = can('roles.manage');
-  const { roles: customRoles, catalog, saveRole, deleteRole, systemRoles, saveSystemRole, databaseReady } = useCustomRoles();
+  const { roles: customRoles, catalog, saveRole, systemRoles, saveSystemRole, databaseReady } = useCustomRoles();
   // The role editor: which role (null = new), and who asked — the add-user
   // dialog wants the new role selected once it is saved
   const [roleEditor, setRoleEditor] = useState<{ role: CustomRole | null; onSaved?: (id: string) => void; preset?: string[] } | null>(null);
@@ -143,13 +142,6 @@ export default function UsersSection() {
     canEditSystemRoles: canManageRoles && !databaseReady,
     holdersOf: (r) => users.filter(u => u.is_active && u.role === r).length,
     onSaveSystemRole: async (r, permissions) => (await saveSystemRole(r, permissions)).error,
-  };
-
-  const handleDeleteRole = async (role: CustomRole) => {
-    if (!confirm(`حذف الدور «${role.name}»؟`)) return;
-    const { error } = await deleteRole(role.id);
-    if (error) toast.error(error);
-    else toast.success('تم حذف الدور');
   };
 
   const activeUsers = users.filter(u => u.is_active);
@@ -324,15 +316,6 @@ export default function UsersSection() {
           </div>
         )}
 
-        {/* The shop's own roles — in the same box as the people they go to */}
-        {canManageRoles && (
-          <CustomRolesPanel
-            roles={customRoles}
-            catalog={catalog}
-              onEdit={(role) => openRoleEditor(role)}
-            onDelete={handleDeleteRole}
-          />
-        )}
       </motion.div>
 
       {/* Edit User Dialog */}
@@ -1290,74 +1273,6 @@ function groupByModule(catalog: CatalogPermission[]) {
     groups.set(p.module, [...(groups.get(p.module) ?? []), p]);
   }
   return [...groups.entries()];
-}
-
-function CustomRolesPanel({
-  roles,
-  catalog,
-  onEdit,
-  onDelete,
-}: {
-  roles: CustomRole[];
-  catalog: CatalogPermission[];
-  onEdit: (role: CustomRole) => void;
-  onDelete: (role: CustomRole) => void;
-}) {
-  const nameOf = new Map(catalog.map(p => [p.key, p.name]));
-
-  // Roles are made from «إضافة مستخدم» → «إنشاء دور مخصص»; the list appears once there is one
-  if (roles.length === 0) return null;
-
-  return (
-    <div className="border-t border-border">
-      {roles.length === 0 ? (
-        <div className="text-center py-10">
-          <Tag className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
-          <p className="text-sm text-muted-foreground">لا توجد أدوار مخصصة بعد — مثال: «محاسب» يرى التقارير والفواتير فقط</p>
-        </div>
-      ) : (
-        <div className="divide-y divide-border">
-          {roles.map(role => (
-            <div key={role.id} className="p-4 flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="font-semibold text-foreground">{role.name}</p>
-                  <span className="text-xs text-muted-foreground">
-                    {role.memberCount} مستخدم
-                  </span>
-                </div>
-                {role.description && (
-                  <p className="text-sm text-muted-foreground mt-0.5">{role.description}</p>
-                )}
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {role.permissions.map(key => (
-                    <span key={key} className="px-2 py-0.5 rounded-full text-xs bg-muted text-muted-foreground border border-border">
-                      {nameOf.get(key) ?? key}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <Button variant="ghost" size="icon" onClick={() => onEdit(role)} title="تعديل">
-                  <Edit className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-destructive"
-                  onClick={() => onDelete(role)}
-                  title={role.memberCount > 0 ? 'مسند لمستخدمين — غيّر أدوارهم أولًا' : 'حذف'}
-                  disabled={role.memberCount > 0}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
 }
 
 const SYSTEM_ROLE_LABELS: Record<EditableSystemRole, string> = {
