@@ -32,7 +32,15 @@ const OWNERS = {
   'owner-professional': 'demo-professional@wasil.demo',
   'owner-enterprise': 'demo-enterprise@wasil.demo',
   'owner-distributor': 'demo-distributor@wasil.demo',
+  // the role demo accounts of the Max shop — signed into with a password too
+  'admin-max': 'demo-admin@wasil.demo',
+  'cashier-max': 'demo-cashier@wasil.demo',
+  'employee-max': 'demo-employee@wasil.demo',
 };
+
+// A custom role saved in the shop itself (not mocked): its permissions are
+// read from the shop when the run starts, since the owner may change them
+const LIVE_CUSTOM = { 'employee-max': null };
 
 // Everything a member can open: [url, permission the app gates it on]
 const TARGETS = [
@@ -125,6 +133,15 @@ async function memberOf(session) {
 const session = await signIn();
 const member = await memberOf(session);
 const custom = CUSTOM[PROFILE];
+if (PROFILE in LIVE_CUSTOM) {
+  const r = await fetch(`${SUPA}/rest/v1/activity_logs?select=new_data&merchant_id=eq.${member.merchant_id}&entity_type=eq.custom_roles&order=created_at.desc&limit=1`, {
+    headers: { apikey: ANON, Authorization: `Bearer ${session.access_token}` },
+  });
+  const config = (await r.json())[0]?.new_data;
+  const role = config?.roles?.find(x => x.id === config.assignments?.[member.id]);
+  LIVE_CUSTOM[PROFILE] = role?.permissions ?? [];
+  console.log(`live role «${role?.name}»: ${LIVE_CUSTOM[PROFILE].join(', ')}`);
+}
 
 const browser = await chromium.launch();
 const context = await browser.newContext({ locale: 'ar', viewport: { width: 1680, height: 1000 } });
@@ -224,6 +241,16 @@ for (const [url, permission] of TARGETS) {
   results.push({ ...(await visit(url)), permission });
 }
 
+// The till is full-width with no sidebar: an account that lands there has its
+// sidebar read on another page it opens
+if (sidebar.length === 0 && home === '/pos') {
+  const other = results.find(r => r.outcome === 'open' && !r.url.startsWith('/pos'));
+  if (other) {
+    await visit(other.url);
+    sidebar.push(...await page.$$eval('aside a[href]', as => [...new Set(as.map(a => new URL(a.href).pathname))]));
+  }
+}
+
 await page.screenshot({ path: `report-${PROFILE}.png`, fullPage: false });
 await browser.close();
 
@@ -253,14 +280,15 @@ const role = member?.role;
 const must = (u) => { if (!opened(u)) problems.push(`must open ${u}, got ${results.find(r => r.url === u)?.outcome}`); };
 const mustNot = (u) => { if (opened(u)) problems.push(`must NOT open ${u}`); };
 
-if (custom) {
-  const grants = new Set(custom.permissions.filter(k => !['roles.view', 'roles.manage', 'users.view', 'users.create', 'users.update', 'users.delete', 'subscription.manage', 'settings.manage', 'policy.manage', 'branches.manage'].includes(k)));
+const grantedList = custom?.permissions ?? LIVE_CUSTOM[PROFILE];
+if (grantedList) {
+  const grants = new Set(grantedList.filter(k => !['roles.view', 'roles.manage', 'users.view', 'users.create', 'users.update', 'users.delete', 'subscription.manage', 'settings.manage', 'policy.manage', 'branches.manage'].includes(k)));
   for (const r of results) {
     if (r.permission && !grants.has(r.permission) && r.outcome === 'open') problems.push(`custom role opened ${r.url} without ${r.permission}`);
   }
   must('/organization?tab=support');
   ['/team?tab=users', '/subscription', '/settings?tab=general', '/settings?tab=policy', '/organization?tab=branches'].forEach(mustNot);
-} else if (PROFILE === 'cashier') {
+} else if (PROFILE === 'cashier' || PROFILE === 'cashier-max') {
   ['/', '/products?tab=inventory', '/shipping', '/reports?tab=sales', '/team?tab=employees', '/team?tab=users',
     '/ai-insights', '/subscription', '/settings?tab=general', '/organization?tab=branches', '/sales?tab=orders',
     '/sales?tab=customers'].forEach(mustNot);

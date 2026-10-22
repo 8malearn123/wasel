@@ -25,6 +25,9 @@ jobs:
           - custom-orders
           - custom-pos
           - custom-forged
+          - admin-max
+          - cashier-max
+          - employee-max
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

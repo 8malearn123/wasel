@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Archive, BarChart3, FileText, Heart, Package, Smartphone,
   Truck, Users, Wrench,
@@ -227,6 +227,12 @@ export default function ReportsPage() {
 
   const all = permitted.flatMap(g => g.items);
   const current = all.find(item => item.key === activeTab) ?? all[0];
+  // a report this member may not open shows the first one they may — and the
+  // address says so, as the other sections do
+  const shownKey = current?.key;
+  useEffect(() => {
+    if (shownKey && shownKey !== activeTab) setActiveTab(shownKey);
+  }, [shownKey, activeTab, setActiveTab]);
 
   // A member whose permissions come with their role (a custom role) gets them
   // a moment after the page mounts; until then there is nothing to show yet
