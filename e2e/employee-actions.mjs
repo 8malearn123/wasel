@@ -72,9 +72,9 @@ await crud('المتجر · تصنيف', 'store_categories', { name: 'E2E تصن
   report('الكاشير · فاتورة بيع', 'إضافة', 'pos.access', sale);
   const sid = sale.data?.[0]?.id;
   if (sid) {
-    report('الكاشير · بنود الفاتورة', 'إضافة', 'pos.access', await api('POST', 'sale_items', [
-      { sale_id: sid, device_id: dev?.id, quantity: 1, unit_price: 1, cost_at_sale: 1 },
-      { sale_id: sid, accessory_id: acc?.id, quantity: 1, unit_price: 1, cost_at_sale: 1 }]));
+    // one row per item, as the till sends them
+    report('الكاشير · بند جهاز', 'إضافة', 'pos.access', await api('POST', 'sale_items', { sale_id: sid, device_id: dev?.id ?? null, accessory_id: null, quantity: 1, unit_price: 1, cost_at_sale: 1 }));
+    report('الكاشير · بند إكسسوار', 'إضافة', 'pos.access', await api('POST', 'sale_items', { sale_id: sid, device_id: null, accessory_id: acc?.id ?? null, quantity: 1, unit_price: 1, cost_at_sale: 1 }));
     report('الكاشير · قراءة فواتيره', 'قراءة', 'pos.access', await api('GET', `sales?select=id&id=eq.${sid}`));
   }
   if (dev) report('الكاشير · الجهاز يصبح مباعًا', 'تعديل', 'pos.access', await api('PATCH', `devices?id=eq.${dev.id}`, { status: 'sold' }));
