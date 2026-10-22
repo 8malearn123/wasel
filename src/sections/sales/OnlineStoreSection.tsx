@@ -582,10 +582,6 @@ export default function OnlineStoreSection() {
               <Textarea value={val("description")} onChange={e => set("description", e.target.value)} className="mt-1" rows={2} placeholder="يظهر تحت اسم المتجر..." />
             </div>
             <div>
-              <Label>رمز العملة</Label>
-              <Input value={val("currency_symbol") || "ر.س"} onChange={e => set("currency_symbol", e.target.value)} className="mt-1 w-32" />
-            </div>
-            <div>
               <Label>سياسة الاسترجاع</Label>
               <Textarea value={val("return_policy")} onChange={e => set("return_policy", e.target.value)} className="mt-1" rows={3} />
             </div>
