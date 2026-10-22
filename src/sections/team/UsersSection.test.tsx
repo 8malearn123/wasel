@@ -7,6 +7,7 @@ import type { MerchantUser } from '@/types/database';
 const saveRole = vi.fn();
 const deleteRole = vi.fn();
 const assignCustomRole = vi.fn();
+const saveSystemRole = vi.fn();
 let permissions: string[] = [];
 let members: MerchantUser[] = [];
 let databaseReady = true;
@@ -30,6 +31,7 @@ vi.mock('@/hooks/useCustomRoles', () => ({
       { key: 'pos.access', module: 'sales', name: 'نقطة البيع', description: null },
     ],
     loading: false, databaseReady, refresh: vi.fn(), saveRole, deleteRole,
+    systemRoles: {}, saveSystemRole,
   }),
   assignCustomRole: (...a: unknown[]) => assignCustomRole(...a),
   assignSystemRole: vi.fn(),
@@ -144,15 +146,48 @@ describe('custom roles in users & permissions', () => {
     await waitFor(() => expect(saveRole).toHaveBeenCalledWith('r1', 'محاسب', '', ['reports.view', 'invoices.view']));
   });
 
-  it('a system role\'s permissions are shown, not editable, with a way to customise them', async () => {
+  it("the owner changes a cashier's permissions for the whole shop", async () => {
     permissions = ['roles.manage', 'users.view', 'users.update'];
+    databaseReady = false;
+    saveSystemRole.mockResolvedValue({});
     members = [...members, member('3', 'cashier', 'خالد')];
     render(<UsersSection />);
     const dialog = await openEdit('خالد');
     const pos = within(dialog).getByRole('checkbox', { name: /نقطة البيع/ });
     expect(pos).toHaveAttribute('data-state', 'checked');
-    expect(pos).toBeDisabled();
-    expect(within(dialog).getByRole('checkbox', { name: /عرض التقارير المالية/ })).toHaveAttribute('data-state', 'unchecked');
-    expect(within(dialog).getByText('تخصيص الصلاحيات')).toBeInTheDocument();
+    expect(pos).not.toBeDisabled();
+    fireEvent.click(within(dialog).getByText('عرض التقارير المالية'));
+    fireEvent.click(within(dialog).getByText('Save Changes'));
+    // the cashier's own map (as far as the catalog goes) plus the report
+    await waitFor(() => expect(saveSystemRole).toHaveBeenCalledWith('cashier', ['pos.access', 'reports.view']));
+    databaseReady = true;
+  });
+
+  it('putting the defaults back stores nothing for the role', async () => {
+    permissions = ['roles.manage', 'users.view', 'users.update'];
+    databaseReady = false;
+    saveSystemRole.mockResolvedValue({});
+    members = [...members, member('3', 'cashier', 'خالد')];
+    render(<UsersSection />);
+    const dialog = await openEdit('خالد');
+    fireEvent.click(within(dialog).getByText('عرض التقارير المالية'));
+    fireEvent.click(within(dialog).getByText('الصلاحيات الافتراضية'));
+    fireEvent.click(within(dialog).getByText('عرض التقارير المالية'));
+    fireEvent.click(within(dialog).getByText('عرض التقارير المالية'));
+    fireEvent.click(within(dialog).getByText('Save Changes'));
+    await waitFor(() => expect(saveSystemRole).not.toHaveBeenCalled());
+    databaseReady = true;
+  });
+
+  it('the admin holds every permission and is shown so, locked', async () => {
+    permissions = ['roles.manage', 'users.view', 'users.update'];
+    members = [...members, member('4', 'admin', 'نورة')];
+    render(<UsersSection />);
+    const dialog = await openEdit('نورة');
+    for (const box of within(dialog).getAllByRole('checkbox')) {
+      expect(box).toHaveAttribute('data-state', 'checked');
+      expect(box).toBeDisabled();
+    }
+    expect(within(dialog).getByText('الأدمن يملك كل الصلاحيات.')).toBeInTheDocument();
   });
 });

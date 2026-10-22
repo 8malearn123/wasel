@@ -59,8 +59,11 @@ export function usePermissions() {
         error.message,
       );
       // a custom role kept in the app's store carries its own list
+      // (a system role the shop changed keeps what only its system role holds)
+      const system = merchantUser.customRole?.system;
       setPermissions(merchantUser.role === 'custom'
-        ? (merchantUser.customRole?.permissions ?? []).filter(k => !CUSTOM_ROLE_FORBIDDEN.has(k))
+        ? (merchantUser.customRole?.permissions ?? [])
+            .filter(k => !CUSTOM_ROLE_FORBIDDEN.has(k) || (!!system && permissionsForLegacyRole(system).includes(k)))
         : permissionsForLegacyRole(merchantUser.role));
     } else {
       setPermissions((data as unknown as string[]) || []);

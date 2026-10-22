@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, createContext, useContext, ReactNode } fro
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { MerchantUser, Merchant, Subscription, Branch } from '@/types/database';
-import { loadCustomRolesConfig, storedRoleFor, CUSTOM_ROLE_BASE } from '@/lib/customRolesStore';
+import { loadCustomRolesConfig, storedRoleFor, CUSTOM_ROLE_BASE, isEditableSystemRole } from '@/lib/customRolesStore';
+import { LEGACY_ROLE_PERMISSIONS, CUSTOM_ROLE_FORBIDDEN } from '@/lib/legacyRolePermissions';
 
 interface AuthContextType {
   user: User | null;
@@ -262,18 +263,32 @@ export function useAuth() {
   return context;
 }
 
+const SYSTEM_ROLE_NAMES = { branch_manager: 'مدير فرع', inventory_manager: 'مسؤول المخزون', cashier: 'كاشير' } as const;
+
 /**
- * A cashier the owner gave a custom role while roles live in the app's store
- * (no custom-roles migration yet) is that custom role to the app. Once the
- * migration is applied the roles table exists, merchant_users.role says
- * 'custom' itself, and the store is not read.
+ * While roles live in the app's store (no custom-roles migration yet):
+ * - a cashier the owner gave a custom role is that custom role to the app;
+ * - a branch manager, inventory manager or cashier whose role the shop changed
+ *   is that role with the shop's permissions — shown to the app as a custom
+ *   role (marked `system`), so every screen goes by its permissions rather
+ *   than by the role's name.
+ * Once the migration is applied the roles table exists, merchant_users.role
+ * says 'custom' itself, and the store is not read.
  */
 async function withStoredCustomRole(member: MerchantUser): Promise<MerchantUser> {
-  if (member.role !== CUSTOM_ROLE_BASE) return member;
+  if (!isEditableSystemRole(member.role)) return member;
   const { error: noRolesTable } = await supabase.from('roles' as never).select('id').limit(1);
   if (!noRolesTable) return member;
-  const role = storedRoleFor(await loadCustomRolesConfig(member.merchant_id), member.id);
-  return role
-    ? { ...member, role: 'custom', customRole: { id: role.id, name: role.name, permissions: role.permissions } }
-    : member;
+  const config = await loadCustomRolesConfig(member.merchant_id);
+  const role = member.role === CUSTOM_ROLE_BASE ? storedRoleFor(config, member.id) : null;
+  if (role) return { ...member, role: 'custom', customRole: { id: role.id, name: role.name, permissions: role.permissions } };
+  const changed = config.systemRoles?.[member.role];
+  if (!changed) return member;
+  // the role keeps what only system roles hold (a branch manager's settings, branches)
+  const kept = LEGACY_ROLE_PERMISSIONS[member.role].filter(k => CUSTOM_ROLE_FORBIDDEN.has(k));
+  return {
+    ...member,
+    role: 'custom',
+    customRole: { id: `system:${member.role}`, name: SYSTEM_ROLE_NAMES[member.role], permissions: [...changed, ...kept], system: member.role },
+  };
 }

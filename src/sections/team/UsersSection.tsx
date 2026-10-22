@@ -56,6 +56,7 @@ import { useLanguage } from "@/i18n";
 import { useMerchantUsers, useBranches } from "@/hooks/useBranches";
 import { usePermissions } from "@/hooks/usePermissions";
 import { LEGACY_ROLE_PERMISSIONS } from "@/lib/legacyRolePermissions";
+import { isEditableSystemRole, type EditableSystemRole } from "@/lib/customRolesStore";
 import {
   useCustomRoles,
   assignCustomRole,
@@ -125,7 +126,7 @@ export default function UsersSection() {
   const { branches } = useBranches();
   const { can } = usePermissions();
   const canManageRoles = can('roles.manage');
-  const { roles: customRoles, catalog, saveRole, deleteRole } = useCustomRoles();
+  const { roles: customRoles, catalog, saveRole, deleteRole, systemRoles, saveSystemRole, databaseReady } = useCustomRoles();
   // The role editor: which role (null = new), and who asked — the add-user
   // dialog wants the new role selected once it is saved
   const [roleEditor, setRoleEditor] = useState<{ role: CustomRole | null; onSaved?: (id: string) => void; preset?: string[] } | null>(null);
@@ -335,6 +336,11 @@ export default function UsersSection() {
         canManageRoles={canManageRoles}
         onSavePermissions={async (role, permissions) => (await saveRole(role.id, role.name, role.description ?? '', permissions)).error}
         onCustomise={canManageRoles ? (preset, onSaved) => openRoleEditor(null, onSaved, preset) : undefined}
+        systemRoles={systemRoles ?? {}}
+        // the system roles are edited per shop only while roles live in the app's store
+        canEditSystemRoles={canManageRoles && !databaseReady}
+        holdersOf={(r) => users.filter(u => u.is_active && u.role === r).length}
+        onSaveSystemRole={async (r, permissions) => (await saveSystemRole(r, permissions)).error}
         onSaveRole={updateUserRole}
         onSaveBranch={updateUserBranch}
         onSaved={refetch}
@@ -398,6 +404,10 @@ function EditUserDialog({
   canManageRoles,
   onSavePermissions,
   onCustomise,
+  systemRoles,
+  canEditSystemRoles,
+  holdersOf,
+  onSaveSystemRole,
   onSaveRole,
   onSaveBranch,
   onSaved
@@ -413,6 +423,13 @@ function EditUserDialog({
   onSavePermissions: (role: CustomRole, permissions: string[]) => Promise<string | undefined>;
   /** opens the role editor with these permissions ticked; the new role is selected once saved */
   onCustomise?: (preset: string[], onSaved: (id: string) => void) => void;
+  /** a system role's permissions as this shop changed them */
+  systemRoles: Partial<Record<EditableSystemRole, string[]>>;
+  canEditSystemRoles: boolean;
+  /** how many active members hold a system role */
+  holdersOf: (role: string) => number;
+  /** null puts the role's own permissions back; resolves to an error message, or nothing */
+  onSaveSystemRole: (role: EditableSystemRole, permissions: string[] | null) => Promise<string | undefined>;
   onSaveRole: (userId: string, role: UserRole) => Promise<any>;
   onSaveBranch: (userId: string, branchId: string | null) => Promise<any>;
   onSaved: () => void;
@@ -421,37 +438,73 @@ function EditUserDialog({
   const [role, setRole] = useState<string>(user ? roleValueOf(user) : 'cashier');
   const [branchId, setBranchId] = useState(user?.branch_id || 'all');
 
-  // The selected role's permissions: a custom role's can be changed here, a
-  // system role's are shown as they are
+  // The selected role's permissions. A custom role's, and a branch manager's,
+  // inventory manager's or cashier's (for the whole shop), can be changed
+  // here; the admin holds everything and is shown as it is
   const customRole = role.startsWith(CUSTOM_PREFIX)
     ? customRoles.find(r => r.id === role.slice(CUSTOM_PREFIX.length)) ?? null
     : null;
-  const [edited, setEdited] = useState<{ roleId: string; keys: Set<string> } | null>(null);
-  const ticked = customRole
-    ? (edited?.roleId === customRole.id ? edited.keys : new Set(customRole.permissions))
-    : new Set(LEGACY_ROLE_PERMISSIONS[role as UserRole] ?? []);
-  const permissionsChanged = !!customRole && edited?.roleId === customRole.id
-    && (edited.keys.size !== customRole.permissions.length || customRole.permissions.some(k => !edited.keys.has(k)));
+  const systemRole = !customRole && isEditableSystemRole(role) ? role : null;
+  const inCatalog = (k: string) => catalog.some(p => p.key === k);
+  const roleDefault = systemRole ? LEGACY_ROLE_PERMISSIONS[systemRole].filter(inCatalog) : [];
+  const baseline = customRole
+    ? customRole.permissions
+    : systemRole
+      ? (systemRoles[systemRole] ?? roleDefault)
+      : LEGACY_ROLE_PERMISSIONS[role as UserRole] ?? [];
+  const editKey = customRole?.id ?? systemRole;
+  const editable = canManageRoles && (!!customRole || (!!systemRole && canEditSystemRoles));
+  const [edited, setEdited] = useState<{ key: string; keys: Set<string> } | null>(null);
+  const ticked = edited && edited.key === editKey ? edited.keys : new Set(baseline);
+  const sameAs = (a: Set<string>, b: string[]) => a.size === b.length && b.every(k => a.has(k));
+  const permissionsChanged = !!edited && edited.key === editKey && !sameAs(edited.keys, baseline);
   const toggle = (key: string, on: boolean) => {
-    if (!customRole) return;
+    if (!editKey || !editable) return;
     const next = new Set(ticked);
     if (on) next.add(key); else next.delete(key);
-    setEdited({ roleId: customRole.id, keys: next });
+    setEdited({ key: editKey, keys: next });
   };
   const sharedWith = customRole
     ? customRole.memberCount - (user && roleValueOf(user) === role ? 1 : 0)
-    : 0;
+    : systemRole
+      ? holdersOf(systemRole) - (user && user.role === systemRole ? 1 : 0)
+      : 0;
+  const systemName = systemRole ? SYSTEM_ROLE_LABELS[systemRole] : '';
   // what a system role holds beyond the list a custom role is built from
-  const extraPowers = customRole ? [] : SYSTEM_ONLY_POWERS.filter(p => p.keys.some(k => ticked.has(k))).map(p => p.label);
+  const extraPowers = customRole ? [] : SYSTEM_ONLY_POWERS
+    .filter(p => p.keys.some(k => (LEGACY_ROLE_PERMISSIONS[role as UserRole] ?? []).includes(k)))
+    .map(p => p.label);
+
+  const hint = customRole
+    ? canManageRoles
+      ? sharedWith > 0
+        ? `اختر ما يراه صاحب الدور. التعديل يطبَّق على كل من يحمل «${customRole.name}» (${sharedWith} غيره).`
+        : 'اختر ما يراه صاحب هذا الدور.'
+      : 'صلاحيات هذا الدور يعدّلها المالك أو الأدمن.'
+    : systemRole
+      ? editable
+        ? `اختر ما يراه دور «${systemName}» في متجرك. التعديل يطبَّق على كل من دوره «${systemName}»${sharedWith > 0 ? ` (${sharedWith} غيره)` : ''}.`
+        : canManageRoles
+          ? 'صلاحيات الأدوار الثابتة تُعدَّل من قاعدة البيانات بعد تحديثها.'
+          : 'صلاحيات هذا الدور يعدّلها المالك أو الأدمن.'
+      : role === 'admin'
+        ? 'الأدمن يملك كل الصلاحيات.'
+        : '';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
-    if (permissionsChanged && customRole) {
-      if (edited!.keys.size === 0) { toast.error('اختر صلاحية واحدة على الأقل'); return; }
+    if (permissionsChanged && edited) {
+      if (edited.keys.size === 0) { toast.error('اختر صلاحية واحدة على الأقل'); return; }
       setLoading(true);
-      const error = await onSavePermissions(customRole, [...edited!.keys]);
+      const keys = [...edited.keys];
+      const error = customRole
+        ? await onSavePermissions(customRole, keys)
+        : systemRole
+          // back to the role's own list = nothing stored for it
+          ? await onSaveSystemRole(systemRole, sameAs(edited.keys, roleDefault) ? null : keys)
+          : undefined;
       if (error) { toast.error(error); setLoading(false); return; }
       toast.success('تم تحديث صلاحيات الدور');
       onSaved();
@@ -521,28 +574,28 @@ function EditUserDialog({
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <Label>الصلاحيات</Label>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {customRole
-                        ? canManageRoles
-                          ? sharedWith > 0
-                            ? `اختر ما يراه صاحب الدور. التعديل يطبَّق على كل من يحمل «${customRole.name}» (${sharedWith} غيره).`
-                            : 'اختر ما يراه صاحب هذا الدور.'
-                          : 'صلاحيات هذا الدور يعدّلها المالك فقط.'
-                        : 'صلاحيات هذا الدور ثابتة. لتختارها بنفسك، أنشئ دوراً مخصصاً.'}
-                    </p>
+                    {hint && <p className="text-xs text-muted-foreground mt-1">{hint}</p>}
                   </div>
-                  {!customRole && onCustomise && (
-                    <Button type="button" variant="outline" size="sm" className="shrink-0 gap-1.5"
-                      onClick={() => onCustomise([...ticked].filter(k => catalog.some(p => p.key === k)), (id) => setRole(CUSTOM_PREFIX + id))}>
-                      <Tag className="w-3.5 h-3.5" /> تخصيص الصلاحيات
-                    </Button>
-                  )}
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    {systemRole && editable && !sameAs(ticked, roleDefault) && (
+                      <Button type="button" variant="ghost" size="sm" className="h-7 text-xs"
+                        onClick={() => setEdited({ key: systemRole, keys: new Set(roleDefault) })}>
+                        الصلاحيات الافتراضية
+                      </Button>
+                    )}
+                    {systemRole && onCustomise && (
+                      <Button type="button" variant="outline" size="sm" className="gap-1.5"
+                        onClick={() => onCustomise([...ticked].filter(inCatalog), (id) => setRole(CUSTOM_PREFIX + id))}>
+                        <Tag className="w-3.5 h-3.5" /> دور مخصص لهذا المستخدم
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <PermissionChecklist
                   catalog={catalog}
                   selected={ticked}
                   onToggle={toggle}
-                  disabled={loading || !customRole || !canManageRoles}
+                  disabled={loading || !editable}
                 />
                 {extraPowers.length > 0 && (
                   <p className="text-xs text-muted-foreground">وأيضاً: {extraPowers.join('، ')}.</p>
@@ -1269,6 +1322,10 @@ function CustomRolesPanel({
     </div>
   );
 }
+
+const SYSTEM_ROLE_LABELS: Record<EditableSystemRole, string> = {
+  branch_manager: 'مدير فرع', inventory_manager: 'مسؤول المخزون', cashier: 'كاشير',
+};
 
 // Powers only the system roles hold — a custom role can never be given them
 const SYSTEM_ONLY_POWERS: { label: string; keys: string[] }[] = [
