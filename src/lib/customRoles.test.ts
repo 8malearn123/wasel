@@ -53,9 +53,9 @@ describe('the role map in the app and in the database', () => {
     expect(assignable).toContain('reports.view');
   });
 
-  it('roles.manage stays the owner’s alone', () => {
+  it('roles.manage is held by the owner and the admin only', () => {
     const holders = SYSTEM_ROLES.filter(r => LEGACY_ROLE_PERMISSIONS[r].includes('roles.manage'));
-    expect(holders).toEqual(['owner']);
+    expect(holders).toEqual(['owner', 'admin']);
   });
 });
 

@@ -52,7 +52,8 @@ export const LEGACY_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'products.media.upload', 'products.media.delete', 'categories.manage',
     'employees.view', 'employees.create', 'employees.update', 'employees.delete',
     'users.view', 'users.create', 'users.update', 'users.delete',
-    'roles.view',
+    // the admin runs the shop with the owner: roles and permissions included
+    'roles.view', 'roles.manage',
     ...OPERATIONS, 'payroll.manage', 'policy.manage', 'subscription.manage',
   ],
   inventory_manager: [

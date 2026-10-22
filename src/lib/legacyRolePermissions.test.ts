@@ -18,11 +18,11 @@ describe('permissionsForLegacyRole', () => {
     expect(new Set(cashier)).toEqual(new Set(['products.view', 'pos.access', 'repairs.manage', 'closings.manage']));
   });
 
-  it('gives an admin everything an owner has except managing roles', () => {
+  it('gives an admin everything an owner has, roles and permissions included', () => {
     const owner = new Set(LEGACY_ROLE_PERMISSIONS.owner);
     const admin = new Set(LEGACY_ROLE_PERMISSIONS.admin);
-    const missing = [...owner].filter(k => !admin.has(k));
-    expect(missing).toEqual(['roles.manage']);
+    expect([...owner].filter(k => !admin.has(k))).toEqual([]);
+    expect(admin.has('roles.manage')).toBe(true);
   });
 
   it('lets an inventory manager run products but not people', () => {
