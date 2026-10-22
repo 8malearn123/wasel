@@ -14,7 +14,7 @@ const PAGES = ['/', '/pos', '/products?tab=inventory', '/products?tab=suppliers'
   '/team?tab=employees', '/team?tab=users', '/settings?tab=general', '/organization?tab=branches', '/subscription', '/ai-insights'];
 const WIDTHS = [['desktop', 1440, 900], ['tablet', 820, 1100], ['phone', 390, 844]];
 const SHOOT = (lang, w) => (w === 'desktop') || (w === 'phone' && lang === 'ar');
-const browser = await chromium.launch();
+const browser = await chromium.launch(process.env.CHANNEL ? { channel: process.env.CHANNEL } : {});
 for (const lang of ['ar', 'en']) {
   for (const [wname, width, height] of WIDTHS) {
     const context = await browser.newContext({ locale: lang, viewport: { width, height } });

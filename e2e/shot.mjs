@@ -19,7 +19,7 @@ async function logShot(page, label) {
   console.log(`SHOT-END ${label}`);
 }
 
-const browser = await chromium.launch();
+const browser = await chromium.launch(process.env.CHANNEL ? { channel: process.env.CHANNEL } : {});
 for (const [label, viewport] of [['desktop', { width: 1920, height: 1080 }], ['mobile', { width: 390, height: 844 }]]) {
   const context = await browser.newContext({ locale: 'ar', viewport });
   await context.addInitScript(([k, v]) => {
