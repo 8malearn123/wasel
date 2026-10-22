@@ -1284,7 +1284,6 @@ export const AR_EN: Record<string, string> = {
   "خطأ في التحقق": "Validation error",
   "تأكد من صحة الرابط": "Check that the link is correct",
   "تمت العملية": "Done",
-  "تمت العملية": "Operation completed",
   "تم الحفظ": "Saved",
   "جميع الحقول مطلوبة": "All fields are required",
   "حذف من السجل": "Remove from history",
