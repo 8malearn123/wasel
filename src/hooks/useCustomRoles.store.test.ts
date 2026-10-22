@@ -94,4 +94,20 @@ describe('custom roles without the migration', () => {
     const role = storedRoleFor(await loadCustomRolesConfig(M), 'cashier')!;
     expect(role.permissions.filter(k => !CUSTOM_ROLE_FORBIDDEN.has(k))).toEqual(['reports.view']);
   });
+
+  it("assigning a role keeps the shop's changes to the system roles", async () => {
+    const before = await loadCustomRolesConfig(M);
+    await saveCustomRolesConfig(M, { ...before, systemRoles: { cashier: ['pos.access', 'reports.view'] } });
+    expect(await assignCustomRole('cashier', 'acct')).toEqual({});
+    const after = await loadCustomRolesConfig(M);
+    expect(after.systemRoles).toEqual({ cashier: ['pos.access', 'reports.view'] });
+    expect(after.assignments).toEqual({ cashier: 'acct' });
+  });
+
+  it('reads back no system-role changes when there are none, and drops unknown roles', async () => {
+    expect((await loadCustomRolesConfig(M)).systemRoles).toEqual({});
+    const config = await loadCustomRolesConfig(M);
+    await saveCustomRolesConfig(M, { ...config, systemRoles: { cashier: ['pos.access'], admin: ['x'] } as never });
+    expect((await loadCustomRolesConfig(M)).systemRoles).toEqual({ cashier: ['pos.access'] });
+  });
 });

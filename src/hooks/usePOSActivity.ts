@@ -24,7 +24,8 @@ export function usePOSActivity(limit = 60) {
   const [activity, setActivity] = useState<POSActivity[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const isCashier = merchantUser?.role === 'cashier';
+  // a cashier whose permissions the shop changed is still a cashier here
+  const isCashier = merchantUser?.role === 'cashier' || merchantUser?.customRole?.system === 'cashier';
 
   const fetchActivity = useCallback(async () => {
     if (!merchant) {

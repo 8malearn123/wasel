@@ -8,6 +8,7 @@ import {
   saveCustomRolesConfig,
   CUSTOM_ROLE_BASE,
   type CustomRolesConfig,
+  type EditableSystemRole,
 } from '@/lib/customRolesStore';
 
 export interface CustomRole {
@@ -64,6 +65,8 @@ export function useCustomRoles() {
   // false until the custom-roles migration is on this database: the editor
   // still shows the list, and says saving needs the update
   const [databaseReady, setDatabaseReady] = useState(true);
+  // the system roles' permissions as this shop changed them (store only)
+  const [systemRoles, setSystemRoles] = useState<CustomRolesConfig['systemRoles']>({});
 
   const load = useCallback(async () => {
     if (!merchant) return;
@@ -110,6 +113,7 @@ export function useCustomRoles() {
     if (!ready) {
       const config = await loadCustomRolesConfig(merchant.id);
       const active = await activeMemberIds(merchant.id);
+      setSystemRoles(config.systemRoles ?? {});
       setRoles(config.roles.map(r => ({
         ...r,
         memberCount: Object.entries(config.assignments)
@@ -149,6 +153,7 @@ export function useCustomRoles() {
         return { error: ERRORS.role_in_use };
       }
       const result = await saveCustomRolesConfig(merchant.id, {
+        ...config,
         roles: config.roles.filter(r => r.id !== roleId),
         assignments: Object.fromEntries(Object.entries(config.assignments).filter(([, r]) => r !== roleId)),
       });
@@ -161,7 +166,28 @@ export function useCustomRoles() {
     return {};
   };
 
-  return { roles, catalog, loading, databaseReady, refresh: load, saveRole, deleteRole };
+  /**
+   * Change what a system role (branch manager, inventory manager, cashier) may
+   * do in this shop; null puts back the role's own map. Only while roles live
+   * in the app's store — with the migration, the system roles are rows of the
+   * roles table and are not edited from here.
+   */
+  const saveSystemRole = async (role: EditableSystemRole, permissions: string[] | null): Promise<{ error?: string }> => {
+    if (!merchant) return { error: ERRORS.forbidden };
+    if (databaseReady) return { error: 'صلاحيات الأدوار الثابتة تُدار من قاعدة البيانات بعد تحديثها' };
+    const known = new Set(CUSTOM_ROLE_CATALOG.map(p => p.key));
+    const keys = permissions && [...new Set(permissions)];
+    if (keys && keys.length === 0) return { error: ERRORS.no_permissions };
+    if (keys?.some(k => !known.has(k))) return { error: ERRORS.invalid_permission };
+    const config = await loadCustomRolesConfig(merchant.id);
+    const next = { ...(config.systemRoles ?? {}) };
+    if (keys) next[role] = keys; else delete next[role];
+    const result = await saveCustomRolesConfig(merchant.id, { ...config, systemRoles: next });
+    if (!result.error) await load();
+    return result;
+  };
+
+  return { roles, catalog, loading, databaseReady, systemRoles, refresh: load, saveRole, deleteRole, saveSystemRole };
 }
 
 /** Give a member one of the shop's custom roles (system roles keep their own path). */
@@ -229,7 +255,7 @@ async function saveRoleInStore(
     roles = [...config.roles, { id, name: clean, description: description.trim() || null, permissions: perms }];
   }
 
-  const result = await saveCustomRolesConfig(merchantId, { roles, assignments: config.assignments });
+  const result = await saveCustomRolesConfig(merchantId, { ...config, roles });
   return result.error ? result : { id: id! };
 }
 
@@ -265,5 +291,5 @@ async function assignInStore(memberId: string, customRoleId: string | null, syst
   const assignments = { ...config.assignments };
   if (customRoleId) assignments[memberId] = customRoleId;
   else delete assignments[memberId];
-  return saveCustomRolesConfig(member.merchant_id, { roles: config.roles, assignments });
+  return saveCustomRolesConfig(member.merchant_id, { ...config, assignments });
 }

@@ -28,13 +28,22 @@ export interface StoredRole {
   permissions: string[];
 }
 
+/** The system roles whose permissions a shop may change — never the owner's or the admin's */
+export const EDITABLE_SYSTEM_ROLES = ['branch_manager', 'inventory_manager', 'cashier'] as const;
+export type EditableSystemRole = typeof EDITABLE_SYSTEM_ROLES[number];
+
 export interface CustomRolesConfig {
   roles: StoredRole[];
   /** merchant_users.id → StoredRole.id */
   assignments: Record<string, string>;
+  /** a system role's permissions as this shop set them; absent = the role's own map */
+  systemRoles?: Partial<Record<EditableSystemRole, string[]>>;
 }
 
 const EMPTY: CustomRolesConfig = { roles: [], assignments: {} };
+
+export const isEditableSystemRole = (role?: string | null): role is EditableSystemRole =>
+  (EDITABLE_SYSTEM_ROLES as readonly string[]).includes(role ?? '');
 
 function parse(value: unknown): CustomRolesConfig {
   const v = value as Partial<CustomRolesConfig> | null;
@@ -49,6 +58,10 @@ function parse(value: unknown): CustomRolesConfig {
         permissions: r.permissions.filter((k): k is string => typeof k === 'string'),
       })),
     assignments: v.assignments && typeof v.assignments === 'object' ? { ...v.assignments } : {},
+    systemRoles: Object.fromEntries(EDITABLE_SYSTEM_ROLES
+      .map(r => [r, v.systemRoles?.[r]] as const)
+      .filter(([, keys]) => Array.isArray(keys))
+      .map(([r, keys]) => [r, (keys as unknown[]).filter((k): k is string => typeof k === 'string')])),
   };
 }
 
