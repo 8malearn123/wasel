@@ -53,6 +53,14 @@ const SECTIONS = [
 // (support, the one leaf a cashier has outside selling, is in المنشأة والدعم)
 const CASHIER_PATHS = new Set(["/pos", "/sales", "/organization"]);
 
+const ROLE_LABELS: Record<string, { ar: string; en: string }> = {
+  owner: { ar: "المالك", en: "Owner" },
+  admin: { ar: "أدمن", en: "Admin" },
+  branch_manager: { ar: "مدير فرع", en: "Branch manager" },
+  inventory_manager: { ar: "مسؤول المخزون", en: "Inventory manager" },
+  cashier: { ar: "كاشير", en: "Cashier" },
+};
+
 export function Header({ title, subtitle, onMenuClick }: HeaderProps) {
   const { t, language, setLanguage, isRTL } = useLanguage();
   const { isDark, toggleTheme } = useTheme();
@@ -62,6 +70,11 @@ export function Header({ title, subtitle, onMenuClick }: HeaderProps) {
   const { can } = usePermissions();
   const { allows, loading: plansLoading } = useFeatureAccess();
   const isCashier = merchantUser?.role === "cashier";
+  // Who is signed in, and as what — a custom role by its own name
+  const displayName = (user?.user_metadata?.full_name as string | undefined)?.trim() || "";
+  const roleLabel = merchantUser?.role === "custom"
+    ? merchantUser.customRole?.name ?? (language === "ar" ? "دور مخصص" : "Custom role")
+    : (ROLE_LABELS[merchantUser?.role ?? ""]?.[language === "ar" ? "ar" : "en"] ?? "");
   // Everyone else is offered what the sidebar offers: the sections their role
   // and the shop's plan open, and the subscription page only to owner/admin
   const canSeeSubscription = merchantUser?.role === "owner" || merchantUser?.role === "admin";
@@ -280,7 +293,10 @@ export function Header({ title, subtitle, onMenuClick }: HeaderProps) {
               <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center">
                 <User className="w-4 h-4 text-white" />
               </div>
-              <span className="hidden xl:inline text-sm font-medium">{t.common.admin}</span>
+              <span className="hidden xl:flex flex-col items-start leading-tight text-start">
+                {displayName && <span className="text-sm font-medium max-w-[140px] truncate">{displayName}</span>}
+                <span className={displayName ? "text-[11px] text-muted-foreground" : "text-sm font-medium"}>{roleLabel}</span>
+              </span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
