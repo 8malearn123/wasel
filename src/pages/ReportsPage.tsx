@@ -228,6 +228,18 @@ export default function ReportsPage() {
   const all = permitted.flatMap(g => g.items);
   const current = all.find(item => item.key === activeTab) ?? all[0];
 
+  // A member whose permissions come with their role (a custom role) gets them
+  // a moment after the page mounts; until then there is nothing to show yet
+  if (!current) {
+    return (
+      <AppLayout title={r.title}>
+        <div className="flex items-center justify-center py-24">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout
       title={r.title}
