@@ -113,9 +113,9 @@ export default function Dashboard() {
           trend={unitsTrend}
           icon={ShoppingCart} />
         <KpiCard index={2} isRTL={isRTL}
-          title={L("الأجهزة المتاحة", "Devices in stock")}
+          title={L("أجهزة في المخزون", "Devices in stock")}
           value={loading ? "…" : String(metrics?.devicesInStock || 0)}
-          sub={L("جاهزة للبيع", "Ready to sell")}
+          sub={L(`${metrics?.devicesForSale ?? 0} متاح للبيع`, `${metrics?.devicesForSale ?? 0} for sale`)}
           icon={Smartphone} />
         <KpiCard index={3} isRTL={isRTL}
           title={L("الإكسسوارات المتاحة", "Accessories in stock")}

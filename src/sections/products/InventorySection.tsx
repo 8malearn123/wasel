@@ -66,6 +66,8 @@ import { usePrimaryMedia } from "@/hooks/useProductMedia";
 import { PermissionGate } from "@/components/common/PermissionGate";
 import { ProductThumb } from "@/components/common/ProductThumb";
 import { useAuth } from "@/hooks/useAuth";
+import { deviceCounts, accessoryCounts, stockValue } from "@/lib/inventoryMetrics";
+import { formatSar } from "@/lib/money";
 import type { Device, Accessory, DeviceStatus } from "@/types/database";
 
 type StockKind = "devices" | "accessories" | "repair_parts";
@@ -248,19 +250,10 @@ export default function InventorySection() {
 
   const showSection = (kind: StockKind) => typeFilter === kind;
 
-  const deviceStats = {
-    total: devices.length,
-    available: devices.filter(d => d.status === "available").length,
-    reserved: devices.filter(d => d.status === "reserved").length,
-    totalValue: devices.filter(d => d.status !== "sold").reduce((sum, d) => sum + Number(d.price), 0),
-  };
-
-  const accessoryStats = {
-    total: accessories.reduce((sum, a) => sum + a.quantity, 0),
-    skus: accessories.length,
-    lowStock: accessories.filter(a => a.quantity <= a.min_quantity).length,
-    totalValue: accessories.reduce((sum, a) => sum + Number(a.price) * a.quantity, 0),
-  };
+  // the same figures the dashboard and the reports show (inventoryMetrics.ts)
+  const deviceStats = deviceCounts(devices);
+  const accessoryStats = accessoryCounts(accessories);
+  const value = stockValue(devices, accessories);
 
   return (
     <>
@@ -276,8 +269,11 @@ export default function InventorySection() {
               <Smartphone className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-foreground">{deviceStats.total}</p>
-              <p className="text-sm text-muted-foreground">{t.inventory.devices}</p>
+              <p className="text-2xl font-bold text-foreground">{deviceStats.inStock}</p>
+              <p className="text-sm text-muted-foreground">
+                {isRTL ? "أجهزة في المخزون" : "Devices in stock"}
+                <span className="text-xs"> · {isRTL ? `${deviceStats.available} متاح للبيع` : `${deviceStats.available} for sale`}</span>
+              </p>
             </div>
           </div>
         </motion.div>
@@ -293,8 +289,8 @@ export default function InventorySection() {
               <Package className="w-5 h-5 text-success" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-foreground">{accessoryStats.total}</p>
-              <p className="text-sm text-muted-foreground">{t.inventory.accessories} ({accessoryStats.skus} {isRTL ? "صنف" : "SKUs"})</p>
+              <p className="text-2xl font-bold text-foreground">{accessoryStats.pieces.toLocaleString('en-US')}</p>
+              <p className="text-sm text-muted-foreground">{t.inventory.accessories} ({accessoryStats.lines} {isRTL ? "صنف" : "SKUs"})</p>
             </div>
           </div>
         </motion.div>
@@ -328,7 +324,7 @@ export default function InventorySection() {
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">
-                {(deviceStats.totalValue + accessoryStats.totalValue).toLocaleString()} ر.س
+                {formatSar(value.retail, { decimals: 0 })} {isRTL ? "ر.س" : "SAR"}
               </p>
               <p className="text-sm text-muted-foreground">{t.inventory.totalValue}</p>
             </div>

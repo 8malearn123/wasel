@@ -11,7 +11,7 @@ import { PanelTable, type PanelColumn } from './PanelTable';
 
 interface Props {
   inventory: {
-    totalDevices: number; availableDevices: number; deviceValue: number;
+    totalDevices: number; inStockDevices: number; availableDevices: number; deviceValue: number;
     totalAccessories: number; lowStockAccessories: number; accessoryValue: number;
   };
   lowStock: Accessory[];
@@ -24,8 +24,8 @@ export function InventoryDashboard({ inventory, lowStock, onExport }: Props) {
 
   const cards: ReportStatCard[] = [
     {
-      key: 'devices', label: r.totalDevices, value: fmtCount(inventory.totalDevices),
-      hint: `${fmtCount(inventory.availableDevices)} ${r.available}`, icon: Smartphone,
+      key: 'devices', label: isRTL ? 'أجهزة في المخزون' : 'Devices in stock', value: fmtCount(inventory.inStockDevices),
+      hint: `${fmtCount(inventory.availableDevices)} ${isRTL ? 'متاح للبيع' : 'for sale'}`, icon: Smartphone,
     },
     {
       key: 'deviceValue', label: r.deviceValue, value: fmtMoney(inventory.deviceValue, isRTL),
