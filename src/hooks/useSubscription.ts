@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { callOptionalRpc } from '@/lib/optionalRpc';
 
 /** What the database says about the subscription, on the database clock. */
 export interface SubscriptionState {
@@ -44,11 +45,11 @@ export function useSubscription() {
   // the user's to set.
   const loadState = useCallback(async () => {
     if (!merchant) { setState(null); return; }
-    const { data, error } = await supabase.rpc('get_subscription_state' as never);
+    const { data, error, missing } = await callOptionalRpc<SubscriptionState>('get_subscription_state', merchant.id);
     if (error) {
       // Before the migration is applied the function does not exist yet; the
       // screens still render, and RLS is the real boundary either way.
-      console.warn('[subscription] get_subscription_state unavailable:', error.message);
+      if (!missing) console.warn('[subscription] get_subscription_state failed:', error.message);
       setState(null);
       return;
     }
