@@ -18,6 +18,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n";
 import { useAuth } from "@/hooks/useAuth";
+import { useCurrentPlan } from "@/hooks/useCurrentPlan";
+import { isUnlimited } from "@/lib/planLimits";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadStoreAsset } from "@/hooks/useOnlineStore";
@@ -61,6 +63,7 @@ export default function GeneralSettingsSection() {
   const { t, isRTL } = useLanguage();
   const [settingsTab, setSettingsTab] = useTabParam('business', 'sub');
   const { merchant, subscription, refreshMerchantData } = useAuth();
+  const currentPlan = useCurrentPlan();
   const { daysRemaining, activateWithCode, loading: subLoading } = useSubscription();
   const [loading, setLoading] = useState(false);
   const [activationCode, setActivationCode] = useState('');
@@ -392,7 +395,7 @@ export default function GeneralSettingsSection() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 rounded-lg bg-primary/5 border border-primary/20">
                   <div>
-                    <p className="font-semibold text-foreground capitalize">{subscription?.plan || 'Free'}</p>
+                    <p className="font-semibold text-foreground">{currentPlan.displayName}</p>
                     <p className="text-sm text-muted-foreground">
                       {isRTL ? "الحالة: " : "Status: "}
                       <span className={cn("font-medium",
@@ -411,11 +414,11 @@ export default function GeneralSettingsSection() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">{isRTL ? "أقصى عدد فروع" : "Max Branches"}</span>
-                    <span className="font-medium">{subscription?.max_branches || 1}</span>
+                    <span className="font-medium">{isUnlimited(currentPlan.branchLimit) ? (isRTL ? 'غير محدود' : 'Unlimited') : currentPlan.branchLimit}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">{isRTL ? "أقصى عدد مستخدمين" : "Max Users"}</span>
-                    <span className="font-medium">{subscription?.max_users || 3}</span>
+                    <span className="font-medium">{isUnlimited(currentPlan.userLimit) ? (isRTL ? 'غير محدود' : 'Unlimited') : currentPlan.userLimit}</span>
                   </div>
                   {subscription?.trial_ends_at && subscription.status === 'trial' && (
                     <div className="flex justify-between">

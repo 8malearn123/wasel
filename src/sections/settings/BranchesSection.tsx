@@ -42,6 +42,7 @@ import { useLanguage } from "@/i18n";
 import { useBranches } from "@/hooks/useBranches";
 import { useBranchRequests } from "@/hooks/useBranchRequests";
 import { useAuth } from "@/hooks/useAuth";
+import { useCurrentPlan } from "@/hooks/useCurrentPlan";
 import { useDevices, useAccessories } from "@/hooks/useInventory";
 import type { Branch } from "@/types/database";
 import { cn } from "@/lib/utils";
@@ -69,13 +70,13 @@ export default function BranchesSection() {
   const { t, isRTL } = useLanguage();
   const { branches, loading, updateBranch, deleteBranch } = useBranches();
   const { requests, loading: requestsLoading, submitRequest } = useBranchRequests();
-  const { subscription, merchantUser } = useAuth();
+  const { merchantUser } = useAuth();
   const { devices } = useDevices();
   const { accessories } = useAccessories();
 
   const activeBranches = branches.filter(b => b.is_active);
   const warehouseCount = activeBranches.filter(b => b.is_warehouse).length;
-  const branchLimit = subscription?.max_branches || 1;
+  const { branchLimit } = useCurrentPlan();
   const isAtLimit = activeBranches.length >= branchLimit;
   const isOwner = merchantUser?.role === 'owner';
   // the database lets the owner and the admin edit branches (is_owner_or_admin);

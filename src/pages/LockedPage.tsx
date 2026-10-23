@@ -7,12 +7,13 @@ import { Input } from '@/components/ui/input';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/hooks/useAuth';
 import { useLanguage } from '@/i18n';
-import { planDisplayName } from '@/hooks/usePlans';
+import { useCurrentPlan } from '@/hooks/useCurrentPlan';
 
 export default function LockedPage() {
   const [code, setCode] = useState('');
   const { activateWithCode, loading, isTrialExpired } = useSubscription();
   const { signOut, merchant, subscription } = useAuth();
+  const { displayName: currentPlanName } = useCurrentPlan();
   const { isRTL } = useLanguage();
 
   const handleActivate = async (e: React.FormEvent) => {
@@ -109,7 +110,7 @@ export default function LockedPage() {
           <div className="flex items-center justify-center gap-3 text-xs text-muted-foreground mt-1">
             <span>
               {isRTL ? 'الباقة: ' : 'Plan: '}
-              {planDisplayName(subscription?.plan)}
+              {currentPlanName}
             </span>
             <span className="opacity-40">·</span>
             <span className="font-mono" dir="ltr">

@@ -62,7 +62,10 @@ export function resolveFeature(
 
   const min = FEATURE_MIN_PLAN[feature];
   if (min === undefined) return { allowed: true, source: 'tier' };
-  return { allowed: planTier(planName) >= min, source: 'tier' };
+  // the row's own name, so a subscription whose text column drifted from its
+  // plan_id is not given one plan's reports and another plan's repairs
+  const tierName = planName === 'trial' ? planName : (plan?.name ?? planName);
+  return { allowed: planTier(tierName) >= min, source: 'tier' };
 }
 
 export function planAllowsFeature(

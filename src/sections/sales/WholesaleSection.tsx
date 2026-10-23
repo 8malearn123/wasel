@@ -4,6 +4,7 @@ import { useLanguage } from '@/i18n';
 import { useWholesale, WholesaleListing, WholesaleOrder, CreditTransaction } from '@/hooks/useWholesale';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { useAuth } from '@/hooks/useAuth';
+import { useCurrentPlan } from '@/hooks/useCurrentPlan';
 import { wholesaleAccess } from '@/lib/wholesaleCapability';
 import UpgradeRequiredPage from '@/pages/UpgradeRequiredPage';
 import { useDevices, useAccessories } from '@/hooks/useInventory';
@@ -69,7 +70,8 @@ export default function WholesaleSection() {
   // Buying and supplying are separate: PRO buys, MAX buys and supplies.
   const { plan } = useFeatureAccess();
   const { subscription } = useAuth();
-  const { canBuy, canSupply } = wholesaleAccess(subscription?.plan, plan);
+  const { name: planName } = useCurrentPlan();
+  const { canBuy, canSupply } = wholesaleAccess(planName, plan);
   const {
     myListings, marketplace, myOrders, incomingOrders, myCredits, receivedCredits, loading,
     createListing, toggleListing, deleteListing, createOrder, updateOrderStatus, recordPayment,
