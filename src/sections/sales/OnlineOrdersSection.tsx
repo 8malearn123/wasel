@@ -137,13 +137,14 @@ export default function OnlineOrdersSection() {
                   className="p-4 hover:bg-muted/20 transition-colors">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-4 min-w-0 flex-1">
-                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex flex-col items-center justify-center shrink-0">
-                        <Hash className="w-3 h-3 text-primary mb-0.5" />
-                        <span className="text-[10px] font-bold text-primary">{order.order_number.slice(-4)}</span>
+                      {/* the number is written in full beside it; the tile showed its
+                          last four characters only («-001») */}
+                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0" aria-hidden>
+                        <Hash className="w-5 h-5 text-primary" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold text-foreground">{order.order_number}</span>
+                          <span className="font-semibold text-foreground whitespace-nowrap tabular-nums" dir="ltr">{order.order_number}</span>
                           <Badge variant="outline" className={st.color}>{st.label}</Badge>
                           <Badge variant="outline" className={pay.color}>{pay.label}</Badge>
                           <Badge variant="outline">{storePaymentLabel(order.payment_method)}</Badge>

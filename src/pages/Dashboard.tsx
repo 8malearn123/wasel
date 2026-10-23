@@ -18,9 +18,11 @@ import type { LucideIcon } from "lucide-react";
 type Trend = { pct: number } | { note: string };
 
 // كرت مؤشر: أيقونة وعنوان، ثم الرقم، ثم سطر واحد — مقارنة بالأمس أو وصف قصير
-function KpiCard({ title, value, unit, trend, sub, icon: Icon, highlight, compact, index, isRTL }: {
+function KpiCard({ title, value, unit, trend, sub, icon: Icon, highlight, compact, index, isRTL, state = "ready" }: {
   title: string;
   value: string;
+  /** loading: a placeholder bar; error: says so instead of showing a figure */
+  state?: "loading" | "error" | "ready";
   unit?: string;
   trend?: Trend;
   sub?: string;
@@ -55,11 +57,23 @@ function KpiCard({ title, value, unit, trend, sub, icon: Icon, highlight, compac
         <p className="text-sm font-semibold text-muted-foreground leading-snug">{title}</p>
       </div>
       <div className={cn("flex items-baseline gap-1.5", compact ? "mt-3" : "mt-4")}>
-        <p className={cn("font-bold text-foreground tracking-tight tabular-nums leading-none", compact ? "text-2xl" : "text-[32px]")}>{value}</p>
-        {unit && <span className="text-sm font-medium text-muted-foreground">{unit}</span>}
+        {state === "loading" ? (
+          <span
+            className={cn("block rounded-md bg-muted animate-pulse", compact ? "h-6 w-20" : "h-8 w-28")}
+            role="status"
+            aria-label={isRTL ? "جارٍ التحميل" : "Loading"}
+          />
+        ) : state === "error" ? (
+          <p className="text-sm font-medium text-destructive">{isRTL ? "تعذّر تحميل القيمة" : "Couldn't load"}</p>
+        ) : (
+          <>
+            <p className={cn("font-bold text-foreground tracking-tight tabular-nums leading-none", compact ? "text-2xl" : "text-[32px]")}>{value}</p>
+            {unit && <span className="text-sm font-medium text-muted-foreground">{unit}</span>}
+          </>
+        )}
       </div>
       <div className="mt-3 min-h-[20px] flex items-center gap-1.5">
-        {typeof pct === "number" ? (
+        {state !== "ready" ? null : typeof pct === "number" ? (
           <>
             <span className={cn(
               "inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full tabular-nums",
@@ -80,7 +94,8 @@ function KpiCard({ title, value, unit, trend, sub, icon: Icon, highlight, compac
 
 export default function Dashboard() {
   const { t, isRTL } = useLanguage();
-  const { metrics, salesChart, recentSales, branchStats, loading } = useDashboardData();
+  const { metrics, salesChart, recentSales, branchStats, loading, error, refresh } = useDashboardData();
+  const kpiState = loading ? "loading" : error || !metrics ? "error" : "ready";
 
   // Today against yesterday — in words when there is nothing to compare with
   const trendOf = (today: number, yesterday: number): Trend | undefined => {
@@ -100,45 +115,54 @@ export default function Dashboard() {
 
   return (
     <AppLayout title={t.dashboard.title} subtitle={t.dashboard.subtitle}>
+      {error && !loading && (
+        <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm" role="alert">
+          <span className="text-destructive">{L("تعذّر تحميل بيانات لوحة التحكم. تحقق من الاتصال ثم أعد المحاولة.", "The dashboard data could not be loaded. Check the connection and try again.")}</span>
+          <button type="button" onClick={() => refresh()} className="shrink-0 rounded-lg border border-destructive/40 px-3 py-1 font-medium text-destructive hover:bg-destructive/10">
+            {L("إعادة المحاولة", "Retry")}
+          </button>
+        </div>
+      )}
+
       {/* المؤشرات الرئيسية */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard index={0} highlight isRTL={isRTL}
+        <KpiCard state={kpiState} index={0} highlight isRTL={isRTL}
           title={L("إيرادات اليوم", "Today's revenue")}
-          value={loading ? "…" : fmt(metrics?.todaysRevenue || 0)} unit={currency}
+          value={fmt(metrics?.todaysRevenue || 0)} unit={currency}
           trend={revenueTrend}
           icon={RiyalSign} />
-        <KpiCard index={1} isRTL={isRTL}
+        <KpiCard state={kpiState} index={1} isRTL={isRTL}
           title={L("الوحدات المباعة اليوم", "Units sold today")}
-          value={loading ? "…" : String(metrics?.unitsSoldToday || 0)}
+          value={String(metrics?.unitsSoldToday || 0)}
           trend={unitsTrend}
           icon={ShoppingCart} />
-        <KpiCard index={2} isRTL={isRTL}
+        <KpiCard state={kpiState} index={2} isRTL={isRTL}
           title={L("أجهزة في المخزون", "Devices in stock")}
-          value={loading ? "…" : String(metrics?.devicesInStock || 0)}
+          value={String(metrics?.devicesInStock || 0)}
           sub={L(`${metrics?.devicesForSale ?? 0} متاح للبيع`, `${metrics?.devicesForSale ?? 0} for sale`)}
           icon={Smartphone} />
-        <KpiCard index={3} isRTL={isRTL}
+        <KpiCard state={kpiState} index={3} isRTL={isRTL}
           title={L("الإكسسوارات المتاحة", "Accessories in stock")}
-          value={loading ? "…" : fmt(metrics?.accessoriesInStock || 0)}
+          value={fmt(metrics?.accessoriesInStock || 0)}
           sub={L("قطعة في المخزون", "Pieces in stock")}
           icon={Package} />
       </div>
 
       {/* المؤشرات الثانوية */}
       <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <KpiCard index={4} compact isRTL={isRTL}
+        <KpiCard state={kpiState} index={4} compact isRTL={isRTL}
           title={L("طلبات صيانة مفتوحة", "Open repairs")}
-          value={loading ? "…" : String(metrics?.pendingRepairs || 0)}
+          value={String(metrics?.pendingRepairs || 0)}
           sub={L("بانتظار الإنجاز", "Awaiting completion")}
           icon={Wrench} />
-        <KpiCard index={5} compact isRTL={isRTL}
+        <KpiCard state={kpiState} index={5} compact isRTL={isRTL}
           title={L("مستحقات الموردين", "Supplier payables")}
-          value={loading ? "…" : fmt(metrics?.supplierDebt || 0)} unit={currency}
+          value={fmt(metrics?.supplierDebt || 0)} unit={currency}
           sub={L("مبالغ لم تُسدَّد بعد", "Not paid yet")}
           icon={Truck} />
-        <KpiCard index={6} compact isRTL={isRTL}
+        <KpiCard state={kpiState} index={6} compact isRTL={isRTL}
           title={L("أوامر شراء غير مدفوعة", "Unpaid purchase orders")}
-          value={loading ? "…" : String(metrics?.unpaidPurchaseOrders || 0)}
+          value={String(metrics?.unpaidPurchaseOrders || 0)}
           sub={L("بانتظار السداد", "Awaiting payment")}
           icon={FileText} />
       </div>
@@ -167,7 +191,9 @@ export default function Dashboard() {
         </div>
 
         {loading ? (
-          <div className="py-8 text-center text-sm text-muted-foreground">...</div>
+          <div className="py-8 flex justify-center" role="status" aria-label={L("جارٍ التحميل", "Loading")}>
+            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
         ) : branchStats.length === 0 ? (
           <div className="py-8 text-center text-sm text-muted-foreground">{L("لا توجد فروع", "No branches")}</div>
         ) : (

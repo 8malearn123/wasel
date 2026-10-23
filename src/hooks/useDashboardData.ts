@@ -56,6 +56,7 @@ export function useDashboardData() {
   const [recentSales, setRecentSales] = useState<RecentSale[]>([]);
   const [branchStats, setBranchStats] = useState<BranchStats[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchMetrics = useCallback(async () => {
     if (!merchant) return;
@@ -109,6 +110,12 @@ export function useDashboardData() {
         .eq('merchant_id', merchant.id)
         .neq('payment_status', 'paid'),
     ]);
+
+    // a refused query used to read as an empty list — a dashboard of zeros
+    // that looked like a quiet day rather than a failure
+    const failed = [todaySalesRes, yesterdaySalesRes, devicesRes, accessoriesRes, pendingRepairsRes, unpaidPORes]
+      .find(r => r.error);
+    if (failed?.error) throw new Error(failed.error.message);
 
     const todayRevenue = (todaySalesRes.data || []).reduce((s, r) => s + Number(r.total_amount || 0), 0);
     const yesterdayRevenue = (yesterdaySalesRes.data || []).reduce((s, r) => s + Number(r.total_amount || 0), 0);
@@ -272,15 +279,25 @@ export function useDashboardData() {
   }, [merchant]);
 
   const fetchAll = useCallback(async () => {
+    // without the shop there is nothing to count yet: stay loading rather
+    // than settle on zeros
+    if (!merchant) return;
     setLoading(true);
-    await Promise.all([
-      fetchMetrics(),
-      fetchSalesChart(),
-      fetchRecentSales(),
-      fetchBranchStats(),
-    ]);
-    setLoading(false);
-  }, [fetchMetrics, fetchSalesChart, fetchRecentSales, fetchBranchStats]);
+    setError(null);
+    try {
+      await Promise.all([
+        fetchMetrics(),
+        fetchSalesChart(),
+        fetchRecentSales(),
+        fetchBranchStats(),
+      ]);
+    } catch (err) {
+      console.error('[dashboard]', err);
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
+  }, [merchant, fetchMetrics, fetchSalesChart, fetchRecentSales, fetchBranchStats]);
 
   useEffect(() => {
     fetchAll();
@@ -292,6 +309,7 @@ export function useDashboardData() {
     recentSales,
     branchStats,
     loading,
+    error,
     refresh: fetchAll,
   };
 }

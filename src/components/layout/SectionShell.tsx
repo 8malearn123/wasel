@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { leafVisible, resolveLeaf } from '@/lib/sectionRouting';
 import type { FeatureKey } from '@/lib/planAccess';
 import type { UserRole } from '@/types/database';
+import { DeniedRedirect } from '@/components/common/DeniedRedirect';
 
 export interface SectionLeaf {
   key: string;
@@ -111,12 +112,12 @@ export function SectionShell({
   // A plan feature keeps the contract its route had: the upsell page, not a
   // dead end. Typing the URL was never what stopped anyone — RLS is.
   if (outcome.kind === 'upsell') {
-    return <Navigate to="/subscription" replace />;
+    return <DeniedRedirect to="/subscription" reason="plan" />;
   }
 
   // Nothing here is open to this user — the old per-route redirect.
   if (outcome.kind === 'empty') {
-    return <Navigate to={fallbackPath} replace />;
+    return <DeniedRedirect to={fallbackPath} reason="permission" />;
   }
 
   const shown = outcome.kind === 'denied' ? outcome.fallback : outcome.leaf;
