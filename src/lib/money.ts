@@ -28,8 +28,12 @@ export function formatSar(value: number | string | null | undefined, { decimals 
 export const sar = (value: number | string | null | undefined, isRTL = true, decimals = 2) =>
   `${formatSar(value, { decimals })} ${isRTL ? 'ر.س' : 'SAR'}`;
 
-/** Round to halalas, avoiding binary drift (1.005 → 1.01) */
-export const roundSar = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
+/**
+ * Round to halalas, half up. value × 100 is first cut to 12 significant digits,
+ * which removes binary drift: 125.1 × 0.15 is 18.764999… in floating point and
+ * must still round to 18.77, as 1.005 rounds to 1.01.
+ */
+export const roundSar = (value: number) => Math.round(Number((value * 100).toPrecision(12))) / 100;
 
 export const VAT_RATE = 0.15;
 

@@ -3,6 +3,7 @@ import {
   Truck, Plus, Pencil, Wifi, WifiOff, AlertCircle, Settings2, RefreshCw,
   Loader2, Sparkles, PackageSearch,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -126,6 +127,21 @@ export default function ShippingPage() {
       subtitle={t ? 'شركات الشحن وإعدادات الاتصال' : 'Carriers and their connections'}
     >
       {usingMock('shipping') && <MockDataBanner what={t ? 'خدمة الشحن' : 'the shipping service'} />}
+      {usingMock('shipping') && (
+        // where shipping really works today: the carriers, prices and delivery
+        // times the store offers at checkout, and the tracking links on orders
+        <p className="-mt-2 mb-4 text-sm text-muted-foreground">
+          {t
+            ? 'شركات الشحن الفعلية التي يراها العميل عند الدفع — مع تكلفة كل شركة ومدة التوصيل — تُضبط من '
+            : 'The carriers customers actually see at checkout — each with its price and delivery time — are set in '}
+          <Link to="/sales?tab=store" className="font-medium text-primary underline-offset-4 hover:underline">
+            {t ? 'إعدادات المتجر الإلكتروني' : 'online store settings'}
+          </Link>
+          {t
+            ? '. الربط المباشر بأنظمة الشركات (إنشاء البوليصة وتحديث الحالة آليًا) يحتاج حسابًا ومفتاح API من كل شركة.'
+            : '. A direct link to the carriers\' systems (creating waybills, automatic status updates) needs an account and API key from each carrier.'}
+        </p>
+      )}
 
       <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-muted/50 border border-border mb-5">
         {TABS.map(tab => (

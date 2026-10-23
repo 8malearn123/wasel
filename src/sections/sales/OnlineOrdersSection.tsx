@@ -19,7 +19,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { CARRIERS, trackingUrl } from "@/lib/shipping";
+import { CARRIERS, trackingUrl, carrierById } from "@/lib/shipping";
 import { useOnlineOrders, OnlineOrder, OnlineOrderItem } from "@/hooks/useOnlineStore";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -190,7 +190,12 @@ export default function OnlineOrdersSection() {
                             </DropdownMenuItem>
                           )}
                           {['confirmed', 'processing'].includes(order.status) && (
-                            <DropdownMenuItem onClick={() => { setShippingOrderId(order.id); setShowShipping(true); }}>
+                            <DropdownMenuItem onClick={() => {
+                              setShippingOrderId(order.id);
+                              // the carrier the customer chose at checkout, when it is one we know
+                              setShippingProvider(carrierById(order.shipping_provider)?.id ?? "aramex");
+                              setShowShipping(true);
+                            }}>
                               <Truck className="w-4 h-4 mr-2" /> إضافة تتبع الشحن
                             </DropdownMenuItem>
                           )}

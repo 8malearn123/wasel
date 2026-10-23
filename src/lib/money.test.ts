@@ -15,6 +15,8 @@ describe('formatSar', () => {
   });
   it('rounds halfway halalas up', () => {
     expect(roundSar(1.005)).toBe(1.01);
+    expect(roundSar(125.1 * 0.15)).toBe(18.77);
+    expect(roundSar(-2.5)).toBe(-2.5);
   });
 });
 
