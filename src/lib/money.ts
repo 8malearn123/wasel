@@ -30,3 +30,24 @@ export const sar = (value: number | string | null | undefined, isRTL = true, dec
 
 /** Round to halalas, avoiding binary drift (1.005 → 1.01) */
 export const roundSar = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
+
+export const VAT_RATE = 0.15;
+
+/**
+ * A till sale's amounts. Shelf prices include VAT (the till and the invoice say
+ * «شامل ضريبة القيمة المضافة»), so the VAT is the part of what the customer
+ * pays, not 15% on top of it. Saving a sale used to add 15% to prices that
+ * already included it: a 2,373.04 cart was charged and printed as 2,373.04 but
+ * stored as 2,729.00, and every report read the stored figure.
+ *
+ *   total    = gross − discount           what the customer pays (incl. VAT)
+ *   subtotal = total ÷ 1.15               المجموع الفرعي, before VAT
+ *   tax      = total − subtotal
+ */
+export function vatInclusive(gross: number, discount = 0) {
+  const g = roundSar(Math.max(0, gross));
+  const d = roundSar(Math.min(Math.max(0, discount), g));
+  const total = roundSar(g - d);
+  const subtotal = roundSar(total / (1 + VAT_RATE));
+  return { gross: g, discount: d, subtotal, tax: roundSar(total - subtotal), total };
+}

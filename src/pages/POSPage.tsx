@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useLanguage } from "@/i18n";
@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { ShoppingCart, FileText, ReceiptText } from "lucide-react";
 import type { Device, Accessory, PaymentMethod } from "@/types/database";
 import { toast } from "sonner";
+import { invoiceDate, invoiceDateTime } from '@/lib/invoiceDate';
 
 interface InvoiceData {
   saleId: string;
@@ -39,6 +40,7 @@ export default function POSPage() {
   const [cart, setCart] = useState<POSCartItem[]>([]);
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const completingRef = useRef(false);
   const [isSearching, setIsSearching] = useState(false);
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
   const [activeTab, setActiveTab] = useTabParam("pos");
@@ -192,17 +194,20 @@ export default function POSPage() {
   };
 
   const handleCompleteSale = async (customerName: string, customerPhone: string, discount: number) => {
-    if (!selectedPayment || cart.length === 0) return;
+    // one sale per press: a second tap while the first is on its way is ignored
+    if (!selectedPayment || cart.length === 0 || completingRef.current) return;
+    completingRef.current = true;
     const saleCart = cart;
 
     setIsProcessing(true);
     try {
       const result = await createSale(saleCart, selectedPayment, customerName || undefined, customerPhone || undefined, discount);
       if (!result.error && result.data) {
-        const totalBeforeDiscount = saleCart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-        const total = totalBeforeDiscount - discount;
-        const tax = total - (total / 1.15);
-        const subtotal = total - tax;
+        // the amounts as saved, so the invoice and the record agree
+        const subtotal = Number(result.data.subtotal);
+        const tax = Number(result.data.tax_amount);
+        const total = Number(result.data.total_amount);
+        const savedDiscount = Number(result.data.discount_amount);
 
         setInvoiceData({
           saleId: result.data.id,
@@ -210,20 +215,22 @@ export default function POSPage() {
           items: [...saleCart],
           subtotal,
           tax,
-          discount,
+          discount: savedDiscount,
           total,
           paymentMethod: selectedPayment,
           customerName: customerName || undefined,
           customerPhone: customerPhone || undefined,
           merchantName: merchant?.name || "Store",
           branchName: currentBranch?.name || "Main",
-          date: new Date().toLocaleString(),
-          deliveryDate: new Date().toLocaleDateString(),
+          // from the saved sale, written the same way on every device
+          date: invoiceDateTime(result.data.sale_date ?? new Date()),
+          deliveryDate: invoiceDate(result.data.sale_date ?? new Date()),
         });
 
         setCart([]);
         setSelectedPayment(null);
-        await refetch();
+        // the product list catches up in the background
+        void refetch();
 
         // Auto-print if enabled
         try {
@@ -237,6 +244,7 @@ export default function POSPage() {
         } catch {}
       }
     } finally {
+      completingRef.current = false;
       setIsProcessing(false);
     }
   };

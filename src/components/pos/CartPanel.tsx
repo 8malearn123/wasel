@@ -19,6 +19,7 @@ import { CouponApply } from "./CouponApply";
 import { MadaMark, VisaMark, MastercardMark, ApplePayMark, TabbyMark, TamaraMark } from "@/components/icons/PaymentMarks";
 import { useLanguage } from "@/i18n";
 import type { Accessory, PaymentMethod } from "@/types/database";
+import { formatSar, vatInclusive } from '@/lib/money';
 
 export interface POSCartItem {
   id: string;
@@ -70,13 +71,12 @@ export function CartPanel({
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
   const discount = couponDiscount;
   const totalBeforeDiscount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const total = totalBeforeDiscount - discount;
-  const tax = total - (total / 1.15);
-  const subtotal = total - tax;
+  // the same split the saved sale and the invoice use (money.ts)
+  const { subtotal, tax, total } = vatInclusive(totalBeforeDiscount, discount);
   // What the customer pays at the till. Delivery is charged on website orders
   // only (store settings → shipping cost), never in the shop
   const amountDue = total;
-  const amountDueTax = amountDue - (amountDue / 1.15);
+  const amountDueTax = tax;
 
   // Installments (Tabby / Tamara) are shown but not yet switched on
   const paymentMethods: { id: PaymentMethod | "installments"; icon: typeof Banknote; label: string; hint?: string; soon?: boolean; logos?: ReactNode }[] = [
@@ -211,7 +211,7 @@ export function CartPanel({
                     )}
                   </div>
                   <span className="font-bold text-foreground">
-                    {(item.price * item.quantity).toLocaleString()} <span className="text-xs text-muted-foreground">ر.س</span>
+                    {formatSar(item.price * item.quantity)} <span className="text-xs text-muted-foreground">ر.س</span>
                   </span>
                 </div>
               </motion.div>
@@ -224,23 +224,24 @@ export function CartPanel({
       <div className="border-t border-border p-3 space-y-2.5 bg-muted/10">
         {/* Totals */}
         <div className="space-y-1 text-xs">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">{t.pos.subtotal}</span>
-            <span className="font-medium">{subtotal.toLocaleString()} ر.س</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">{t.pos.tax}</span>
-            <span className="font-medium">{tax.toFixed(2)} ر.س</span>
-          </div>
+          {/* the discount comes off first; subtotal + VAT then add up to the total */}
           {discount > 0 && (
             <div className="flex justify-between text-primary">
               <span>{isRTL ? "الخصم" : "Discount"}</span>
-              <span>-{discount.toFixed(2)} ر.س</span>
+              <span dir="ltr">&minus;{formatSar(discount)} {isRTL ? "ر.س" : "SAR"}</span>
             </div>
           )}
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">{isRTL ? "المجموع الفرعي (غير شامل الضريبة)" : "Subtotal (excl. VAT)"}</span>
+            <span className="font-medium">{formatSar(subtotal)} ر.س</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">{t.pos.tax}</span>
+            <span className="font-medium">{formatSar(tax)} ر.س</span>
+          </div>
           <div className="flex justify-between text-base pt-1.5 border-t border-border">
             <span className="font-semibold">{t.pos.total}</span>
-            <span className="font-bold text-primary">{total.toFixed(2)} ر.س</span>
+            <span className="font-bold text-primary">{formatSar(total)} ر.س</span>
           </div>
         </div>
 
@@ -272,9 +273,9 @@ export function CartPanel({
             {/* Amount due */}
             <div className="rounded-2xl bg-primary/5 border border-primary/20 px-6 py-6 text-center">
               <p className="text-sm text-muted-foreground mb-1.5">{isRTL ? "المبلغ المستحق" : "Amount Due"}</p>
-              <p className="text-5xl font-bold text-primary tracking-tight">{amountDue.toFixed(2)} <span className="text-xl">ر.س</span></p>
+              <p className="text-5xl font-bold text-primary tracking-tight">{formatSar(amountDue)} <span className="text-xl">ر.س</span></p>
               <p className="text-xs text-muted-foreground mt-2">
-                {isRTL ? `شامل ضريبة القيمة المضافة ${amountDueTax.toFixed(2)} ر.س` : `Includes VAT ${amountDueTax.toFixed(2)} SAR`}
+                {isRTL ? `شامل ضريبة القيمة المضافة ${formatSar(amountDueTax)} ر.س` : `Includes VAT ${formatSar(amountDueTax)} SAR`}
               </p>
             </div>
 
@@ -297,8 +298,8 @@ export function CartPanel({
                         ? Math.round((discount / totalBeforeDiscount) * 100)
                         : 0;
                       return isRTL
-                        ? `🎉 حصلت على خصم ${pct}% — وفّرت ${discount.toFixed(2)} ر.س`
-                        : `🎉 ${pct}% off — you saved ${discount.toFixed(2)} SAR`;
+                        ? `🎉 حصلت على خصم ${pct}% — وفّرت ${formatSar(discount)} ر.س`
+                        : `🎉 ${pct}% off — you saved ${formatSar(discount)} SAR`;
                     })()}
                   </p>
                 </div>
@@ -366,12 +367,12 @@ export function CartPanel({
                 {cashReceived !== "" && (
                   cashInsufficient ? (
                     <p className="text-sm text-destructive font-medium text-center">
-                      {isRTL ? `المبلغ ناقص ${(amountDue - receivedAmount).toFixed(2)} ر.س` : `Short by ${(amountDue - receivedAmount).toFixed(2)} SAR`}
+                      {isRTL ? `المبلغ ناقص ${formatSar(amountDue - receivedAmount)} ر.س` : `Short by ${formatSar(amountDue - receivedAmount)} SAR`}
                     </p>
                   ) : (
                     <div className="flex justify-between items-center rounded-lg bg-success/10 border border-success/20 px-3 py-2">
                       <span className="text-sm font-medium text-success">{isRTL ? "الباقي للعميل" : "Change Due"}</span>
-                      <span className="text-lg font-bold text-success">{changeDue.toFixed(2)} ر.س</span>
+                      <span className="text-lg font-bold text-success">{formatSar(changeDue)} ر.س</span>
                     </div>
                   )
                 )}
