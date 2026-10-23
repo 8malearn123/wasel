@@ -482,6 +482,7 @@ export const AR_EN: Record<string, string> = {
   "نوع الجهاز": "Device Type",
   "هاتف ذكي": "Smartphone",
   "تابلت": "Tablet",
+  "كاميرا": "Camera",
   "لابتوب": "Laptop",
   "ساعة ذكية": "Smartwatch",
   "مدة الضمان": "Warranty Period",
