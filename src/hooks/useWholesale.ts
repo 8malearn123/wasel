@@ -51,6 +51,55 @@ export interface CreditTransaction {
   buyer_merchant?: { name: string } | null;
 }
 
+type PartyRow = { merchant_id: string; name: string; phone: string | null };
+type ListingItemRow = { listing_id: string; item_type: string; name: string | null; brand: string | null; model: string | null; sku: string | null };
+
+let partiesMissingWarned = false;
+
+/**
+ * The other side of a deal. merchants / devices / accessories are readable only
+ * by their own shop, so the joins above come back null for the other party;
+ * wholesale_parties() and wholesale_listing_items() (migration 20261023100100)
+ * return just the names and product descriptions a party to the deal may see.
+ * Until that migration is applied they do not exist and the screens show «—»
+ * where the name is unknown — never a made-up one.
+ */
+async function loadParties() {
+  const [parties, items] = await Promise.all([
+    supabase.rpc('wholesale_parties' as never),
+    supabase.rpc('wholesale_listing_items' as never),
+  ]);
+  if ((parties.error || items.error) && !partiesMissingWarned) {
+    partiesMissingWarned = true;
+    console.warn('[wholesale] party names unavailable until migration 20261023100100 is applied:',
+      (parties.error || items.error)?.message);
+  }
+  const names = new Map<string, PartyRow>();
+  for (const p of ((parties.data as unknown as PartyRow[]) || [])) names.set(p.merchant_id, p);
+  const products = new Map<string, ListingItemRow>();
+  for (const i of ((items.data as unknown as ListingItemRow[]) || [])) products.set(i.listing_id, i);
+  return { names, products };
+}
+
+const withParty = <T extends { supplier_merchant_id: string; buyer_merchant_id: string; supplier_merchant?: { name: string } | null; buyer_merchant?: { name: string } | null }>(
+  row: T, names: Map<string, PartyRow>,
+): T => ({
+  ...row,
+  supplier_merchant: row.supplier_merchant ?? (names.get(row.supplier_merchant_id) ? { name: names.get(row.supplier_merchant_id)!.name } : null),
+  buyer_merchant: row.buyer_merchant ?? (names.get(row.buyer_merchant_id) ? { name: names.get(row.buyer_merchant_id)!.name } : null),
+});
+
+const withProduct = (l: WholesaleListing, names: Map<string, PartyRow>, products: Map<string, ListingItemRow>): WholesaleListing => {
+  const p = products.get(l.id);
+  const shop = names.get(l.merchant_id);
+  return {
+    ...l,
+    merchant: l.merchant ?? (shop ? { id: shop.merchant_id, name: shop.name, phone: shop.phone } : null),
+    device: l.device ?? (l.device_id && p ? { id: l.device_id, imei: '', model: p.model ?? p.name ?? '', brand: p.brand, price: 0, status: '' } : null),
+    accessory: l.accessory ?? (l.accessory_id && p ? { id: l.accessory_id, name: p.name ?? '', sku: p.sku ?? '', brand: p.brand, price: 0, quantity: 0 } : null),
+  };
+};
+
 export function useWholesale() {
   const { merchant, user } = useAuth();
   const [myListings, setMyListings] = useState<WholesaleListing[]>([]);
@@ -65,21 +114,22 @@ export function useWholesale() {
     if (!merchant) return;
     setLoading(true);
 
-    const [listingsRes, marketRes, buyerRes, supplierRes, creditsOutRes, creditsInRes] = await Promise.all([
+    const [listingsRes, marketRes, buyerRes, supplierRes, creditsOutRes, creditsInRes, { names, products }] = await Promise.all([
       supabase.from('wholesale_listings').select('*, device:devices(id, imei, model, brand, price, status), accessory:accessories(id, name, sku, brand, price, quantity)').eq('merchant_id', merchant.id).order('created_at', { ascending: false }),
       supabase.from('wholesale_listings').select('*, device:devices(id, imei, model, brand, price, status), accessory:accessories(id, name, sku, brand, price, quantity), merchant:merchants(id, name, phone)').eq('is_active', true).neq('merchant_id', merchant.id),
       supabase.from('wholesale_orders').select('*, supplier_merchant:merchants!wholesale_orders_supplier_merchant_id_fkey(name), buyer_merchant:merchants!wholesale_orders_buyer_merchant_id_fkey(name)').eq('buyer_merchant_id', merchant.id).order('created_at', { ascending: false }),
       supabase.from('wholesale_orders').select('*, supplier_merchant:merchants!wholesale_orders_supplier_merchant_id_fkey(name), buyer_merchant:merchants!wholesale_orders_buyer_merchant_id_fkey(name)').eq('supplier_merchant_id', merchant.id).order('created_at', { ascending: false }),
       supabase.from('wholesale_credit_transactions' as any).select('*, buyer_merchant:merchants!wholesale_credit_transactions_buyer_merchant_id_fkey(name)').eq('supplier_merchant_id', merchant.id).order('created_at', { ascending: false }),
       supabase.from('wholesale_credit_transactions' as any).select('*, supplier_merchant:merchants!wholesale_credit_transactions_supplier_merchant_id_fkey(name)').eq('buyer_merchant_id', merchant.id).order('created_at', { ascending: false }),
+      loadParties(),
     ]);
 
-    setMyListings((listingsRes.data || []) as WholesaleListing[]);
-    setMarketplace((marketRes.data || []) as WholesaleListing[]);
-    setMyOrders((buyerRes.data || []) as WholesaleOrder[]);
-    setIncomingOrders((supplierRes.data || []) as WholesaleOrder[]);
-    setMyCredits((creditsOutRes.data || []) as unknown as CreditTransaction[]);
-    setReceivedCredits((creditsInRes.data || []) as unknown as CreditTransaction[]);
+    setMyListings(((listingsRes.data || []) as WholesaleListing[]).map(l => withProduct(l, names, products)));
+    setMarketplace(((marketRes.data || []) as WholesaleListing[]).map(l => withProduct(l, names, products)));
+    setMyOrders(((buyerRes.data || []) as WholesaleOrder[]).map(o => withParty(o, names)));
+    setIncomingOrders(((supplierRes.data || []) as WholesaleOrder[]).map(o => withParty(o, names)));
+    setMyCredits(((creditsOutRes.data || []) as unknown as CreditTransaction[]).map(c => withParty(c, names)));
+    setReceivedCredits(((creditsInRes.data || []) as unknown as CreditTransaction[]).map(c => withParty(c, names)));
     setLoading(false);
   }, [merchant]);
 
@@ -119,16 +169,23 @@ export function useWholesale() {
 
     if (error) { toast.error(error.message); return; }
 
-    await supabase.from('wholesale_order_items').insert({
+    // An order without its line has no product: if the line is refused, the
+    // order goes too rather than being left behind empty
+    const { error: itemError } = await supabase.from('wholesale_order_items').insert({
       order_id: (order as any).id,
       listing_id: listingId,
       quantity,
       unit_price: listing.wholesale_price,
     } as any);
+    if (itemError) {
+      await supabase.from('wholesale_orders').delete().eq('id', (order as any).id);
+      toast.error(itemError.message);
+      return;
+    }
 
     // If credit type specified, create credit transaction
     if (creditType) {
-      await supabase.from('wholesale_credit_transactions' as any).insert({
+      const { error: creditError } = await supabase.from('wholesale_credit_transactions' as any).insert({
         supplier_merchant_id: listing.merchant_id,
         buyer_merchant_id: merchant.id,
         order_id: (order as any).id,
@@ -140,6 +197,7 @@ export function useWholesale() {
         status: 'unpaid',
         created_by: user.id,
       } as any);
+      if (creditError) toast.error(`أُرسل الطلب #${orderNumber} لكن تعذّر تسجيل الآجل: ${creditError.message}`);
     }
 
     toast.success(`تم إرسال الطلب #${orderNumber}`);
