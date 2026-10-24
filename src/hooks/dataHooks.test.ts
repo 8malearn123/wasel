@@ -126,6 +126,18 @@ describe('wholesale names and products', () => {
     expect(result.current.myOrders[0].supplier_merchant?.name).toBe('موزع الشرق');
   });
 
+  it('uses the supplier\'s published store name until the functions are installed', async () => {
+    tables.wholesale_listings = { data: [listing], error: null };
+    tables.wholesale_orders = { data: [order], error: null };
+    tables.store_settings = { data: [{ merchant_id: 'sup', store_name: 'متجر الأنام' }], error: null };
+    const { result } = renderHook(() => useWholesale());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.marketplace[0].merchant?.name).toBe('متجر الأنام');
+    expect(result.current.myOrders[0].supplier_merchant?.name).toBe('متجر الأنام');
+    // the product row stays unreadable: no invented name
+    expect(result.current.marketplace[0].device).toBeNull();
+  });
+
   it('leaves a name unknown, not invented, when the functions are missing', async () => {
     tables.wholesale_listings = { data: [listing], error: null };
     tables.wholesale_orders = { data: [order], error: null };

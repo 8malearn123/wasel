@@ -28,3 +28,25 @@ if (sup) {
 const sp = await signIn('demo-distributor@wasil.demo');
 const r = await fetch(`${SUPA}/rest/v1/wholesale_listings?select=id,item_type,wholesale_price,min_quantity,is_active,notes,device:devices(model,brand),accessory:accessories(name,sku,price)`, { headers: { apikey: ANON, Authorization: `Bearer ${sp.access_token}` } });
 console.log(`SUPPLIER own listings ${(await r.text()).slice(0, 1200)}`);
+
+// ---- the screen, with this branch's code (read only)
+const { chromium } = await import('playwright');
+const browser = await chromium.launch(process.env.CHANNEL ? { channel: process.env.CHANNEL } : {});
+const context = await browser.newContext({ locale: 'ar', viewport: { width: 1440, height: 900 } });
+await context.addInitScript(([k, v]) => { localStorage.setItem(k, v); localStorage.setItem('language', 'ar'); },
+  ['sb-ynwddyxzypbcftlevuam-auth-token', JSON.stringify(s)]);
+await context.route(`${SUPA}/rest/v1/**`, route =>
+  ['GET', 'HEAD'].includes(route.request().method()) || route.request().url().includes('/rpc/') ? route.continue() : route.abort());
+const page = await context.newPage();
+await page.goto(`${process.env.SITE}/sales?tab=wholesale`); await page.waitForTimeout(9000);
+console.log(`SCREEN market: ${(await page.evaluate(() => (document.querySelector('main') || document.body).innerText.replace(/\s+/g, ' '))).slice(0, 900)}`);
+let shot = await page.screenshot({ type: 'jpeg', quality: 70 });
+console.log('SHOT-BEGIN market'); console.log(shot.toString('base64')); console.log('SHOT-END');
+const btn = page.locator('table button').first();
+if (await btn.count()) {
+  await btn.click(); await page.waitForTimeout(1500);
+  console.log(`SCREEN dialog: ${(await page.locator('[role=dialog]').innerText()).replace(/\s+/g, ' ')}`);
+  shot = await page.screenshot({ type: 'jpeg', quality: 70 });
+  console.log('SHOT-BEGIN dialog'); console.log(shot.toString('base64')); console.log('SHOT-END');
+} else console.log('SCREEN dialog: no order button found');
+await browser.close();
