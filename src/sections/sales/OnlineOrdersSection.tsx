@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { storePaymentLabel } from '@/lib/storePayments';
+import { formatSar } from '@/lib/money';
 import { motion } from "framer-motion";
 import {
   ShoppingBag, Search, Loader2, Eye, Truck, CreditCard, CheckCircle2,
@@ -19,7 +20,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { CARRIERS, trackingUrl } from "@/lib/shipping";
+import { CARRIERS, trackingUrl, carrierById } from "@/lib/shipping";
 import { useOnlineOrders, OnlineOrder, OnlineOrderItem } from "@/hooks/useOnlineStore";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -86,7 +87,7 @@ export default function OnlineOrdersSection() {
           { label: "إجمالي الطلبات", value: stats.total, icon: ShoppingBag, color: "bg-primary/10 text-primary" },
           { label: "قيد الانتظار", value: stats.pending, icon: Clock, color: "bg-warning/10 text-warning" },
           { label: "قيد التجهيز", value: stats.processing, icon: Package, color: "bg-primary/10 text-primary" },
-          { label: "الإيرادات", value: `${stats.revenue.toFixed(0)} ر.س`, icon: CreditCard, color: "bg-success/10 text-success" },
+          { label: "الإيرادات", value: `${formatSar(stats.revenue)} ر.س`, icon: CreditCard, color: "bg-success/10 text-success" },
         ].map((s, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
             className="p-4 rounded-xl bg-card border border-border shadow-sm">
@@ -137,13 +138,14 @@ export default function OnlineOrdersSection() {
                   className="p-4 hover:bg-muted/20 transition-colors">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-4 min-w-0 flex-1">
-                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex flex-col items-center justify-center shrink-0">
-                        <Hash className="w-3 h-3 text-primary mb-0.5" />
-                        <span className="text-[10px] font-bold text-primary">{order.order_number.slice(-4)}</span>
+                      {/* the number is written in full beside it; the tile showed its
+                          last four characters only («-001») */}
+                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0" aria-hidden>
+                        <Hash className="w-5 h-5 text-primary" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold text-foreground">{order.order_number}</span>
+                          <span className="font-semibold text-foreground whitespace-nowrap tabular-nums" dir="ltr">{order.order_number}</span>
                           <Badge variant="outline" className={st.color}>{st.label}</Badge>
                           <Badge variant="outline" className={pay.color}>{pay.label}</Badge>
                           <Badge variant="outline">{storePaymentLabel(order.payment_method)}</Badge>
@@ -170,9 +172,9 @@ export default function OnlineOrdersSection() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
-                      <div className="text-left hidden sm:block">
-                        <p className="font-bold text-foreground">{order.total_amount.toFixed(0)} ر.س</p>
-                        <p className="text-xs text-muted-foreground">{format(new Date(order.created_at), 'dd MMM yyyy', { locale: ar })}</p>
+                      <div className="text-left">
+                        <p className="font-bold text-foreground whitespace-nowrap text-sm sm:text-base">{formatSar(order.total_amount)} ر.س</p>
+                        <p className="text-xs text-muted-foreground whitespace-nowrap">{format(new Date(order.created_at), 'dd MMM yyyy', { locale: ar })}</p>
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="w-4 h-4" /></Button></DropdownMenuTrigger>
@@ -189,7 +191,12 @@ export default function OnlineOrdersSection() {
                             </DropdownMenuItem>
                           )}
                           {['confirmed', 'processing'].includes(order.status) && (
-                            <DropdownMenuItem onClick={() => { setShippingOrderId(order.id); setShowShipping(true); }}>
+                            <DropdownMenuItem onClick={() => {
+                              setShippingOrderId(order.id);
+                              // the carrier the customer chose at checkout, when it is one we know
+                              setShippingProvider(carrierById(order.shipping_provider)?.id ?? "aramex");
+                              setShowShipping(true);
+                            }}>
                               <Truck className="w-4 h-4 mr-2" /> إضافة تتبع الشحن
                             </DropdownMenuItem>
                           )}
@@ -264,17 +271,17 @@ export default function OnlineOrdersSection() {
                         <p className="text-sm font-medium text-foreground">{item.item_name}</p>
                         <p className="text-xs text-muted-foreground">الكمية: {item.quantity}</p>
                       </div>
-                      <span className="font-bold text-foreground">{(item.unit_price * item.quantity).toFixed(0)} ر.س</span>
+                      <span className="font-bold text-foreground">{formatSar(item.unit_price * item.quantity)} ر.س</span>
                     </div>
                   ))}
                 </div>
               </div>
               <div className="p-3 rounded-lg bg-muted/30 space-y-1">
-                <div className="flex justify-between text-sm"><span>المجموع</span><span>{selectedOrder.subtotal.toFixed(2)} ر.س</span></div>
-                <div className="flex justify-between text-sm"><span>الضريبة</span><span>{selectedOrder.tax_amount.toFixed(2)} ر.س</span></div>
-                <div className="flex justify-between text-sm"><span>الشحن</span><span>{selectedOrder.shipping_cost.toFixed(2)} ر.س</span></div>
+                <div className="flex justify-between text-sm"><span>المجموع الفرعي (غير شامل الضريبة)</span><span>{formatSar(selectedOrder.subtotal)} ر.س</span></div>
+                <div className="flex justify-between text-sm"><span>الضريبة</span><span>{formatSar(selectedOrder.tax_amount)} ر.س</span></div>
+                <div className="flex justify-between text-sm"><span>الشحن</span><span>{formatSar(selectedOrder.shipping_cost)} ر.س</span></div>
                 <div className="flex justify-between font-bold text-lg border-t border-border pt-1">
-                  <span>الإجمالي</span><span className="text-primary">{selectedOrder.total_amount.toFixed(2)} ر.س</span>
+                  <span>الإجمالي</span><span className="text-primary">{formatSar(selectedOrder.total_amount)} ر.س</span>
                 </div>
               </div>
             </div>

@@ -18,7 +18,7 @@ import { ReportStats, type ReportStatCard } from '../ReportStats';
 import { ReportCard, PanelEmpty } from '../ReportShell';
 import { chartTooltip } from './chartTheme';
 
-type DeviceStatusKey = 'available' | 'reserved' | 'sold';
+type DeviceStatusKey = 'available' | 'reserved' | 'transferred' | 'repair' | 'sold';
 
 interface Props {
   stats: {
@@ -46,6 +46,8 @@ const PROFIT = 'hsl(var(--success))';
 const STATUS_COLOR: Record<DeviceStatusKey, string> = {
   available: 'hsl(var(--success))',
   reserved: 'hsl(var(--primary))',
+  transferred: 'hsl(var(--warning))',
+  repair: 'hsl(var(--destructive))',
   sold: 'hsl(var(--muted-foreground))',
 };
 

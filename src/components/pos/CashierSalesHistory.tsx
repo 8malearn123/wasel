@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n";
 import type { POSActivity } from "@/hooks/usePOSActivity";
 import type { PaymentMethod, Sale, SaleItem } from "@/types/database";
+import { formatSar } from '@/lib/money';
 
 interface CashierSalesHistoryProps {
   sales: Sale[];
@@ -288,7 +289,7 @@ export function CashierSalesHistory({
                   </div>
                   {row.entry.total_amount !== undefined && (
                     <span className="text-xs text-muted-foreground shrink-0">
-                      {Number(row.entry.total_amount).toLocaleString()} ر.س
+                      {formatSar(row.entry.total_amount)} ر.س
                     </span>
                   )}
                 </motion.div>
@@ -339,10 +340,10 @@ export function CashierSalesHistory({
                       </div>
 
                       <div className="text-right">
-                        <p className="font-bold text-foreground">{Number(sale.total_amount).toLocaleString()} ر.س</p>
+                        <p className="font-bold text-foreground">{formatSar(sale.total_amount)} ر.س</p>
                         {Number(sale.discount_amount) > 0 && (
                           <p className="text-[11px] text-primary">
-                            {isRTL ? "خصم" : "Discount"} {Number(sale.discount_amount).toLocaleString()}
+                            {isRTL ? "خصم" : "Discount"} {formatSar(sale.discount_amount)}
                           </p>
                         )}
                       </div>
@@ -392,9 +393,9 @@ export function CashierSalesHistory({
                             <div key={item.id} className="flex items-center justify-between gap-3 text-xs">
                               <span className="text-foreground truncate">{itemName(item)}</span>
                               <span className="text-muted-foreground shrink-0">
-                                {item.quantity} × {Number(item.unit_price).toLocaleString()} ={" "}
+                                {item.quantity} × {formatSar(item.unit_price)} ={" "}
                                 <span className="text-foreground font-medium">
-                                  {(item.quantity * Number(item.unit_price)).toLocaleString()} ر.س
+                                  {formatSar(item.quantity * Number(item.unit_price))} ر.س
                                 </span>
                               </span>
                             </div>

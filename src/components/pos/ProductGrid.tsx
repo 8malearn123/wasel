@@ -7,6 +7,7 @@ import { useLanguage } from "@/i18n";
 import { Loader2, Smartphone, Package } from "lucide-react";
 import { useCategories } from "@/hooks/useCategories";
 import type { Device, Accessory } from "@/types/database";
+import { formatSar } from '@/lib/money';
 
 interface ProductGridProps {
   devices: Device[];
@@ -234,7 +235,7 @@ export function ProductGrid({ devices, accessories, loading, onAddDevice, onAddA
                 <p className="text-xs text-muted-foreground font-mono mt-0.5 truncate">{device.imei}</p>
                 <div className="mt-2 flex items-center justify-between gap-2">
                   <span className="text-lg font-bold text-foreground tabular-nums">
-                    {Number(device.price).toLocaleString()} ر.س
+                    {formatSar(device.price)} ر.س
                   </span>
                   {device.storage && (
                     <span className="rounded-md bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground">{device.storage}</span>
@@ -264,7 +265,7 @@ export function ProductGrid({ devices, accessories, loading, onAddDevice, onAddA
                 <p className="text-xs text-muted-foreground font-mono mt-0.5">{acc.sku}</p>
                 <div className="mt-2 flex items-center justify-between gap-2">
                   <span className="text-lg font-bold text-foreground tabular-nums">
-                    {Number(acc.price).toLocaleString()} ر.س
+                    {formatSar(acc.price)} ر.س
                   </span>
                   <span className="text-[11px] text-muted-foreground">
                     {isRTL ? `${t.inventory.inStock}: ${acc.quantity}` : `${acc.quantity} in stock`}

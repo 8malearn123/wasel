@@ -7,6 +7,7 @@ import { UrlTabs } from '@/components/common/UrlTabs';
 import { SectionNav } from '@/components/layout/SectionNav';
 import { useTabParam } from '@/hooks/useTabParam';
 import { useAuth } from '@/hooks/useAuth';
+import { useCurrentPlan } from '@/hooks/useCurrentPlan';
 import { SearchableSelect } from '@/components/common/SearchableSelect';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,7 +49,8 @@ export default function MarketingSection() {
   } = useMarketing();
 
   const { subscription } = useAuth();
-  const isMax = subscription?.plan === 'Distributor' || subscription?.plan === 'trial';
+  const { name: planName } = useCurrentPlan();
+  const isMax = planName === 'Distributor' || planName === 'trial';
 
   const [couponDialog, setCouponDialog] = useState(false);
   const [campaignDialog, setCampaignDialog] = useState(false);

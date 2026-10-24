@@ -15,6 +15,7 @@ import { usePermissions, type PermissionKey } from "@/hooks/usePermissions";
 import { firstOpenSection } from "@/lib/sectionAccess";
 import { useVersionCheck } from "./hooks/useVersionCheck";
 import { useSubscription } from "./hooks/useSubscription";
+import { DeniedRedirect } from '@/components/common/DeniedRedirect';
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const POSPage = lazy(() => import("./pages/POSPage"));
 const ReportsPage = lazy(() => import("./pages/ReportsPage"));
@@ -107,7 +108,7 @@ function FeatureRoute({ feature, children }: { feature: FeatureKey; children: Re
   }
 
   if (!allows(feature)) {
-    return <Navigate to="/subscription" replace />;
+    return <DeniedRedirect to="/subscription" reason="plan" />;
   }
 
   return <>{children}</>;
@@ -125,8 +126,11 @@ function RoleRoute({ allow, children }: { allow: UserRole[]; children: React.Rea
     );
   }
 
-  if (!merchantUser || !allow.includes(merchantUser.role as UserRole)) {
+  if (!merchantUser) {
     return <Navigate to="/" replace />;
+  }
+  if (!allow.includes(merchantUser.role as UserRole)) {
+    return <DeniedRedirect to="/" reason="permission" />;
   }
 
   return <>{children}</>;
@@ -147,7 +151,7 @@ function PermissionRoute({ require, children }: { require: PermissionKey | Permi
   }
 
   if (!canAny(...(Array.isArray(require) ? require : [require]))) {
-    return <Navigate to="/" replace />;
+    return <DeniedRedirect to="/" reason="permission" />;
   }
 
   return <>{children}</>;

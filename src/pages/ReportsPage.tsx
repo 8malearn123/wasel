@@ -71,8 +71,12 @@ export default function ReportsPage() {
   const statusBreakdown = useMemo(() => [
     { key: 'available' as const, name: r.available, value: inventory.availableDevices },
     { key: 'reserved' as const, name: r.reserved, value: inventory.reservedDevices },
+    // every status, so the card's total is every device (it read 17 of 24
+    // while 7 were in transfer)
+    { key: 'transferred' as const, name: isRTL ? 'قيد التحويل' : 'In transfer', value: inventory.transferredDevices },
+    { key: 'repair' as const, name: isRTL ? 'في الصيانة' : 'In repair', value: inventory.repairDevices },
     { key: 'sold' as const, name: r.soldStatus, value: inventory.soldDevices },
-  ].filter(d => d.value > 0), [inventory, r]);
+  ].filter(d => d.value > 0), [inventory, r, isRTL]);
 
   const deadStock = useMemo<DeadStockDevice[]>(() => {
     const now = new Date();

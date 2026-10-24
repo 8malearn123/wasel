@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
-import { usePlans, planDisplayName, Plan } from '@/hooks/usePlans';
+import { usePlans, Plan } from '@/hooks/usePlans';
+import { useCurrentPlan } from '@/hooks/useCurrentPlan';
 import { useBranches, useMerchantUsers } from '@/hooks/useBranches';
 import { useBranchRequests } from '@/hooks/useBranchRequests';
 import { supabase } from '@/integrations/supabase/client';
@@ -77,11 +78,8 @@ export default function SubscriptionPage() {
   const activeBranches = allBranches.filter(b => b.is_active);
   const activeUsers = users.filter(u => u.is_active !== false);
   const currentPlanId = subscription?.plan_id;
-  // The subscription carries the limits it was granted; the plan row is the
-  // fallback when a subscription predates them
-  const currentPlan = plans.find(p => p.id === currentPlanId);
-  const branchLimit = subscription?.max_branches ?? currentPlan?.branch_limit ?? 1;
-  const userLimit = subscription?.max_users ?? currentPlan?.user_limit ?? 0;
+  // name and limits from the plan the subscription points at (subscriptionPlan.ts)
+  const { branchLimit, userLimit, displayName: currentPlanName } = useCurrentPlan();
 
   const handleUpgradeRequest = async (plan: Plan) => {
     if (!merchant) return;
@@ -112,7 +110,7 @@ export default function SubscriptionPage() {
             </div>
             <div>
               <h3 className="text-lg font-bold text-foreground">باقتك الحالية</h3>
-              <p className="text-sm text-muted-foreground">{planDisplayName(subscription?.plan)}</p>
+              <p className="text-sm text-muted-foreground">{currentPlanName}</p>
             </div>
             <div className="ms-auto">
               <span className={cn(

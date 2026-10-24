@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { callOptionalRpc } from '@/lib/optionalRpc';
 import { useAuth } from './useAuth';
 import { permissionsForLegacyRole, CUSTOM_ROLE_FORBIDDEN } from '@/lib/legacyRolePermissions';
 
@@ -42,7 +42,7 @@ export function usePermissions() {
     }
 
     setLoading(true);
-    const { data, error } = await supabase.rpc('my_permissions' as never);
+    const { data, error, missing } = await callOptionalRpc<string[]>('my_permissions', user.id);
 
     if (error) {
       // The Phase 1 migration has not been applied, so my_permissions() does
@@ -54,10 +54,7 @@ export function usePermissions() {
       // Falling back to the legacy role map gives the same answer the server
       // gives in this state, and the same answer has_permission() will give
       // once the migration lands.
-      console.warn(
-        '[permissions] my_permissions unavailable, falling back to the role map:',
-        error.message,
-      );
+      if (!missing) console.warn('[permissions] my_permissions failed, falling back to the role map:', error.message);
       // a custom role kept in the app's store carries its own list
       // (a system role the shop changed keeps what only its system role holds)
       const system = merchantUser.customRole?.system;

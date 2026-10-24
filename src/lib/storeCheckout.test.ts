@@ -68,3 +68,15 @@ describe('the remembered customer', () => {
     expect(loadCustomer('s').address?.city).toBe('جدة');
   });
 });
+
+describe('the checkout total and the stored order agree', () => {
+  it('adds VAT on goods and delivery, rounded once to halalas', async () => {
+    const { roundSar, VAT_RATE } = await import('./money');
+    const [smsa] = shippingOptions(store, [{ id: 'smsa', enabled: true, cost: 25, days: '2-3 أيام' }]);
+    expect(smsa.days).toBe('2-3 أيام');
+    const subtotal = 100.1;
+    const shipping = shippingCost(smsa, subtotal, store);
+    const tax = roundSar((subtotal + shipping) * VAT_RATE);
+    expect(roundSar(subtotal + tax + shipping)).toBe(143.87);
+  });
+});

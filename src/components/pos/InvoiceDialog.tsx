@@ -19,6 +19,7 @@ import {
   type PaperWidth,
   type ReceiptData,
 } from "@/services/thermalPrinter";
+import { formatSar } from '@/lib/money';
 
 interface InvoiceData {
   invoiceNumber: string;
@@ -106,7 +107,7 @@ function buildReceiptHTML(data: InvoiceData, vatNumber: string): string {
     <tr>
       <td style="max-width:60%">${item.name}<br/><span style="font-size:9px;color:#6B7280">${item.identifier}</span></td>
       <td class="center">${item.quantity}</td>
-      <td class="left">${(item.price * item.quantity).toLocaleString()}</td>
+      <td class="left">${formatSar(item.price * item.quantity)}</td>
     </tr>`).join("");
 
   const zatcaBase64 = generateZATCABase64(data.merchantName, vatNumber || "000000000000000", new Date().toISOString(), data.total.toFixed(2), data.tax.toFixed(2));
@@ -119,18 +120,18 @@ function buildReceiptHTML(data: InvoiceData, vatNumber: string): string {
       ${vatNumber ? `<p>الرقم الضريبي: ${vatNumber}</p>` : ''}
       <p style="margin-top:4px;font-weight:600">فاتورة ضريبية مبسطة</p>
       <p style="font-weight:600">${data.invoiceNumber}</p>
-      <p>${data.date}</p>
-      <p style="font-weight:600">تاريخ التسليم: ${data.deliveryDate || data.date}</p>
+      <p><bdi dir="ltr">${data.date}</bdi></p>
+      <p style="font-weight:600">تاريخ التسليم: <bdi dir="ltr">${data.deliveryDate || data.date}</bdi></p>
       <p style="font-size:9px">يبدأ الضمان من تاريخ التسليم</p>
     </div>
     ${data.customerName || data.customerPhone ? `<div style="margin-bottom:6px">${data.customerName ? `<p>العميل: ${data.customerName}</p>` : ''}${data.customerPhone ? `<p>الهاتف: ${data.customerPhone}</p>` : ''}</div><hr class="separator"/>` : ''}
     <table><thead><tr><th>الصنف</th><th class="center">الكمية</th><th class="left">المبلغ</th></tr></thead><tbody>${itemsRows}</tbody></table>
     <hr class="separator"/>
     <div class="totals">
-      <div class="row"><span>المجموع</span><span>${data.subtotal.toLocaleString()} ر.س</span></div>
-      <div class="row"><span>ضريبة 15%</span><span>${data.tax.toFixed(2)} ر.س</span></div>
-      ${data.discount > 0 ? `<div class="row"><span>خصم</span><span>-${data.discount.toFixed(2)}</span></div>` : ''}
-      <div class="row total-row"><span>الإجمالي</span><span>${data.total.toFixed(2)} ر.س</span></div>
+      ${data.discount > 0 ? `<div class="row"><span>المبلغ قبل الخصم</span><span>${formatSar(data.total + data.discount)} ر.س</span></div><div class="row"><span>الخصم</span><span>&#x2212;${formatSar(data.discount)} ر.س</span></div>` : ''}
+      <div class="row"><span>المجموع الفرعي (غير شامل الضريبة)</span><span>${formatSar(data.subtotal)} ر.س</span></div>
+      <div class="row"><span>ضريبة القيمة المضافة 15%</span><span>${formatSar(data.tax)} ر.س</span></div>
+      <div class="row total-row"><span>الإجمالي (شامل الضريبة)</span><span>${formatSar(data.total)} ر.س</span></div>
     </div>
     <hr class="separator"/>
     <p>الدفع: ${paymentMethodLabels[data.paymentMethod]}</p>
@@ -373,8 +374,8 @@ export function InvoiceDialog({ data, onClose, onPrinted }: InvoiceDialogProps) 
             {config.vatNumber && <p className="text-xs text-muted-foreground mt-1">الرقم الضريبي: {config.vatNumber}</p>}
             <p className="text-sm mt-2 font-semibold text-primary">فاتورة ضريبية مبسطة</p>
             <p className="text-sm font-semibold text-foreground">{data.invoiceNumber}</p>
-            <p className="text-xs text-muted-foreground">{data.date}</p>
-            <p className="text-xs font-semibold text-foreground mt-1">تاريخ التسليم: {data.deliveryDate || data.date}</p>
+            <p className="text-xs text-muted-foreground"><bdi dir="ltr">{data.date}</bdi></p>
+            <p className="text-xs font-semibold text-foreground mt-1">تاريخ التسليم: <bdi dir="ltr">{data.deliveryDate || data.date}</bdi></p>
             <p className="text-[10px] text-muted-foreground">يبدأ الضمان من تاريخ التسليم</p>
           </div>
 
@@ -401,21 +402,24 @@ export function InvoiceDialog({ data, onClose, onPrinted }: InvoiceDialogProps) 
                     <span className="text-[10px] text-muted-foreground">{item.identifier}</span>
                   </td>
                   <td className="text-center py-1 text-xs text-foreground">{item.quantity}</td>
-                  <td className="text-left py-1 text-xs text-foreground">{(item.price * item.quantity).toLocaleString()}</td>
+                  <td className="text-left py-1 text-xs text-foreground">{formatSar(item.price * item.quantity)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
 
           <div className="border-t border-dashed border-muted-foreground/30 pt-2 space-y-1 text-xs">
-            <div className="flex justify-between"><span className="text-muted-foreground">المجموع</span><span className="text-foreground">{data.subtotal.toLocaleString()} ر.س</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">ضريبة 15%</span><span className="text-foreground">{data.tax.toFixed(2)} ر.س</span></div>
             {data.discount > 0 && (
-              <div className="flex justify-between text-primary"><span>خصم</span><span>-{data.discount.toFixed(2)} ر.س</span></div>
+              <>
+                <div className="flex justify-between"><span className="text-muted-foreground">المبلغ قبل الخصم</span><span className="text-foreground">{formatSar(data.total + data.discount)} ر.س</span></div>
+                <div className="flex justify-between text-primary"><span>الخصم</span><span dir="ltr">&minus;{formatSar(data.discount)} ر.س</span></div>
+              </>
             )}
+            <div className="flex justify-between"><span className="text-muted-foreground">المجموع الفرعي (غير شامل الضريبة)</span><span className="text-foreground">{formatSar(data.subtotal)} ر.س</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">ضريبة القيمة المضافة 15%</span><span className="text-foreground">{formatSar(data.tax)} ر.س</span></div>
             <div className="flex justify-between text-base font-bold border-t border-foreground/20 pt-2 mt-2">
-              <span className="text-foreground">الإجمالي</span>
-              <span className="text-foreground">{data.total.toFixed(2)} ر.س</span>
+              <span className="text-foreground">الإجمالي (شامل الضريبة)</span>
+              <span className="text-foreground">{formatSar(data.total)} ر.س</span>
             </div>
           </div>
 

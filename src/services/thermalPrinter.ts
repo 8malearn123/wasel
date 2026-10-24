@@ -1,3 +1,4 @@
+import { formatSar } from '@/lib/money';
 /**
  * Thermal Printer Service
  * Supports direct IP printing via:
@@ -148,8 +149,8 @@ function buildESCPOSReceipt(data: ReceiptData, paperWidth: PaperWidth): number[]
   // Items
   for (const item of data.items) {
     addText(item.name);
-    const qtyPrice = `${item.quantity} x ${item.price.toFixed(2)}`;
-    const total = (item.quantity * item.price).toFixed(2);
+    const qtyPrice = `${item.quantity} x ${formatSar(item.price)}`;
+    const total = formatSar(item.quantity * item.price);
     addText(padLine(qtyPrice, `${total} ر.س`));
     if (item.identifier) {
       addText(`  ${item.identifier}`);
@@ -159,15 +160,16 @@ function buildESCPOSReceipt(data: ReceiptData, paperWidth: PaperWidth): number[]
   addLine();
 
   // Totals
-  addText(padLine('المجموع', `${data.subtotal.toFixed(2)} ر.س`));
-  addText(padLine('ضريبة 15%', `${data.tax.toFixed(2)} ر.س`));
   if (data.discount > 0) {
-    addText(padLine('خصم', `-${data.discount.toFixed(2)} ر.س`));
+    addText(padLine('قبل الخصم', `${formatSar(data.total + data.discount)} ر.س`));
+    addText(padLine('الخصم', `-${formatSar(data.discount)} ر.س`));
   }
+  addText(padLine('المجموع الفرعي', `${formatSar(data.subtotal)} ر.س`));
+  addText(padLine('ضريبة 15%', `${formatSar(data.tax)} ر.س`));
 
   add(...ESCPOS.BOLD_ON);
   add(...ESCPOS.DOUBLE_ON);
-  addText(padLine('الإجمالي', `${data.total.toFixed(2)}`));
+  addText(padLine('الإجمالي', `${formatSar(data.total)}`));
   add(...ESCPOS.DOUBLE_OFF);
   add(...ESCPOS.BOLD_OFF);
 
@@ -191,10 +193,10 @@ function buildESCPOSReceipt(data: ReceiptData, paperWidth: PaperWidth): number[]
 
 function buildEpsonXML(data: ReceiptData, paperWidth: PaperWidth): string {
   const items = data.items.map(item => {
-    const total = (item.quantity * item.price).toFixed(2);
+    const total = formatSar(item.quantity * item.price);
     return `
       <text lang=\\\"ar\\\">${item.name}&#10;</text>
-      <text>  ${item.quantity} x ${item.price.toFixed(2)} = ${total}&#10;</text>
+      <text>  ${item.quantity} x ${formatSar(item.price)} = ${total}&#10;</text>
       ${item.identifier ? `<text>  ${item.identifier}&#10;</text>` : ''}
     `;
   }).join('');
@@ -221,10 +223,10 @@ function buildEpsonXML(data: ReceiptData, paperWidth: PaperWidth): string {
       ${items}
       
       <text>--------------------------------&#10;</text>
-      <text>المجموع: ${data.subtotal.toFixed(2)} ر.س&#10;</text>
-      <text>ضريبة 15%: ${data.tax.toFixed(2)} ر.س&#10;</text>
-      ${data.discount > 0 ? `<text>خصم: -${data.discount.toFixed(2)} ر.س&#10;</text>` : ''}
-      <text em=\\\"true\\\" dw=\\\"true\\\">الإجمالي: ${data.total.toFixed(2)} ر.س&#10;</text>
+      ${data.discount > 0 ? `<text>قبل الخصم: ${formatSar(data.total + data.discount)} ر.س&#10;</text><text>الخصم: -${formatSar(data.discount)} ر.س&#10;</text>` : ''}
+      <text>المجموع الفرعي: ${formatSar(data.subtotal)} ر.س&#10;</text>
+      <text>ضريبة 15%: ${formatSar(data.tax)} ر.س&#10;</text>
+      <text em=\\\"true\\\" dw=\\\"true\\\">الإجمالي: ${formatSar(data.total)} ر.س&#10;</text>
       <text em=\\\"false\\\" dw=\\\"false\\\">--------------------------------&#10;</text>
       <text>الدفع: ${data.paymentMethod}&#10;</text>
       
@@ -271,8 +273,8 @@ async function printEpson(config: PrinterConfig, data: ReceiptData): Promise<{ s
 
 function buildStarXML(data: ReceiptData, paperWidth: PaperWidth): string {
   const items = data.items.map(item => {
-    const total = (item.quantity * item.price).toFixed(2);
-    return `<text>${item.name}\\\\n  ${item.quantity} x ${item.price.toFixed(2)} = ${total}\\\\n${item.identifier ? `  ${item.identifier}\\\\n` : ''}</text>`;
+    const total = formatSar(item.quantity * item.price);
+    return `<text>${item.name}\\\\n  ${item.quantity} x ${formatSar(item.price)} = ${total}\\\\n${item.identifier ? `  ${item.identifier}\\\\n` : ''}</text>`;
   }).join('');
 
   return `<?xml version=\\\"1.0\\\" encoding=\\\"UTF-8\\\"?>
@@ -294,10 +296,10 @@ function buildStarXML(data: ReceiptData, paperWidth: PaperWidth): string {
       ${items}
       
       <TextData>--------------------------------\\\\n</TextData>
-      <TextData>المجموع: ${data.subtotal.toFixed(2)} ر.س\\\\n</TextData>
-      <TextData>ضريبة 15%: ${data.tax.toFixed(2)} ر.س\\\\n</TextData>
-      ${data.discount > 0 ? `<TextData>خصم: -${data.discount.toFixed(2)} ر.س\\\\n</TextData>` : ''}
-      <TextData bold=\\\"true\\\" width=\\\"2\\\">الإجمالي: ${data.total.toFixed(2)} ر.س\\\\n</TextData>
+      ${data.discount > 0 ? `<TextData>قبل الخصم: ${formatSar(data.total + data.discount)} ر.س\\\\n</TextData><TextData>الخصم: -${formatSar(data.discount)} ر.س\\\\n</TextData>` : ''}
+      <TextData>المجموع الفرعي: ${formatSar(data.subtotal)} ر.س\\\\n</TextData>
+      <TextData>ضريبة 15%: ${formatSar(data.tax)} ر.س\\\\n</TextData>
+      <TextData bold=\\\"true\\\" width=\\\"2\\\">الإجمالي: ${formatSar(data.total)} ر.س\\\\n</TextData>
       <TextData>--------------------------------\\\\n</TextData>
       <TextData>الدفع: ${data.paymentMethod}\\\\n</TextData>
       

@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import type { Sale, SaleItem, Device, Accessory, PaymentMethod } from '@/types/database';
 import { toast } from 'sonner';
+import { vatInclusive } from '@/lib/money';
 
 interface CartItem {
   id: string;
@@ -15,6 +16,22 @@ interface CartItem {
   quantity: number;
   deviceId?: string;
   accessoryId?: string;
+}
+
+/**
+ * A sale's lines as one insert. PostgREST takes a list only when every row has
+ * the same columns, so a device line still names accessory_id (null) and the
+ * other way round.
+ */
+export function saleLineRows(saleId: string, cart: CartItem[]) {
+  return cart.map(item => ({
+    sale_id: saleId,
+    device_id: item.type === 'device' ? item.deviceId ?? null : null,
+    accessory_id: item.type === 'accessory' ? item.accessoryId ?? null : null,
+    quantity: item.quantity,
+    unit_price: item.price,
+    cost_at_sale: item.cost ?? null,
+  }));
 }
 
 export function useSales() {
@@ -60,9 +77,9 @@ export function useSales() {
       return { error: new Error('Missing merchant, branch, or user') };
     }
 
-    const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const taxAmount = subtotal * 0.15; // 15% VAT
-    const totalAmount = subtotal + taxAmount - discountAmount;
+    // prices include VAT: the same split the cart and the invoice show
+    const gross = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const { subtotal, tax: taxAmount, discount, total: totalAmount } = vatInclusive(gross, discountAmount);
 
     // Generate invoice number
     const { data: invoiceData } = await supabase
@@ -81,7 +98,7 @@ export function useSales() {
         customer_phone: customerPhone,
         subtotal,
         tax_amount: taxAmount,
-        discount_amount: discountAmount,
+        discount_amount: discount,
         total_amount: totalAmount,
         payment_method: paymentMethod === 'apple_pay' ? 'card' : paymentMethod,
         ...(paymentMethod === 'apple_pay' ? { notes: 'Apple Pay' } : {}),
@@ -96,46 +113,48 @@ export function useSales() {
       return { error: saleError };
     }
 
-    // Create sale items and update inventory
-    for (const item of cart) {
-      // Create sale item
-      await supabase
-        .from('sale_items')
-        .insert({
-          sale_id: sale.id,
-          device_id: item.type === 'device' ? item.deviceId : null,
-          accessory_id: item.type === 'accessory' ? item.accessoryId : null,
-          quantity: item.quantity,
-          unit_price: item.price,
-          cost_at_sale: item.cost
-        });
+    // The lines in one request, then the stock in parallel. This used to be
+    // two or three requests per line, one after the other, followed by a
+    // reload of the last 100 sales with their lines and products before the
+    // till could say «done» — 8–10 seconds on a mobile connection.
+    const { error: itemsError } = await supabase
+      .from('sale_items')
+      .insert(saleLineRows(sale.id, cart));
 
-      // Update inventory
-      if (item.type === 'device' && item.deviceId) {
-        await supabase
-          .from('devices')
-          .update({ status: 'sold' })
-          .eq('id', item.deviceId);
-      } else if (item.type === 'accessory' && item.accessoryId) {
-        // Decrement accessory quantity
+    if (itemsError) {
+      // an invoice without its lines would count as revenue with nothing sold
+      await supabase.from('sales').delete().eq('id', sale.id);
+      toast.error(itemsError.message);
+      return { error: itemsError };
+    }
+
+    const deviceIds = cart.filter(i => i.type === 'device' && i.deviceId).map(i => i.deviceId as string);
+    const accessoryLines = cart.filter(i => i.type === 'accessory' && i.accessoryId);
+    const stockUpdates: PromiseLike<unknown>[] = [];
+    if (deviceIds.length) {
+      stockUpdates.push(supabase.from('devices').update({ status: 'sold' }).in('id', deviceIds));
+    }
+    for (const item of accessoryLines) {
+      stockUpdates.push((async () => {
         const { data: acc } = await supabase
           .from('accessories')
           .select('quantity')
-          .eq('id', item.accessoryId)
+          .eq('id', item.accessoryId as string)
           .single();
-        
         if (acc) {
           await supabase
             .from('accessories')
             .update({ quantity: Math.max(0, acc.quantity - item.quantity) })
-            .eq('id', item.accessoryId);
+            .eq('id', item.accessoryId as string);
         }
-      }
+      })());
     }
+    await Promise.all(stockUpdates);
 
-    await fetchSales();
-    toast.success(`Sale completed! Invoice: ${invoiceNumber}`);
-    
+    // the history refreshes on its own; the sale is confirmed already
+    void fetchSales();
+    toast.success(`تمت عملية البيع — فاتورة ${invoiceNumber}`);
+
     return { data: sale, error: null };
   };
 
@@ -191,15 +210,18 @@ export function useSales() {
     const sale = sales.find(s => s.id === saleId);
     if (!sale) return { error: new Error('Sale not found') };
 
-    const patch: typeof updates & { total_amount?: number } = { ...updates };
+    const patch: typeof updates & { total_amount?: number; subtotal?: number; tax_amount?: number } = { ...updates };
 
     // A changed discount has to carry through to the invoice total, or the
     // stored total stops matching its own lines
     if (updates.discount_amount !== undefined) {
-      const beforeDiscount = Number(sale.subtotal) + Number(sale.tax_amount);
-      const discount = Math.min(Math.max(updates.discount_amount, 0), beforeDiscount);
-      patch.discount_amount = discount;
-      patch.total_amount = beforeDiscount - discount;
+      // what the lines came to before any discount, as the customer saw it
+      const gross = Number(sale.total_amount) + Number(sale.discount_amount || 0);
+      const next = vatInclusive(gross, updates.discount_amount);
+      patch.discount_amount = next.discount;
+      patch.total_amount = next.total;
+      patch.subtotal = next.subtotal;
+      patch.tax_amount = next.tax;
     }
 
     const { error } = await supabase

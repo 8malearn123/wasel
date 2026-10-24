@@ -18,6 +18,7 @@ import {
   addressLine, addressProblem, loadCustomer, saveCustomer, orderAddress, shippingOptions, shippingCost,
   normaliseShortCode, EMPTY_ADDRESS, type CheckoutCustomer, type NationalAddress,
 } from '@/lib/storeCheckout';
+import { roundSar, VAT_RATE } from '@/lib/money';
 
 // The map (and Leaflet) loads only when the customer opens the address form
 const DeliveryMapPicker = lazy(() =>
@@ -52,8 +53,9 @@ export function StoreCheckoutPage({ store, designExtras, placeOrder }: Props) {
   const currency = store.currency_symbol || 'ر.س';
   const shipping = shippingCost(option, subtotal, store);
   // Delivery is charged on website orders only, and VAT applies to it as well
-  const tax = Math.round((subtotal + shipping) * 0.15 * 100) / 100;
-  const total = subtotal + tax + shipping;
+  // the same sums placeOrder stores
+  const tax = roundSar((subtotal + shipping) * VAT_RATE);
+  const total = roundSar(subtotal + tax + shipping);
   const freeShipping = !!store.free_shipping_threshold && subtotal >= store.free_shipping_threshold;
 
   if (items.length === 0) {

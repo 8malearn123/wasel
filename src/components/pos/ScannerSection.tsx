@@ -70,7 +70,7 @@ export function ScannerSection({ onScan, isSearching }: ScannerSectionProps) {
           onClick={() => setIsScanning(!isScanning)}
         >
           <Camera className={cn("w-5 h-5", isRTL ? "ml-2" : "mr-2")} />
-          Camera
+          {isRTL ? "كاميرا" : "Camera"}
         </Button>
       </div>
 
@@ -81,8 +81,8 @@ export function ScannerSection({ onScan, isSearching }: ScannerSectionProps) {
           className="mt-4 p-8 bg-muted/30 rounded-lg border-2 border-dashed border-border text-center"
         >
           <Camera className="w-12 h-12 mx-auto text-muted-foreground mb-2" />
-          <p className="text-muted-foreground">Camera scanning mode active</p>
-          <p className="text-sm text-muted-foreground">Position barcode in front of camera</p>
+          <p className="text-muted-foreground">{isRTL ? "المسح بالكاميرا مفعّل" : "Camera scanning mode active"}</p>
+          <p className="text-sm text-muted-foreground">{isRTL ? "وجّه الباركود نحو الكاميرا" : "Position barcode in front of camera"}</p>
         </motion.div>
       )}
     </motion.div>

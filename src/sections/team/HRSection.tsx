@@ -19,6 +19,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
+import { useCurrentPlan } from '@/hooks/useCurrentPlan';
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n";
 import { toast } from "sonner";
@@ -50,6 +51,7 @@ const ROLE_LABELS: Record<string, { ar: string; en: string; cls: string }> = {
 export default function HRSection() {
   const { isRTL } = useLanguage();
   const { merchant, subscription } = useAuth();
+  const { name: planName } = useCurrentPlan();
   const { users, loading } = useMerchantUsers();
   const [hr, setHr] = useState<Record<string, HRInfo>>(loadHR);
   const [editing, setEditing] = useState<MerchantUser | null>(null);
@@ -60,7 +62,7 @@ export default function HRSection() {
   const { settings: hrSettings, save: saveHRSettings } = useHRSettings();
   const [showAttendanceReport, setShowAttendanceReport] = useState(false);
   const [showPayroll, setShowPayroll] = useState(false);
-  const isMax = subscription?.plan === 'Distributor' || subscription?.plan === 'trial';
+  const isMax = planName === 'Distributor' || planName === 'trial';
   // سجل الحضور: دخول/انصراف الكاشير من نقطة البيع (آخر ٧ أيام)
   const [attendance, setAttendance] = useState<Array<{ user_id: string; action: string; created_at: string }>>([]);
 

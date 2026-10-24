@@ -21,6 +21,7 @@ import { ColorWheel } from '@/components/common/ColorWheel';
 import { CARRIERS } from '@/lib/shipping';
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { useCurrentPlan } from '@/hooks/useCurrentPlan';
 import { useStoreSettings, useStorePages, uploadStoreAsset, DEFAULT_HOME_SECTIONS, type StorePage, type DesignExtras } from "@/hooks/useOnlineStore";
 import { toast } from "sonner";
 
@@ -175,6 +176,7 @@ const THEMES = [
 
 export default function OnlineStoreSection() {
   const { merchant, subscription } = useAuth();
+  const { name: planName } = useCurrentPlan();
   const { settings, categories, loading, initStore, updateSettings, addCategory, removeCategory } = useStoreSettings();
   const { pages, upsertPage, deletePage, designExtras, saveDesignExtras } = useStorePages();
   const [newCat, setNewCat] = useState("");
@@ -203,8 +205,8 @@ export default function OnlineStoreSection() {
   const dragIdx = useRef<number | null>(null);
 
   // باقة ماكس (الموزع) والفترة التجريبية: استوديو التصميم الكامل — برو: محرر مبسط
-  const isMax = subscription?.plan === 'Distributor' || subscription?.plan === 'trial';
-  const isPro = subscription?.plan === 'Enterprise';
+  const isMax = planName === 'Distributor' || planName === 'trial';
+  const isPro = planName === 'Enterprise';
   const [extras, setExtras] = useState<DesignExtras>({ gallery: [] });
   const [extrasDirty, setExtrasDirty] = useState(false);
   const [extrasLoaded, setExtrasLoaded] = useState(false);

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { deviceCounts, accessoryCounts, unitsSold } from '@/lib/inventoryMetrics';
 import { startOfDay, subDays, format, startOfWeek, endOfWeek } from 'date-fns';
 
 export interface DashboardMetrics {
@@ -8,7 +9,10 @@ export interface DashboardMetrics {
   yesterdaysRevenue: number;
   unitsSoldToday: number;
   unitsSoldYesterday: number;
+  /** not sold — the products page's and the reports' figure */
   devicesInStock: number;
+  /** status 'available' */
+  devicesForSale: number;
   devicesLastWeek: number;
   accessoriesInStock: number;
   accessoriesLastWeek: number;
@@ -52,6 +56,7 @@ export function useDashboardData() {
   const [recentSales, setRecentSales] = useState<RecentSale[]>([]);
   const [branchStats, setBranchStats] = useState<BranchStats[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchMetrics = useCallback(async () => {
     if (!merchant) return;
@@ -72,26 +77,25 @@ export function useDashboardData() {
       // Today's sales
       supabase
         .from('sales')
-        .select('total_amount, subtotal, discount_amount')
+        .select('total_amount, subtotal, discount_amount, items:sale_items(quantity)')
         .eq('merchant_id', merchant.id)
         .gte('sale_date', today),
       // Yesterday's sales
       supabase
         .from('sales')
-        .select('total_amount')
+        .select('total_amount, items:sale_items(quantity)')
         .eq('merchant_id', merchant.id)
         .gte('sale_date', yesterday)
         .lt('sale_date', today),
-      // Devices in stock
+      // Devices — counted with the products page's and the reports' definition
       supabase
         .from('devices')
-        .select('id', { count: 'exact', head: true })
-        .eq('merchant_id', merchant.id)
-        .eq('status', 'available'),
+        .select('status, price')
+        .eq('merchant_id', merchant.id),
       // Accessories in stock
       supabase
         .from('accessories')
-        .select('quantity')
+        .select('quantity, price')
         .eq('merchant_id', merchant.id),
       // Pending repairs
       supabase
@@ -107,11 +111,18 @@ export function useDashboardData() {
         .neq('payment_status', 'paid'),
     ]);
 
+    // a refused query used to read as an empty list — a dashboard of zeros
+    // that looked like a quiet day rather than a failure
+    const failed = [todaySalesRes, yesterdaySalesRes, devicesRes, accessoriesRes, pendingRepairsRes, unpaidPORes]
+      .find(r => r.error);
+    if (failed?.error) throw new Error(failed.error.message);
+
     const todayRevenue = (todaySalesRes.data || []).reduce((s, r) => s + Number(r.total_amount || 0), 0);
     const yesterdayRevenue = (yesterdaySalesRes.data || []).reduce((s, r) => s + Number(r.total_amount || 0), 0);
-    const unitsSoldToday = todaySalesRes.data?.length || 0;
-    const devicesInStock = devicesRes.count || 0;
-    const totalAccessories = (accessoriesRes.data || []).reduce((s, a) => s + Number(a.quantity || 0), 0);
+    // pieces on today's invoices, not the number of invoices
+    const unitsSoldToday = unitsSold(todaySalesRes.data || []);
+    const devices = deviceCounts(devicesRes.data || []);
+    const totalAccessories = accessoryCounts(accessoriesRes.data || []).pieces;
 
     const supplierDebt = (unpaidPORes.data || []).reduce((s, po) => {
       return s + (Number(po.total_amount || 0) - Number(po.paid_amount || 0));
@@ -121,8 +132,9 @@ export function useDashboardData() {
       todaysRevenue: todayRevenue,
       yesterdaysRevenue: yesterdayRevenue,
       unitsSoldToday,
-      unitsSoldYesterday: yesterdaySalesRes.data?.length || 0,
-      devicesInStock,
+      unitsSoldYesterday: unitsSold(yesterdaySalesRes.data || []),
+      devicesInStock: devices.inStock,
+      devicesForSale: devices.available,
       devicesLastWeek: 0,
       accessoriesInStock: totalAccessories,
       accessoriesLastWeek: 0,
@@ -267,15 +279,25 @@ export function useDashboardData() {
   }, [merchant]);
 
   const fetchAll = useCallback(async () => {
+    // without the shop there is nothing to count yet: stay loading rather
+    // than settle on zeros
+    if (!merchant) return;
     setLoading(true);
-    await Promise.all([
-      fetchMetrics(),
-      fetchSalesChart(),
-      fetchRecentSales(),
-      fetchBranchStats(),
-    ]);
-    setLoading(false);
-  }, [fetchMetrics, fetchSalesChart, fetchRecentSales, fetchBranchStats]);
+    setError(null);
+    try {
+      await Promise.all([
+        fetchMetrics(),
+        fetchSalesChart(),
+        fetchRecentSales(),
+        fetchBranchStats(),
+      ]);
+    } catch (err) {
+      console.error('[dashboard]', err);
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
+  }, [merchant, fetchMetrics, fetchSalesChart, fetchRecentSales, fetchBranchStats]);
 
   useEffect(() => {
     fetchAll();
@@ -287,6 +309,7 @@ export function useDashboardData() {
     recentSales,
     branchStats,
     loading,
+    error,
     refresh: fetchAll,
   };
 }

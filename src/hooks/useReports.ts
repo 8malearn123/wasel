@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { deviceCounts, accessoryCounts, stockValue, isInStock } from '@/lib/inventoryMetrics';
 import type { Sale, Device, Accessory, Branch } from '@/types/database';
 
 interface SalesReport {
@@ -15,13 +16,21 @@ interface SalesReport {
 
 interface InventoryReport {
   totalDevices: number;
+  /** not sold — the figure the dashboard and the products page show */
+  inStockDevices: number;
   availableDevices: number;
   reservedDevices: number;
+  /** on their way between branches — still the shop's stock */
+  transferredDevices: number;
+  repairDevices: number;
   soldDevices: number;
   totalAccessories: number;
   lowStockAccessories: number;
+  /** at cost, in-stock devices and every accessory piece */
   deviceValue: number;
   accessoryValue: number;
+  /** at selling price — the products page's «القيمة الإجمالية» */
+  retailValue: number;
 }
 
 interface BranchReport {
@@ -171,26 +180,30 @@ export function useReports() {
   }, [salesData]);
 
   const getInventoryReport = useCallback((): InventoryReport => {
-    const availableDevices = devices.filter(d => d.status === 'available');
-    const reservedDevices = devices.filter(d => d.status === 'reserved');
-    const soldDevices = devices.filter(d => d.status === 'sold');
-    const lowStockAccessories = accessories.filter(a => a.quantity <= a.min_quantity);
+    // the same definitions as the dashboard and the products page
+    const counts = deviceCounts(devices);
+    const pieces = accessoryCounts(accessories);
+    const value = stockValue(devices, accessories);
     return {
-      totalDevices: devices.length,
-      availableDevices: availableDevices.length,
-      reservedDevices: reservedDevices.length,
-      soldDevices: soldDevices.length,
-      totalAccessories: accessories.reduce((sum, a) => sum + a.quantity, 0),
-      lowStockAccessories: lowStockAccessories.length,
-      deviceValue: availableDevices.reduce((sum, d) => sum + Number(d.price), 0),
-      accessoryValue: accessories.reduce((sum, a) => sum + Number(a.price) * a.quantity, 0)
+      totalDevices: counts.total,
+      inStockDevices: counts.inStock,
+      availableDevices: counts.available,
+      reservedDevices: counts.reserved,
+      transferredDevices: counts.transferred,
+      repairDevices: counts.repair + counts.other,
+      soldDevices: counts.sold,
+      totalAccessories: pieces.pieces,
+      lowStockAccessories: pieces.lowStock,
+      deviceValue: value.deviceCost,
+      accessoryValue: value.accessoryCost,
+      retailValue: value.retail,
     };
   }, [devices, accessories]);
 
   const getBranchReport = useCallback((): BranchReport[] => {
     return branches.map(branch => {
       const branchSales = salesData.filter(s => s.branch_id === branch.id);
-      const branchDevices = devices.filter(d => d.branch_id === branch.id && d.status === 'available');
+      const branchDevices = devices.filter(d => d.branch_id === branch.id && isInStock(d));
       const branchAccessories = accessories.filter(a => a.branch_id === branch.id);
       return {
         branchId: branch.id, branchName: branch.name,
@@ -289,8 +302,8 @@ export function useReports() {
       todaySalesCount: todaySales.length, todayRevenue, todayProfit,
       thisMonthSalesCount: thisMonthSales.length, thisMonthRevenue, thisMonthProfit,
       revenueChange,
-      inventoryValue: inventory.deviceValue + inventory.accessoryValue,
-      availableDevices: inventory.availableDevices,
+      inventoryValue: inventory.retailValue,
+      availableDevices: inventory.inStockDevices,
       lowStockItems: inventory.lowStockAccessories
     };
   }, [salesData, getInventoryReport]);

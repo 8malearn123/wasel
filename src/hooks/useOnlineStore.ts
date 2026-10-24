@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { shippingOptions, shippingCost as shippingCostFor } from '@/lib/storeCheckout';
+import { roundSar, VAT_RATE } from '@/lib/money';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
@@ -554,9 +555,9 @@ export function usePublicStore(slug: string) {
     const subtotal = orderData.items.reduce((sum, i) => sum + i.unit_price * i.quantity, 0);
     const option = shippingOptions(store, designExtras?.carriers).find(o => o.id === orderData.shipping_option);
     const shippingCost = shippingCostFor(option, subtotal, store);
-    // VAT on the goods and on the delivery fee
-    const taxAmount = Math.round((subtotal + Number(shippingCost || 0)) * 0.15 * 100) / 100;
-    const totalAmount = subtotal + taxAmount + shippingCost;
+    // VAT on the goods and on the delivery fee — the same sums the checkout page shows
+    const taxAmount = roundSar((subtotal + Number(shippingCost || 0)) * VAT_RATE);
+    const totalAmount = roundSar(subtotal + taxAmount + shippingCost);
 
     const { data: order, error: orderErr } = await supabase
       .from('online_orders')
@@ -569,6 +570,9 @@ export function usePublicStore(slug: string) {
         shipping_address: orderData.shipping_address,
         shipping_city: orderData.shipping_city,
         shipping_cost: shippingCost,
+        // the carrier the customer picked, so the shipping step starts from it
+        // and the tracking link points at the right company ('store' = the shop's own delivery)
+        shipping_provider: option && option.id !== 'store' ? option.id : null,
         payment_method: orderData.payment_method,
         subtotal,
         tax_amount: taxAmount,
@@ -588,7 +592,13 @@ export function usePublicStore(slug: string) {
       unit_price: i.unit_price,
     }));
 
-    await supabase.from('online_order_items').insert(items as any);
+    const { error: itemsErr } = await supabase.from('online_order_items').insert(items as any);
+    if (itemsErr) {
+      // an order with no lines cannot be prepared or shipped; say so instead of thanking the customer
+      toast.error('تعذّر حفظ منتجات الطلب، يرجى المحاولة مرة أخرى');
+      console.error('[store] order items refused:', itemsErr.message);
+      return null;
+    }
 
     return { orderNumber, totalAmount, shippingCost };
   };
