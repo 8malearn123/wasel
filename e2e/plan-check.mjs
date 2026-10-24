@@ -13,6 +13,17 @@ const getAs = (tok) => async (p) => {
   const j = await r.json(); if (!r.ok) console.log(`ERR ${p}: ${JSON.stringify(j)}`); return Array.isArray(j) ? j : [];
 };
 
+// Put the two demo accounts back on the plans their names say, with the
+// function the app's demo switcher uses (it writes plan, plan_id and limits together).
+for (const [email, plan] of [['demo-enterprise@wasil.demo', 'Enterprise'], ['demo-basic@wasil.demo', 'Basic']]) {
+  const s = await signIn(email);
+  const r = await fetch(`${SUPA}/rest/v1/rpc/demo_switch_plan`, {
+    method: 'POST', headers: { apikey: ANON, Authorization: `Bearer ${s.access_token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ _plan_name: plan }),
+  });
+  console.log(`SWITCH ${email} → ${plan}: ${r.status} ${(await r.text()).slice(0, 200)}`);
+}
+
 const browser = await chromium.launch(process.env.CHANNEL ? { channel: process.env.CHANNEL } : {});
 let printedPlans = false;
 for (const [label, email] of [['LITE', 'demo-basic@wasil.demo'], ['PRO', 'demo-enterprise@wasil.demo'], ['MAX', 'demo-distributor@wasil.demo']]) {
