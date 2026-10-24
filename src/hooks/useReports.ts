@@ -20,6 +20,9 @@ interface InventoryReport {
   inStockDevices: number;
   availableDevices: number;
   reservedDevices: number;
+  /** on their way between branches — still the shop's stock */
+  transferredDevices: number;
+  repairDevices: number;
   soldDevices: number;
   totalAccessories: number;
   lowStockAccessories: number;
@@ -186,6 +189,8 @@ export function useReports() {
       inStockDevices: counts.inStock,
       availableDevices: counts.available,
       reservedDevices: counts.reserved,
+      transferredDevices: counts.transferred,
+      repairDevices: counts.repair + counts.other,
       soldDevices: counts.sold,
       totalAccessories: pieces.pieces,
       lowStockAccessories: pieces.lowStock,

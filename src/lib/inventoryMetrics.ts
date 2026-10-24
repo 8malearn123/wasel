@@ -26,13 +26,15 @@ const n = (v: number | string | null | undefined) => {
 export const isInStock = (d: DeviceLike) => d.status !== 'sold';
 
 export function deviceCounts(devices: DeviceLike[]) {
-  const c = { total: devices.length, inStock: 0, available: 0, reserved: 0, sold: 0, other: 0 };
+  const c = { total: devices.length, inStock: 0, available: 0, reserved: 0, transferred: 0, repair: 0, sold: 0, other: 0 };
   for (const d of devices) {
     if (d.status === 'sold') c.sold++;
     else {
       c.inStock++;
       if (d.status === 'available') c.available++;
       else if (d.status === 'reserved') c.reserved++;
+      else if (d.status === 'transferred') c.transferred++;
+      else if (d.status === 'repair' || d.status === 'in_repair') c.repair++;
       else c.other++;
     }
   }

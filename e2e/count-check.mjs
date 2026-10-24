@@ -34,7 +34,8 @@ console.log(`NEW expected: in stock=${unsold.length} for sale=${by.available || 
 const browser = await chromium.launch(process.env.CHANNEL ? { channel: process.env.CHANNEL } : {});
 const context = await browser.newContext({ locale: 'ar', viewport: { width: 1440, height: 1000 } });
 await context.addInitScript(([k, v]) => { localStorage.setItem(k, v); localStorage.setItem('language', 'ar'); }, ['sb-ynwddyxzypbcftlevuam-auth-token', JSON.stringify(session)]);
-await context.route(`${SUPA}/rest/v1/**`, route => route.request().method() === 'GET' || route.request().url().includes('/rpc/') ? route.continue() : route.abort());
+// reads only: GET and HEAD (the dashboard counts with HEAD), and the read RPCs
+await context.route(`${SUPA}/rest/v1/**`, route => ['GET', 'HEAD'].includes(route.request().method()) || route.request().url().includes('/rpc/') ? route.continue() : route.abort());
 const page = await context.newPage();
 for (const [label, path, pick] of [
   ['dashboard', '/', 'main'],
@@ -42,7 +43,7 @@ for (const [label, path, pick] of [
   ['reports-sales', '/reports?tab=sales', 'main'],
   ['reports-inventory', '/reports?tab=inventory', 'main'],
 ]) {
-  await page.goto(SITE + path); await page.waitForTimeout(7000);
+  await page.goto(SITE + path); await page.waitForTimeout(12000);
   const text = await page.evaluate(sel => (document.querySelector(sel) || document.body).innerText.replace(/\s+/g, ' ').slice(0, 900), pick);
   console.log(`SCREEN ${label}: ${text}`);
   const shot = await page.screenshot({ type: 'jpeg', quality: 70 });

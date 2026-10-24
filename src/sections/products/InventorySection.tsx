@@ -460,9 +460,15 @@ export default function InventorySection() {
                 {/* ترويسة ثنائية اللغة — من تصميم Devices Inventory */}
                 <div className="px-6 pt-5 pb-3 flex items-end justify-between flex-wrap gap-2">
                   <div>
-                    <h2 className="text-lg font-bold text-foreground mt-0.5">{isRTL ? "الأجهزة في المخزون" : "Devices in Stock"}</h2>
+                    {/* the list holds every device, sold ones too; it was titled
+                        «in stock» with 24 under it while the card above said 11 */}
+                    <h2 className="text-lg font-bold text-foreground mt-0.5">{isRTL ? "كل الأجهزة" : "All devices"}</h2>
                   </div>
-                  <p className="text-xs text-muted-foreground">{arNum(filteredDevices.length)} {isRTL ? "جهازاً" : "devices"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {isRTL
+                      ? `${arNum(filteredDevices.length)} جهازاً · ${arNum(deviceStats.inStock)} في المخزون · ${arNum(deviceStats.sold)} مباع`
+                      : `${filteredDevices.length} devices · ${deviceStats.inStock} in stock · ${deviceStats.sold} sold`}
+                  </p>
                 </div>
                 <div className="overflow-x-auto">
                 <table className="w-full">

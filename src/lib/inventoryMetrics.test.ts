@@ -16,7 +16,7 @@ const accessories = [
 
 describe('one definition per figure', () => {
   it('counts in stock as not sold, for sale as available', () => {
-    expect(deviceCounts(devices)).toEqual({ total: 6, inStock: 4, available: 2, reserved: 1, sold: 2, other: 1 });
+    expect(deviceCounts(devices)).toEqual({ total: 6, inStock: 4, available: 2, reserved: 1, transferred: 0, repair: 1, sold: 2, other: 0 });
   });
 
   it('values unsold devices and every accessory piece, at price and at cost', () => {
@@ -37,5 +37,19 @@ describe('one definition per figure', () => {
 
   it('ignores missing numbers rather than producing NaN', () => {
     expect(stockValue([{ status: 'available', price: null }], [{ quantity: null, price: 5 }]).retail).toBe(0);
+  });
+});
+
+describe('the demo Max shop as it is in the database', () => {
+  // 24 devices on 24 Oct 2026: 4 for sale, 13 sold, 7 in transfer
+  const live = [
+    ...Array.from({ length: 4 }, () => ({ status: 'available', price: 1 })),
+    ...Array.from({ length: 13 }, () => ({ status: 'sold', price: 1 })),
+    ...Array.from({ length: 7 }, () => ({ status: 'transferred', price: 1 })),
+  ];
+  it('counts every status, so the parts add up to all 24', () => {
+    const c = deviceCounts(live);
+    expect(c).toMatchObject({ total: 24, inStock: 11, available: 4, transferred: 7, sold: 13 });
+    expect(c.available + c.reserved + c.transferred + c.repair + c.other + c.sold).toBe(c.total);
   });
 });
