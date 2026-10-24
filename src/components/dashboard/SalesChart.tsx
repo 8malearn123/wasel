@@ -54,7 +54,7 @@ export function SalesChart({ data, loading }: SalesChartProps) {
             </p>
           </div>
           <div className="text-center p-3 rounded-lg bg-accent/5 border border-accent/10">
-            <p className="text-xs text-muted-foreground">{isRTL ? "عدد الفواتير" : "Invoices"}</p>
+            <p className="text-xs text-muted-foreground">{isRTL ? "عدد الفواتير · آخر 7 أيام" : "Invoices · last 7 days"}</p>
             <p className="text-lg font-bold text-foreground">
               {data.reduce((s, d) => s + d.count, 0)}
             </p>

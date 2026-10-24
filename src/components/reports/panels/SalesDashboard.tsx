@@ -198,7 +198,9 @@ export function SalesDashboard({
             off at the card edge */}
         <ReportCard
           title={r.deviceStatus}
-          description={statusTotal > 0 ? `${fmtCount(statusTotal)} ${r.devices}` : undefined}
+          // the devices as they stand now — «مباع» counts every device ever sold,
+          // not the invoices of a period
+          description={statusTotal > 0 ? `${fmtCount(statusTotal)} ${r.devices} · ${isRTL ? 'الحالة الآن' : 'as of now'}` : undefined}
         >
           {statusTotal === 0 ? (
             <div className="h-72"><PanelEmpty icon={Smartphone} text={r.noData} /></div>

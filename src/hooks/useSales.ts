@@ -81,6 +81,28 @@ export function useSales() {
     const gross = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const { subtotal, tax: taxAmount, discount, total: totalAmount } = vatInclusive(gross, discountAmount);
 
+    // A device is sold once. The till only offers devices for sale, but a cart
+    // can outlive that: the same iPhone was found on two invoices. The database
+    // has the last word before the invoice is made.
+    const deviceIds = cart.filter(i => i.type === 'device' && i.deviceId).map(i => i.deviceId as string);
+    if (deviceIds.length) {
+      const { data: current, error: statusError } = await supabase
+        .from('devices')
+        .select('id, model, status')
+        .in('id', deviceIds);
+      if (statusError) {
+        toast.error(statusError.message);
+        return { error: statusError };
+      }
+      const unavailable = (current || []).filter(d => d.status !== 'available');
+      if (unavailable.length || (current || []).length !== new Set(deviceIds).size) {
+        const names = unavailable.map(d => d.model).join('، ') || 'جهاز في السلة';
+        const error = new Error(`لا يمكن بيع ${names}: الجهاز غير متاح (مباع أو محجوز أو قيد التحويل). أزِله من السلة.`);
+        toast.error(error.message);
+        return { error };
+      }
+    }
+
     // Generate invoice number
     const { data: invoiceData } = await supabase
       .rpc('generate_invoice_number', { _merchant_id: merchant.id });
@@ -128,7 +150,6 @@ export function useSales() {
       return { error: itemsError };
     }
 
-    const deviceIds = cart.filter(i => i.type === 'device' && i.deviceId).map(i => i.deviceId as string);
     const accessoryLines = cart.filter(i => i.type === 'accessory' && i.accessoryId);
     const stockUpdates: PromiseLike<unknown>[] = [];
     if (deviceIds.length) {
