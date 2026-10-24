@@ -59,10 +59,12 @@ const LEGACY_TABS: Record<string, { section: Section; side: string }> = {
 const isOverdue = (credit: CreditTransaction) =>
   Boolean(credit.due_date) && new Date(credit.due_date as string) < new Date() && credit.status !== 'paid';
 
+// When the supplier's product row cannot be read (before migration
+// 20261023100100), say what kind of item it is rather than a bare «—»
 const listingName = (listing: WholesaleListing) =>
   listing.item_type === 'device'
-    ? `${listing.device?.brand || ''} ${listing.device?.model || ''}`.trim() || '—'
-    : listing.accessory?.name || '—';
+    ? `${listing.device?.brand || ''} ${listing.device?.model || ''}`.trim() || 'جهاز'
+    : listing.accessory?.name || 'إكسسوار';
 
 export default function WholesaleSection() {
   const { isRTL } = useLanguage();
@@ -593,7 +595,7 @@ export default function WholesaleSection() {
               <div className="space-y-4">
                 <div className="p-4 bg-muted rounded-lg">
                   <p className="font-medium">{listingName(selectedListing)}</p>
-                  <p className="text-sm text-muted-foreground">{t ? 'من: ' : 'From: '}{selectedListing.merchant?.name}</p>
+                  <p className="text-sm text-muted-foreground">{t ? 'من: ' : 'From: '}{selectedListing.merchant?.name || '—'}</p>
                   <p className="text-lg font-bold mt-1">{money(selectedListing.wholesale_price)}<span className="text-sm font-normal text-muted-foreground">{t ? ' / وحدة' : ' / unit'}</span></p>
                 </div>
                 <div>

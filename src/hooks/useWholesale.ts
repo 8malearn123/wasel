@@ -124,6 +124,22 @@ export function useWholesale() {
       loadParties(),
     ]);
 
+    // Until those functions are installed, a shop the caller deals with is
+    // still known by the name it publishes for its online store (store_settings
+    // is readable for published stores) — the supplier's own public name.
+    const ids = new Set<string>();
+    for (const l of (marketRes.data || []) as WholesaleListing[]) ids.add(l.merchant_id);
+    for (const o of [...(buyerRes.data || []), ...(supplierRes.data || [])] as WholesaleOrder[]) { ids.add(o.supplier_merchant_id); ids.add(o.buyer_merchant_id); }
+    for (const c of [...(creditsOutRes.data || []), ...(creditsInRes.data || [])] as unknown as CreditTransaction[]) { ids.add(c.supplier_merchant_id); ids.add(c.buyer_merchant_id); }
+    ids.delete(merchant.id);
+    const unnamed = [...ids].filter(id => !names.has(id));
+    if (unnamed.length) {
+      const { data: stores } = await supabase.from('store_settings').select('merchant_id, store_name').in('merchant_id', unnamed);
+      for (const st of (stores || []) as { merchant_id: string; store_name: string | null }[]) {
+        if (st.store_name) names.set(st.merchant_id, { merchant_id: st.merchant_id, name: st.store_name, phone: null });
+      }
+    }
+
     setMyListings(((listingsRes.data || []) as WholesaleListing[]).map(l => withProduct(l, names, products)));
     setMarketplace(((marketRes.data || []) as WholesaleListing[]).map(l => withProduct(l, names, products)));
     setMyOrders(((buyerRes.data || []) as WholesaleOrder[]).map(o => withParty(o, names)));
