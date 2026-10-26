@@ -1,0 +1,20 @@
+name: System check
+on:
+  push:
+    branches: [claude/sweet-knuth-u4nbzm]
+    paths: ['e2e/system-check.mjs', '.github/workflows/system-check.yml']
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci && npm run build
+      - run: (npx vite preview --port 4173 --strictPort > preview.log 2>&1 &) && sleep 5
+      - run: PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm i --no-save --no-package-lock playwright@1.48.2
+        working-directory: e2e
+      - run: export ANON=$(grep -E '^VITE_SUPABASE_PUBLISHABLE_KEY=' .env | cut -d= -f2- | tr -d '"') && cd e2e && node system-check.mjs
+        env:
+          CHANNEL: chrome
