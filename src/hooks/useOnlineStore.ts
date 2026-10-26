@@ -4,6 +4,7 @@ import { roundSar, VAT_RATE } from '@/lib/money';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { toOrderShipping } from '@/lib/shipping';
 
 export interface StoreSettings {
   id: string;
@@ -320,7 +321,7 @@ export function useStorePages() {
 
   const designExtras = parseDesignExtras(pages);
 
-  const saveDesignExtras = async (extras: DesignExtras) => {
+  const saveDesignExtras = async (extras: DesignExtras, savedMessage = 'تم حفظ التصميم') => {
     if (!merchant) return;
     const { error } = await supabase.from('store_pages').upsert({
       merchant_id: merchant.id,
@@ -332,7 +333,7 @@ export function useStorePages() {
     } as any, { onConflict: 'merchant_id,slug' });
     if (error) { toast.error(error.message); return; }
     await fetchPages();
-    toast.success('تم حفظ التصميم');
+    toast.success(savedMessage);
   };
 
   return {
@@ -444,8 +445,7 @@ export function useOnlineOrders() {
     const { error } = await supabase
       .from('online_orders')
       .update({
-        shipping_provider: provider,
-        tracking_number: trackingNumber,
+        ...toOrderShipping(provider, trackingNumber),
         status: 'shipped',
       } as any)
       .eq('id', orderId);
@@ -571,8 +571,9 @@ export function usePublicStore(slug: string) {
         shipping_city: orderData.shipping_city,
         shipping_cost: shippingCost,
         // the carrier the customer picked, so the shipping step starts from it
-        // and the tracking link points at the right company ('store' = the shop's own delivery)
-        shipping_provider: option && option.id !== 'store' ? option.id : null,
+        // and the tracking link points at the right company ('store' = the shop's own delivery);
+        // stored the way the column's enum accepts (see toOrderShipping)
+        ...toOrderShipping(option && option.id !== 'store' ? option.id : null),
         payment_method: orderData.payment_method,
         subtotal,
         tax_amount: taxAmount,

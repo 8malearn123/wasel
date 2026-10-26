@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
-  Truck, Plus, Pencil, Wifi, WifiOff, AlertCircle, Settings2, RefreshCw,
-  Loader2, Sparkles, PackageSearch,
+  Truck, PackageCheck, PackageOpen, CheckCircle2, Printer, ExternalLink, Loader2,
+  MapPin, Phone, User, Wallet, Save, Info, BarChart3,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import JsBarcode from 'jsbarcode';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,138 +12,63 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@/components/ui/table';
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { useTabParam } from '@/hooks/useTabParam';
 import { useLanguage } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import {
-  shippingService, aiService, usingMock, isOk,
-  type ShippingCarrier, type CarrierConnectionStatus, type AiInsight,
-} from '@/services';
-import {
-  LoadingState, EmptyState, ErrorState, UnavailableState, MockDataBanner,
-} from '@/components/common/StateViews';
+import { LoadingState, EmptyState } from '@/components/common/StateViews';
+import { useOnlineOrders, useStorePages, useStoreSettings, type OnlineOrder } from '@/hooks/useOnlineStore';
+import { CARRIERS, orderShipment, type CarrierSetting } from '@/lib/shipping';
+import { shipmentStage, shippingStats, collectOnDelivery, waybillHtml, type ShipmentStage } from '@/lib/shipments';
+import { formatSar } from '@/lib/money';
 
-const CONNECTION: Record<CarrierConnectionStatus, { ar: string; en: string; cls: string; icon: typeof Wifi }> = {
-  connected:      { ar: 'متصل',          en: 'Connected',      cls: 'bg-success/15 text-success', icon: Wifi },
-  disconnected:   { ar: 'غير متصل',      en: 'Disconnected',   cls: 'bg-muted text-muted-foreground', icon: WifiOff },
-  error:          { ar: 'خطأ في الاتصال', en: 'Connection error', cls: 'bg-destructive/15 text-destructive', icon: AlertCircle },
-  not_configured: { ar: 'لم يُهيّأ',      en: 'Not configured', cls: 'bg-warning/15 text-warning', icon: Settings2 },
-};
+/**
+ * Shipping, from the store's own orders: what is waiting to go out, what is on
+ * its way, what arrived; the carriers the store works with and their prices;
+ * and the figures those orders add up to. Each order is shipped here with a
+ * carrier and a tracking number, which gives the customer a link to the
+ * carrier's own tracking page, and a waybill is printed for the parcel.
+ *
+ * Not here, said so on the page: creating waybills in a carrier's system and
+ * reading statuses back from it — that needs an account and an API key from
+ * each carrier, and none is connected.
+ */
 
 const TABS = [
+  { key: 'shipments', ar: 'الشحنات', en: 'Shipments' },
   { key: 'carriers', ar: 'شركات الشحن', en: 'Carriers' },
-  { key: 'api', ar: 'إعدادات الاتصال', en: 'API settings' },
-  { key: 'ai', ar: 'تحليلات الشحن', en: 'Shipping insights' },
+  { key: 'insights', ar: 'تحليلات الشحن', en: 'Shipping insights' },
 ] as const;
 
-const EMPTY_FORM = { name: '', serviceType: '', logoUrl: '', isActive: true };
+const STAGES: { key: Exclude<ShipmentStage, 'closed'>; ar: string; en: string; cls: string }[] = [
+  { key: 'to_ship', ar: 'بانتظار الشحن', en: 'To ship', cls: 'bg-warning/10 text-warning border-warning/20' },
+  { key: 'shipped', ar: 'في الطريق', en: 'On the way', cls: 'bg-primary/10 text-primary border-primary/20' },
+  { key: 'delivered', ar: 'تم التسليم', en: 'Delivered', cls: 'bg-success/10 text-success border-success/20' },
+];
 
 export default function ShippingPage() {
   const { isRTL } = useLanguage();
   const t = isRTL;
-  const [activeTab, setActiveTab] = useTabParam('carriers');
+  const [activeTab, setActiveTab] = useTabParam('shipments');
+  const { orders, loading, updateOrderStatus, updateTracking, getOrderItems } = useOnlineOrders();
+  const { settings } = useStoreSettings();
+  const { designExtras, saveDesignExtras, loading: pagesLoading } = useStorePages();
 
-  const [carriers, setCarriers] = useState<ShippingCarrier[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const [editing, setEditing] = useState<ShippingCarrier | null>(null);
-  const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [saving, setSaving] = useState(false);
-  const [testing, setTesting] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    const result = await shippingService.listCarriers();
-    if (!isOk(result)) {
-      setError(result.error.message);
-      setLoading(false);
-      return;
-    }
-    setCarriers(result.data);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
-
-  const openCreate = () => { setForm(EMPTY_FORM); setEditing(null); setCreating(true); };
-  const openEdit = (carrier: ShippingCarrier) => {
-    setForm({
-      name: carrier.name,
-      serviceType: carrier.serviceType ?? '',
-      logoUrl: carrier.logoUrl ?? '',
-      isActive: carrier.isActive,
-    });
-    setEditing(carrier);
-  };
-  const close = () => { setCreating(false); setEditing(null); };
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    const payload = {
-      name: form.name.trim(),
-      serviceType: form.serviceType.trim() || null,
-      logoUrl: form.logoUrl.trim() || null,
-      isActive: form.isActive,
-    };
-    const result = editing
-      ? await shippingService.updateCarrier(editing.id, payload)
-      : await shippingService.createCarrier(payload);
-    setSaving(false);
-
-    if (!isOk(result)) { toast.error(result.error.message); return; }
-    toast.success(editing ? (t ? 'تم حفظ التعديلات' : 'Saved') : (t ? 'تمت إضافة الشركة' : 'Carrier added'));
-    close();
-    load();
-  };
-
-  const toggleActive = async (carrier: ShippingCarrier) => {
-    const result = await shippingService.setCarrierActive(carrier.id, !carrier.isActive);
-    if (!isOk(result)) { toast.error(result.error.message); return; }
-    load();
-  };
-
-  const test = async (carrier: ShippingCarrier) => {
-    setTesting(carrier.id);
-    const result = await shippingService.testConnection(carrier.id);
-    setTesting(null);
-    if (!isOk(result)) { toast.error(result.error.message); return; }
-    toast.success(result.data.message);
-    load();
-  };
+  const carrierSettings = designExtras?.carriers ?? [];
+  const stats = useMemo(() => shippingStats(orders), [orders]);
+  const cur = t ? 'ر.س' : 'SAR';
 
   return (
     <AppLayout
       title={t ? 'الشحن' : 'Shipping'}
-      subtitle={t ? 'شركات الشحن وإعدادات الاتصال' : 'Carriers and their connections'}
+      subtitle={t ? 'شحن طلبات المتجر الإلكتروني وتتبّعها' : 'Ship and track online store orders'}
     >
-      {usingMock('shipping') && <MockDataBanner what={t ? 'خدمة الشحن' : 'the shipping service'} />}
-      {usingMock('shipping') && (
-        // where shipping really works today: the carriers, prices and delivery
-        // times the store offers at checkout, and the tracking links on orders
-        <p className="-mt-2 mb-4 text-sm text-muted-foreground">
-          {t
-            ? 'شركات الشحن الفعلية التي يراها العميل عند الدفع — مع تكلفة كل شركة ومدة التوصيل — تُضبط من '
-            : 'The carriers customers actually see at checkout — each with its price and delivery time — are set in '}
-          <Link to="/sales?tab=store" className="font-medium text-primary underline-offset-4 hover:underline">
-            {t ? 'إعدادات المتجر الإلكتروني' : 'online store settings'}
-          </Link>
-          {t
-            ? '. الربط المباشر بأنظمة الشركات (إنشاء البوليصة وتحديث الحالة آليًا) يحتاج حسابًا ومفتاح API من كل شركة.'
-            : '. A direct link to the carriers\' systems (creating waybills, automatic status updates) needs an account and API key from each carrier.'}
-        </p>
-      )}
-
       <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-muted/50 border border-border mb-5">
         {TABS.map(tab => (
           <button key={tab.key} type="button" onClick={() => setActiveTab(tab.key)}
@@ -155,277 +81,335 @@ export default function ShippingPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsContent value="carriers" className="m-0 space-y-4">
-          <div className="flex justify-end">
-            <Button onClick={openCreate} className="gap-2">
-              <Plus className="w-4 h-4" />{t ? 'إضافة شركة' : 'Add carrier'}
-            </Button>
+        <TabsContent value="shipments" className="m-0 space-y-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <Kpi icon={PackageOpen} tone="text-warning bg-warning/10" label={t ? 'بانتظار الشحن' : 'To ship'} value={String(stats.toShip)} />
+            <Kpi icon={Truck} tone="text-primary bg-primary/10" label={t ? 'في الطريق' : 'On the way'} value={String(stats.shipped)} />
+            <Kpi icon={PackageCheck} tone="text-success bg-success/10" label={t ? 'تم التسليم' : 'Delivered'} value={String(stats.delivered)} />
+            <Kpi icon={Wallet} tone="text-primary bg-primary/10" label={t ? 'تحصيل مع المندوب' : 'Cash with couriers'} value={`${formatSar(stats.codInTransit)} ${cur}`} />
           </div>
-
-          {loading ? <LoadingState />
-            : error ? <ErrorState message={error} onRetry={load} />
-            : carriers.length === 0 ? (
-              <EmptyState icon={Truck}
-                title={t ? 'لم تُضف أي شركة شحن' : 'No carriers yet'}
-                description={t
-                  ? 'أضف شركة لتظهر هنا. بيانات الاتصال بالشركة يحفظها الخادم، ولا تُدخل من هذه الشاشة.'
-                  : 'Add one to see it here. Its credentials are stored by the backend, not entered on this screen.'}
-                action={<Button onClick={openCreate} className="gap-2"><Plus className="w-4 h-4" />{t ? 'إضافة شركة' : 'Add carrier'}</Button>} />
-            ) : (
-              <div className="bg-card rounded-xl border border-border overflow-hidden">
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader><TableRow>
-                      <TableHead>{t ? 'الشركة' : 'Carrier'}</TableHead>
-                      <TableHead className="text-center">{t ? 'نوع الخدمة' : 'Service'}</TableHead>
-                      <TableHead className="text-center">{t ? 'الحالة' : 'Status'}</TableHead>
-                      <TableHead className="text-center">{t ? 'الاتصال' : 'Connection'}</TableHead>
-                      <TableHead className="text-center">{t ? 'الشحنات' : 'Shipments'}</TableHead>
-                      <TableHead className="text-center">{t ? 'أُضيفت في' : 'Added'}</TableHead>
-                      <TableHead className="text-end">{t ? 'إجراءات' : 'Actions'}</TableHead>
-                    </TableRow></TableHeader>
-                    <TableBody>
-                      {carriers.map(carrier => {
-                        const conn = CONNECTION[carrier.connectionStatus];
-                        const ConnIcon = conn.icon;
-                        return (
-                          <TableRow key={carrier.id} className={carrier.isActive ? '' : 'opacity-60'}>
-                            <TableCell className="font-medium">
-                              <div className="flex items-center gap-2">
-                                {carrier.logoUrl
-                                  ? <img src={carrier.logoUrl} alt="" className="w-8 h-8 rounded object-contain bg-muted/30" />
-                                  : <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center">
-                                      <Truck className="w-4 h-4 text-primary" />
-                                    </div>}
-                                {carrier.name}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-center">{carrier.serviceType || '—'}</TableCell>
-                            <TableCell className="text-center">
-                              <Switch checked={carrier.isActive} onCheckedChange={() => toggleActive(carrier)} />
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <Badge className={cn(conn.cls, 'gap-1')}>
-                                <ConnIcon className="w-3 h-3" />{t ? conn.ar : conn.en}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-center tabular-nums">
-                              {/* dash, not 0 — the backend has not reported a count */}
-                              {carrier.shipmentCount ?? '—'}
-                            </TableCell>
-                            <TableCell className="text-center text-sm text-muted-foreground">
-                              {new Date(carrier.createdAt).toLocaleDateString(t ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-GB')}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-1 justify-end">
-                                <Button variant="ghost" size="sm" onClick={() => test(carrier)} disabled={testing === carrier.id}
-                                  title={t ? 'اختبار الاتصال' : 'Test connection'}>
-                                  {testing === carrier.id
-                                    ? <Loader2 className="w-4 h-4 animate-spin" />
-                                    : <RefreshCw className="w-4 h-4" />}
-                                </Button>
-                                <Button variant="ghost" size="sm" onClick={() => openEdit(carrier)} title={t ? 'تعديل' : 'Edit'}>
-                                  <Pencil className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            )}
+          <Shipments
+            orders={orders as OnlineOrder[]}
+            loading={loading}
+            carrierSettings={carrierSettings}
+            sender={{ name: settings?.store_name || (t ? 'المتجر' : 'Store'), phone: settings?.whatsapp_number }}
+            onShip={updateTracking}
+            onDelivered={id => updateOrderStatus(id, 'delivered')}
+            getOrderItems={getOrderItems}
+          />
         </TabsContent>
 
-        <TabsContent value="api" className="m-0">
-          <ApiSettings carriers={carriers} loading={loading} onTest={test} testing={testing} />
+        <TabsContent value="carriers" className="m-0">
+          {pagesLoading ? <LoadingState /> : (
+            <Carriers
+              initial={carrierSettings}
+              onSave={carriers => saveDesignExtras({ gallery: [], ...designExtras, carriers }, t ? 'تم حفظ شركات الشحن' : 'Carriers saved')}
+            />
+          )}
         </TabsContent>
 
-        <TabsContent value="ai" className="m-0">
-          <ShippingInsights />
+        <TabsContent value="insights" className="m-0">
+          {loading ? <LoadingState /> : <Insights stats={stats} />}
         </TabsContent>
       </Tabs>
 
-      <Dialog open={creating || !!editing} onOpenChange={open => !open && close()}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editing ? (t ? 'تعديل شركة شحن' : 'Edit carrier') : (t ? 'إضافة شركة شحن' : 'Add carrier')}</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={submit} className="space-y-4">
-            <div>
-              <Label htmlFor="carrier-name">{t ? 'اسم الشركة' : 'Carrier name'} *</Label>
-              <Input id="carrier-name" value={form.name} required
-                onChange={e => setForm({ ...form, name: e.target.value })} />
-            </div>
-            <div>
-              <Label htmlFor="carrier-service">{t ? 'نوع الخدمة' : 'Service type'}</Label>
-              <Input id="carrier-service" value={form.serviceType}
-                onChange={e => setForm({ ...form, serviceType: e.target.value })}
-                placeholder={t ? 'سريع، عادي، نفس اليوم…' : 'Express, standard, same-day…'} />
-            </div>
-            <div>
-              <Label htmlFor="carrier-logo">{t ? 'رابط الشعار' : 'Logo URL'}</Label>
-              <Input id="carrier-logo" dir="ltr" value={form.logoUrl}
-                onChange={e => setForm({ ...form, logoUrl: e.target.value })} />
-            </div>
-            <div className="flex items-center justify-between rounded-lg border border-border p-3">
-              <Label htmlFor="carrier-active" className="cursor-pointer">{t ? 'مفعّلة' : 'Active'}</Label>
-              <Switch id="carrier-active" checked={form.isActive}
-                onCheckedChange={v => setForm({ ...form, isActive: v })} />
-            </div>
-
-            {/* Said plainly so nobody looks for a key field that is not here. */}
-            <p className="text-xs text-muted-foreground p-3 rounded-lg bg-muted/40 border border-border">
-              {t
-                ? 'مفاتيح الاتصال بشركة الشحن تُحفظ في الخادم ولا تُدخل من المتصفح، حمايةً لها.'
-                : 'Carrier API keys are stored on the server and are never entered in the browser.'}
-            </p>
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={close}>{t ? 'إلغاء' : 'Cancel'}</Button>
-              <Button type="submit" disabled={saving}>
-                {saving && <Loader2 className="w-4 h-4 me-2 animate-spin" />}
-                {editing ? (t ? 'حفظ' : 'Save') : (t ? 'إضافة' : 'Add')}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <div className="mt-6 flex gap-2 rounded-xl border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+        <Info className="w-4 h-4 shrink-0 mt-0.5" />
+        <p>
+          {t
+            ? 'تُشحن الطلبات هنا يدويًا: تختار الشركة وتكتب رقم الشحنة من بوليصتها، فيصل العميل رابط التتبع لدى الشركة نفسها. الربط الآلي (إصدار البوليصة لدى الشركة وتحديث الحالة تلقائيًا) يحتاج حسابًا ومفتاح API من كل شركة، وغير مفعّل حاليًا.'
+            : 'Orders are shipped here by hand: pick the carrier and enter the waybill number, and the customer gets the carrier\'s own tracking link. Automatic links (waybills issued by the carrier, statuses updated by it) need an account and an API key from each carrier and are not connected.'}
+        </p>
+      </div>
     </AppLayout>
   );
 }
 
-function ApiSettings({
-  carriers, loading, onTest, testing,
+function Kpi({ icon: Icon, tone, label, value }: { icon: typeof Truck; tone: string; label: string; value: string }) {
+  return (
+    <div className="bg-card rounded-xl border border-border p-4 flex items-center gap-3">
+      <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center shrink-0', tone)}><Icon className="w-5 h-5" /></div>
+      <div className="min-w-0">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="text-lg font-bold text-foreground tabular-nums whitespace-nowrap">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function Shipments({
+  orders, loading, carrierSettings, sender, onShip, onDelivered, getOrderItems,
 }: {
-  carriers: ShippingCarrier[];
+  orders: OnlineOrder[];
   loading: boolean;
-  onTest: (carrier: ShippingCarrier) => void;
-  testing: string | null;
+  carrierSettings: CarrierSetting[];
+  sender: { name: string; phone?: string | null };
+  onShip: (orderId: string, carrierId: string, trackingNumber: string) => Promise<void>;
+  onDelivered: (orderId: string) => Promise<void>;
+  getOrderItems: (orderId: string) => Promise<{ quantity: number }[]>;
 }) {
   const { isRTL } = useLanguage();
   const t = isRTL;
+  const [stage, setStage] = useState<Exclude<ShipmentStage, 'closed'>>('to_ship');
+  const [shipping, setShipping] = useState<OnlineOrder | null>(null);
+  const [carrierId, setCarrierId] = useState('');
+  const [number, setNumber] = useState('');
+  const [busy, setBusy] = useState<string | null>(null);
 
-  if (loading) return <LoadingState />;
-  if (carriers.length === 0) {
-    return <EmptyState icon={Settings2}
-      title={t ? 'لا توجد شركات لعرض إعدادات اتصالها' : 'No carriers to configure'}
-      description={t ? 'أضف شركة شحن أولاً من تبويب «شركات الشحن».' : 'Add a carrier first.'} />;
-  }
+  // the store's carriers first, then the rest
+  const enabled = new Set(carrierSettings.filter(c => c.enabled).map(c => c.id));
+  const carrierList = [...CARRIERS].sort((a, b) => Number(enabled.has(b.id)) - Number(enabled.has(a.id)));
+  const chosen = CARRIERS.find(c => c.id === carrierId);
+  const numberRequired = !!chosen?.track;
+
+  const list = orders.filter(o => shipmentStage(o) === stage);
+  const cur = t ? 'ر.س' : 'SAR';
+
+  const openShip = (o: OnlineOrder) => {
+    const s = orderShipment(o);
+    setShipping(o);
+    // the carrier the customer chose at checkout, else the store's first one
+    setCarrierId(s.carrier?.id ?? carrierList[0].id);
+    setNumber(s.number ?? '');
+  };
+
+  const confirmShip = async () => {
+    if (!shipping || !carrierId || (numberRequired && !number.trim())) return;
+    setBusy(shipping.id);
+    await onShip(shipping.id, carrierId, number.trim());
+    setBusy(null);
+    setShipping(null);
+  };
+
+  const delivered = async (o: OnlineOrder) => { setBusy(o.id); await onDelivered(o.id); setBusy(null); };
+
+  const printWaybill = async (o: OnlineOrder) => {
+    const w = window.open('', '_blank', 'width=480,height=720');
+    if (!w) { toast.error(t ? 'اسمح بالنوافذ المنبثقة لطباعة البوليصة' : 'Allow pop-ups to print the waybill'); return; }
+    const items = await getOrderItems(o.id);
+    const pieces = items.reduce((s, i) => s + Number(i.quantity || 0), 0);
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    try { JsBarcode(svg, o.order_number, { format: 'CODE128', height: 50, displayValue: false, margin: 0 }); } catch { /* no barcode */ }
+    w.document.write(waybillHtml(o, sender, pieces, svg.outerHTML));
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 300);
+  };
 
   return (
     <div className="space-y-3">
-      {carriers.map(carrier => {
-        const conn = CONNECTION[carrier.connectionStatus];
-        const ConnIcon = conn.icon;
-        return (
-          <div key={carrier.id} className="bg-card rounded-xl border border-border p-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                <Truck className="w-5 h-5 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <p className="font-semibold text-foreground">{carrier.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {t ? 'آخر مزامنة: ' : 'Last sync: '}
-                  {carrier.lastSyncAt
-                    ? new Date(carrier.lastSyncAt).toLocaleString(t ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-GB')
-                    : (t ? 'لم تتم بعد' : 'never')}
-                </p>
-              </div>
-              <Badge className={cn(conn.cls, 'gap-1 ms-auto')}>
-                <ConnIcon className="w-3 h-3" />{t ? conn.ar : conn.en}
-              </Badge>
-              <Button variant="outline" size="sm" className="gap-2"
-                onClick={() => onTest(carrier)} disabled={testing === carrier.id}>
-                {testing === carrier.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                {t ? 'اختبار الاتصال' : 'Test connection'}
-              </Button>
-            </div>
+      <div className="flex gap-2 flex-wrap">
+        {STAGES.map(s => (
+          <button key={s.key} type="button" onClick={() => setStage(s.key)} aria-pressed={stage === s.key}
+            className={cn('px-3 py-1.5 rounded-full border text-sm transition-colors',
+              stage === s.key ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border text-muted-foreground hover:text-foreground')}>
+            {t ? s.ar : s.en} <span className="ms-1 tabular-nums opacity-80">{orders.filter(o => shipmentStage(o) === s.key).length}</span>
+          </button>
+        ))}
+      </div>
 
-            <div className="grid sm:grid-cols-2 gap-3 mt-4 text-sm">
-              <Field label={t ? 'بيانات الاتصال' : 'Credentials'}
-                value={carrier.credentialsSet
-                  ? (t ? 'محفوظة في الخادم' : 'Stored on the server')
-                  : (t ? 'لم تُحفظ بعد' : 'Not set yet')} />
-              <Field label={t ? 'عدد الشحنات' : 'Shipments'} value={carrier.shipmentCount?.toString() ?? '—'} />
+      {loading ? <LoadingState /> : list.length === 0 ? (
+        <EmptyState icon={Truck}
+          title={stage === 'to_ship' ? (t ? 'لا توجد طلبات بانتظار الشحن' : 'Nothing waiting to ship') : stage === 'shipped' ? (t ? 'لا توجد شحنات في الطريق' : 'Nothing on the way') : (t ? 'لا توجد شحنات مُسلّمة بعد' : 'No deliveries yet')}
+          description={t ? 'تظهر هنا طلبات المتجر الإلكتروني حسب حالة شحنها.' : 'Online store orders appear here by shipping status.'}
+          action={<Button asChild variant="outline"><Link to="/sales?tab=orders">{t ? 'طلبات المتجر' : 'Store orders'}</Link></Button>} />
+      ) : (
+        <div className="space-y-2">
+          {list.map(o => {
+            const s = orderShipment(o);
+            const cod = collectOnDelivery(o);
+            const st = STAGES.find(x => x.key === shipmentStage(o));
+            return (
+              <div key={o.id} className="bg-card rounded-xl border border-border p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold text-foreground whitespace-nowrap tabular-nums" dir="ltr">{o.order_number}</span>
+                      {st && <Badge variant="outline" className={st.cls}>{t ? st.ar : st.en}</Badge>}
+                      {o.status === 'pending' && <Badge variant="outline">{t ? 'لم يُؤكَّد بعد' : 'Not confirmed yet'}</Badge>}
+                    </div>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1"><User className="w-3 h-3" />{o.customer_name}</span>
+                      <span className="flex items-center gap-1" dir="ltr"><Phone className="w-3 h-3" />{o.customer_phone}</span>
+                      <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{o.shipping_city}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground line-clamp-2 whitespace-pre-line">{o.shipping_address}</p>
+                    <div className="flex flex-wrap items-center gap-2 text-xs pt-1">
+                      <span className="inline-flex items-center gap-1 text-foreground"><Truck className="w-3 h-3" />{s.carrier?.name ?? (t ? 'لم تُحدَّد شركة' : 'No carrier yet')}</span>
+                      {s.number && <span className="font-mono text-foreground" dir="ltr">{s.number}</span>}
+                      {s.url && <a href={s.url} target="_blank" rel="noopener" className="inline-flex items-center gap-1 text-primary hover:underline">{t ? 'تتبع لدى الشركة' : 'Track'}<ExternalLink className="w-3 h-3" /></a>}
+                    </div>
+                  </div>
+                  <div className="text-end shrink-0 space-y-1">
+                    <p className="text-xs text-muted-foreground">{t ? 'رسوم الشحن' : 'Shipping'}: <span className="text-foreground font-medium">{formatSar(o.shipping_cost)} {cur}</span></p>
+                    {cod > 0
+                      ? <p className="text-xs font-semibold text-warning">{t ? 'تحصيل عند الاستلام' : 'Collect on delivery'}: {formatSar(cod)} {cur}</p>
+                      : <p className="text-xs text-success">{t ? 'مدفوع' : 'Paid'}</p>}
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-border">
+                  {shipmentStage(o) === 'to_ship' && (
+                    <Button size="sm" onClick={() => openShip(o)} disabled={busy === o.id}><Truck className="w-4 h-4 me-1" />{t ? 'شحن الطلب' : 'Ship'}</Button>
+                  )}
+                  {shipmentStage(o) === 'shipped' && (
+                    <>
+                      <Button size="sm" onClick={() => delivered(o)} disabled={busy === o.id}>
+                        {busy === o.id ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : <CheckCircle2 className="w-4 h-4 me-1" />}{t ? 'تم التسليم' : 'Delivered'}
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => openShip(o)}>{t ? 'تعديل الشحنة' : 'Edit shipment'}</Button>
+                    </>
+                  )}
+                  <Button size="sm" variant="outline" onClick={() => printWaybill(o)}><Printer className="w-4 h-4 me-1" />{t ? 'طباعة البوليصة' : 'Print waybill'}</Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <Dialog open={!!shipping} onOpenChange={open => !open && setShipping(null)}>
+        <DialogContent dir={isRTL ? 'rtl' : 'ltr'}>
+          <DialogHeader>
+            <DialogTitle>{t ? 'شحن الطلب' : 'Ship order'} <span dir="ltr" className="tabular-nums">{shipping?.order_number}</span></DialogTitle>
+            <DialogDescription>{t ? 'اختر شركة الشحن واكتب رقم الشحنة من البوليصة. يصل العميل رابط التتبع لدى الشركة.' : 'Pick the carrier and enter the waybill number. The customer gets the carrier\'s tracking link.'}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>{t ? 'شركة الشحن' : 'Carrier'}</Label>
+              <Select value={carrierId} onValueChange={setCarrierId}>
+                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {carrierList.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{t ? c.name : c.nameEn}{enabled.has(c.id) ? (t ? ' · مفعّلة في متجرك' : ' · enabled') : ''}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>{t ? 'رقم الشحنة' : 'Tracking number'}{numberRequired ? ' *' : (t ? ' (اختياري)' : ' (optional)')}</Label>
+              <Input value={number} onChange={e => setNumber(e.target.value)} dir="ltr" className="mt-1 font-mono" placeholder={numberRequired ? '1234567890' : ''} />
+              {!numberRequired && chosen && <p className="text-xs text-muted-foreground mt-1">{t ? 'هذه الشركة بلا صفحة تتبع على الإنترنت؛ رقم الشحنة اختياري.' : 'This carrier has no online tracking; the number is optional.'}</p>}
             </div>
           </div>
-        );
-      })}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShipping(null)}>{t ? 'إلغاء' : 'Cancel'}</Button>
+            <Button onClick={confirmShip} disabled={!carrierId || (numberRequired && !number.trim()) || busy === shipping?.id}>
+              {busy === shipping?.id ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : <Truck className="w-4 h-4 me-1" />}{t ? 'تأكيد الشحن' : 'Confirm shipment'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
-function Field({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium">{value}</span>
-    </div>
-  );
-}
-
-function ShippingInsights() {
+function Carriers({ initial, onSave }: { initial: CarrierSetting[]; onSave: (carriers: CarrierSetting[]) => Promise<void> }) {
   const { isRTL } = useLanguage();
   const t = isRTL;
-  const [insights, setInsights] = useState<AiInsight[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [configured, setConfigured] = useState(false);
+  const [list, setList] = useState<CarrierSetting[]>(initial);
+  const [dirty, setDirty] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const [status, list] = await Promise.all([
-        aiService.getStatus(),
-        aiService.listInsights('shipping'),
-      ]);
-      if (cancelled) return;
-      if (isOk(status)) setConfigured(status.data.configured);
-      if (isOk(list)) setInsights(list.data);
-      setLoading(false);
-    })();
-    return () => { cancelled = true; };
-  }, []);
+  const upd = (id: string, patch: Partial<CarrierSetting>) => {
+    setList(prev => {
+      const next = [...prev];
+      const i = next.findIndex(x => x.id === id);
+      if (i >= 0) next[i] = { ...next[i], ...patch };
+      else next.push({ id, enabled: false, ...patch });
+      return next;
+    });
+    setDirty(true);
+  };
 
-  if (loading) return <LoadingState />;
-
-  if (!configured) {
-    return (
-      <UnavailableState
-        title={t ? 'لا توجد بيانات كافية للتحليل حالياً' : 'Not enough data to analyse yet'}
-        message={t
-          ? 'تحليلات الشحن تحتاج شركة شحن مربوطة وشحنات فعلية. الواجهة جاهزة لعرض النتائج فور توفرها من الخادم.'
-          : 'Shipping insights need a connected carrier and real shipments. This screen is ready to show them once the backend has them.'}
-      />
-    );
-  }
-
-  if (insights.length === 0) {
-    return <EmptyState icon={PackageSearch}
-      title={t ? 'لا توجد ملاحظات حالياً' : 'No insights right now'} />;
-  }
+  const save = async () => { setSaving(true); await onSave(list); setSaving(false); setDirty(false); };
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      {insights.map(insight => (
-        <div key={insight.id} className="bg-card rounded-xl border border-border p-4">
-          <div className="flex items-start gap-2">
-            <Sparkles className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-            <div>
-              <p className="font-semibold text-foreground">{insight.title}</p>
-              <p className="text-sm text-muted-foreground mt-1">{insight.body}</p>
-              {insight.basis && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  {t ? 'المصدر: ' : 'Based on: '}{insight.basis}
-                </p>
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">
+        {t ? 'الشركات المفعّلة تظهر لعميلك عند الدفع بسعرها ومدة توصيلها، وتظهر أولًا عند شحن الطلبات.' : 'Enabled carriers are offered at checkout with their price and delivery time, and listed first when shipping.'}
+      </p>
+      <div className="grid gap-2 md:grid-cols-2">
+        {CARRIERS.map(c => {
+          const cfg = list.find(x => x.id === c.id);
+          const on = !!cfg?.enabled;
+          return (
+            <div key={c.id} className={cn('rounded-xl border p-3 bg-card transition-colors', on && 'border-primary/40 bg-primary/5')}>
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold truncate">{t ? c.name : c.nameEn}</p>
+                  <p className="text-[11px] text-muted-foreground">{c.track ? (t ? 'تتبع إلكتروني لدى الشركة' : 'Online tracking') : (t ? 'بلا تتبع إلكتروني' : 'No online tracking')}</p>
+                </div>
+                <Switch checked={on} onCheckedChange={v => upd(c.id, { enabled: v })} aria-label={c.name} />
+              </div>
+              {on && (
+                <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t">
+                  <div>
+                    <Label className="text-[11px]">{t ? 'التكلفة (ر.س)' : 'Price (SAR)'}</Label>
+                    <Input type="number" min={0} value={cfg?.cost ?? ''} onChange={e => upd(c.id, { cost: Number(e.target.value) || 0 })} className="mt-1 h-8 text-xs" placeholder="25" />
+                  </div>
+                  <div>
+                    <Label className="text-[11px]">{t ? 'مدة التوصيل' : 'Delivery time'}</Label>
+                    <Input value={cfg?.days || ''} onChange={e => upd(c.id, { days: e.target.value })} className="mt-1 h-8 text-xs" placeholder={t ? '١-٣ أيام' : '1–3 days'} />
+                  </div>
+                  <div>
+                    <Label className="text-[11px]">{t ? 'رقم الحساب' : 'Account no.'}</Label>
+                    <Input value={cfg?.account || ''} onChange={e => upd(c.id, { account: e.target.value })} className="mt-1 h-8 text-xs font-mono" dir="ltr" placeholder={t ? 'اختياري' : 'optional'} />
+                  </div>
+                </div>
               )}
             </div>
+          );
+        })}
+      </div>
+      <div className="flex justify-end">
+        <Button onClick={save} disabled={!dirty || saving}>
+          {saving ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : <Save className="w-4 h-4 me-1" />}{t ? 'حفظ شركات الشحن' : 'Save carriers'}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function Insights({ stats }: { stats: ReturnType<typeof shippingStats> }) {
+  const { isRTL } = useLanguage();
+  const t = isRTL;
+  const cur = t ? 'ر.س' : 'SAR';
+  const went = stats.shipped + stats.delivered;
+  if (went === 0) {
+    return <EmptyState icon={BarChart3} title={t ? 'لا توجد شحنات بعد' : 'No shipments yet'}
+      description={t ? 'تظهر التحليلات بعد شحن أول طلب.' : 'Insights appear once the first order is shipped.'} />;
+  }
+  const max = Math.max(...stats.byCarrier.map(c => c.count), 1);
+  const maxCity = Math.max(...stats.byCity.map(c => c.count), 1);
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <Kpi icon={Truck} tone="text-primary bg-primary/10" label={t ? 'شحنات خرجت' : 'Shipped in total'} value={String(went)} />
+        <Kpi icon={PackageCheck} tone="text-success bg-success/10" label={t ? 'نسبة التسليم' : 'Delivered rate'} value={`${stats.deliveredRate}%`} />
+        <Kpi icon={Wallet} tone="text-primary bg-primary/10" label={t ? 'رسوم شحن محصّلة' : 'Shipping fees'} value={`${formatSar(stats.fees)} ${cur}`} />
+        <Kpi icon={Wallet} tone="text-warning bg-warning/10" label={t ? 'متوسط رسوم الشحنة' : 'Average fee'} value={`${formatSar(stats.fees / went)} ${cur}`} />
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Bars title={t ? 'الشحنات حسب الشركة' : 'By carrier'} rows={stats.byCarrier.map(c => ({ label: c.name, value: c.count }))} max={max} />
+        <Bars title={t ? 'أكثر المدن شحنًا' : 'Top cities'} rows={stats.byCity.map(c => ({ label: c.city, value: c.count }))} max={maxCity} />
+      </div>
+    </div>
+  );
+}
+
+function Bars({ title, rows, max }: { title: string; rows: { label: string; value: number }[]; max: number }) {
+  return (
+    <div className="bg-card rounded-xl border border-border p-4">
+      <p className="font-semibold text-foreground mb-3">{title}</p>
+      <div className="space-y-2">
+        {rows.map(r => (
+          <div key={r.label} className="flex items-center gap-3 text-sm">
+            <span className="w-28 truncate text-muted-foreground">{r.label}</span>
+            <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden"><div className="h-full rounded-full bg-primary" style={{ width: `${(r.value / max) * 100}%` }} /></div>
+            <span className="w-8 text-end tabular-nums font-medium">{r.value}</span>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
