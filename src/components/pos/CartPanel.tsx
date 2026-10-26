@@ -116,7 +116,7 @@ export function CartPanel({
     <motion.div
       initial={{ opacity: 0, x: isRTL ? -20 : 20 }}
       animate={{ opacity: 1, x: 0 }}
-      className="w-[380px] bg-card rounded-xl border border-border shadow-lg flex flex-col overflow-hidden"
+      className="w-full lg:w-[380px] shrink-0 min-h-[420px] lg:min-h-0 bg-card rounded-xl border border-border shadow-lg flex flex-col overflow-hidden"
     >
       {/* Cart Header */}
       <div className="px-4 py-3 border-b border-border flex items-center justify-between">

@@ -1,4 +1,4 @@
-// One-off: time from «تأكيد الدفع» to the invoice, and the invoice's labels
+// One-off (phone and desktop): time from «تأكيد الدفع» to the invoice, and the invoice's labels
 // and date, on live data. Nothing is written: every write (and the invoice
 // number RPC, which advances a counter) is answered here after the same delay
 // as a real Supabase round trip, measured in the same page.
