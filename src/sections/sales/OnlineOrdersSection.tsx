@@ -20,7 +20,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { CARRIERS, trackingUrl, carrierById } from "@/lib/shipping";
+import { CARRIERS, orderShipment } from "@/lib/shipping";
 import { useOnlineOrders, OnlineOrder, OnlineOrderItem } from "@/hooks/useOnlineStore";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -133,6 +133,7 @@ export default function OnlineOrdersSection() {
             {filtered.map((order, i) => {
               const st = statusConfig[order.status] || statusConfig.pending;
               const pay = paymentConfig[order.payment_status] || paymentConfig.unpaid;
+              const shipment = orderShipment(order);
               return (
                 <motion.div key={order.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}
                   className="p-4 hover:bg-muted/20 transition-colors">
@@ -150,23 +151,23 @@ export default function OnlineOrdersSection() {
                           <Badge variant="outline" className={pay.color}>{pay.label}</Badge>
                           <Badge variant="outline">{storePaymentLabel(order.payment_method)}</Badge>
                         </div>
-                        <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1"><User className="w-3 h-3" />{order.customer_name}</span>
-                          <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{order.customer_phone}</span>
+                          <span className="flex items-center gap-1" dir="ltr"><Phone className="w-3 h-3" />{order.customer_phone}</span>
                           <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{order.shipping_city}</span>
                         </div>
-                        {order.tracking_number && trackingUrl(order.shipping_provider, order.tracking_number) && (
+                        {shipment.url && (
                           <a
-                            href={trackingUrl(order.shipping_provider, order.tracking_number)!}
+                            href={shipment.url}
                             target="_blank" rel="noopener"
                             onClick={e => e.stopPropagation()}
                             className="inline-flex items-center gap-1 text-xs text-primary hover:underline ms-2"
                           > تتبع الشحنة ↗
                           </a>
                         )}
-                        {order.tracking_number && (
+                        {(shipment.carrier || shipment.number) && (
                           <p className="text-xs text-primary mt-1 flex items-center gap-1">
-                            <Truck className="w-3 h-3" /> {order.shipping_provider?.toUpperCase()} - {order.tracking_number}
+                            <Truck className="w-3 h-3" /> {shipment.carrier?.name ?? 'شحن'}{shipment.number && <> - <span dir="ltr">{shipment.number}</span></>}
                           </p>
                         )}
                       </div>
@@ -194,7 +195,7 @@ export default function OnlineOrdersSection() {
                             <DropdownMenuItem onClick={() => {
                               setShippingOrderId(order.id);
                               // the carrier the customer chose at checkout, when it is one we know
-                              setShippingProvider(carrierById(order.shipping_provider)?.id ?? "aramex");
+                              setShippingProvider(orderShipment(order).carrier?.id ?? "aramex");
                               setShowShipping(true);
                             }}>
                               <Truck className="w-4 h-4 mr-2" /> إضافة تتبع الشحن

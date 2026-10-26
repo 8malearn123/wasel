@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { storePaymentLabel } from '@/lib/storePayments';
-import { trackingUrl } from '@/lib/shipping';
+import { orderShipment } from '@/lib/shipping';
 import { Link, useParams } from 'react-router-dom';
 import { Package, ChevronDown, ChevronUp, ShoppingBag, Trash2, Truck, CheckCircle2, Clock, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -104,7 +104,7 @@ export function StoreMyOrdersPage({ store }: { store: StoreSettings }) {
                     <Package className="w-5 h-5 text-muted-foreground" />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-mono font-semibold text-sm truncate">{o.order_number}</p>
+                    <p className="font-mono font-semibold text-sm whitespace-nowrap" dir="ltr">{o.order_number}</p>
                     <p className="text-xs text-muted-foreground">
                       {new Date(o.created_at).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn')} • {o.items.length} منتج
                     </p>
@@ -142,13 +142,13 @@ export function StoreMyOrdersPage({ store }: { store: StoreSettings }) {
                       <p>{storePaymentLabel(o.payment_method)}</p>
                       <p className="text-muted-foreground">حالة الدفع</p>
                       <p>{o.payment_status === 'paid' ? 'مدفوع' : 'غير مدفوع'}</p>
-                      {o.tracking_number && (
+                      {orderShipment(o).number && (
                         <>
-                          <p className="text-muted-foreground">رقم الشحنة</p>
+                          <p className="text-muted-foreground">رقم الشحنة{orderShipment(o).carrier ? ` · ${orderShipment(o).carrier!.name}` : ''}</p>
                           <p className="font-mono">
-                            {o.tracking_number}
-                            {trackingUrl((o as any).shipping_provider, o.tracking_number) && (
-                              <a href={trackingUrl((o as any).shipping_provider, o.tracking_number)!}
+                            <span dir="ltr">{orderShipment(o).number}</span>
+                            {orderShipment(o).url && (
+                              <a href={orderShipment(o).url!}
                                 target="_blank" rel="noopener" className="ms-2 text-primary hover:underline font-sans">تتبع الشحنة</a>
                             )}
                           </p>

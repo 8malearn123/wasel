@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { trackPublicOrder, type OnlineOrder, type OnlineOrderItem, type StoreSettings } from '@/hooks/useOnlineStore';
 import { StoreSEO } from '@/components/store/StoreSEO';
-import { carrierById, trackingUrl } from '@/lib/shipping';
+import { orderShipment } from '@/lib/shipping';
 import { toast } from 'sonner';
 
 const STATUS_FLOW = [
@@ -34,6 +34,7 @@ export function StoreTrackOrderPage({ store }: { store: StoreSettings }) {
     setOrder(res.order!); setItems(res.items || []);
   };
 
+  const shipment = order ? orderShipment(order) : { number: null, carrier: undefined, url: null };
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       <StoreSEO title={`تتبع الطلب - ${store.store_name}`} noindex />
@@ -75,13 +76,13 @@ export function StoreTrackOrderPage({ store }: { store: StoreSettings }) {
             })}
           </div>
 
-          {order.tracking_number && (
+          {shipment.number && (
             <div className="bg-muted/30 rounded-lg p-3 text-sm">
-              <p className="text-xs text-muted-foreground"> رقم الشحنة{carrierById(order.shipping_provider) ? ` · ${carrierById(order.shipping_provider)!.name}` : ''}
+              <p className="text-xs text-muted-foreground"> رقم الشحنة{shipment.carrier ? ` · ${shipment.carrier.name}` : ''}
               </p>
-              <p className="font-mono font-bold">{order.tracking_number}</p>
-              {trackingUrl(order.shipping_provider, order.tracking_number) && (
-                <a href={trackingUrl(order.shipping_provider, order.tracking_number)!} target="_blank" rel="noopener"
+              <p className="font-mono font-bold" dir="ltr">{shipment.number}</p>
+              {shipment.url && (
+                <a href={shipment.url} target="_blank" rel="noopener"
                   className="inline-flex items-center gap-1 mt-2 px-4 py-2 rounded-lg text-white text-xs font-bold"
                   style={{ background: 'hsl(var(--store-primary))' }}> تتبع الشحنة لدى شركة الشحن
                 </a>
