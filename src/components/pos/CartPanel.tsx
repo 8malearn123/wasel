@@ -62,6 +62,7 @@ export function CartPanel({
   isProcessing,
 }: CartPanelProps) {
   const { t, isRTL } = useLanguage();
+  const cur = isRTL ? "ر.س" : "SAR";
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [showCustomerDialog, setShowCustomerDialog] = useState(false);
@@ -211,7 +212,7 @@ export function CartPanel({
                     )}
                   </div>
                   <span className="font-bold text-foreground">
-                    {formatSar(item.price * item.quantity)} <span className="text-xs text-muted-foreground">ر.س</span>
+                    {formatSar(item.price * item.quantity)} <span className="text-xs text-muted-foreground">{cur}</span>
                   </span>
                 </div>
               </motion.div>
@@ -228,20 +229,20 @@ export function CartPanel({
           {discount > 0 && (
             <div className="flex justify-between text-primary">
               <span>{isRTL ? "الخصم" : "Discount"}</span>
-              <span dir="ltr">&minus;{formatSar(discount)} {isRTL ? "ر.س" : "SAR"}</span>
+              <span dir="ltr">&minus;{formatSar(discount)} {cur}</span>
             </div>
           )}
           <div className="flex justify-between">
             <span className="text-muted-foreground">{isRTL ? "المجموع الفرعي (غير شامل الضريبة)" : "Subtotal (excl. VAT)"}</span>
-            <span className="font-medium">{formatSar(subtotal)} ر.س</span>
+            <span className="font-medium">{formatSar(subtotal)} {cur}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">{t.pos.tax}</span>
-            <span className="font-medium">{formatSar(tax)} ر.س</span>
+            <span className="font-medium">{formatSar(tax)} {cur}</span>
           </div>
           <div className="flex justify-between text-base pt-1.5 border-t border-border">
             <span className="font-semibold">{t.pos.total}</span>
-            <span className="font-bold text-primary">{formatSar(total)} ر.س</span>
+            <span className="font-bold text-primary">{formatSar(total)} {cur}</span>
           </div>
         </div>
 
@@ -273,7 +274,7 @@ export function CartPanel({
             {/* Amount due */}
             <div className="rounded-2xl bg-primary/5 border border-primary/20 px-6 py-6 text-center">
               <p className="text-sm text-muted-foreground mb-1.5">{isRTL ? "المبلغ المستحق" : "Amount Due"}</p>
-              <p className="text-5xl font-bold text-primary tracking-tight">{formatSar(amountDue)} <span className="text-xl">ر.س</span></p>
+              <p className="text-5xl font-bold text-primary tracking-tight">{formatSar(amountDue)} <span className="text-xl">{cur}</span></p>
               <p className="text-xs text-muted-foreground mt-2">
                 {isRTL ? `شامل ضريبة القيمة المضافة ${formatSar(amountDueTax)} ر.س` : `Includes VAT ${formatSar(amountDueTax)} SAR`}
               </p>
@@ -360,7 +361,7 @@ export function CartPanel({
                       onClick={() => setCashReceived(String(v))}
                       className="flex-1 py-2.5 rounded-lg border border-border bg-muted/40 text-sm font-medium hover:border-primary/50 transition-all"
                     >
-                      {v.toLocaleString()}
+                      {formatSar(v, { decimals: 0 })}
                     </button>
                   ))}
                 </div>
@@ -372,7 +373,7 @@ export function CartPanel({
                   ) : (
                     <div className="flex justify-between items-center rounded-lg bg-success/10 border border-success/20 px-3 py-2">
                       <span className="text-sm font-medium text-success">{isRTL ? "الباقي للعميل" : "Change Due"}</span>
-                      <span className="text-lg font-bold text-success">{formatSar(changeDue)} ر.س</span>
+                      <span className="text-lg font-bold text-success">{formatSar(changeDue)} {cur}</span>
                     </div>
                   )
                 )}
