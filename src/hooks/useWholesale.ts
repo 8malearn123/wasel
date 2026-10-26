@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { productFromDevice, productFromAccessory, productFromNotes, productNotes, type ListingProduct } from '@/lib/wholesaleProduct';
 
 export interface WholesaleListing {
   id: string;
@@ -14,9 +15,11 @@ export interface WholesaleListing {
   is_active: boolean;
   notes: string | null;
   created_at: string;
-  device?: { id: string; imei: string; model: string; brand: string | null; price: number; status: string } | null;
-  accessory?: { id: string; name: string; sku: string; brand: string | null; price: number; quantity: number } | null;
+  device?: { id: string; imei: string; model: string; brand: string | null; price: number; status: string; storage?: string | null; color?: string | null; condition?: string | null; category?: string | null } | null;
+  accessory?: { id: string; name: string; sku: string; brand: string | null; price: number; quantity: number; category?: string | null } | null;
   merchant?: { id: string; name: string; phone: string | null } | null;
+  /** what is on offer, from whichever source could be read (see wholesaleProduct.ts) */
+  product?: ListingProduct | null;
 }
 
 export interface WholesaleOrder {
@@ -92,11 +95,20 @@ const withParty = <T extends { supplier_merchant_id: string; buyer_merchant_id: 
 const withProduct = (l: WholesaleListing, names: Map<string, PartyRow>, products: Map<string, ListingItemRow>): WholesaleListing => {
   const p = products.get(l.id);
   const shop = names.get(l.merchant_id);
+  const device = l.device ?? (l.device_id && p ? { id: l.device_id, imei: '', model: p.model ?? p.name ?? '', brand: p.brand, price: 0, status: '' } : null);
+  const accessory = l.accessory ?? (l.accessory_id && p ? { id: l.accessory_id, name: p.name ?? '', sku: p.sku ?? '', brand: p.brand, price: 0, quantity: 0 } : null);
+  // the shop's own row when readable (the supplier), else the description
+  // saved with the listing, else what the parties function returned
+  const product = l.device ? productFromDevice(l.device)
+    : l.accessory ? productFromAccessory(l.accessory)
+    : productFromNotes(l.notes)
+      ?? (device ? productFromDevice(device) : accessory ? productFromAccessory(accessory) : null);
   return {
     ...l,
     merchant: l.merchant ?? (shop ? { id: shop.merchant_id, name: shop.name, phone: shop.phone } : null),
-    device: l.device ?? (l.device_id && p ? { id: l.device_id, imei: '', model: p.model ?? p.name ?? '', brand: p.brand, price: 0, status: '' } : null),
-    accessory: l.accessory ?? (l.accessory_id && p ? { id: l.accessory_id, name: p.name ?? '', sku: p.sku ?? '', brand: p.brand, price: 0, quantity: 0 } : null),
+    device,
+    accessory,
+    product,
   };
 };
 
@@ -115,7 +127,7 @@ export function useWholesale() {
     setLoading(true);
 
     const [listingsRes, marketRes, buyerRes, supplierRes, creditsOutRes, creditsInRes, { names, products }] = await Promise.all([
-      supabase.from('wholesale_listings').select('*, device:devices(id, imei, model, brand, price, status), accessory:accessories(id, name, sku, brand, price, quantity)').eq('merchant_id', merchant.id).order('created_at', { ascending: false }),
+      supabase.from('wholesale_listings').select('*, device:devices(id, imei, model, brand, price, status, storage, color, condition, category), accessory:accessories(id, name, sku, brand, price, quantity, category)').eq('merchant_id', merchant.id).order('created_at', { ascending: false }),
       supabase.from('wholesale_listings').select('*, device:devices(id, imei, model, brand, price, status), accessory:accessories(id, name, sku, brand, price, quantity), merchant:merchants(id, name, phone)').eq('is_active', true).neq('merchant_id', merchant.id),
       supabase.from('wholesale_orders').select('*, supplier_merchant:merchants!wholesale_orders_supplier_merchant_id_fkey(name), buyer_merchant:merchants!wholesale_orders_buyer_merchant_id_fkey(name)').eq('buyer_merchant_id', merchant.id).order('created_at', { ascending: false }),
       supabase.from('wholesale_orders').select('*, supplier_merchant:merchants!wholesale_orders_supplier_merchant_id_fkey(name), buyer_merchant:merchants!wholesale_orders_buyer_merchant_id_fkey(name)').eq('supplier_merchant_id', merchant.id).order('created_at', { ascending: false }),
@@ -140,7 +152,16 @@ export function useWholesale() {
       }
     }
 
-    setMyListings(((listingsRes.data || []) as WholesaleListing[]).map(l => withProduct(l, names, products)));
+    const own = ((listingsRes.data || []) as WholesaleListing[]).map(l => withProduct(l, names, products));
+    // Listings made before descriptions were saved: the supplier can read its
+    // own product, so its listing gets the description buyers will see.
+    // Only empty notes are filled; nothing a person wrote is replaced.
+    const missing = own.filter(l => !l.notes && (l.device || l.accessory) && l.product);
+    if (missing.length) {
+      await Promise.all(missing.map(l =>
+        supabase.from('wholesale_listings').update({ notes: productNotes(l.product!) } as any).eq('id', l.id)));
+    }
+    setMyListings(own);
     setMarketplace(((marketRes.data || []) as WholesaleListing[]).map(l => withProduct(l, names, products)));
     setMyOrders(((buyerRes.data || []) as WholesaleOrder[]).map(o => withParty(o, names)));
     setIncomingOrders(((supplierRes.data || []) as WholesaleOrder[]).map(o => withParty(o, names)));
@@ -153,7 +174,18 @@ export function useWholesale() {
 
   const createListing = async (data: { device_id?: string; accessory_id?: string; item_type: string; wholesale_price: number; min_quantity: number; notes?: string }) => {
     if (!merchant) return;
-    const { error } = await supabase.from('wholesale_listings').insert({ merchant_id: merchant.id, ...data } as any);
+    // the description buyers will see, written with the listing (wholesaleProduct.ts)
+    let notes = data.notes;
+    if (!notes) {
+      if (data.device_id) {
+        const { data: d } = await supabase.from('devices').select('model, brand, storage, color, condition, category').eq('id', data.device_id).maybeSingle();
+        if (d) notes = productNotes(productFromDevice(d));
+      } else if (data.accessory_id) {
+        const { data: a } = await supabase.from('accessories').select('name, brand, sku, category').eq('id', data.accessory_id).maybeSingle();
+        if (a) notes = productNotes(productFromAccessory(a));
+      }
+    }
+    const { error } = await supabase.from('wholesale_listings').insert({ merchant_id: merchant.id, ...data, notes: notes ?? null } as any);
     if (error) { toast.error(error.message); return; }
     toast.success('تمت إضافة المنتج للبيع بالجملة');
     fetchAll();

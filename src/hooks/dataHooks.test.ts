@@ -138,6 +138,15 @@ describe('wholesale names and products', () => {
     expect(result.current.marketplace[0].device).toBeNull();
   });
 
+  it('shows the product the supplier saved with the listing', async () => {
+    const saved = { ...listing, notes: JSON.stringify({ wasel_product: { kind: 'device', name: 'Apple iPhone 14 Pro', brand: 'Apple', model: 'iPhone 14 Pro', storage: '256GB' } }) };
+    tables.wholesale_listings = { data: [saved], error: null };
+    const { result } = renderHook(() => useWholesale());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.marketplace[0].product?.name).toBe('Apple iPhone 14 Pro');
+    expect(result.current.marketplace[0].product?.storage).toBe('256GB');
+  });
+
   it('leaves a name unknown, not invented, when the functions are missing', async () => {
     tables.wholesale_listings = { data: [listing], error: null };
     tables.wholesale_orders = { data: [order], error: null };
