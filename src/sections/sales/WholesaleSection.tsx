@@ -175,23 +175,6 @@ export default function WholesaleSection() {
     setMinQty('1');
   };
 
-  // A new purchase order from the page itself, not only from a row: starts on
-  // the first product in the market; the supplier and the product are chosen
-  // in the dialog.
-  const startNewOrder = () => {
-    const first = marketplace[0];
-    if (!first) return;
-    setSelectedListing(first);
-    setOrderQty(String(first.min_quantity));
-    setShowOrderDialog(true);
-  };
-  const newOrderButton = (
-    <Button size="sm" onClick={startNewOrder} disabled={marketplace.length === 0}
-      title={marketplace.length === 0 ? (t ? 'لا توجد منتجات معروضة في السوق حالياً' : 'Nothing is listed in the market yet') : undefined}>
-      <Plus className="w-4 h-4 me-1" />{t ? 'طلب شراء جديد' : 'New purchase order'}
-    </Button>
-  );
-
   const handleOrder = async () => {
     if (!selectedListing || !orderQty) return;
     await createOrder(
@@ -350,10 +333,7 @@ export default function WholesaleSection() {
             {/* ---------- Marketplace ---------- */}
             {section === 'marketplace' && (
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
-                  <CardTitle className="text-base">{t ? 'منتجات متاحة من موزعين' : 'Available from distributors'}</CardTitle>
-                  {newOrderButton}
-                </CardHeader>
+                <CardHeader><CardTitle className="text-base">{t ? 'منتجات متاحة من موزعين' : 'Available from distributors'}</CardTitle></CardHeader>
                 <CardContent className="p-0">
                   {filteredMarketplace.length === 0 ? (
                     <EmptyState icon={Store} text={term ? (t ? 'لا نتائج مطابقة' : 'Nothing matches') : (t ? 'لا توجد منتجات معروضة حالياً' : 'No products on offer')} />
@@ -485,7 +465,6 @@ export default function WholesaleSection() {
                       { key: 'incoming', label: t ? 'طلبات واردة (بيع)' : 'Incoming', count: incomingOrders.length, dot: totals.pendingIncoming > 0 },
                     ]}
                   />}
-                  {orderSide === 'mine' && newOrderButton}
                 </CardHeader>
                 <CardContent className="p-0">
                   {orders.length === 0 ? (
