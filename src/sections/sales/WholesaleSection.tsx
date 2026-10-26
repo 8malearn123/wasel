@@ -677,7 +677,7 @@ export default function WholesaleSection() {
                 <div className="p-3 bg-primary/5 rounded-lg space-y-1">
                   <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <span>{t ? 'سعر الوحدة × الكمية' : 'Unit price × quantity'}</span>
-                    <span dir="ltr">{money(selectedListing.wholesale_price)} × {parseInt(orderQty) || 0}</span>
+                    <span>{parseInt(orderQty) || 0} × {money(selectedListing.wholesale_price)}</span>
                   </div>
                   <div className="flex items-center justify-between pt-1 border-t border-primary/10">
                     <span className="font-semibold text-foreground">{t ? 'الإجمالي' : 'Total'}</span>
