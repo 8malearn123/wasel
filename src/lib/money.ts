@@ -1,7 +1,7 @@
 /**
  * Riyal amounts as the till, the invoice and the stock pages write them:
- * grouped thousands, Latin digits and always the same number of decimals
- * (halalas: two). The till showed 2,373.043 next to 2729.00 — one was
+ * grouped thousands, Latin digits, and halalas as two decimals only when there
+ * are any: «7,298» and «6,346.09», never «7,298.00». The till showed 2,373.043 next to 2729.00 — one was
  * toLocaleString() with up to three decimals, the other toFixed(2) without
  * grouping.
  *
@@ -21,10 +21,13 @@ const formatter = (decimals: number) => {
 
 export function formatSar(value: number | string | null | undefined, { decimals = 2 }: { decimals?: number } = {}): string {
   const n = Number(value);
-  return formatter(decimals).format(Number.isFinite(n) ? n : 0);
+  const v = Number.isFinite(n) ? n : 0;
+  // a whole amount (after rounding to the shown decimals) drops «.00»
+  const whole = Math.round(Math.abs(v) * 10 ** decimals) % 10 ** decimals === 0;
+  return formatter(whole ? 0 : decimals).format(v);
 }
 
-/** An amount with its currency on the reading side: «2,373.04 ر.س» / «2,373.04 SAR» */
+/** An amount with its currency on the reading side: «2,373.04 ر.س» / «2,373 SAR» */
 export const sar = (value: number | string | null | undefined, isRTL = true, decimals = 2) =>
   `${formatSar(value, { decimals })} ${isRTL ? 'ر.س' : 'SAR'}`;
 
