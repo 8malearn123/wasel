@@ -625,7 +625,7 @@ export default function WholesaleSection() {
                   <p className="text-xs text-muted-foreground mt-1">
                     {(() => {
                       const n = marketplace.filter(l => l.merchant_id === selectedListing.merchant_id).length;
-                      return t ? `${n} ${n === 1 ? 'منتج' : 'منتجات'} معروضة من هذا المورد` : `${n} product(s) from this supplier`;
+                      return t ? (n === 1 ? 'منتج واحد معروض من هذا المورد' : `${n} منتجات معروضة من هذا المورد`) : `${n} product(s) from this supplier`;
                     })()}
                   </p>
                 </div>
