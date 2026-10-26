@@ -1,11 +1,13 @@
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/i18n";
 import { Toast, ToastClose, ToastDescription, ToastProvider, ToastTitle, ToastViewport } from "@/components/ui/toast";
 
 export function Toaster() {
   const { toasts } = useToast();
+  const { isRTL } = useLanguage();
 
   return (
-    <ToastProvider>
+    <ToastProvider label={isRTL ? "إشعار" : "Notification"}>
       {toasts.map(function ({ id, title, description, action, ...props }) {
         return (
           <Toast key={id} {...props}>
@@ -18,7 +20,7 @@ export function Toaster() {
           </Toast>
         );
       })}
-      <ToastViewport />
+      <ToastViewport label={isRTL ? "الإشعارات ({hotkey})" : "Notifications ({hotkey})"} />
     </ToastProvider>
   );
 }

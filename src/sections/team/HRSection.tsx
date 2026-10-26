@@ -46,6 +46,10 @@ const ROLE_LABELS: Record<string, { ar: string; en: string; cls: string }> = {
   cashier: { ar: "كاشير", en: "Cashier", cls: "bg-success/10 text-success border-success/20" },
   inventory_manager: { ar: "مدير مخزون", en: "Inventory Manager", cls: "bg-warning/10 text-warning border-warning/20" },
   technician: { ar: "فني صيانة", en: "Technician", cls: "bg-muted text-muted-foreground border-border" },
+  admin: { ar: "مدير النظام", en: "Admin", cls: "bg-accent/10 text-accent-foreground border-accent/20" },
+  employee: { ar: "موظف", en: "Employee", cls: "bg-muted text-muted-foreground border-border" },
+  // a role the shop made; its own name is on the users page
+  custom: { ar: "دور مخصص", en: "Custom role", cls: "bg-muted text-muted-foreground border-border" },
 };
 
 export default function HRSection() {

@@ -1317,6 +1317,32 @@ export const AR_EN: Record<string, string> = {
   "تتبع الشحنة ↗": "Track shipment ↗",
   "غير شامل ضريبة القيمة المضافة": "Excl. VAT",
   "طلب تغيير الباقة": "Request plan change",
+  // found by the full-site translation audit
+  "عنصر": "items",
+  "تباين": "discrepancies",
+  "مفتوحة:": "Open:",
+  "الكل:": "All:",
+  // device colours as shops type them
+  "أسود": "Black",
+  "أسود فلكي": "Space Black",
+  "أبيض": "White",
+  "أزرق": "Blue",
+  "رمادي": "Gray",
+  "أحمر": "Red",
+  "أخضر": "Green",
+  "بنفسجي": "Purple",
+  "وردي": "Pink",
+  // carriers (src/lib/shipping.ts)
+  "سمسا إكسبريس": "SMSA Express",
+  "أرامكس": "Aramex",
+  "ناقل إكسبريس": "Naqel Express",
+  "البريد السعودي (سبل)": "Saudi Post (SPL)",
+  "J&T إكسبريس": "J&T Express",
+  "آي مايل": "iMile",
+  "دي إتش إل": "DHL",
+  "فيدكس": "FedEx",
+  "ثابت للتوصيل": "Thabit",
+  "مندوب المحل": "Own driver",
 };
 
 const ATTRS = ["placeholder", "title", "aria-label", "alt"] as const;

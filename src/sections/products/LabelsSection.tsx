@@ -102,7 +102,7 @@ function LabelCard({
         <BarcodeCanvas value={item.code} width={cfg.barW} height={cfg.h} />
         {showPrice && (
           <Badge variant="secondary" className="text-[10px]">
-            {formatSar(item.price)} SAR
+            {formatSar(item.price)} {isRTL ? 'ر.س' : 'SAR'}
           </Badge>
         )}
       </div>
@@ -200,7 +200,7 @@ export default function LabelsSection() {
             <p class="name">${item.name}</p>
             ${showBrand && item.brand ? `<p class="brand">${item.brand}</p>` : ""}
             <img src="${barcodeDataUrl}" />
-            ${showPrice ? `<p class="price">${formatSar(item.price)} SAR</p>` : ""}
+            ${showPrice ? `<p class="price">${formatSar(item.price)} ${isRTL ? 'ر.س' : 'SAR'}</p>` : ""}
           </div>
         `;
       })

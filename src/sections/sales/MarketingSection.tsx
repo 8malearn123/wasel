@@ -23,6 +23,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "@/hooks/use-toast";
 import { Plus, Ticket, Megaphone, Trash2, Pencil, Copy, Zap, Package, Tag, PercentIcon , Sparkles } from "lucide-react";
 import { format } from "date-fns";
+import { formatSar } from "@/lib/money";
 
 export default function MarketingSection() {
   const { t, language } = useLanguage();
@@ -386,7 +387,7 @@ export default function MarketingSection() {
                         </TableCell>
                         <TableCell>{c.name}</TableCell>
                         <TableCell>
-                          {c.discount_type === 'percentage' ? `${c.discount_value}%` : `${c.discount_value} SAR`}
+                          {c.discount_type === 'percentage' ? `${c.discount_value}%` : `${formatSar(c.discount_value)} ${language === 'ar' ? 'ر.س' : 'SAR'}`}
                         </TableCell>
                         <TableCell>
                           {c.used_count}{c.max_uses ? ` / ${c.max_uses}` : ''}
@@ -506,7 +507,7 @@ export default function MarketingSection() {
                         {c.campaign_type === 'buy_x_get_y' ? (
                           <p>{mk.buy} {c.buy_quantity} {mk.get} {c.get_quantity}</p>
                         ) : (
-                          <p>{mk.discount}: {c.discount_type === 'percentage' ? `${c.discount_value}%` : `${c.discount_value} SAR`}</p>
+                          <p>{mk.discount}: {c.discount_type === 'percentage' ? `${c.discount_value}%` : `${formatSar(c.discount_value)} ${language === 'ar' ? 'ر.س' : 'SAR'}`}</p>
                         )}
                         <p className="text-muted-foreground">
                           {c.starts_at && format(new Date(c.starts_at), 'yyyy-MM-dd')}
