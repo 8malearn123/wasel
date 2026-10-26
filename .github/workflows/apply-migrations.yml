@@ -1,0 +1,83 @@
+name: Apply database migrations
+
+# Nothing applied supabase/migrations to the live database: functions the app
+# calls (my_permissions, get_subscription_state, …) were in the repo but not in
+# the database, so every page load got 404s for them.
+#
+# Run it from Actions → «Apply database migrations» → Run workflow:
+#   check — lists the migrations the live database is missing; changes nothing
+#   apply — applies them, in order, each in its own transaction
+# Both first apply every migration from scratch to a throwaway local Supabase,
+# so a broken migration fails here and never reaches the live database.
+#
+# Needs the repository secret SUPABASE_DB_URL: Supabase → Project Settings →
+# Database → Connection string → «Session pooler» URI, with the password
+# filled in (the direct connection is IPv6 only and GitHub runners cannot reach it).
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'check = list what is missing, apply = apply it'
+        type: choice
+        options: [check, apply]
+        default: check
+  push:
+    branches: [claude/sweet-knuth-u4nbzm]
+    paths: ['supabase/migrations/**', '.github/workflows/apply-migrations.yml']
+  pull_request:
+    paths: ['supabase/migrations/**', '.github/workflows/apply-migrations.yml']
+
+jobs:
+  validate:
+    name: Migrations apply cleanly from scratch
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.54.11
+      - run: supabase db start
+      - name: Functions the app calls exist
+        run: |
+          for f in my_permissions get_subscription_state; do
+            n=$(psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -tAc \
+              "select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = '$f'")
+            echo "$f: $n"
+            [ "$n" -ge 1 ] || { echo "::error::$f is missing after the migrations"; exit 1; }
+          done
+
+  live:
+    name: Live database (${{ inputs.mode }})
+    if: github.event_name == 'workflow_dispatch'
+    needs: validate
+    runs-on: ubuntu-latest
+    env:
+      DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.54.11
+      - name: Secret is set
+        run: |
+          [ -n "$DB_URL" ] || { echo "::error::Add the SUPABASE_DB_URL secret (Settings → Secrets and variables → Actions); see the top of this file."; exit 1; }
+      - name: Applied and missing migrations
+        run: supabase migration list --db-url "$DB_URL"
+      - name: What apply would do
+        run: |
+          supabase db push --db-url "$DB_URL" --dry-run 2>&1 | tee push-plan.txt
+          # The live history must already hold everything before 20261004 (the
+          # app runs on it). If it does not, the history is out of step and
+          # applying would re-run old migrations, so stop and look first.
+          old=$(grep -oE '\b2026(0[0-9]|100[0-3])[0-9]{6,}\b' push-plan.txt || true)
+          if [ -n "$old" ]; then
+            echo "::error::The live database's migration history lacks migrations older than 20261004: $old. Not applying; repair the history first."
+            exit 1
+          fi
+      - name: Apply
+        if: inputs.mode == 'apply'
+        run: supabase db push --db-url "$DB_URL" --yes
+      - name: Applied and missing migrations, after
+        if: inputs.mode == 'apply'
+        run: supabase migration list --db-url "$DB_URL"
