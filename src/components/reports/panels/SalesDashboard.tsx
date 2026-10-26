@@ -207,7 +207,7 @@ export function SalesDashboard({
           ) : (
             <div className="space-y-5 p-5">
               <div className="flex h-3 gap-0.5 overflow-hidden rounded-full" role="img"
-                aria-label={statusBreakdown.map(s => `${s.name}: ${fmtCount(s.value)}`).join('، ')}>
+                aria-label={statusBreakdown.map(s => `${s.name}: ${fmtCount(s.value)}`).join(isRTL ? '، ' : ', ')}>
                 {statusBreakdown.map(s => (
                   <span
                     key={s.key}

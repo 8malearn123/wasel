@@ -20,14 +20,25 @@ const EMPTY: SeoFields = {
   socialTitle: null, socialDescription: null, socialImageUrl: null, indexable: true,
 };
 
+// store_settings is readable for every published store (the storefront reads
+// it), so an unfiltered query returned many rows and maybeSingle() failed with
+// «JSON object requested, multiple (or no) rows returned». Always this shop's.
+async function myMerchantId(userId: string): Promise<string | null> {
+  const { data } = await supabase.from('merchant_users').select('merchant_id').eq('user_id', userId).limit(1);
+  return data?.[0]?.merchant_id ?? null;
+}
+
 export const supabaseSeoService: SeoService = {
   async getStoreSeo() {
     const { data: auth } = await supabase.auth.getUser();
     if (!auth?.user) return fail('unavailable', 'الجلسة غير متاحة');
+    const merchantId = await myMerchantId(auth.user.id);
+    if (!merchantId) return ok(EMPTY);
 
     const { data, error } = await supabase
       .from('store_settings')
       .select('seo_title, seo_description, slug, og_image_url, store_name, description')
+      .eq('merchant_id', merchantId)
       .maybeSingle();
 
     if (error) return fail('unknown', error.message);
@@ -48,9 +59,13 @@ export const supabaseSeoService: SeoService = {
   },
 
   async saveStoreSeo(fields: SeoFields) {
+    const { data: auth } = await supabase.auth.getUser();
+    const merchantId = auth?.user ? await myMerchantId(auth.user.id) : null;
+    if (!merchantId) return fail('unavailable', 'الجلسة غير متاحة');
     const { data: existing } = await supabase
       .from('store_settings')
       .select('id')
+      .eq('merchant_id', merchantId)
       .maybeSingle();
 
     if (!existing) return fail('not_found', 'إعدادات المتجر غير موجودة');
