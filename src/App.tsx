@@ -127,7 +127,7 @@ function RoleRoute({ allow, children }: { allow: UserRole[]; children: React.Rea
   }
 
   if (!merchantUser) {
-    return <Navigate to="/" replace />;
+    return <DeniedRedirect to="/" reason="permission" />;
   }
   if (!allow.includes(merchantUser.role as UserRole)) {
     return <DeniedRedirect to="/" reason="permission" />;
@@ -180,10 +180,12 @@ function DashboardRoute({ children }: { children: React.ReactNode }) {
   return <Navigate to={firstOpenSection(can, allows)} replace />;
 }
 
-function CashierRedirect({ children }: { children: React.ReactNode }) {
+// A cashier works at the till. Landing on "/" takes them there quietly; any
+// other page they open says why they were moved instead of bouncing silently.
+function CashierRedirect({ children, quiet = false }: { children: React.ReactNode; quiet?: boolean }) {
   const { merchantUser } = useAuth();
   if (merchantUser?.role === 'cashier') {
-    return <Navigate to="/pos" replace />;
+    return quiet ? <Navigate to="/pos" replace /> : <DeniedRedirect to="/pos" reason="cashier" />;
   }
   return <>{children}</>;
 }
@@ -206,7 +208,7 @@ function HomeRoute() {
 
   return (
     <ProtectedRoute>
-      <CashierRedirect>
+      <CashierRedirect quiet>
         <DashboardRoute>
           <Dashboard />
         </DashboardRoute>
