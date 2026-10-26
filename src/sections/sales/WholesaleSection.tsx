@@ -23,6 +23,8 @@ import {
   Package, Store, Truck, Plus, Trash2, Eye, EyeOff, Send, CheckCircle, XCircle, Clock,
   Lock, Wallet, AlertTriangle, Banknote, Search, Loader2, Inbox, ArrowLeftRight,
 } from 'lucide-react';
+import { productDetails } from '@/lib/wholesaleProduct';
+import { formatSar, roundSar } from '@/lib/money';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-warning/15 text-warning',
@@ -59,12 +61,10 @@ const LEGACY_TABS: Record<string, { section: Section; side: string }> = {
 const isOverdue = (credit: CreditTransaction) =>
   Boolean(credit.due_date) && new Date(credit.due_date as string) < new Date() && credit.status !== 'paid';
 
-// When the supplier's product row cannot be read (before migration
-// 20261023100100), say what kind of item it is rather than a bare «—»
+// The product as the hook resolved it (useWholesale → wholesaleProduct.ts);
+// a listing nothing could describe says what kind of item it is, not «—»
 const listingName = (listing: WholesaleListing) =>
-  listing.item_type === 'device'
-    ? `${listing.device?.brand || ''} ${listing.device?.model || ''}`.trim() || 'جهاز'
-    : listing.accessory?.name || 'إكسسوار';
+  listing.product?.name || (listing.item_type === 'device' ? 'جهاز' : 'إكسسوار');
 
 export default function WholesaleSection() {
   const { isRTL } = useLanguage();
@@ -229,7 +229,7 @@ export default function WholesaleSection() {
     );
   }
 
-  const money = (value: number) => `${value.toLocaleString(t ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US')} ${t ? 'ر.س' : 'SAR'}`;
+  const money = (value: number) => `${formatSar(value)} ${t ? 'ر.س' : 'SAR'}`;
 
   // Each tile opens the section it counts, on the right side of it
   const tiles: { id: string; section: Section; label: string; value: string; icon: typeof Package; tone: string; bg: string; open?: () => void }[] = [
@@ -351,7 +351,12 @@ export default function WholesaleSection() {
                         {filteredMarketplace.map(listing => (
                           <TableRow key={listing.id}>
                             <TableCell className="font-medium">{listing.merchant?.name || '—'}</TableCell>
-                            <TableCell>{listingName(listing)}</TableCell>
+                            <TableCell>
+                              <p className="font-medium">{listingName(listing)}</p>
+                              {listing.product && productDetails(listing.product) && (
+                                <p className="text-xs text-muted-foreground">{productDetails(listing.product)}</p>
+                              )}
+                            </TableCell>
                             <TableCell className="text-center"><Badge variant="outline">{listing.item_type === 'device' ? (t ? 'جهاز' : 'Device') : (t ? 'إكسسوار' : 'Accessory')}</Badge></TableCell>
                             <TableCell className="text-center tabular-nums">{listing.min_quantity}</TableCell>
                             <TableCell className="text-center font-semibold tabular-nums">{money(listing.wholesale_price)}</TableCell>
@@ -593,15 +598,55 @@ export default function WholesaleSection() {
             <DialogHeader><DialogTitle>{t ? 'طلب شراء بالجملة' : 'Wholesale order'}</DialogTitle></DialogHeader>
             {selectedListing && (
               <div className="space-y-4">
-                <div className="p-4 bg-muted rounded-lg">
-                  <p className="font-medium">{listingName(selectedListing)}</p>
-                  <p className="text-sm text-muted-foreground">{t ? 'من: ' : 'From: '}{selectedListing.merchant?.name || '—'}</p>
-                  <p className="text-lg font-bold mt-1">{money(selectedListing.wholesale_price)}<span className="text-sm font-normal text-muted-foreground">{t ? ' / وحدة' : ' / unit'}</span></p>
+                {/* what is on offer, from whom, at what price */}
+                <div className="p-4 bg-muted rounded-lg space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-foreground">{listingName(selectedListing)}</p>
+                      {selectedListing.product && productDetails(selectedListing.product) && (
+                        <p className="text-sm text-muted-foreground">{productDetails(selectedListing.product)}</p>
+                      )}
+                    </div>
+                    <Badge variant="outline" className="shrink-0">
+                      {selectedListing.item_type === 'device' ? (t ? 'جهاز' : 'Device') : (t ? 'إكسسوار' : 'Accessory')}
+                    </Badge>
+                  </div>
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+                    <dt className="text-muted-foreground">{t ? 'المورد' : 'Supplier'}</dt>
+                    <dd className="font-medium text-foreground">{selectedListing.merchant?.name || '—'}</dd>
+                    {selectedListing.merchant?.phone && (<>
+                      <dt className="text-muted-foreground">{t ? 'جوال المورد' : 'Phone'}</dt>
+                      <dd className="font-medium text-foreground" dir="ltr">{selectedListing.merchant.phone}</dd>
+                    </>)}
+                    {selectedListing.product?.brand && (<>
+                      <dt className="text-muted-foreground">{t ? 'الماركة' : 'Brand'}</dt>
+                      <dd className="font-medium text-foreground">{selectedListing.product.brand}</dd>
+                    </>)}
+                    {selectedListing.product?.category && (<>
+                      <dt className="text-muted-foreground">{t ? 'التصنيف' : 'Category'}</dt>
+                      <dd className="font-medium text-foreground">{selectedListing.product.category}</dd>
+                    </>)}
+                    <dt className="text-muted-foreground">{t ? 'سعر الوحدة' : 'Unit price'}</dt>
+                    <dd className="font-bold text-foreground">{money(selectedListing.wholesale_price)}</dd>
+                    <dt className="text-muted-foreground">{t ? 'أقل كمية للطلب' : 'Minimum order'}</dt>
+                    <dd className="font-medium text-foreground">{selectedListing.min_quantity}</dd>
+                  </dl>
                 </div>
                 <div>
                   <Label>{t ? 'الكمية' : 'Quantity'}</Label>
-                  <Input type="number" min={selectedListing.min_quantity} value={orderQty} onChange={e => setOrderQty(e.target.value)} />
-                  <p className="text-xs text-muted-foreground mt-1">{t ? `أقل كمية: ${selectedListing.min_quantity}` : `Minimum: ${selectedListing.min_quantity}`}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Button type="button" variant="outline" size="icon" aria-label={t ? 'إنقاص' : 'Less'}
+                      disabled={(parseInt(orderQty) || 0) <= selectedListing.min_quantity}
+                      onClick={() => setOrderQty(String(Math.max(selectedListing.min_quantity, (parseInt(orderQty) || 0) - 1)))}>−</Button>
+                    <Input type="number" inputMode="numeric" className="text-center" min={selectedListing.min_quantity} value={orderQty} onChange={e => setOrderQty(e.target.value)} />
+                    <Button type="button" variant="outline" size="icon" aria-label={t ? 'زيادة' : 'More'}
+                      onClick={() => setOrderQty(String((parseInt(orderQty) || 0) + 1))}>+</Button>
+                  </div>
+                  {(parseInt(orderQty) || 0) < selectedListing.min_quantity ? (
+                    <p className="text-xs text-destructive mt-1">{t ? `أقل كمية يقبلها المورد: ${selectedListing.min_quantity}` : `The supplier's minimum is ${selectedListing.min_quantity}`}</p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground mt-1">{t ? `أقل كمية: ${selectedListing.min_quantity}` : `Minimum: ${selectedListing.min_quantity}`}</p>
+                  )}
                 </div>
                 <div><Label>{t ? 'طريقة الدفع' : 'Payment'}</Label>
                   <Select value={orderPaymentType} onValueChange={(v: 'cash' | 'credit') => setOrderPaymentType(v)}>
@@ -628,12 +673,17 @@ export default function WholesaleSection() {
                     )}
                   </>
                 )}
-                {orderQty && (
-                  <div className="text-center p-3 bg-primary/5 rounded-lg">
-                    <p className="text-sm text-muted-foreground">{t ? 'الإجمالي' : 'Total'}</p>
-                    <p className="text-2xl font-bold text-primary">{money(selectedListing.wholesale_price * (parseInt(orderQty) || 0))}</p>
+                {/* the price follows the quantity */}
+                <div className="p-3 bg-primary/5 rounded-lg space-y-1">
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <span>{t ? 'سعر الوحدة × الكمية' : 'Unit price × quantity'}</span>
+                    <span dir="ltr">{money(selectedListing.wholesale_price)} × {parseInt(orderQty) || 0}</span>
                   </div>
-                )}
+                  <div className="flex items-center justify-between pt-1 border-t border-primary/10">
+                    <span className="font-semibold text-foreground">{t ? 'الإجمالي' : 'Total'}</span>
+                    <span className="text-2xl font-bold text-primary">{money(roundSar(selectedListing.wholesale_price * (parseInt(orderQty) || 0)))}</span>
+                  </div>
+                </div>
                 <Button onClick={handleOrder} className="w-full" disabled={!orderQty || parseInt(orderQty) < selectedListing.min_quantity}>
                   <Send className="w-4 h-4 me-1" />{t ? 'إرسال الطلب' : 'Send order'}
                 </Button>
