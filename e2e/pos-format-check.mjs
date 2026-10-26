@@ -16,7 +16,7 @@ for (const lang of ['en', 'ar']) {
   const res = await page.goto(`${process.env.SITE}/pos`); await page.waitForTimeout(9000);
   const html = await (await fetch(`${process.env.SITE}/`)).text();
   console.log(`TEXT ${lang} bundle: ${(html.match(/assets\/index-[^"]+\.js/) || ['?'])[0]} status ${res?.status()}`);
-  for (const name of ['Xiaomi 14', '20000']) {
+  for (const name of ['Apple iPhone 14 Pro', '20000']) {
     try { await page.getByText(name, { exact: false }).first().click({ timeout: 6000 }); await page.waitForTimeout(800); console.log(`OK   ${lang} add ${name}`); }
     catch (e) { console.log(`FAIL ${lang} add ${name}: ${e.message.split('\n')[0]}`); }
   }
