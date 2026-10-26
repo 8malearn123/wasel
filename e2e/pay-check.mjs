@@ -15,7 +15,7 @@ for (let i = 0; i < 7; i++) { const t = Date.now(); await fetch(`${SUPA}/rest/v1
 const RTT = rtts.sort((a, b) => a - b)[3];
 console.log(`TEXT round trip to Supabase: ${RTT} ms (reads: ${rtts.join(', ')})`);
 const browser = await chromium.launch(process.env.CHANNEL ? { channel: process.env.CHANNEL } : {});
-for (const [label, site] of [['live', 'https://wasel-alpha.vercel.app'], ['branch', 'http://localhost:4173']]) {
+for (const [label, site] of [['branch', 'http://localhost:4173']]) {
  for (const w of [1440, 390]) {
   const context = await browser.newContext({ locale: 'ar', viewport: { width: w, height: w > 500 ? 900 : 844 } });
   await context.addInitScript(([k, v]) => { localStorage.setItem(k, v); localStorage.setItem('language', 'ar'); },
@@ -41,7 +41,7 @@ for (const [label, site] of [['live', 'https://wasel-alpha.vercel.app'], ['branc
   const page = await context.newPage();
   const step = async (name, fn) => { try { await fn(); console.log(`OK   ${label} ${w} ${name}`); } catch (e) { console.log(`FAIL ${label} ${w} ${name}: ${e.message.split('\n')[0]}`); } };
   await page.goto(`${site}/pos`); await page.waitForTimeout(9000);
-  if (w < 500) { /* on phones the cart is behind a button */ }
+  if (w < 500) console.log(`TEXT ${label} ${w} page: ${(await page.locator('body').innerText()).replace(/\s+/g, ' ').slice(0, 600)}`);
   await step('add iPhone 14 Pro', async () => { await page.getByText('Apple iPhone 14 Pro').first().click({ timeout: 6000 }); });
   await step('add power bank', async () => { await page.getByText('20000').first().click({ timeout: 6000 }); });
   await step('open payment', async () => {
@@ -64,7 +64,7 @@ for (const [label, site] of [['live', 'https://wasel-alpha.vercel.app'], ['branc
   await page.waitForTimeout(1500); t0 = 0;
   console.log(`TEXT ${label} ${w} PAYMENT ${ms} ms`);
   for (const l of log) console.log(`TEXT ${label} ${w}   ${l}`);
-  const inv = (await page.getByRole('dialog').last().innerText().catch(() => '')).replace(/\s+/g, ' ');
+  const inv = (await page.locator('body').innerText().catch(() => '')).replace(/\s+/g, ' ').split('فاتورة ضريبية').pop();
   console.log(`TEXT ${label} ${w} invoice: ${inv.slice(0, 900)}`);
   console.log(`TEXT ${label} ${w} dates: ${JSON.stringify(inv.match(/\d{1,2}\/\d{1,2}\/\d{4}( \d{1,2}:\d{2})?/g))}`);
   const b = await page.screenshot({ type: 'jpeg', quality: 72 }); console.log(`SHOT-BEGIN ${label}-${w}`); console.log(b.toString('base64')); console.log('SHOT-END');
