@@ -598,6 +598,37 @@ export default function WholesaleSection() {
             <DialogHeader><DialogTitle>{t ? 'طلب شراء بالجملة' : 'Wholesale order'}</DialogTitle></DialogHeader>
             {selectedListing && (
               <div className="space-y-4">
+                {/* every product this supplier offers: the device and its price can be changed here */}
+                <div>
+                  <Label>{t ? 'المنتج / نوع الجهاز' : 'Product'}</Label>
+                  <Select
+                    value={selectedListing.id}
+                    onValueChange={id => {
+                      const next = marketplace.find(l => l.id === id);
+                      if (!next) return;
+                      setSelectedListing(next);
+                      // keep the quantity, but never below the new minimum
+                      setOrderQty(String(Math.max(parseInt(orderQty) || 0, next.min_quantity)));
+                    }}
+                  >
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {marketplace
+                        .filter(l => l.merchant_id === selectedListing.merchant_id)
+                        .map(l => (
+                          <SelectItem key={l.id} value={l.id}>
+                            {listingName(l)}{l.product && productDetails(l.product) ? ` · ${productDetails(l.product)}` : ''} — {money(l.wholesale_price)}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {(() => {
+                      const n = marketplace.filter(l => l.merchant_id === selectedListing.merchant_id).length;
+                      return t ? (n === 1 ? 'منتج واحد معروض من هذا المورد' : `${n} منتجات معروضة من هذا المورد`) : `${n} product(s) from this supplier`;
+                    })()}
+                  </p>
+                </div>
                 {/* what is on offer, from whom, at what price */}
                 <div className="p-4 bg-muted rounded-lg space-y-3">
                   <div className="flex items-start justify-between gap-3">
