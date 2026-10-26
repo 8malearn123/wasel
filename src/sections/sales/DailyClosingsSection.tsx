@@ -20,6 +20,7 @@ import {
   PieChart, Pie, Cell, Legend,
 } from "recharts";
 import { toast } from "sonner";
+import { formatSar } from "@/lib/money";
 
 export default function DailyClosingsSection() {
   const { isRTL } = useLanguage();
@@ -165,7 +166,7 @@ export default function DailyClosingsSection() {
     }
   };
 
-  const formatCurrency = (v: number) => `${v.toFixed(2)} ر.س`;
+  const formatCurrency = (v: number) => `${formatSar(v)} ر.س`;
   const pctChange = (curr: number, prev: number) => {
     if (!prev) return curr > 0 ? 100 : 0;
     return ((curr - prev) / prev) * 100;

@@ -262,7 +262,7 @@ export default function POSPage() {
 
   return (
     <AppLayout title={t.pos.title} subtitle={t.pos.subtitle} hideSidebar>
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="h-[calc(100vh-140px)]">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="lg:h-[calc(100vh-140px)]">
         {/* سجل المبيعات used to be reachable only from the sidebar's own
             sub-entry under the till. The sidebar now opens the till directly,
             so the switcher belongs on the screen it switches. */}
@@ -289,9 +289,12 @@ export default function POSPage() {
           ))}
         </div>
 
-        <TabsContent value="pos" className="h-[calc(100%-60px)]">
-          <div className="flex gap-6 h-full">
-            <div className="flex-1 flex flex-col gap-6 overflow-hidden">
+        {/* side by side from lg; on a phone the products come first (their own
+            scroll) and the cart under them — the cart's fixed width used to
+            leave the products no room at all below 640px */}
+        <TabsContent value="pos" className="lg:h-[calc(100%-60px)]">
+          <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 lg:h-full">
+            <div className="flex-1 min-w-0 flex flex-col gap-4 lg:gap-6 overflow-hidden h-[65vh] lg:h-auto">
               <ScannerSection onScan={handleScan} isSearching={isSearching} />
               <ProductGrid
                 devices={devices}

@@ -116,7 +116,7 @@ export function CartPanel({
     <motion.div
       initial={{ opacity: 0, x: isRTL ? -20 : 20 }}
       animate={{ opacity: 1, x: 0 }}
-      className="w-[380px] bg-card rounded-xl border border-border shadow-lg flex flex-col overflow-hidden"
+      className="w-full lg:w-[380px] shrink-0 min-h-[420px] lg:min-h-0 bg-card rounded-xl border border-border shadow-lg flex flex-col overflow-hidden"
     >
       {/* Cart Header */}
       <div className="px-4 py-3 border-b border-border flex items-center justify-between">
@@ -253,7 +253,7 @@ export function CartPanel({
           onClick={() => setShowPaymentDialog(true)}
         >
           <ReceiptText className={cn("w-4 h-4", isRTL ? "ml-2" : "mr-2")} />
-          {isProcessing ? (isRTL ? "جاري البيع..." : "Processing...") : t.pos.completeSale}
+          {isProcessing ? (isRTL ? "جارٍ إتمام البيع…" : "Completing sale…") : t.pos.completeSale}
         </Button>
       </div>
 
@@ -351,7 +351,7 @@ export function CartPanel({
                   inputMode="decimal"
                   value={cashReceived}
                   onChange={(e) => setCashReceived(e.target.value)}
-                  placeholder={amountDue.toFixed(2)}
+                  placeholder={formatSar(amountDue)}
                   className={cn("h-12 text-xl font-bold text-center", cashInsufficient && "border-destructive")}
                 />
                 <div className="flex gap-1.5">

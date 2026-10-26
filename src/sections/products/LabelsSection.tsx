@@ -14,6 +14,7 @@ import { Search, Printer, Barcode, Settings2, Package, Smartphone } from "lucide
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import JsBarcode from "jsbarcode";
+import { formatSar } from "@/lib/money";
 
 type LabelSize = "small" | "medium" | "large";
 
@@ -101,7 +102,7 @@ function LabelCard({
         <BarcodeCanvas value={item.code} width={cfg.barW} height={cfg.h} />
         {showPrice && (
           <Badge variant="secondary" className="text-[10px]">
-            {item.price.toFixed(2)} SAR
+            {formatSar(item.price)} SAR
           </Badge>
         )}
       </div>
@@ -199,7 +200,7 @@ export default function LabelsSection() {
             <p class="name">${item.name}</p>
             ${showBrand && item.brand ? `<p class="brand">${item.brand}</p>` : ""}
             <img src="${barcodeDataUrl}" />
-            ${showPrice ? `<p class="price">${item.price.toFixed(2)} SAR</p>` : ""}
+            ${showPrice ? `<p class="price">${formatSar(item.price)} SAR</p>` : ""}
           </div>
         `;
       })

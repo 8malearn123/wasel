@@ -2,16 +2,20 @@ import { describe, it, expect } from 'vitest';
 import { formatSar, sar, roundSar, vatInclusive } from './money';
 
 describe('formatSar', () => {
-  it('writes every amount with grouping and two decimals', () => {
+  it('groups thousands; two decimals only when there are halalas', () => {
     expect(formatSar(2373.043)).toBe('2,373.04');
-    expect(formatSar(2729)).toBe('2,729.00');
+    expect(formatSar(2729)).toBe('2,729');
+    expect(formatSar(7298.004)).toBe('7,298');
+    expect(formatSar(6346.09)).toBe('6,346.09');
+    expect(formatSar(951.9)).toBe('951.90');
     expect(formatSar('15.5')).toBe('15.50');
-    expect(formatSar(null)).toBe('0.00');
+    expect(formatSar(null)).toBe('0');
     expect(formatSar(77211088, { decimals: 0 })).toBe('77,211,088');
   });
   it('puts the currency after the figure in both languages', () => {
-    expect(sar(10)).toBe('10.00 ر.س');
-    expect(sar(10, false)).toBe('10.00 SAR');
+    expect(sar(10)).toBe('10 ر.س');
+    expect(sar(10.5)).toBe('10.50 ر.س');
+    expect(sar(10, false)).toBe('10 SAR');
   });
   it('rounds halfway halalas up', () => {
     expect(roundSar(1.005)).toBe(1.01);
