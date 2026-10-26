@@ -42,5 +42,6 @@ describe('shipments', () => {
     expect(html).toContain('ORD-20261026-001');
     expect(html).toContain('تحصيل عند الاستلام: 1,150 ر.س');
     expect(html).toContain('&lt;b&gt;x&lt;/b&gt;');
+    expect(waybillHtml(order({ payment_method: 'bank_transfer' }), { name: 's' }, 1)).not.toContain('مدفوع');
   });
 });

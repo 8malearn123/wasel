@@ -151,9 +151,9 @@ export default function OnlineOrdersSection() {
                           <Badge variant="outline" className={pay.color}>{pay.label}</Badge>
                           <Badge variant="outline">{storePaymentLabel(order.payment_method)}</Badge>
                         </div>
-                        <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1"><User className="w-3 h-3" />{order.customer_name}</span>
-                          <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{order.customer_phone}</span>
+                          <span className="flex items-center gap-1" dir="ltr"><Phone className="w-3 h-3" />{order.customer_phone}</span>
                           <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{order.shipping_city}</span>
                         </div>
                         {shipment.url && (

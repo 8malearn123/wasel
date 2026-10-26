@@ -57,7 +57,7 @@ for (const w of [1440, 390]) {
   await step('carriers tab', async () => { await page.getByRole('button', { name: 'شركات الشحن', exact: true }).click(); await page.waitForTimeout(800); console.log(`TEXT ${w} carriers: ${(await text()).slice(0, 500)}`); });
   await step('insights tab', async () => { await page.getByRole('button', { name: 'تحليلات الشحن' }).click(); await page.waitForTimeout(800); console.log(`TEXT ${w} insights: ${(await text()).slice(0, 500)}`); await shot('insights'); });
   await page.goto(`${'http://localhost:4173'}/sales?tab=orders`); await page.waitForTimeout(7000);
-  const nums = (await text()).match(/ORD-[\w-]+/g) || [];
+  const nums = (await text()).match(/(ORD|ON)-[\w-]+/g) || [];
   console.log(`TEXT ${w} store orders numbers: ${JSON.stringify(nums.slice(0, 6))} short-only=${/(^|\s)-\d{3}(\s|$)/.test(await text())}`);
   await shot('orders');
   console.log(`TEXT ${w} overflow=${await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)} ERRORS ${JSON.stringify(errors.slice(0, 4))}`);

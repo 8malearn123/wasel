@@ -111,6 +111,8 @@ export function waybillHtml(order: ShipmentOrder, sender: { name: string; phone?
   <div class="row box"><div><div class="lbl">رقم الطلب</div><div class="big ltr">${esc(order.order_number)}</div></div>
     <div><div class="lbl">عدد القطع</div><div class="big">${itemsCount}</div></div></div>
   ${barcodeSvg ? `<div class="bar box">${barcodeSvg}</div>` : ''}
-  ${cod > 0 ? `<div class="cod">تحصيل عند الاستلام: ${formatSar(cod)} ر.س</div>` : '<div class="lbl" style="text-align:center">مدفوع — لا يُحصَّل شيء عند الاستلام</div>'}
+  ${cod > 0 ? `<div class="cod">تحصيل عند الاستلام: ${formatSar(cod)} ر.س</div>`
+    : order.payment_status === 'paid' ? '<div class="lbl" style="text-align:center">مدفوع — لا يُحصَّل شيء عند الاستلام</div>'
+    : '<div class="lbl" style="text-align:center">لا يُحصَّل شيء عند الاستلام</div>'}
 </body></html>`;
 }

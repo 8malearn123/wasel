@@ -27,6 +27,7 @@ import { useOnlineOrders, useStorePages, useStoreSettings, type OnlineOrder } fr
 import { CARRIERS, orderShipment, type CarrierSetting } from '@/lib/shipping';
 import { shipmentStage, shippingStats, collectOnDelivery, waybillHtml, type ShipmentStage } from '@/lib/shipments';
 import { formatSar } from '@/lib/money';
+import { storePaymentLabel } from '@/lib/storePayments';
 
 /**
  * Shipping, from the store's own orders: what is waiting to go out, what is on
@@ -244,7 +245,9 @@ function Shipments({
                     <p className="text-xs text-muted-foreground">{t ? 'رسوم الشحن' : 'Shipping'}: <span className="text-foreground font-medium">{formatSar(o.shipping_cost)} {cur}</span></p>
                     {cod > 0
                       ? <p className="text-xs font-semibold text-warning">{t ? 'تحصيل عند الاستلام' : 'Collect on delivery'}: {formatSar(cod)} {cur}</p>
-                      : <p className="text-xs text-success">{t ? 'مدفوع' : 'Paid'}</p>}
+                      : o.payment_status === 'paid'
+                        ? <p className="text-xs text-success">{t ? 'مدفوع' : 'Paid'}</p>
+                        : <p className="text-xs font-semibold text-destructive">{t ? `غير مدفوع · ${storePaymentLabel(o.payment_method)}` : 'Not paid yet'}</p>}
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-border">
