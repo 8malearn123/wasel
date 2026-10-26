@@ -83,13 +83,17 @@ export function useSales() {
 
     // A device is sold once. The till only offers devices for sale, but a cart
     // can outlive that: the same iPhone was found on two invoices. The database
-    // has the last word before the invoice is made.
+    // has the last word before the invoice is made. Asked together with the
+    // invoice number: one round trip, not two.
     const deviceIds = cart.filter(i => i.type === 'device' && i.deviceId).map(i => i.deviceId as string);
+    const [statusCheck, { data: invoiceData }] = await Promise.all([
+      deviceIds.length
+        ? supabase.from('devices').select('id, model, status').in('id', deviceIds)
+        : Promise.resolve({ data: [] as { id: string; model: string; status: string }[], error: null }),
+      supabase.rpc('generate_invoice_number', { _merchant_id: merchant.id }),
+    ]);
     if (deviceIds.length) {
-      const { data: current, error: statusError } = await supabase
-        .from('devices')
-        .select('id, model, status')
-        .in('id', deviceIds);
+      const { data: current, error: statusError } = statusCheck;
       if (statusError) {
         toast.error(statusError.message);
         return { error: statusError };
@@ -103,10 +107,6 @@ export function useSales() {
       }
     }
 
-    // Generate invoice number
-    const { data: invoiceData } = await supabase
-      .rpc('generate_invoice_number', { _merchant_id: merchant.id });
-    
     const invoiceNumber = invoiceData || `INV-${Date.now()}`;
 
     // Create sale
@@ -150,30 +150,35 @@ export function useSales() {
       return { error: itemsError };
     }
 
+    // The stock follows in the background: the sale and its lines are saved,
+    // so the till confirms now instead of waiting one or two more round trips.
+    // A stock update that fails is reported, not hidden.
     const accessoryLines = cart.filter(i => i.type === 'accessory' && i.accessoryId);
-    const stockUpdates: PromiseLike<unknown>[] = [];
+    const stockUpdates: PromiseLike<{ error: unknown }>[] = [];
     if (deviceIds.length) {
       stockUpdates.push(supabase.from('devices').update({ status: 'sold' }).in('id', deviceIds));
     }
     for (const item of accessoryLines) {
       stockUpdates.push((async () => {
-        const { data: acc } = await supabase
+        const { data: acc, error } = await supabase
           .from('accessories')
           .select('quantity')
           .eq('id', item.accessoryId as string)
           .single();
-        if (acc) {
-          await supabase
-            .from('accessories')
-            .update({ quantity: Math.max(0, acc.quantity - item.quantity) })
-            .eq('id', item.accessoryId as string);
-        }
+        if (error || !acc) return { error: error ?? new Error('accessory not found') };
+        return supabase
+          .from('accessories')
+          .update({ quantity: Math.max(0, acc.quantity - item.quantity) })
+          .eq('id', item.accessoryId as string);
       })());
     }
-    await Promise.all(stockUpdates);
-
-    // the history refreshes on its own; the sale is confirmed already
-    void fetchSales();
+    void Promise.all(stockUpdates).then(results => {
+      if (results.some(r => r.error)) {
+        toast.warning(`تم البيع (فاتورة ${invoiceNumber}) لكن تعذّر تحديث المخزون لبعض المنتجات — راجِعه من صفحة المنتجات.`);
+      }
+      // the history refreshes on its own; the sale is confirmed already
+      void fetchSales();
+    });
     toast.success(`تمت عملية البيع — فاتورة ${invoiceNumber}`);
 
     return { data: sale, error: null };
