@@ -1,0 +1,98 @@
+name: Apply database migrations
+
+# Nothing applied supabase/migrations to the live database: functions the app
+# calls (my_permissions, get_subscription_state, …) were in the repo but not in
+# the database, so the site got 404s for them.
+#
+# Run it from Actions → «Apply database migrations» → Run workflow:
+#   check — lists the migrations the live database is missing and rehearses
+#           them on a copy of the live schema; changes nothing
+#   apply — the same, then applies them to the live database, in order, each
+#           file in its own transaction (a failing file changes nothing)
+#
+# Needs the repository secret SUPABASE_DB_URL: Supabase → Project Settings →
+# Database → Connection string → «Session pooler» URI, with the password
+# filled in (the direct connection is IPv6 only; GitHub runners cannot reach it).
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'check = list and rehearse, apply = apply to the live database'
+        type: choice
+        options: [check, apply]
+        default: check
+
+env:
+  SUPABASE_URL: https://ynwddyxzypbcftlevuam.supabase.co
+  LOCAL_DB: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+
+jobs:
+  migrate:
+    name: Migrations (${{ inputs.mode }})
+    runs-on: ubuntu-latest
+    env:
+      DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Live functions, before
+        run: bash .github/scripts/probe-rpcs.sh
+
+      - name: Secret is set
+        run: |
+          [ -n "$DB_URL" ] || { echo "::error::Add the SUPABASE_DB_URL secret (Settings → Secrets and variables → Actions): Supabase → Project Settings → Database → Connection string → Session pooler URI, with the password."; exit 1; }
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.54.11
+
+      - name: Migrations the live database is missing
+        run: |
+          psql "$DB_URL" -tAc "select version from supabase_migrations.schema_migrations" | sort > applied.txt
+          ls supabase/migrations/*.sql | sed -E 's#.*/([0-9]+)_.*#\1#' | sort > local.txt
+          comm -23 local.txt applied.txt > pending.txt
+          echo "Applied in the live database: $(wc -l < applied.txt)"
+          echo "Missing:"; cat pending.txt
+          # Everything before 20261004 is what the site runs on. If the live
+          # history lacks it, the history is out of step with the repo: stop.
+          old=$(awk '$1 < "20261004"' pending.txt)
+          if [ -n "$old" ]; then echo "::error::Live history lacks migrations older than 20261004 ($old); not touching it."; exit 1; fi
+
+      - name: Rehearse on a copy of the live schema
+        run: |
+          mkdir -p /tmp/held && mv supabase/migrations/*.sql /tmp/held/
+          supabase db start
+          mv /tmp/held/*.sql supabase/migrations/
+          supabase db dump --db-url "$DB_URL" -f live-schema.sql
+          psql "$LOCAL_DB" -q -v ON_ERROR_STOP=1 -f live-schema.sql
+          while read -r v; do
+            f=$(ls supabase/migrations/${v}_*.sql)
+            echo "::group::rehearse $f"
+            psql "$LOCAL_DB" -q -v ON_ERROR_STOP=1 --single-transaction -f "$f"
+            echo "::endgroup::"
+          done < pending.txt
+          for fn in my_permissions get_subscription_state; do
+            n=$(psql "$LOCAL_DB" -tAc "select count(*) from pg_proc p join pg_namespace s on s.oid = p.pronamespace where s.nspname = 'public' and p.proname = '$fn'")
+            echo "$fn after the rehearsal: $n"
+            [ "$n" -ge 1 ] || { echo "::error::$fn is still missing after the rehearsal"; exit 1; }
+          done
+
+      - name: Apply to the live database
+        if: inputs.mode == 'apply'
+        run: |
+          while read -r v; do
+            f=$(ls supabase/migrations/${v}_*.sql)
+            name=$(basename "$f" .sql | cut -d_ -f2-)
+            echo "::group::apply $f"
+            { cat "$f"; echo; echo "INSERT INTO supabase_migrations.schema_migrations (version, name) VALUES ('$v', '$name');"; } \
+              | psql "$DB_URL" -q -v ON_ERROR_STOP=1 --single-transaction
+            echo "::endgroup::"
+          done < pending.txt
+          echo "Missing now:"; psql "$DB_URL" -tAc "select version from supabase_migrations.schema_migrations" | sort | comm -23 local.txt -
+
+      - name: Live functions, after
+        if: inputs.mode == 'apply'
+        run: |
+          sleep 5  # PostgREST reloads its schema cache on DDL
+          bash .github/scripts/probe-rpcs.sh --expect-present
