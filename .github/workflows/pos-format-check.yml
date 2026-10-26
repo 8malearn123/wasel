@@ -1,0 +1,17 @@
+name: POS format check
+on:
+  push:
+    branches: [claude/sweet-knuth-u4nbzm]
+    paths: ['e2e/pos-format-check.mjs', '.github/workflows/pos-format-check.yml']
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: cd e2e && PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm i --no-save --no-package-lock playwright@1.48.2
+      - run: export ANON=$(grep -E '^VITE_SUPABASE_PUBLISHABLE_KEY=' .env | cut -d= -f2- | tr -d '"') && cd e2e && node pos-format-check.mjs
+        env:
+          SITE: https://wasel-alpha.vercel.app
+          CHANNEL: chrome
