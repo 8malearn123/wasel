@@ -351,7 +351,7 @@ export function CartPanel({
                   inputMode="decimal"
                   value={cashReceived}
                   onChange={(e) => setCashReceived(e.target.value)}
-                  placeholder={amountDue.toFixed(2)}
+                  placeholder={formatSar(amountDue)}
                   className={cn("h-12 text-xl font-bold text-center", cashInsufficient && "border-destructive")}
                 />
                 <div className="flex gap-1.5">

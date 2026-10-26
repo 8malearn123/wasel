@@ -11,6 +11,7 @@ import {
 } from "@/services/thermalPrinter";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import { formatSar } from "@/lib/money";
 
 interface RepairInvoiceDialogProps {
   repair: RepairOrder;
@@ -147,9 +148,9 @@ export function RepairInvoiceDialog({ repair, usedParts, merchantName, branchNam
       <div class="totals">
         ${usedParts.length > 0 ? `<div class="row"><span>تكلفة القطع</span><span>${partsCostTotal.toLocaleString()} ر.س</span></div>` : ''}
         <div class="row"><span>أجرة الإصلاح</span><span>${(laborCost - partsCostTotal).toLocaleString()} ر.س</span></div>
-        <div class="row"><span>المجموع قبل الضريبة</span><span>${subtotal.toFixed(2)} ر.س</span></div>
-        <div class="row"><span>ضريبة 15%</span><span>${tax.toFixed(2)} ر.س</span></div>
-        <div class="row total-row"><span>الإجمالي</span><span>${total.toFixed(2)} ر.س</span></div>
+        <div class="row"><span>المجموع قبل الضريبة</span><span>${formatSar(subtotal)} ر.س</span></div>
+        <div class="row"><span>ضريبة 15%</span><span>${formatSar(tax)} ر.س</span></div>
+        <div class="row total-row"><span>الإجمالي</span><span>${formatSar(total)} ر.س</span></div>
       </div>
       <hr class="separator"/>
 
@@ -289,15 +290,15 @@ export function RepairInvoiceDialog({ repair, usedParts, merchantName, branchNam
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">المجموع قبل الضريبة</span>
-              <span className="text-foreground">{subtotal.toFixed(2)} ر.س</span>
+              <span className="text-foreground">{formatSar(subtotal)} ر.س</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">ضريبة 15%</span>
-              <span className="text-foreground">{tax.toFixed(2)} ر.س</span>
+              <span className="text-foreground">{formatSar(tax)} ر.س</span>
             </div>
             <div className="flex justify-between pt-2 border-t border-border font-bold text-base">
               <span>الإجمالي</span>
-              <span className="text-primary">{total.toFixed(2)} ر.س</span>
+              <span className="text-primary">{formatSar(total)} ر.س</span>
             </div>
           </div>
 
