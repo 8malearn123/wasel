@@ -12,6 +12,8 @@ for (const v of ['naqel', 'other']) {
   const r = await fetch(`${SUPA}/rest/v1/online_orders?id=eq.00000000-0000-0000-0000-000000000000`, { method: 'PATCH', headers: H, body: JSON.stringify({ shipping_provider: v }) });
   console.log(`TEXT enum probe shipping_provider='${v}' → HTTP ${r.status} ${(await r.text()).slice(0, 160)}`);
 }
+const spec = await (await fetch(`${SUPA}/rest/v1/`, { headers: { apikey: ANON, Authorization: `Bearer ${session.access_token}` } })).json();
+console.log(`TEXT column type online_orders.shipping_provider: ${JSON.stringify(spec?.definitions?.online_orders?.properties?.shipping_provider)}`);
 const orders = await (await fetch(`${SUPA}/rest/v1/online_orders?select=order_number,status,shipping_provider,tracking_number,shipping_city&order=created_at.desc&limit=50`, { headers: H })).json();
 console.log(`TEXT live orders: ${orders.length} → ${JSON.stringify(orders.slice(0, 8))}`);
 const browser = await chromium.launch(process.env.CHANNEL ? { channel: process.env.CHANNEL } : {});
@@ -31,7 +33,7 @@ for (const w of [1440, 390]) {
   const step = async (n, f) => { try { await f(); console.log(`OK   ${w} ${n}`); } catch (e) { console.log(`FAIL ${w} ${n}: ${e.message.split('\n')[0]}`); } };
   const text = async () => (await page.locator('main, body').first().innerText()).replace(/\s+/g, ' ');
 
-  await page.goto(`${process.env.SITE}/shipping`); await page.waitForTimeout(8000);
+  await page.goto(`${'http://localhost:4173'}/shipping`); await page.waitForTimeout(8000);
   console.log(`TEXT ${w} shipping: ${(await text()).slice(0, 900)}`);
   await shot('shipping');
   for (const tab of ['في الطريق', 'تم التسليم', 'بانتظار الشحن']) {
@@ -54,7 +56,7 @@ for (const w of [1440, 390]) {
   });
   await step('carriers tab', async () => { await page.getByRole('button', { name: 'شركات الشحن', exact: true }).click(); await page.waitForTimeout(800); console.log(`TEXT ${w} carriers: ${(await text()).slice(0, 500)}`); });
   await step('insights tab', async () => { await page.getByRole('button', { name: 'تحليلات الشحن' }).click(); await page.waitForTimeout(800); console.log(`TEXT ${w} insights: ${(await text()).slice(0, 500)}`); await shot('insights'); });
-  await page.goto(`${process.env.SITE}/sales?tab=orders`); await page.waitForTimeout(7000);
+  await page.goto(`${'http://localhost:4173'}/sales?tab=orders`); await page.waitForTimeout(7000);
   const nums = (await text()).match(/ORD-[\w-]+/g) || [];
   console.log(`TEXT ${w} store orders numbers: ${JSON.stringify(nums.slice(0, 6))} short-only=${/(^|\s)-\d{3}(\s|$)/.test(await text())}`);
   await shot('orders');
