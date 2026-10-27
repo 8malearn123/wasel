@@ -24,5 +24,11 @@ for (const [who, table, knownId, col, code] of T) {
     ['repair_orders', `merchant_id=eq.${mid}&device_imei=eq.${code}`],
     ['stocktake_items', `item_sku=eq.${encodeURIComponent(code)}`],
   ];
+  // JSON columns cannot be text-searched through the API: read them whole and search here
+  for (const [t, q] of [['activity_logs', `merchant_id=eq.${mid}&select=id,old_data,new_data`], ['store_settings', `merchant_id=eq.${mid}&select=id,featured_product_ids,additional_banners`], ['store_categories', `merchant_id=eq.${mid}&select=*`], ['campaigns', `merchant_id=eq.${mid}&select=*`]]) {
+    const [st, rows] = await get(q.includes('select=') ? `${t}?${q}` : `${t}?${q}&select=*`);
+    const hits = Array.isArray(rows) ? rows.filter(r => JSON.stringify(r).includes(id)).length : JSON.stringify(rows).slice(0, 100);
+    console.log(`EV ${who}   ${t} (full read, ${Array.isArray(rows) ? rows.length : '?'} rows, searched in JSON) → HTTP ${st} matches=${hits}`);
+  }
   for (const [t, q] of checks) { const [st, j] = await get(`${t}?${q}&select=id`); console.log(`EV ${who}   ${t} ?${q.slice(0, 60)} → HTTP ${st} ${Array.isArray(j) ? j.length + ' rows' : JSON.stringify(j).slice(0, 120)}`); }
 }
