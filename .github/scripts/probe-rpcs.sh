@@ -7,11 +7,11 @@ ANON=$(grep -E '^VITE_SUPABASE_PUBLISHABLE_KEY=' .env | cut -d= -f2- | tr -d '"'
 TOKEN=$(curl -sS "$SUPABASE_URL/auth/v1/token?grant_type=password" -H "apikey: $ANON" -H 'Content-Type: application/json' \
   -d '{"email":"demo-enterprise@wasil.demo","password":"demo1234"}' | python3 -c 'import sys,json;print(json.load(sys.stdin)["access_token"])')
 missing=0
-for fn in my_permissions get_subscription_state; do
+for fn in my_permissions get_subscription_state wholesale_parties; do
   code=$(curl -sS -o body.json -w '%{http_code}' -X POST "$SUPABASE_URL/rest/v1/rpc/$fn" \
     -H "apikey: $ANON" -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{}')
   echo "$fn → HTTP $code $(head -c 200 body.json)"
-  [ "$code" = 404 ] && missing=1
+  [ "$code" = 404 ] && missing=1 || true
 done
 rm -f body.json
 if [ "${1:-}" = --expect-present ] && [ $missing = 1 ]; then echo "::error::a function is still 404"; exit 1; fi
