@@ -9,6 +9,11 @@ name: Apply database migrations
 #           them on a copy of the live schema; changes nothing
 #   apply — the same, then applies them to the live database, in order, each
 #           file in its own transaction (a failing file changes nothing)
+#   up_to — optional: apply only the missing migrations up to and including
+#           this version (e.g. 20261004100200), to approve them in batches
+# The order, purpose and effect of each pending file: supabase/manual/PENDING_MIGRATIONS.md
+# The connection string is a secret: GitHub masks it in every log line, and it
+# is never written to a file in the repository.
 #
 # Needs the repository secret SUPABASE_DB_URL: Supabase → Project Settings →
 # Database → Connection string → «Session pooler» URI, with the password
@@ -22,6 +27,10 @@ on:
         type: choice
         options: [check, apply]
         default: check
+      up_to:
+        description: 'optional: last migration version to apply (empty = all missing)'
+        type: string
+        default: ''
 
 env:
   SUPABASE_URL: https://ynwddyxzypbcftlevuam.supabase.co
@@ -52,6 +61,7 @@ jobs:
           psql "$DB_URL" -tAc "select version from supabase_migrations.schema_migrations" | sort > applied.txt
           ls supabase/migrations/*.sql | sed -E 's#.*/([0-9]+)_.*#\1#' | sort > local.txt
           comm -23 local.txt applied.txt > pending.txt
+          if [ -n "${{ inputs.up_to }}" ]; then awk -v u="${{ inputs.up_to }}" '$1 <= u' pending.txt > p && mv p pending.txt; fi
           echo "Applied in the live database: $(wc -l < applied.txt)"
           echo "Missing:"; cat pending.txt
           # Everything before 20261004 is what the site runs on. If the live
@@ -72,11 +82,18 @@ jobs:
             psql "$LOCAL_DB" -q -v ON_ERROR_STOP=1 --single-transaction -f "$f"
             echo "::endgroup::"
           done < pending.txt
-          for fn in my_permissions get_subscription_state; do
+          for fn in $(grep -hoE 'FUNCTION public\.(my_permissions|get_subscription_state|wholesale_parties)\(' $(sed -E 's#^#supabase/migrations/#; s#$#_*.sql#' pending.txt) 2>/dev/null | sed -E 's/FUNCTION public\.//; s/\(//' | sort -u); do
             n=$(psql "$LOCAL_DB" -tAc "select count(*) from pg_proc p join pg_namespace s on s.oid = p.pronamespace where s.nspname = 'public' and p.proname = '$fn'")
             echo "$fn after the rehearsal: $n"
             [ "$n" -ge 1 ] || { echo "::error::$fn is still missing after the rehearsal"; exit 1; }
           done
+
+      - name: What changes in existing rows (read only)
+        run: |
+          echo "Subscriptions whose plan text or limits 20261023100000 would align with plan_id:"
+          psql "$DB_URL" -c "select s.merchant_id, s.plan, p.name as plan_by_id, s.max_branches, p.branch_limit, s.max_users, p.user_limit from public.subscriptions s join public.plans p on p.id = s.plan_id where s.plan <> 'trial' and (s.plan is distinct from p.name or coalesce(s.max_branches,0) < p.branch_limit or coalesce(s.max_users,0) < p.user_limit)"
+          echo "Merchant members 20261004100200 would give a role row (one per member, from their current role):"
+          psql "$DB_URL" -tAc "select count(*) from public.merchant_users"
 
       - name: Apply to the live database
         if: inputs.mode == 'apply'
