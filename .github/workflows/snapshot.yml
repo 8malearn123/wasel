@@ -1,0 +1,13 @@
+name: Demo data snapshot (read only)
+on:
+  push:
+    branches: [claude/sweet-knuth-u4nbzm]
+    paths: ['e2e/snapshot.mjs', '.github/workflows/snapshot.yml']
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: export ANON=$(grep -E '^VITE_SUPABASE_PUBLISHABLE_KEY=' .env | cut -d= -f2- | tr -d '"') && node e2e/snapshot.mjs
