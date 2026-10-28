@@ -1,0 +1,99 @@
+name: Database backup (verified, encrypted)
+
+# A backup of production that has been restored and checked before it counts.
+#
+# 1. The read-only login is proved unable to write (db-readonly-guard.sh).
+# 2. Everything is dumped from ONE snapshot (pg_dump --snapshot), so shop
+#    activity during the run cannot make the copy inconsistent.
+# 3. The dump is restored into a throw-away local Supabase database on
+#    production's major version; every table's row count and row fingerprint
+#    (md5 of its rows) must equal production's in that snapshot.
+# 4. Only then is it encrypted (AES-256, BACKUP_PASSPHRASE) and kept as a run
+#    artifact for 30 days, named …-VERIFIED. If the check fails, the job fails
+#    and the artifact is named …-NOT-VERIFIED: never rely on that one.
+# Plain dump files never leave the runner; the log shows table names and
+# counts only, never rows.
+#
+# Secrets: SUPABASE_DB_URL_RO, BACKUP_PASSPHRASE.
+# Restoring for real is a separate, approved step: supabase/manual/RESTORE.md
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SRC_URL: ${{ secrets.SUPABASE_DB_URL_RO }}
+      PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+      TARGET_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+      OUT: /tmp/backup
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Secrets are set
+        run: |
+          [ -n "$SRC_URL" ] || { echo "::error::Add SUPABASE_DB_URL_RO (supabase/manual/readonly_role.sql)"; exit 1; }
+          [ ${#PASSPHRASE} -ge 20 ] || { echo "::error::Add BACKUP_PASSPHRASE (20+ characters)"; exit 1; }
+
+      - name: Postgres client matching production
+        id: ver
+        run: |
+          major=$(psql "$SRC_URL" -XqAt -c 'show server_version_num' | cut -c1-2)
+          echo "major=$major" >> "$GITHUB_OUTPUT"
+          sudo apt-get install -y -q postgresql-common >/dev/null
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y >/dev/null
+          sudo apt-get install -y -q "postgresql-client-$major" >/dev/null
+          echo "/usr/lib/postgresql/$major/bin" >> "$GITHUB_PATH"
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.54.11
+
+      - name: Throw-away database to restore into
+        run: |
+          printf '\n[db]\nmajor_version = %s\n' "${{ steps.ver.outputs.major }}" >> supabase/config.toml
+          mkdir -p /tmp/held && mv supabase/migrations/*.sql /tmp/held/
+          supabase db start
+          mv /tmp/held/*.sql supabase/migrations/
+
+      - name: Dump from one snapshot, restore, compare
+        run: bash .github/scripts/db-backup.sh
+
+      - name: Encrypt (also when not verified, under a name that says so)
+        if: always()
+        id: pack
+        run: |
+          [ -f "$OUT/manifest.txt" ] || { echo "No backup was made (an earlier step failed)."; exit 0; }
+          stamp=$(date -u +%Y%m%dT%H%MZ)
+          grep -qx verified=yes "$OUT/manifest.txt" && state=VERIFIED || state=NOT-VERIFIED
+          name="wasel-backup-$stamp-$state"
+          mkdir -p /tmp/upload
+          tar -C "$OUT" -cf - schema.sql data.sql $(cd "$OUT" && ls auth-storage-data.sql 2>/dev/null) \
+              manifest.txt fingerprints.source.txt fingerprints.restored.txt extensions.txt server_version.txt \
+            | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 3 --symmetric --cipher-algo AES256 \
+                  -o "/tmp/upload/$name.tar.gpg" 3<<<"$PASSPHRASE"
+          cp "$OUT/manifest.txt" "/tmp/upload/$name.manifest.txt"
+          (cd /tmp/upload && sha256sum "$name.tar.gpg" > "$name.sha256")
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "Backup: $name"; cat "$OUT/manifest.txt"; cat "/tmp/upload/$name.sha256"
+
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.pack.outputs.name != ''
+        with:
+          name: ${{ steps.pack.outputs.name }}
+          path: /tmp/upload/
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Remove the plain dump from the runner
+        if: always()
+        run: rm -rf "$OUT" /tmp/upload

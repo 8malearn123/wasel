@@ -1,0 +1,134 @@
+name: Database check (read only)
+
+# Before any migration touches production: what is missing, which rows each
+# pending migration would refuse or change, and a rehearsal of the files on a
+# copy of production's schema in three orders. Changes nothing anywhere.
+#
+# Production is reached ONLY through SUPABASE_DB_URL_RO — the login made by
+# supabase/manual/readonly_role.sql. The first step proves that login cannot
+# write (.github/scripts/db-readonly-guard.sh) and the job stops if it can.
+# Every session is also opened read-only (PGOPTIONS).
+#
+# Secret: SUPABASE_DB_URL_RO = Supabase → Connect → Session pooler URI, with
+# user wasel_ci_readonly.<project-ref> and that role's password.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-check
+  cancel-in-progress: false
+
+env:
+  DEMO_IDS: "'6245ba37-9e68-4e5e-9e68-46ffee192fb4','e2cffaf5-0f86-4a62-96b7-04a4338e9ac3','25d29b66-3383-4af5-9cd7-dfa1608419e1'"
+  PGOPTIONS: "-c default_transaction_read_only=on -c statement_timeout=300000"
+
+jobs:
+  preflight:
+    name: Read-only login, pending migrations, affected rows
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      RO: ${{ secrets.SUPABASE_DB_URL_RO }}
+    outputs:
+      major: ${{ steps.pending.outputs.major }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Secret is set
+        run: '[ -n "$RO" ] || { echo "::error::Add SUPABASE_DB_URL_RO (see supabase/manual/readonly_role.sql)"; exit 1; }'
+
+      - name: The login cannot write
+        run: bash .github/scripts/db-readonly-guard.sh "$RO"
+
+      - name: Migrations production is missing
+        id: pending
+        run: |
+          psql "$RO" -XqAt -v ON_ERROR_STOP=1 -c "select version from supabase_migrations.schema_migrations" | sort > applied.txt
+          ls supabase/migrations/*.sql | sed -E 's#.*/([0-9]+)_.*#\1#' | sort > local.txt
+          comm -23 local.txt applied.txt > pending.txt
+          echo "Applied in production: $(wc -l < applied.txt)"
+          echo "Missing in production ($(wc -l < pending.txt)):"; sed 's/^/  /' pending.txt
+          echo "In production but not in the repository:"; comm -13 local.txt applied.txt | sed 's/^/  /'
+          echo "major=$(psql "$RO" -XqAt -c 'show server_version_num' | cut -c1-2)" >> "$GITHUB_OUTPUT"
+
+      - name: Rows the pending migrations refuse or change (read only)
+        run: psql "$RO" -X -v demo="$DEMO_IDS" -f .github/scripts/db-preflight.sql
+
+  rehearse:
+    name: Rehearse — ${{ matrix.order }}
+    needs: preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        # all:      the 16 pending files in order
+        # hold-12:  all but 20261023100000 (it changes subscription rows), then it alone
+        # with-119: the 16, then PR #119's migration (as it would land if merged after them)
+        order: [all, hold-12, with-119]
+    env:
+      RO: ${{ secrets.SUPABASE_DB_URL_RO }}
+      LOCAL_DB: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.54.11
+
+      - name: Local database on production's major version, without the repo's migrations
+        run: |
+          printf '\n[db]\nmajor_version = %s\n' "${{ needs.preflight.outputs.major }}" >> supabase/config.toml
+          mkdir -p /tmp/held && mv supabase/migrations/*.sql /tmp/held/
+          supabase db start
+          mv /tmp/held/*.sql supabase/migrations/
+
+      - name: Copy of production's schema (no rows)
+        run: |
+          supabase db dump --db-url "$RO" -f live-schema.sql
+          PGOPTIONS='' psql "$LOCAL_DB" -q -v ON_ERROR_STOP=1 -f live-schema.sql
+
+      - name: Files to apply, in order
+        run: |
+          applied=$(psql "$RO" -XqAt -c "select version from supabase_migrations.schema_migrations" | sort)
+          ls supabase/migrations/*.sql | sed -E 's#.*/([0-9]+)_.*#\1#' | sort | comm -23 - <(echo "$applied") > pending.txt
+          case "${{ matrix.order }}" in
+            all)      cp pending.txt order.txt ;;
+            hold-12)  { grep -vx 20261023100000 pending.txt; grep -x 20261023100000 pending.txt; } > order.txt ;;
+            with-119)
+              git show origin/claude/sweet-knuth-u4nbzm:supabase/migrations/20261019120000_secure_login_codes_and_storefront_orders.sql \
+                > supabase/migrations/20261019120000_secure_login_codes_and_storefront_orders.sql
+              { cat pending.txt; echo 20261019120000; } > order.txt ;;
+          esac
+          sed 's/^/  /' order.txt
+
+      - name: Apply each file in its own transaction
+        run: |
+          while read -r v; do
+            f=$(ls supabase/migrations/${v}_*.sql)
+            echo "::group::$f"
+            PGOPTIONS='' psql "$LOCAL_DB" -q -v ON_ERROR_STOP=1 --single-transaction -f "$f"
+            echo "::endgroup::"
+          done < order.txt
+
+      - name: After the rehearsal — functions present, visitor and member permissions
+        run: |
+          L() { PGOPTIONS='' psql "$LOCAL_DB" -XqAt -v ON_ERROR_STOP=1 "$@"; }
+          for fn in my_permissions get_subscription_state wholesale_parties has_permission demo_switch_plan take_device_for_sale enforce_branch_limit; do
+            echo "$fn: $(L -c "select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = '$fn'")"
+          done
+          # permission errors show even on an empty table, so these prove the grants
+          for q in "select * from public.public_store_devices limit 1" \
+                   "select * from public.public_store_accessories limit 1" \
+                   "select id, slug, store_name from public.store_settings limit 1"; do
+            if L -c "set role anon; $q" >/dev/null 2>err.txt; then echo "visitor may: $q"; else echo "::error::visitor refused: $q — $(cat err.txt)"; exit 1; fi
+          done
+          for q in "select * from public.online_orders limit 1" "select login_code from public.merchant_users limit 1"; do
+            L -c "set role anon; $q" >/dev/null 2>&1 && echo "visitor query runs (RLS decides rows): $q" || echo "visitor refused (expected): $q"
+          done
