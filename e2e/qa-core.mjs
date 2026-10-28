@@ -82,6 +82,14 @@ export async function newSession(browser, role, { mobile = false, allow = {} } =
     else if (t === 'activity_logs' && m === 'POST') ok = idsIn(body).some(i => created.has(i)); // the app's own log of our action
     else ok = allow.write?.(m, t, u, body) ?? false;
     log.writes.push(`${ok ? 'SENT' : 'BLOCKED'} ${m} ${t} ${u.split('?')[1]?.slice(0, 120) || ''} ${body.slice(0, 160)}`);
+    if (ok && m === 'POST' && /\/rest\/v1\//.test(u) && !/\/rpc\//.test(u)) {
+      // learn the new rows' ids before the app's next request (its lines) goes out
+      const resp = await route.fetch().catch(() => null);
+      if (!resp) return route.abort('failed');
+      const text = await resp.text().catch(() => '');
+      try { for (const row of [].concat(JSON.parse(text) || [])) if (row?.id) { created.add(row.id); createdLog.push({ table: t, id: row.id, role }); } } catch { /* no body */ }
+      return route.fulfill({ response: resp, body: text });
+    }
     if (ok) return route.continue();
     log.blocked.push(`${m} ${t} ${(u.split('?')[1] || '').slice(0, 100)} ${body.slice(0, 120)}`);
     return route.abort('blockedbyclient');
@@ -121,6 +129,9 @@ export async function loginUI(s, email, password = PW) {
   await page.waitForTimeout(1500);
   return page;
 }
+
+export function track(table, id, role = 'api') { if (id && !created.has(id)) { created.add(id); createdLog.push({ table, id, role }); } }
+export const createdRows = () => createdLog;
 
 export function finish() {
   fs.writeFileSync('results.json', JSON.stringify({ results, created: createdLog }, null, 1));
