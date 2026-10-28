@@ -38,13 +38,17 @@ async function settle(page, max = 15000) {
   await sleep(400);
   return Date.now() - t0;
 }
+// toasts that appeared after the last clearToasts() (recorded by an observer; nothing is removed)
 async function toast(page, timeout = 8000) {
-  const t = page.locator('[data-sonner-toast], [role="status"], li[role="status"]').last();
-  await t.waitFor({ timeout }).catch(() => {});
-  const txt = (await page.locator('[data-sonner-toast], ol[role] li, [role="status"]').allInnerTexts().catch(() => [])).join(' | ');
-  return txt.replace(/\s+/g, ' ').trim();
+  const t0 = Date.now();
+  while (Date.now() - t0 < timeout) {
+    const got = await page.evaluate(() => (window.__qaToasts || []).filter(x => x.at >= (window.__qaMark || 0)).map(x => x.text)).catch(() => []);
+    if (got.length) { await sleep(300); return (await page.evaluate(() => (window.__qaToasts || []).filter(x => x.at >= (window.__qaMark || 0)).map(x => x.text)).catch(() => got)).join(' | '); }
+    await sleep(250);
+  }
+  return '';
 }
-async function clearToasts(page) { await page.evaluate(() => document.querySelectorAll('[data-sonner-toast]').forEach(e => e.remove())).catch(() => {}); }
+async function clearToasts(page) { await page.evaluate(() => { window.__qaMark = Date.now(); }).catch(() => {}); }
 const dialog = page => page.locator('[role="dialog"]').last();
 const fill = async (loc, v) => { await loc.click({ timeout: 5000 }); await loc.fill(String(v)); };
 function luhnImei(body14) { let s = 0; for (let i = 0; i < 14; i++) { let d = +body14[i]; if (i % 2 === 1) { d *= 2; if (d > 9) d -= 9; } s += d; } return body14 + ((10 - (s % 10)) % 10); }
@@ -98,8 +102,12 @@ async function login(s, email) {
 }
 async function logout(s) {
   const { page } = s;
-  await page.locator('header button:has(svg.lucide-user)').last().click({ timeout: 8000 });
-  await page.getByRole('menuitem', { name: /تسجيل الخروج|Sign Out/ }).click();
+  const direct = page.getByRole('button', { name: /^تسجيل الخروج$/ });
+  if (await direct.count()) await direct.first().click();
+  else {
+    await page.locator('header button:has(svg.lucide-user)').last().click({ timeout: 8000 });
+    await page.getByRole('menuitem', { name: /تسجيل الخروج|Sign Out/ }).click();
+  }
   await page.waitForURL(u => u.pathname.startsWith('/auth'), { timeout: 15000 });
 }
 async function open(s, path) {
@@ -348,7 +356,7 @@ async function ownerJourneys(browser) {
     const d = dialog(page);
     await fill(d.locator('#price'), 120);
     await clearToasts(page);
-    await d.getByRole('button', { name: /حفظ التعديلات/ }).click();
+    await d.locator('button[type="submit"]').last().click();
     const t = await toast(page);
     await sleep(1200);
     const r = (await api(E, `accessories?merchant_id=eq.${mid}&sku=eq.${SKU}&select=price`))[0];
@@ -439,13 +447,13 @@ async function ownerJourneys(browser) {
     const amt = d.locator('input[type="number"]').first();
     if (await amt.count()) await fill(amt, 200);
     const n0 = (await api(E, `sales?merchant_id=eq.${mid}&created_at=gte.${TODAY}&select=id`)).length;
-    await s.ctx.setOffline(true);
+    s.offline = true; await s.ctx.setOffline(true);
     await clearToasts(page);
     await d.getByRole('button', { name: /تأكيد الدفع وإصدار الفاتورة/ }).click().catch(() => {});
     const t = await toast(page, 8000);
     await sleep(2000);
     const stillBusy = /جارٍ إتمام البيع/.test(await bodyText(page));
-    await s.ctx.setOffline(false);
+    s.offline = false; await s.ctx.setOffline(false);
     await sleep(3000);
     const after = await api(E, `sales?merchant_id=eq.${mid}&created_at=gte.${TODAY}&select=id,invoice_number,customer_name,created_at&order=created_at.desc&limit=3`);
     const n1 = (await api(E, `sales?merchant_id=eq.${mid}&created_at=gte.${TODAY}&select=id`)).length;
@@ -630,16 +638,25 @@ async function ownerJourneys(browser) {
   let orderNo = null;
   const v = await newSession(browser, 'visitor-store', { allow: { fn: (u, b) => /award-loyalty/.test(u) && (b.includes(TAG) || [...created].some(i => b.includes(i))) } });
   await v.page.addInitScript(() => { try { localStorage.setItem('language', 'ar'); } catch {} });
-  await step(v, 'store', 'visitor finds the test accessory and adds it to the cart', async () => {
+  await step(v, 'store', 'a newly added accessory appears in the store', async () => {
+    const pubAll = await fetch(`${SUPA}/rest/v1/public_store_accessories?merchant_id=eq.${mid}&select=id`, { headers: { apikey: ANON } }).then(r => r.json()).catch(() => []);
+    const pubDev = await fetch(`${SUPA}/rest/v1/public_store_devices?merchant_id=eq.${mid}&select=id`, { headers: { apikey: ANON } }).then(r => r.json()).catch(() => []);
     await open(v, '/store/alanam-max/products');
+    const listed = (await bodyText(v.page)).match(/(\d+) منتج/)?.[1];
     await fill(v.page.getByPlaceholder('ابحث عن منتج...'), RUN); await sleep(1500);
-    const t = await bodyText(v.page);
-    if (!t.includes(RUN)) {
-      const pub = await fetch(`${SUPA}/rest/v1/public_store_accessories?sku=eq.${SKU}&select=*`, { headers: { apikey: ANON } }).then(r => r.json()).catch(e => e.message);
-      return { status: 'FAIL', detail: `the new accessory is not listed in the store; public view row: ${JSON.stringify(pub).slice(0, 300)}` };
-    }
-    await v.page.getByRole('button', { name: 'أضف للسلة' }).first().click();
-    return `toast: ${await toast(v.page)}`;
+    const found = (await bodyText(v.page)).includes(RUN);
+    return { status: found ? 'PASS' : 'FAIL', detail: `store lists ${listed} products; visitors can read ${Array.isArray(pubAll) ? pubAll.length : '?'} accessories and ${Array.isArray(pubDev) ? pubDev.length : '?'} devices through the public views; the test accessory (qty 5) found by name: ${found}` };
+  });
+  await step(v, 'store', 'visitor adds a product to the cart', async () => {
+    await open(v, '/store/alanam-max/products');
+    const add = v.page.getByRole('button', { name: 'أضف للسلة' });
+    if (!(await add.count())) return { status: 'FAIL', detail: 'no «أضف للسلة» button on the products page' };
+    await clearToasts(v.page);
+    await add.first().click();
+    const t = await toast(v.page, 4000);
+    await open(v, '/store/alanam-max/cart');
+    const c = await bodyText(v.page);
+    return { status: /سلتك فارغة/.test(c) ? 'FAIL' : 'PASS', detail: `toast "${t}"; cart: ${(c.match(/ملخص الطلب.{0,200}/) || ['?'])[0]}` };
   });
   await step(v, 'store', 'checkout without details or address is refused with messages', async () => {
     await open(v, '/store/alanam-max/checkout');
@@ -691,10 +708,12 @@ async function ownerJourneys(browser) {
     const tt = await toast(v.page, 3000);
     const o = orderNo && (await api(E, `online_orders?order_number=eq.${orderNo}&select=id,subtotal,tax_amount,shipping_cost,total_amount,status`))[0];
     if (o) track('row', o.id);
-    // the shelf price (VAT included) is 120: the right total is 120 + delivery
-    const right = o && Math.abs(Number(o.total_amount) - (120 + Number(o.shipping_cost || 0))) < 0.01;
+    const items = o ? await api(E, `online_order_items?order_id=eq.${o.id}&select=quantity,unit_price,item_name`) : [];
+    const shelf = (Array.isArray(items) ? items : []).reduce((a, i) => a + Number(i.unit_price) * Number(i.quantity), 0);
+    // shelf prices are shown «شامل الضريبة»: the right total is the shelf price + delivery
+    const right = o && Math.abs(Number(o.total_amount) - (shelf + Number(o.shipping_cost || 0))) < 0.01;
     return { status: o ? (right ? 'PASS' : 'FAIL') : 'FAIL',
-      detail: o ? `order ${orderNo}: subtotal ${o.subtotal} + VAT ${o.tax_amount} + delivery ${o.shipping_cost} = ${o.total_amount} (shelf price 120 «شامل الضريبة»; checkout showed VAT ${vat}, total ${total}, delivery ${ship})` : `no order saved; url ${v.page.url()}; ${tt}` };
+      detail: o ? `order ${orderNo}: subtotal ${o.subtotal} + VAT ${o.tax_amount} + delivery ${o.shipping_cost} = ${o.total_amount} (shelf price ${shelf} «شامل الضريبة», lines ${JSON.stringify(items).slice(0, 120)}; checkout showed VAT ${vat}, total ${total}, delivery ${ship})` : `no order saved; url ${v.page.url()}; ${tt}` };
   });
   await step(v, 'store', 'track the order with its number and phone', async () => {
     if (!orderNo) return { status: 'BLOCKED', detail: 'no order number' };
@@ -762,6 +781,10 @@ async function ownerJourneys(browser) {
     await combos.nth(1).click(); await page.getByRole('option').nth(1).click();
     const scan = d.getByPlaceholder(/امسح الباركود أو اكتب IMEI/);
     await fill(scan, IMEI1); await scan.press('Enter'); await sleep(1000);
+    const listedDev = (await d.innerText()).includes(DEV_MODEL);
+    if (!listedDev) { await page.keyboard.press('Escape'); return { status: 'FAIL', detail: `the test device (added without choosing a branch) is not offered for transfer from any branch; dialog: ${(await d.innerText().catch(() => '')).slice(0, 200)}` }; }
+    const box = d.locator('label').filter({ hasText: DEV_MODEL }).first();
+    if (!(await box.locator('input:checked, [data-state="checked"]').count())) await box.click();
     await fill(d.getByPlaceholder('ملاحظات اختيارية...'), `${TAG} تحويل اختبار`);
     await clearToasts(page);
     await d.getByRole('button', { name: 'إنشاء التحويل' }).click();
@@ -851,7 +874,7 @@ async function cashierJourneys(browser) {
   const { page } = s;
   const E = ACC.cashier;
   await step(s, 'login', 'email login (cashier)', async () => `${await login(s, E)}ms → ${new URL(page.url()).pathname}`);
-  let inv = null;
+  let inv = null; let cashierSaleId = null;
   await step(s, 'pos', 'cashier sells the test accessory', async () => {
     await open(s, '/pos');
     const scan = page.getByPlaceholder(/امسح رقم IMEI أو الباركود/);
@@ -865,11 +888,13 @@ async function cashierJourneys(browser) {
     await clearToasts(page);
     await d.getByRole('button', { name: /تأكيد الدفع وإصدار الفاتورة/ }).click();
     const t = await toast(page, 15000);
-    const ap = await afterPay(page, E, t); inv = ap.inv;
+    const ap = await afterPay(page, E, t);
     await page.locator('div.fixed.inset-0 button:has(svg.lucide-x)').first().click().catch(() => {});
-    const sale = inv && (await api(E, `sales?invoice_number=eq.${inv}&select=id,total_amount`))[0];
-    if (sale) track('row', sale.id);
-    return { status: sale && ap.overlay ? 'PASS' : 'FAIL', detail: `${ap.ui}; saved ${inv} total ${sale?.total_amount}` };
+    const me = (await token(E)).user.id;
+    const sale = (await api(E, `sales?sold_by=eq.${me}&customer_name=ilike.*${TAG}*&select=id,invoice_number,total_amount&order=created_at.desc&limit=1`))[0];
+    if (sale) { track('row', sale.id); inv = sale.invoice_number; cashierSaleId = sale.id; }
+    const same = inv ? await api(ACC.distributor, `sales?invoice_number=eq.${inv}&select=id,created_at,total_amount`) : [];
+    return { status: sale && ap.overlay && same.length === 1 ? 'PASS' : 'FAIL', detail: `${ap.ui}; saved ${inv} total ${sale?.total_amount}; invoices sharing this number: ${same.length} ${same.length > 1 ? JSON.stringify(same) : ''}` };
   });
   await step(s, 'pos', 'cashier history shows only their own sales', async () => {
     await open(s, '/pos?tab=history');
@@ -891,7 +916,7 @@ async function cashierJourneys(browser) {
     const disc = d.locator('input[type="number"]').first();
     await fill(disc, 120);
     await d.getByRole('button', { name: 'حفظ' }).click(); await sleep(2000);
-    const sale = (await api(E, `sales?invoice_number=eq.${inv}&select=total_amount,discount_amount`))[0];
+    const sale = (await api(E, `sales?id=eq.${cashierSaleId}&select=total_amount,discount_amount`))[0];
     const del = await page.getByRole('button', { name: 'حذف', exact: true }).count();
     return { status: Number(sale?.discount_amount) > 0 ? 'FAIL' : 'PASS', detail: `after edit: discount ${sale?.discount_amount}, total ${sale?.total_amount} — a cashier can rewrite a paid invoice; delete button shown to cashier: ${del > 0}` };
   });

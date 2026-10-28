@@ -62,10 +62,25 @@ export async function newSession(browser, role, { mobile = false, allow = {} } =
       } catch { /* ignore */ }
     }
   });
-  await page.route(/supabase\.co\/(rest|functions|storage)\/v1\//, async route => {
+  // toasts are recorded as they appear (never removed from the page: React owns those nodes)
+  await page.addInitScript(() => {
+    window.__qaToasts = [];
+    const seen = new WeakSet();
+    new MutationObserver(() => {
+      document.querySelectorAll('[data-sonner-toast], li[role="status"]').forEach(el => {
+        if (seen.has(el)) return;
+        seen.add(el);
+        setTimeout(() => window.__qaToasts.push({ at: Date.now(), text: (el.innerText || '').replace(/\s+/g, ' ').trim() }), 50);
+      });
+    }).observe(document, { childList: true, subtree: true });
+  });
+  const sess = { ctx, page, log, role, offline: false };
+  await page.route(/supabase\.co\//, async route => {
+    if (sess.offline) return route.abort('internetdisconnected');
     const req = route.request();
     const m = req.method();
     const u = req.url();
+    if (!/\/(rest|functions|storage)\/v1\//.test(u)) return route.continue();
     if (m === 'GET' || m === 'HEAD' || m === 'OPTIONS') return route.continue();
     const body = req.postData() || '';
     const t = tableOf(u);
@@ -94,7 +109,7 @@ export async function newSession(browser, role, { mobile = false, allow = {} } =
     log.blocked.push(`${m} ${t} ${(u.split('?')[1] || '').slice(0, 100)} ${body.slice(0, 120)}`);
     return route.abort('blockedbyclient');
   });
-  return { ctx, page, log, role };
+  return sess;
 }
 
 export async function shot(s, name) {

@@ -16,7 +16,7 @@ jobs:
       - run: export ANON=$(grep -E '^VITE_SUPABASE_PUBLISHABLE_KEY=' .env | cut -d= -f2- | tr -d '"') && cd e2e && node qa-live.mjs
         env:
           CHANNEL: chrome
-          ONLY: 'auth,owner,cashier,plans'
+          ONLY: 'auth,owner,cashier,employee,plans'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
