@@ -64,6 +64,24 @@ async function setCustomer(page, name = `${TAG} زبون نقطة البيع`) {
   return true;
 }
 
+
+// what the till shows after «تأكيد الدفع»; the invoice is looked up in the database too
+async function afterPay(page, email, t) {
+  await sleep(2500);
+  const txt = await bodyText(page);
+  const overlay = /فاتورة ضريبية مبسطة/.test(txt);
+  const crashed = /صار خطأ في عرض هذه الصفحة/.test(txt);
+  const stillDialog = await page.locator('[role="dialog"]').last().isVisible().catch(() => false);
+  let inv = (t.match(/INV-[\d-]+/) || [])[0];
+  if (!inv) {
+    const since = new Date(Date.now() - 180000).toISOString();
+    const r = await api(email, `sales?customer_name=ilike.*${TAG}*&created_at=gte.${since}&select=invoice_number&order=created_at.desc&limit=1`);
+    inv = Array.isArray(r) && r[0]?.invoice_number;
+  }
+  const ui = `screen after paying: invoice view ${overlay ? 'shown' : 'NOT shown'}${crashed ? ', ERROR PAGE' : ''}${stillDialog ? ', payment dialog still open' : ''}; toast "${t}"; text: ${txt.slice(0, 160)}`;
+  return { inv, ui, overlay, crashed };
+}
+
 async function login(s, email) {
   const { page } = s;
   await page.addInitScript(() => { try { localStorage.setItem('language', 'ar'); } catch {} });
@@ -197,7 +215,7 @@ async function authTests(browser) {
     await page.getByRole('button', { name: 'دخول', exact: true }).click();
     await page.waitForURL(u => !u.pathname.startsWith('/auth'), { timeout: 20000 });
     await settle(page);
-    return `→ ${new URL(page.url()).pathname}`;
+    return `→ ${new URL(page.url()).pathname}: ${(await bodyText(page)).slice(0, 300)}`;
   });
   await step(s, 'auth', 'session survives a reload', async () => {
     await page.reload(); await settle(page);
@@ -320,8 +338,12 @@ async function ownerJourneys(browser) {
     return { status: a && b ? 'PASS' : 'FAIL', detail: `device by IMEI: ${a}; accessory by SKU: ${b}` };
   });
   await step(s, 'inventory', 'edit accessory price to 120', async () => {
-    const row = page.locator('tr, [role="row"], div.rounded-lg').filter({ hasText: ACC_NAME }).last();
-    await row.locator('button:has(svg.lucide-more-horizontal), button:has(svg.lucide-ellipsis)').first().click();
+    await page.getByRole('button', { name: /^الإكسسوارات/ }).first().click().catch(() => {});
+    await fill(page.getByPlaceholder(/ابحث في المخزون/), SKU); await sleep(1200);
+    const menus = page.locator('main button:has(svg.lucide-more-horizontal), main button:has(svg.lucide-ellipsis)');
+    const nMenus = await menus.count();
+    if (!nMenus) return { status: 'FAIL', detail: 'no row menu found after searching the SKU' };
+    await menus.first().click();
     await page.getByRole('menuitem', { name: 'تعديل' }).click();
     const d = dialog(page);
     await fill(d.locator('#price'), 120);
@@ -358,7 +380,8 @@ async function ownerJourneys(browser) {
     await d.getByRole('button', { name: /تأكيد الدفع وإصدار الفاتورة/ }).click();
     const t = await toast(page, 15000);
     const ms = Date.now() - t0;
-    invoice = (t.match(/INV-[\d-]+/) || [])[0];
+    const ap = await afterPay(page, E, t);
+    invoice = ap.inv;
     const inv = await bodyText(page);
     const total = (inv.match(/الإجمالي \(شامل الضريبة\)\s*([\d,.]+)/) || [])[1];
     const vat = (inv.match(/الضريبة[^\d]{0,30}([\d,.]+)/) || [])[1];
@@ -368,7 +391,7 @@ async function ownerJourneys(browser) {
     const acc = (await api(E, `accessories?merchant_id=eq.${mid}&sku=eq.${SKU}&select=quantity`))[0];
     const okTotals = sale && Number(sale.total_amount) === 240 && Math.abs(Number(sale.tax_amount) - 31.3) < 0.02;
     return { status: sale && okTotals && acc?.quantity === 3 ? 'PASS' : 'FAIL',
-      detail: `toast "${t}" in ${ms}ms; invoice ${invoice}; saved total ${sale?.total_amount} vat ${sale?.tax_amount} (expected 240 / 31.30); stock now ${acc?.quantity} (expected 3); due shown: ${(due.match(/المبلغ المستحق[^\d]*([\d,.]+)/) || [])[1]}; invoice view total ${total}` };
+      detail: `${ap.ui}; ${ms}ms; invoice ${invoice}; saved total ${sale?.total_amount} vat ${sale?.tax_amount} (expected 240 / 31.30); stock now ${acc?.quantity} (expected 3); due shown: ${(due.match(/المبلغ المستحق[^\d]*([\d,.]+)/) || [])[1]}; invoice view total ${total}` };
   });
   await step(s, 'pos', 'the new invoice appears in sales history and search finds it', async () => {
     await open(s, '/pos?tab=history');
@@ -424,9 +447,11 @@ async function ownerJourneys(browser) {
     const stillBusy = /جارٍ إتمام البيع/.test(await bodyText(page));
     await s.ctx.setOffline(false);
     await sleep(3000);
+    const after = await api(E, `sales?merchant_id=eq.${mid}&created_at=gte.${TODAY}&select=id,invoice_number,customer_name,created_at&order=created_at.desc&limit=3`);
     const n1 = (await api(E, `sales?merchant_id=eq.${mid}&created_at=gte.${TODAY}&select=id`)).length;
+    after.forEach(x => { if ((x.customer_name || '').includes(TAG)) track('row', x.id); });
     await page.keyboard.press('Escape').catch(() => {});
-    return { status: n1 === n0 && t ? 'PASS' : 'FAIL', detail: `message: "${t || 'none'}"; button stuck busy: ${stillBusy}; invoices made: ${n1 - n0}` };
+    return { status: n1 === n0 && t ? 'PASS' : 'FAIL', detail: `message: "${t || 'none'}"; button stuck busy: ${stillBusy}; invoices made: ${n1 - n0}; latest ${JSON.stringify(after).slice(0, 300)}` };
   });
 
   // -- coupons
@@ -481,7 +506,7 @@ async function ownerJourneys(browser) {
         await clearToasts(page);
         await d.getByRole('button', { name: /تأكيد الدفع وإصدار الفاتورة/ }).click();
         const t = await toast(page, 15000);
-        inv = (t.match(/INV-[\d-]+/) || [])[0];
+        const ap = await afterPay(page, E, t); inv = ap.inv;
         await page.locator('div.fixed.inset-0 button:has(svg.lucide-x)').first().click().catch(() => {});
         const sale = inv && (await api(E, `sales?invoice_number=eq.${inv}&select=id,total_amount,discount_amount`))[0];
         if (sale) track('row', sale.id);
@@ -609,13 +634,18 @@ async function ownerJourneys(browser) {
     await open(v, '/store/alanam-max/products');
     await fill(v.page.getByPlaceholder('ابحث عن منتج...'), RUN); await sleep(1500);
     const t = await bodyText(v.page);
-    if (!t.includes(RUN)) return { status: 'FAIL', detail: 'the new accessory is not listed in the store (search by name)' };
+    if (!t.includes(RUN)) {
+      const pub = await fetch(`${SUPA}/rest/v1/public_store_accessories?sku=eq.${SKU}&select=*`, { headers: { apikey: ANON } }).then(r => r.json()).catch(e => e.message);
+      return { status: 'FAIL', detail: `the new accessory is not listed in the store; public view row: ${JSON.stringify(pub).slice(0, 300)}` };
+    }
     await v.page.getByRole('button', { name: 'أضف للسلة' }).first().click();
     return `toast: ${await toast(v.page)}`;
   });
   await step(v, 'store', 'checkout without details or address is refused with messages', async () => {
     await open(v, '/store/alanam-max/checkout');
     const btn = v.page.getByRole('button', { name: 'إتمام الطلب' });
+    const disabled = await btn.isDisabled().catch(() => 'missing');
+    if (disabled === true) return { status: 'PASS', detail: 'the submit button stays disabled until details and address are filled' };
     await clearToasts(v.page);
     await btn.click().catch(() => {});
     const t = await toast(v.page, 4000);
@@ -835,11 +865,11 @@ async function cashierJourneys(browser) {
     await clearToasts(page);
     await d.getByRole('button', { name: /تأكيد الدفع وإصدار الفاتورة/ }).click();
     const t = await toast(page, 15000);
-    inv = (t.match(/INV-[\d-]+/) || [])[0];
+    const ap = await afterPay(page, E, t); inv = ap.inv;
     await page.locator('div.fixed.inset-0 button:has(svg.lucide-x)').first().click().catch(() => {});
     const sale = inv && (await api(E, `sales?invoice_number=eq.${inv}&select=id,total_amount`))[0];
     if (sale) track('row', sale.id);
-    return { status: sale ? 'PASS' : 'FAIL', detail: `"${t}"` };
+    return { status: sale && ap.overlay ? 'PASS' : 'FAIL', detail: `${ap.ui}; saved ${inv} total ${sale?.total_amount}` };
   });
   await step(s, 'pos', 'cashier history shows only their own sales', async () => {
     await open(s, '/pos?tab=history');
@@ -848,7 +878,8 @@ async function cashierJourneys(browser) {
     const mine = await api(E, `sales?sold_by=eq.${me}&select=invoice_number`);
     const mineSet = new Set(mine.map(x => x.invoice_number));
     const others = shown.filter(x => !mineSet.has(x));
-    return { status: others.length ? 'FAIL' : 'PASS', detail: `${shown.length} invoices shown, ${others.length} not the cashier's` };
+    const all = await api(ACC.distributor, `sales?invoice_number=in.(${[...new Set(others)].slice(0, 20).join(',')})&select=invoice_number,sold_by,created_at`);
+    return { status: others.length ? 'FAIL' : 'PASS', detail: `${shown.length} invoices shown, ${others.length} not the cashier's: ${JSON.stringify(all).slice(0, 400)}; cashier id ${me}` };
   });
   await step(s, 'pos', 'cashier edits their own test invoice to a 100% discount', async () => {
     if (!inv) return { status: 'BLOCKED', detail: 'no invoice' };
@@ -956,11 +987,11 @@ async function planSale(browser, key) {
     await clearToasts(page);
     await d.getByRole('button', { name: /تأكيد الدفع وإصدار الفاتورة/ }).click();
     const t = await toast(page, 15000);
-    inv = (t.match(/INV-[\d-]+/) || [])[0];
+    const ap = await afterPay(page, E, t); inv = ap.inv;
     await page.locator('div.fixed.inset-0 button:has(svg.lucide-x)').first().click().catch(() => {});
     const sale = inv && (await api(E, `sales?invoice_number=eq.${inv}&select=id,total_amount,tax_amount,payment_method`))[0];
     if (sale) track('row', sale.id);
-    return { status: sale && Number(sale.total_amount) === 23 ? 'PASS' : 'FAIL', detail: `"${t}"; total ${sale?.total_amount} vat ${sale?.tax_amount} method ${sale?.payment_method}` };
+    return { status: sale && ap.overlay && Number(sale.total_amount) === 23 ? 'PASS' : 'FAIL', detail: `${ap.ui}; ${inv}; total ${sale?.total_amount} vat ${sale?.tax_amount} method ${sale?.payment_method}` };
   });
   await step(s, 'pos', 'delete that invoice (owner)', async () => {
     if (!inv) return { status: 'BLOCKED', detail: 'no invoice' };

@@ -45,7 +45,7 @@ export async function newSession(browser, role, { mobile = false, allow = {} } =
   const page = await ctx.newPage();
   const log = { console: [], net: [], blocked: [], writes: [] };
   page.on('console', m => { if (m.type() === 'error') log.console.push(m.text().slice(0, 200)); });
-  page.on('pageerror', e => log.console.push('PAGEERROR ' + e.message.slice(0, 200)));
+  page.on('pageerror', e => { log.console.push('PAGEERROR ' + e.message.slice(0, 200)); console.log('PAGEERROR ' + role + ' ' + page.url() + ' ' + (e.stack || '').slice(0, 700).replace(/\n/g, ' / ')); });
   page.on('response', async r => {
     const u = r.url();
     if (!u.includes('supabase.co')) return;
@@ -115,11 +115,17 @@ export async function step(s, area, test, fn) {
     if (net.length) extra.push('http: ' + [...new Set(net)].slice(0, 3).join(' | '));
     const blocked = s.log.blocked.slice(before.b);
     if (blocked.length) extra.push('blocked-writes: ' + blocked.slice(0, 2).join(' | '));
+    if (out && typeof out === 'object' && out.status === 'FAIL') {
+      const dlg = await s.page.locator('[role="dialog"]').last().innerText().catch(() => '');
+      extra.push(`url=${s.page.url().replace(SITE, '')}${dlg ? ' dialog=' + dlg.replace(/\s+/g, ' ').slice(0, 200) : ''} page=${(await bodyText(s.page)).slice(0, 300)}`);
+    }
     if (out && typeof out === 'object' && out.status) rec(s.role, area, test, out.status, [out.detail, ...extra].filter(Boolean).join(' ; '));
     else rec(s.role, area, test, 'PASS', [typeof out === 'string' ? out : '', ...extra].filter(Boolean).join(' ; '));
   } catch (e) {
     const f = await shot(s, `${area}-${test}`.slice(0, 60));
-    rec(s.role, area, test, 'FAIL', `${e.message.split('\n')[0]} [${f}]`);
+    const t = (await bodyText(s.page)).slice(0, 700);
+    const dlg = await s.page.locator('[role="dialog"]').last().innerText().catch(() => '');
+    rec(s.role, area, test, 'FAIL', `${e.message.split('\n')[0]} | url=${s.page.url().replace(SITE, '')} | dialog=${dlg.replace(/\s+/g, ' ').slice(0, 300)} | page=${t}`);
   }
 }
 
