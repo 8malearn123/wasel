@@ -20,6 +20,10 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -67,6 +71,8 @@ export default function SuppliersSection() {
   const { accessories } = useAccessories();
 
   const activeSuppliers = suppliers.filter(s => s.is_active);
+  // removing a supplier asks first; it is the only removal on this page
+  const [removing, setRemoving] = useState<Supplier | null>(null);
 
   // Calculate amounts owed per supplier from unpaid/partial purchase orders
   const supplierDebts = useMemo(() => {
@@ -205,7 +211,7 @@ export default function SuppliersSection() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => setEditing(supplier)}><Edit className="w-4 h-4 mr-2" /> {isRTL ? 'تعديل' : 'Edit'}</DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive" onClick={() => deleteSupplier(supplier.id)}>
+                          <DropdownMenuItem className="text-destructive" onClick={() => setRemoving(supplier)}>
                             <Trash2 className="w-4 h-4 mr-2" /> {isRTL ? 'حذف' : 'Remove'}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -410,6 +416,28 @@ export default function SuppliersSection() {
 
       <PODetailsDialog open={!!showPODetails} onOpenChange={(open) => { if (!open) setShowPODetails(null); }}
         order={showPODetails} isRTL={isRTL} />
+
+      <AlertDialog open={!!removing} onOpenChange={(open) => { if (!open) setRemoving(null); }}>
+        <AlertDialogContent dir={isRTL ? 'rtl' : 'ltr'}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{isRTL ? `إزالة المورد «${removing?.name ?? ''}»؟` : `Remove supplier "${removing?.name ?? ''}"?`}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {isRTL
+                ? 'سيختفي المورد من قائمة الموردين ومن اختيار المورد في أوامر الشراء الجديدة. أوامر الشراء السابقة ومدفوعاتها تبقى كما هي، ولا يُحذف أي سجل.'
+                : 'The supplier leaves the list and can no longer be chosen for new purchase orders. Past purchase orders and payments stay as they are; nothing is deleted.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{isRTL ? 'إلغاء' : 'Cancel'}</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => { const s = removing; setRemoving(null); if (s) await deleteSupplier(s.id); }}
+            >
+              {isRTL ? 'إزالة المورد' : 'Remove supplier'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
