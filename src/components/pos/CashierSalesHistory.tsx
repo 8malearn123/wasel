@@ -140,12 +140,15 @@ export function CashierSalesHistory({
 
   const handleSave = async () => {
     if (!editSale) return;
+    // the cashier corrects the customer's details and notes only; the money stays as sold
     const result = await onUpdateSale(editSale.id, {
       customer_name: editForm.customer_name || undefined,
       customer_phone: editForm.customer_phone || undefined,
       notes: editForm.notes || undefined,
-      discount_amount: Number(editForm.discount_amount) || 0,
-      payment_method: editForm.payment_method,
+      ...(isCashier ? {} : {
+        discount_amount: Number(editForm.discount_amount) || 0,
+        payment_method: editForm.payment_method,
+      }),
     });
     if (!result.error) {
       setEditSale(null);
@@ -441,6 +444,7 @@ export function CashierSalesHistory({
               <div>
                 <Label>{isRTL ? "طريقة الدفع" : "Payment method"}</Label>
                 <Select
+                  disabled={isCashier}
                   value={editForm.payment_method}
                   onValueChange={value => setEditForm(prev => ({ ...prev, payment_method: value as PaymentMethod }))}
                 >
@@ -460,6 +464,7 @@ export function CashierSalesHistory({
                 <Input
                   type="number"
                   min={0}
+                  disabled={isCashier}
                   value={editForm.discount_amount}
                   onChange={e => setEditForm(prev => ({ ...prev, discount_amount: e.target.value }))}
                 />
@@ -473,9 +478,13 @@ export function CashierSalesHistory({
               />
             </div>
             <p className="text-[11px] text-muted-foreground">
-              {isRTL
-                ? "تغيير الخصم يعيد احتساب إجمالي الفاتورة."
-                : "Changing the discount recalculates the invoice total."}
+              {isCashier
+                ? (isRTL
+                    ? "الخصم وطريقة الدفع لا تُعدَّل بعد الدفع إلا من المدير أو المالك."
+                    : "Only a manager or the owner can change the discount or payment method of a paid invoice.")
+                : (isRTL
+                    ? "تغيير الخصم يعيد احتساب إجمالي الفاتورة."
+                    : "Changing the discount recalculates the invoice total.")}
             </p>
           </div>
           <DialogFooter>

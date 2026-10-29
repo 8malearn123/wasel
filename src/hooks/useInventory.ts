@@ -1,3 +1,4 @@
+import { friendlyError } from '@/lib/errors';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -57,9 +58,9 @@ export function useDevices() {
 
     if (!error) {
       await fetchDevices();
-      toast.success('Device added successfully');
+      toast.success('تمت إضافة الجهاز');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error, 'حفظ الجهاز'));
     }
 
     return { data, error };
@@ -75,9 +76,9 @@ export function useDevices() {
 
     if (!error) {
       await fetchDevices();
-      toast.success('Device updated');
+      toast.success('تم حفظ تعديلات الجهاز');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error, 'حفظ تعديلات الجهاز'));
     }
 
     return { data, error };
@@ -95,9 +96,9 @@ export function useDevices() {
 
     if (!error) {
       await fetchDevices();
-      toast.success('Device deleted');
+      toast.success('تم حذف الجهاز');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error, 'حذف الجهاز'));
     }
 
     return { error };
@@ -161,9 +162,9 @@ export function useAccessories() {
 
     if (!error) {
       await fetchAccessories();
-      toast.success('Accessory added successfully');
+      toast.success('تمت إضافة الإكسسوار');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error, 'حفظ الإكسسوار'));
     }
 
     return { data, error };
@@ -179,9 +180,9 @@ export function useAccessories() {
 
     if (!error) {
       await fetchAccessories();
-      toast.success('Accessory updated');
+      toast.success('تم حفظ تعديلات الإكسسوار');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error, 'حفظ تعديلات الإكسسوار'));
     }
 
     return { data, error };
@@ -203,9 +204,9 @@ export function useAccessories() {
 
     if (!error) {
       await fetchAccessories();
-      toast.success('Accessory deleted');
+      toast.success('تم حذف الإكسسوار');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error, 'حذف الإكسسوار'));
     }
 
     return { error };
