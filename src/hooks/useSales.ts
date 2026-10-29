@@ -74,10 +74,14 @@ export function useSales() {
     
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('sales')
         .select('*, branch:branches(*), items:sale_items(*, device:devices(*), accessory:accessories(*))')
-        .eq('merchant_id', merchant.id)
+        .eq('merchant_id', merchant.id);
+      // a cashier's history is their own invoices (the database says the
+      // same once 20261029090300 is applied)
+      if (cashier && user) query = query.eq('sold_by', user.id);
+      const { data, error } = await query
         .order('sale_date', { ascending: false })
         .limit(100);
 
@@ -89,7 +93,7 @@ export function useSales() {
     } finally {
       setLoading(false);
     }
-  }, [merchant]);
+  }, [merchant, cashier, user]);
 
   useEffect(() => {
     fetchSales();
