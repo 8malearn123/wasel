@@ -29,9 +29,9 @@ async function session(site, email) {
   await page.route(/supabase\.co\//, async route => {
     const req = route.request(); const m = req.method(); const u = req.url();
     if (!/\/(rest|functions|storage)\/v1\//.test(u)) return route.continue();
-    s.reqs.push(`${m} ${u.replace(SUPA, '').slice(0, 160)}`);
+    s.reqs.push(`${m} ${decodeURIComponent(u.replace(SUPA, '')).slice(0, 400)}`);
     const rpc = (u.match(/\/rpc\/([a-z_]+)/) || [])[1];
-    if (s.mode) { const r = await s.mode(route, req, u, m); if (r !== undefined) return; }
+    if (s.mode) { try { if (await s.mode(route, req, u, m)) return; } catch { return; } }
     if (m === 'GET' || m === 'HEAD' || m === 'OPTIONS') return route.continue();
     if (rpc && READ_RPCS.has(rpc)) return route.continue();
     if (rpc === 'generate_invoice_number') return route.fulfill({ status: 200, contentType: 'application/json', body: '"INV-QA-LOCAL-0001"' });
@@ -62,7 +62,7 @@ for (const k of ['F', 'L']) {
   await step(`${k}.cashier./reports?tab=table-sales`, async () => { const r = await open(c, site, '/reports?tab=table-sales'); return { url: r.url, toasts: r.toasts }; });
   await step(`${k}.cashier.history-request`, async () => {
     c.reqs.length = 0; const r = await open(c, site, '/pos?tab=history');
-    const q = c.reqs.filter(x => /\/rest\/v1\/sales\?/.test(x)).map(x => x.slice(0, 160));
+    const q = c.reqs.filter(x => /\/rest\/v1\/sales\?/.test(x)).map(x => (x.match(/sold_by=[^&]*/) || ['no sold_by filter'])[0] + ' · ' + x.slice(0, 60));
     return { url: r.url, salesRequests: q, deleteButtons: await c.page.getByRole('button', { name: 'حذف', exact: true }).count() };
   });
   // 2 · offline sale (writes are aborted as a dropped connection; nothing reaches the server)
@@ -114,19 +114,19 @@ for (const k of ['F', 'L']) {
     ellipsis: /…/.test(document.querySelector('main')?.innerText || ''),
   }));
   await step(`${k}.kpi.slow`, async () => {
-    o.mode = async (route, req, u, m) => { if (m === 'GET' && KPI_TABLES.test(u)) { await sleep(6000); return route.continue(); } };
+    o.mode = async (route, req, u, m) => { if (m === 'GET' && KPI_TABLES.test(u)) { await sleep(6000); await route.continue().catch(() => {}); return true; } };
     await o.page.goto(`${site}/`, { waitUntil: 'domcontentloaded' }); await sleep(2500);
     const during = await kpi(); await sleep(9000); const after = await kpi();
     o.mode = null; return { during, after };
   });
   await step(`${k}.kpi.fail`, async () => {
-    o.mode = async (route, req, u, m) => { if (m === 'GET' && KPI_TABLES.test(u)) return route.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"qa"}' }); };
+    o.mode = async (route, req, u, m) => { if (m === 'GET' && KPI_TABLES.test(u)) { await route.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"qa"}' }); return true; } };
     await o.page.goto(`${site}/`, { waitUntil: 'domcontentloaded' }); await sleep(7000);
     const r = await kpi(); const banner = /تعذّر تحميل بيانات لوحة التحكم/.test(await text(o.page));
     o.mode = null; return { ...r, banner };
   });
   await step(`${k}.kpi.empty`, async () => {
-    o.mode = async (route, req, u, m) => { if ((m === 'GET' || m === 'HEAD') && KPI_TABLES.test(u)) return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'content-range': '*/0' }, body: '[]' }); };
+    o.mode = async (route, req, u, m) => { if ((m === 'GET' || m === 'HEAD') && KPI_TABLES.test(u)) { await route.fulfill({ status: 200, contentType: 'application/json', headers: { 'content-range': '*/0' }, body: '[]' }); return true; } };
     await o.page.goto(`${site}/`, { waitUntil: 'domcontentloaded' }); await sleep(7000);
     const r = await kpi(); const t = await text(o.page);
     o.mode = null; return { ...r, excerpt: (t.match(/(مبيعات اليوم|إجمالي).{0,300}/) || [''])[0] };
