@@ -5,6 +5,7 @@ import {
 import { useLanguage } from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { isCashierMember } from "@/lib/cashier";
 
 export type AlertType = "urgent" | "warning" | "info";
 export type AlertCategory = "stock" | "transfers" | "sales" | "repairs";
@@ -22,7 +23,7 @@ export interface Notification {
 export function useNotifications() {
   const { t } = useLanguage();
   const n = t.notifications;
-  const { merchant } = useAuth();
+  const { merchant, merchantUser, user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -96,11 +97,14 @@ export function useNotifications() {
     }
 
     // 4. Unpaid sales
-    const { data: unpaidSales } = await supabase
+    // a cashier is told about their own invoices only
+    let unpaidQuery = supabase
       .from("sales")
       .select("id, invoice_number, total_amount, customer_name, created_at")
       .eq("merchant_id", merchant.id)
-      .eq("payment_status", "unpaid")
+      .eq("payment_status", "unpaid");
+    if (isCashierMember(merchantUser) && user) unpaidQuery = unpaidQuery.eq("sold_by", user.id);
+    const { data: unpaidSales } = await unpaidQuery
       .order("created_at", { ascending: false })
       .limit(20);
 
@@ -173,7 +177,7 @@ export function useNotifications() {
 
     setNotifications(alerts);
     setLoading(false);
-  }, [merchant, n, t]);
+  }, [merchant, merchantUser, user, n, t]);
 
   useEffect(() => {
     fetchNotifications();
