@@ -1,0 +1,145 @@
+name: Staging (wasel-staging)
+
+# A separate Supabase project for trying migrations, functions and
+# permissions before production. It holds production's schema and the three
+# demo shops only, with every customer name, phone, email, address, IMEI,
+# bank detail and login code replaced by test values before they leave
+# production (.github/scripts/staging_copy_plan.py). No real customer data.
+#
+#   init      build it (refuses unless staging is empty, or was built by this)
+#   reset     empty and rebuild it (only a project this workflow marked)
+#   rehearse  apply the pending migrations to STAGING, in the chosen order
+#   test      run the phase-0 scenarios against STAGING (e2e/staging-phase0.mjs)
+#
+# Production is only read, through SUPABASE_DB_URL_RO (proved read-only first).
+# Every write goes to the staging project; each mode stops if a staging setting
+# names production's project.
+#
+# Secrets: SUPABASE_DB_URL_RO; STAGING_DB_URL (staging's session pooler, postgres),
+# STAGING_API_URL (https://<staging-ref>.supabase.co), STAGING_ANON_KEY,
+# STAGING_SERVICE_ROLE_KEY, STAGING_TEST_PASSWORD (for the staging accounts).
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        type: choice
+        options: [init, reset, rehearse, test]
+        default: init
+      order:
+        description: 'rehearse: all | hold-12 (all but 20261023100000) | only-12 | with-119 (then PR #119)'
+        type: choice
+        options: [all, hold-12, only-12, with-119]
+        default: hold-12
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging
+  cancel-in-progress: false
+
+env:
+  PROD_REF: ynwddyxzypbcftlevuam
+  DEMO_IDS: 6245ba37-9e68-4e5e-9e68-46ffee192fb4,e2cffaf5-0f86-4a62-96b7-04a4338e9ac3,25d29b66-3383-4af5-9cd7-dfa1608419e1
+
+jobs:
+  staging:
+    name: ${{ inputs.mode }}${{ inputs.mode == 'rehearse' && format(' ({0})', inputs.order) || '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      PROD_RO_URL: ${{ secrets.SUPABASE_DB_URL_RO }}
+      STAGING_DB_URL: ${{ secrets.STAGING_DB_URL }}
+      STAGING_API_URL: ${{ secrets.STAGING_API_URL }}
+      STAGING_ANON_KEY: ${{ secrets.STAGING_ANON_KEY }}
+      STAGING_SERVICE_ROLE_KEY: ${{ secrets.STAGING_SERVICE_ROLE_KEY }}
+      STAGING_TEST_PASSWORD: ${{ secrets.STAGING_TEST_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Settings point at a staging project, not production
+        run: |
+          for v in STAGING_DB_URL STAGING_API_URL STAGING_ANON_KEY STAGING_SERVICE_ROLE_KEY STAGING_TEST_PASSWORD; do
+            [ -n "${!v}" ] || { echo "::error::secret $v is not set"; exit 1; }
+          done
+          case "$STAGING_DB_URL $STAGING_API_URL" in *"$PROD_REF"*) echo "::error::a staging secret names production ($PROD_REF)"; exit 1;; esac
+          # the service key's own project must be the staging URL's project
+          ref=$(python3 -c 'import json,base64,sys; p=sys.argv[1].split(".")[1]; print(json.loads(base64.urlsafe_b64decode(p+"="*(-len(p)%4))).get("ref",""))' "$STAGING_SERVICE_ROLE_KEY" || true)
+          [ -z "$ref" ] || [ "$ref" != "$PROD_REF" ] || { echo "::error::the service key is production's"; exit 1; }
+          [ -z "$ref" ] || echo "$STAGING_API_URL" | grep -q "$ref" || { echo "::error::the service key ($ref) is not for $STAGING_API_URL"; exit 1; }
+          [ ${#STAGING_TEST_PASSWORD} -ge 16 ] || { echo "::error::STAGING_TEST_PASSWORD must be 16+ characters"; exit 1; }
+
+      - name: Postgres client matching production
+        if: inputs.mode == 'init' || inputs.mode == 'reset'
+        run: |
+          [ -n "$PROD_RO_URL" ] || { echo "::error::secret SUPABASE_DB_URL_RO is not set"; exit 1; }
+          major=$(psql "$PROD_RO_URL" -XqAt -c 'show server_version_num' | cut -c1-2)
+          staging_major=$(psql "$STAGING_DB_URL" -XqAt -c 'show server_version_num' | cut -c1-2)
+          echo "production Postgres $major, staging Postgres $staging_major"
+          [ "$major" = "$staging_major" ] || echo "::warning::staging runs Postgres $staging_major, production $major: results may differ"
+          sudo apt-get install -y -q postgresql-common >/dev/null
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y >/dev/null
+          sudo apt-get install -y -q "postgresql-client-$major" >/dev/null
+          echo "/usr/lib/postgresql/$major/bin" >> "$GITHUB_PATH"
+
+      - name: Build staging
+        if: inputs.mode == 'init' || inputs.mode == 'reset'
+        env:
+          RESET: ${{ inputs.mode == 'reset' && '1' || '0' }}
+        run: bash .github/scripts/staging-init.sh
+
+      - name: Staging is the project this workflow built
+        if: inputs.mode == 'rehearse' || inputs.mode == 'test'
+        run: |
+          m=$(psql "$STAGING_DB_URL" -XqAt -c "select coalesce(shobj_description(oid, 'pg_database'), '') from pg_database where datname = current_database()")
+          [ "$m" = wasel-staging ] || { echo "::error::this database is not marked wasel-staging; run init first"; exit 1; }
+
+      - name: Apply pending migrations to STAGING
+        if: inputs.mode == 'rehearse'
+        run: |
+          S() { psql "$STAGING_DB_URL" -XqAt -v ON_ERROR_STOP=1 "$@"; }
+          S -c "select version from supabase_migrations.schema_migrations" | sort > applied.txt
+          if [ "${{ inputs.order }}" = with-119 ]; then
+            git show origin/claude/sweet-knuth-u4nbzm:supabase/migrations/20261019120000_secure_login_codes_and_storefront_orders.sql \
+              > supabase/migrations/20261019120000_secure_login_codes_and_storefront_orders.sql
+          fi
+          ls supabase/migrations/*.sql | sed -E 's#.*/([0-9]+)_.*#\1#' | sort | comm -23 - applied.txt > pending.txt
+          case "${{ inputs.order }}" in
+            all|with-119) grep -vx 20261019120000 pending.txt > order.txt || true
+                          [ "${{ inputs.order }}" = with-119 ] && grep -x 20261019120000 pending.txt >> order.txt || true ;;
+            hold-12)      grep -vx -e 20261023100000 -e 20261019120000 pending.txt > order.txt || true ;;
+            only-12)      grep -x 20261023100000 pending.txt > order.txt || true ;;
+          esac
+          echo "Applying to staging:"; sed 's/^/  /' order.txt
+          [ -s order.txt ] || { echo "nothing to apply"; exit 0; }
+          if grep -qx 20261023100000 order.txt; then
+            echo "Subscriptions 20261023100000 changes in staging (before):"
+            psql "$STAGING_DB_URL" -X -c "select s.merchant_id, s.plan, p.name as plan_by_id, s.max_branches, p.branch_limit, s.max_users, p.user_limit from public.subscriptions s left join public.plans p on p.id = s.plan_id order by 1"
+          fi
+          while read -r v; do
+            f=$(ls supabase/migrations/${v}_*.sql)
+            name=$(basename "$f" .sql | cut -d_ -f2-)
+            echo "::group::$f"
+            { cat "$f"; echo; echo "INSERT INTO supabase_migrations.schema_migrations (version, name) VALUES ('$v', '$name');"; } \
+              | psql "$STAGING_DB_URL" -q -v ON_ERROR_STOP=1 --single-transaction
+            echo "::endgroup::"
+          done < order.txt
+          S -c "NOTIFY pgrst, 'reload schema'"
+          if grep -qx 20261023100000 order.txt; then
+            echo "Subscriptions after:"
+            psql "$STAGING_DB_URL" -X -c "select s.merchant_id, s.plan, s.max_branches, s.max_users from public.subscriptions s order by 1"
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Phase-0 scenarios on STAGING
+        run: |
+          sleep 5
+          node e2e/staging-phase0.mjs | tee scenarios.txt
+          echo "### Staging scenarios (${{ inputs.mode }} ${{ inputs.order }})" >> "$GITHUB_STEP_SUMMARY"
+          grep -E '^(RESULT|SUMMARY)' scenarios.txt | sed 's/^/    /' >> "$GITHUB_STEP_SUMMARY"
