@@ -1,3 +1,4 @@
+import { productAmountProblem } from '@/lib/amounts';
 import { friendlyError } from '@/lib/errors';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -49,6 +50,8 @@ export function useDevices() {
 
   const addDevice = async (device: Omit<Device, 'id' | 'merchant_id' | 'created_at' | 'updated_at'>) => {
     if (!merchant) return { error: new Error('No merchant') };
+    const invalid = productAmountProblem(device);
+    if (invalid) { toast.error(invalid); return { data: null, error: new Error(invalid) }; }
 
     const { data, error } = await supabase
       .from('devices')
@@ -67,6 +70,8 @@ export function useDevices() {
   };
 
   const updateDevice = async (id: string, updates: Partial<Device>) => {
+    const invalid = productAmountProblem(updates);
+    if (invalid) { toast.error(invalid); return { data: null, error: new Error(invalid) }; }
     const { data, error } = await supabase
       .from('devices')
       .update(updates)
@@ -153,6 +158,8 @@ export function useAccessories() {
 
   const addAccessory = async (accessory: Omit<Accessory, 'id' | 'merchant_id' | 'created_at' | 'updated_at'>) => {
     if (!merchant) return { error: new Error('No merchant') };
+    const invalid = productAmountProblem(accessory);
+    if (invalid) { toast.error(invalid); return { data: null, error: new Error(invalid) }; }
 
     const { data, error } = await supabase
       .from('accessories')
@@ -171,6 +178,8 @@ export function useAccessories() {
   };
 
   const updateAccessory = async (id: string, updates: Partial<Accessory>) => {
+    const invalid = productAmountProblem(updates);
+    if (invalid) { toast.error(invalid); return { data: null, error: new Error(invalid) }; }
     const { data, error } = await supabase
       .from('accessories')
       .update(updates)
