@@ -1,3 +1,5 @@
+import { productAmountProblem } from '@/lib/amounts';
+import { friendlyError } from '@/lib/errors';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -48,6 +50,8 @@ export function useDevices() {
 
   const addDevice = async (device: Omit<Device, 'id' | 'merchant_id' | 'created_at' | 'updated_at'>) => {
     if (!merchant) return { error: new Error('No merchant') };
+    const invalid = productAmountProblem(device);
+    if (invalid) { toast.error(invalid); return { data: null, error: new Error(invalid) }; }
 
     const { data, error } = await supabase
       .from('devices')
@@ -57,15 +61,17 @@ export function useDevices() {
 
     if (!error) {
       await fetchDevices();
-      toast.success('Device added successfully');
+      toast.success('تمت إضافة الجهاز');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error, 'حفظ الجهاز'));
     }
 
     return { data, error };
   };
 
   const updateDevice = async (id: string, updates: Partial<Device>) => {
+    const invalid = productAmountProblem(updates);
+    if (invalid) { toast.error(invalid); return { data: null, error: new Error(invalid) }; }
     const { data, error } = await supabase
       .from('devices')
       .update(updates)
@@ -75,9 +81,9 @@ export function useDevices() {
 
     if (!error) {
       await fetchDevices();
-      toast.success('Device updated');
+      toast.success('تم حفظ تعديلات الجهاز');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error, 'حفظ تعديلات الجهاز'));
     }
 
     return { data, error };
@@ -95,9 +101,9 @@ export function useDevices() {
 
     if (!error) {
       await fetchDevices();
-      toast.success('Device deleted');
+      toast.success('تم حذف الجهاز');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error, 'حذف الجهاز'));
     }
 
     return { error };
@@ -152,6 +158,8 @@ export function useAccessories() {
 
   const addAccessory = async (accessory: Omit<Accessory, 'id' | 'merchant_id' | 'created_at' | 'updated_at'>) => {
     if (!merchant) return { error: new Error('No merchant') };
+    const invalid = productAmountProblem(accessory);
+    if (invalid) { toast.error(invalid); return { data: null, error: new Error(invalid) }; }
 
     const { data, error } = await supabase
       .from('accessories')
@@ -161,15 +169,17 @@ export function useAccessories() {
 
     if (!error) {
       await fetchAccessories();
-      toast.success('Accessory added successfully');
+      toast.success('تمت إضافة الإكسسوار');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error, 'حفظ الإكسسوار'));
     }
 
     return { data, error };
   };
 
   const updateAccessory = async (id: string, updates: Partial<Accessory>) => {
+    const invalid = productAmountProblem(updates);
+    if (invalid) { toast.error(invalid); return { data: null, error: new Error(invalid) }; }
     const { data, error } = await supabase
       .from('accessories')
       .update(updates)
@@ -179,9 +189,9 @@ export function useAccessories() {
 
     if (!error) {
       await fetchAccessories();
-      toast.success('Accessory updated');
+      toast.success('تم حفظ تعديلات الإكسسوار');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error, 'حفظ تعديلات الإكسسوار'));
     }
 
     return { data, error };
@@ -203,9 +213,9 @@ export function useAccessories() {
 
     if (!error) {
       await fetchAccessories();
-      toast.success('Accessory deleted');
+      toast.success('تم حذف الإكسسوار');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error, 'حذف الإكسسوار'));
     }
 
     return { error };

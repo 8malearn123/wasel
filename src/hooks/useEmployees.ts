@@ -33,6 +33,8 @@ const ERRORS: Record<string, string> = {
   account_belongs_to_another_merchant: 'الحساب المختار لا يتبع متجرك',
   branch_belongs_to_another_merchant: 'الفرع المختار لا يتبع متجرك',
   'row-level security': 'ليست لديك صلاحية لهذا الإجراء',
+  // the table's migration has not run on this database yet
+  "public.employees' in the schema cache": 'سجل الموظفين غير مفعّل بعد في قاعدة البيانات، فلم يُحفظ الموظف. يفعّله مالك النظام (docs/ops/employees-table-now.sql).',
 };
 
 const messageFor = (raw: string) => {

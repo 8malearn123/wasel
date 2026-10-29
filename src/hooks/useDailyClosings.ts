@@ -1,7 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import type { Sale } from '@/types/database';
 import { toast } from 'sonner';
+import { isMissingFunction } from '@/lib/optionalRpc';
+import { friendlyError } from '@/lib/errors';
+
+/** A sale of the day as the closing reads it — from day_sales_summary() or the sales table */
+type DaySale = Pick<Sale, 'payment_method' | 'total_amount' | 'tax_amount' | 'discount_amount' | 'invoice_number' | 'customer_name' | 'sale_date'>;
 
 export interface DailyClosing {
   id: string;
@@ -88,17 +94,30 @@ export function useDailyClosings() {
     const startOfDay = `${date}T00:00:00.000Z`;
     const endOfDay = `${date}T23:59:59.999Z`;
 
-    const { data: sales, error } = await supabase
-      .from('sales')
-      .select('*, items:sale_items(*, device:devices(*), accessory:accessories(*))')
-      .eq('merchant_id', merchant.id)
-      .eq('branch_id', currentBranch.id)
-      .gte('sale_date', startOfDay)
-      .lte('sale_date', endOfDay)
-      .order('sale_date', { ascending: true });
+    // The branch's day comes from day_sales_summary(): a cashier reads only
+    // their own invoices, but closes the day for the whole branch. Until its
+    // migration is applied, the sales are read directly as before.
+    let { data: sales, error } = await supabase.rpc('day_sales_summary' as never, {
+      _branch_id: currentBranch.id,
+      _from: startOfDay,
+      _to: endOfDay,
+    } as never) as { data: DaySale[] | null; error: { message: string; code?: string } | null };
+
+    if (error && isMissingFunction(error)) {
+      ({ data: sales, error } = await supabase
+        .from('sales')
+        .select('*, items:sale_items(*, device:devices(*), accessory:accessories(*))')
+        .eq('merchant_id', merchant.id)
+        .eq('branch_id', currentBranch.id)
+        .gte('sale_date', startOfDay)
+        .lte('sale_date', endOfDay)
+        .order('sale_date', { ascending: true }));
+    }
 
     if (error) {
       console.error('Error fetching day sales:', error);
+      // zeros on screen would read as a day with no sales, and could be closed as one
+      toast.error(friendlyError(error, 'قراءة مبيعات اليوم'));
       return { cashTotal: 0, cardTotal: 0, bankTransferTotal: 0, totalSales: 0, totalTax: 0, totalDiscount: 0, transactionsCount: 0, devicesSold: 0, accessoriesSold: 0, soldItems: [] };
     }
 

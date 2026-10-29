@@ -102,7 +102,7 @@ const navItems: NavItem[] = [
       { key: "seo", label: "Search engines", labelAr: "محركات البحث", icon: Search, requireFeature: "onlineStore", denyRoles: ["cashier"], requirePermission: "store.manage" },
       { key: "customers", label: "Customers & loyalty", labelAr: "العملاء والولاء", icon: Heart, requireFeature: "customers", denyRoles: ["cashier"], requirePermission: "customers.manage" },
       { key: "marketing", label: "Marketing", labelAr: "التسويق", icon: Megaphone, requireFeature: "marketing", denyRoles: ["cashier"], requirePermission: "marketing.manage" },
-      { key: "wholesale", label: "Wholesale", labelAr: "بيع الجملة", icon: Warehouse, denyRoles: ["cashier"], requirePermission: "wholesale.manage" },
+      { key: "wholesale", label: "Wholesale", labelAr: "بيع الجملة", icon: Warehouse, requireFeature: "wholesale", denyRoles: ["cashier"], requirePermission: "wholesale.manage" },
     ],
   },
   {

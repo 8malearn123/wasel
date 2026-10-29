@@ -1,3 +1,4 @@
+import { isCashierMember } from "@/lib/cashier";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -50,7 +51,7 @@ export default function POSPage() {
   // تسجيل حضور الكاشير (مرة واحدة في اليوم) عند دخوله نقطة البيع —
   // يظهر في قسم الموارد البشرية كموعد الدخول
   useEffect(() => {
-    if (!merchant || !user || merchantUser?.role !== 'cashier') return;
+    if (!merchant || !user || !isCashierMember(merchantUser)) return;
     (async () => {
       try {
         const today = new Date();
@@ -79,7 +80,7 @@ export default function POSPage() {
   const { createSale, markAsPrinted, sales, loading: salesLoading, updateSale, deleteSale, refetch: refetchSales } = useSales();
   const { activity, loading: activityLoading, refetch: refetchActivity } = usePOSActivity();
 
-  const isCashier = merchantUser?.role === 'cashier';
+  const isCashier = isCashierMember(merchantUser);
 
   const addDeviceToCart = (device: Device) => {
     const existing = cart.find(item => item.deviceId === device.id);

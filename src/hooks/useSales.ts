@@ -1,9 +1,11 @@
+import { friendlyError, isNetworkError } from '@/lib/errors';
+import { isCashierMember } from '@/lib/cashier';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import type { Sale, SaleItem, Device, Accessory, PaymentMethod } from '@/types/database';
 import { toast } from 'sonner';
-import { vatInclusive } from '@/lib/money';
+import { vatInclusive, formatSar } from '@/lib/money';
 
 interface CartItem {
   id: string;
@@ -34,8 +36,35 @@ export function saleLineRows(saleId: string, cart: CartItem[]) {
   }));
 }
 
+/**
+ * The sale the till is trying to make. When the connection drops while the
+ * invoice is being saved, the till cannot know whether it reached the
+ * server. Pressing «pay» again for the same cart reuses the same invoice id
+ * and number: if the first try was saved it is picked up and finished, not
+ * made a second time. A different cart starts a new sale.
+ */
+type SaleResult = { data?: Sale | null; error: unknown };
+
+type PendingSale = { signature: string; id: string; invoiceNumber: string };
+let pendingSale: PendingSale | null = null;
+
+export const saleSignature = (
+  cart: Pick<CartItem, 'type' | 'deviceId' | 'accessoryId' | 'price' | 'quantity'>[],
+  paymentMethod: string,
+  customerName?: string,
+  customerPhone?: string,
+  discountAmount = 0,
+) => JSON.stringify([
+  cart.map(i => [i.type, i.deviceId ?? null, i.accessoryId ?? null, i.price, i.quantity]),
+  paymentMethod, customerName ?? '', customerPhone ?? '', discountAmount,
+]);
+
+/** for tests */
+export const resetPendingSale = () => { pendingSale = null; };
+
 export function useSales() {
-  const { merchant, currentBranch, user } = useAuth();
+  const { merchant, currentBranch, user, merchantUser } = useAuth();
+  const cashier = isCashierMember(merchantUser);
   const [sales, setSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -45,10 +74,14 @@ export function useSales() {
     
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('sales')
         .select('*, branch:branches(*), items:sale_items(*, device:devices(*), accessory:accessories(*))')
-        .eq('merchant_id', merchant.id)
+        .eq('merchant_id', merchant.id);
+      // a cashier's history is their own invoices (the database says the
+      // same once 20261029090300 is applied)
+      if (cashier && user) query = query.eq('sold_by', user.id);
+      const { data, error } = await query
         .order('sale_date', { ascending: false })
         .limit(100);
 
@@ -60,7 +93,7 @@ export function useSales() {
     } finally {
       setLoading(false);
     }
-  }, [merchant]);
+  }, [merchant, cashier, user]);
 
   useEffect(() => {
     fetchSales();
@@ -72,7 +105,7 @@ export function useSales() {
     customerName?: string,
     customerPhone?: string,
     discountAmount: number = 0
-  ) => {
+  ): Promise<SaleResult> => {
     if (!merchant || !currentBranch || !user) {
       return { error: new Error('Missing merchant, branch, or user') };
     }
@@ -86,16 +119,42 @@ export function useSales() {
     // has the last word before the invoice is made. Asked together with the
     // invoice number: one round trip, not two.
     const deviceIds = cart.filter(i => i.type === 'device' && i.deviceId).map(i => i.deviceId as string);
-    const [statusCheck, { data: invoiceData }] = await Promise.all([
+    const signature = saleSignature(cart, paymentMethod, customerName, customerPhone, discountAmount);
+    const retry = pendingSale?.signature === signature ? pendingSale : null;
+    if (pendingSale && !retry) {
+      // the cart changed after a try whose answer was lost: if that try left
+      // an invoice without lines, take it back so it does not count as revenue
+      const stale = pendingSale.id;
+      pendingSale = null;
+      const { count } = await supabase.from('sale_items').select('id', { count: 'exact', head: true }).eq('sale_id', stale);
+      if (count === 0) await supabase.from('sales').delete().eq('id', stale);
+    }
+
+    // A retry of a sale that did reach the server: finish that one
+    if (retry) {
+      const { data: saved, error: lookupError } = await supabase
+        .from('sales').select('*').eq('id', retry.id).maybeSingle();
+      if (lookupError) {
+        toast.error(isNetworkError(lookupError)
+          ? 'ما زال الاتصال مقطوعًا، فلم يُكرَّر البيع. أعد المحاولة عند عودة الإنترنت.'
+          : friendlyError(lookupError, 'إتمام البيع'));
+        return { error: lookupError };
+      }
+      if (saved) return finishSale(saved as Sale, cart, deviceIds, retry.invoiceNumber, true);
+    }
+
+    const [statusCheck, { data: invoiceData, error: numberError }] = await Promise.all([
       deviceIds.length
         ? supabase.from('devices').select('id, model, status').in('id', deviceIds)
         : Promise.resolve({ data: [] as { id: string; model: string; status: string }[], error: null }),
-      supabase.rpc('generate_invoice_number', { _merchant_id: merchant.id }),
+      retry
+        ? Promise.resolve({ data: retry.invoiceNumber, error: null })
+        : supabase.rpc('generate_invoice_number', { _merchant_id: merchant.id }),
     ]);
     if (deviceIds.length) {
       const { data: current, error: statusError } = statusCheck;
       if (statusError) {
-        toast.error(statusError.message);
+        toast.error(friendlyError(statusError, 'إتمام البيع'));
         return { error: statusError };
       }
       const unavailable = (current || []).filter(d => d.status !== 'available');
@@ -107,12 +166,24 @@ export function useSales() {
       }
     }
 
-    const invoiceNumber = invoiceData || `INV-${Date.now()}`;
+    // No number, no invoice: a made-up number (it used to be INV-<time>) is
+    // not part of the shop's sequence and can never be issued as a tax invoice
+    if (numberError || !invoiceData) {
+      const error = numberError ?? new Error('no invoice number');
+      toast.error(isNetworkError(error)
+        ? friendlyError(error, 'إتمام البيع')
+        : 'تعذّر إصدار رقم للفاتورة، فلم يُحفظ البيع. أعد المحاولة بعد لحظات.');
+      return { error };
+    }
+    const invoiceNumber = invoiceData as string;
+    const saleId = retry?.id ?? crypto.randomUUID();
+    pendingSale = { signature, id: saleId, invoiceNumber };
 
     // Create sale
     const { data: sale, error: saleError } = await supabase
       .from('sales')
       .insert({
+        id: saleId,
         merchant_id: merchant.id,
         branch_id: currentBranch.id,
         invoice_number: invoiceNumber,
@@ -131,8 +202,36 @@ export function useSales() {
       .single();
 
     if (saleError) {
-      toast.error(saleError.message);
+      // the request may have reached the server before the connection dropped;
+      // pressing «pay» again for this cart picks it up instead of selling twice
+      toast.error(isNetworkError(saleError)
+        ? 'انقطع الاتصال أثناء إتمام البيع. تحقّق من الإنترنت ثم اضغط «إتمام البيع» مرة أخرى للسلة نفسها: لن تتكرر الفاتورة.'
+        : friendlyError(saleError, 'إتمام البيع'));
+      if (!isNetworkError(saleError)) pendingSale = null;
       return { error: saleError };
+    }
+
+    return finishSale(sale as Sale, cart, deviceIds, invoiceNumber, retry !== null);
+  };
+
+  // The lines, then the stock, of an invoice that is saved
+  const finishSale = async (sale: Sale, cart: CartItem[], deviceIds: string[], invoiceNumber: string, resumed: boolean): Promise<SaleResult> => {
+    // a retry: the lines (and with them the stock) may have been saved by the
+    // try whose answer was lost — then the sale is complete already
+    const { count: linesSaved } = resumed
+      ? await supabase.from('sale_items').select('id', { count: 'exact', head: true }).eq('sale_id', sale.id)
+      : { count: 0 };
+    if (linesSaved) {
+      pendingSale = null;
+      // the stock step of that try may not have run: marking devices sold is
+      // safe to repeat, an accessory count is not — so it is left to a person
+      if (deviceIds.length) void supabase.from('devices').update({ status: 'sold' }).in('id', deviceIds);
+      if (cart.some(i => i.type === 'accessory')) {
+        toast.warning(`الفاتورة ${invoiceNumber} محفوظة من المحاولة السابقة. راجِع كمية الإكسسوارات في المخزون.`);
+      }
+      toast.success(`تمت عملية البيع — فاتورة ${invoiceNumber}`);
+      void fetchSales();
+      return { data: sale, error: null };
     }
 
     // The lines in one request, then the stock in parallel. This used to be
@@ -144,11 +243,18 @@ export function useSales() {
       .insert(saleLineRows(sale.id, cart));
 
     if (itemsError) {
+      if (isNetworkError(itemsError)) {
+        // the lines may be saved; the next «pay» for this cart checks
+        toast.error('انقطع الاتصال أثناء حفظ أصناف الفاتورة. اضغط «إتمام البيع» مرة أخرى للسلة نفسها عند عودة الإنترنت: لن تتكرر الفاتورة.');
+        return { error: itemsError };
+      }
       // an invoice without its lines would count as revenue with nothing sold
       await supabase.from('sales').delete().eq('id', sale.id);
-      toast.error(itemsError.message);
+      pendingSale = null;
+      toast.error(friendlyError(itemsError, 'إتمام البيع'));
       return { error: itemsError };
     }
+    pendingSale = null;
 
     // The stock follows in the background: the sale and its lines are saved,
     // so the till confirms now instead of waiting one or two more round trips.
@@ -236,6 +342,14 @@ export function useSales() {
     const sale = sales.find(s => s.id === saleId);
     if (!sale) return { error: new Error('Sale not found') };
 
+    // A paid invoice's money is not the cashier's to change: the amounts,
+    // discount and payment method stay as sold. (The database refuses it too.)
+    if (cashier && (updates.discount_amount !== undefined || updates.payment_method !== undefined)) {
+      const error = new Error('لا يمكن للكاشير تعديل خصم الفاتورة المدفوعة أو طريقة دفعها. اطلب ذلك من المدير أو المالك.');
+      toast.error(error.message);
+      return { error };
+    }
+
     const patch: typeof updates & { total_amount?: number; subtotal?: number; tax_amount?: number } = { ...updates };
 
     // A changed discount has to carry through to the invoice total, or the
@@ -243,7 +357,14 @@ export function useSales() {
     if (updates.discount_amount !== undefined) {
       // what the lines came to before any discount, as the customer saw it
       const gross = Number(sale.total_amount) + Number(sale.discount_amount || 0);
-      const next = vatInclusive(gross, updates.discount_amount);
+      const wanted = Number(updates.discount_amount);
+      // a discount is never negative and never takes the invoice to zero or below
+      if (!Number.isFinite(wanted) || wanted < 0 || wanted >= gross) {
+        const error = new Error(`الخصم يجب أن يكون بين 0 وأقل من قيمة الفاتورة (${formatSar(gross)} ر.س).`);
+        toast.error(error.message);
+        return { error };
+      }
+      const next = vatInclusive(gross, wanted);
       patch.discount_amount = next.discount;
       patch.total_amount = next.total;
       patch.subtotal = next.subtotal;
@@ -269,6 +390,11 @@ export function useSales() {
   const deleteSale = async (saleId: string) => {
     const sale = sales.find(s => s.id === saleId);
     if (!sale) return { error: new Error('Sale not found') };
+    if (cashier) {
+      const error = new Error('حذف الفواتير من صلاحية المدير أو المالك فقط.');
+      toast.error(error.message);
+      return { error };
+    }
 
     // Put the stock back before the invoice goes
     const { data: items, error: itemsError } = await supabase

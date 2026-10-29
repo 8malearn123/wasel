@@ -135,11 +135,6 @@ jobs:
 
           FAILED=0
 
-          SESSION=$(curl -sS "$SUPA/functions/v1/login-by-code" \
-            -H "apikey: $ANON" -H "Authorization: Bearer $ANON" \
-            -H "Content-Type: application/json" -d '{"code":"70035"}')
-          TOKEN=$(echo "$SESSION" | jq -r '.session.access_token // empty')
-          if [ -n "$TOKEN" ]; then seed_merchant "$TOKEN" "cashier-70035" || FAILED=1; else echo "cashier login failed"; FAILED=1; fi
 
           for EMAIL in demo-basic@wasil.demo demo-professional@wasil.demo demo-enterprise@wasil.demo demo-distributor@wasil.demo; do
             AUTH=$(curl -sS "$SUPA/auth/v1/token?grant_type=password" \

@@ -1,3 +1,4 @@
+import { isCashierMember } from "@/lib/cashier";
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -25,7 +26,7 @@ export function usePOSActivity(limit = 60) {
   const [loading, setLoading] = useState(true);
 
   // a cashier whose permissions the shop changed is still a cashier here
-  const isCashier = merchantUser?.role === 'cashier' || merchantUser?.customRole?.system === 'cashier';
+  const isCashier = isCashierMember(merchantUser);
 
   const fetchActivity = useCallback(async () => {
     if (!merchant) {

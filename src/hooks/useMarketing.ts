@@ -1,3 +1,4 @@
+import { amountProblem } from '@/lib/amounts';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -38,6 +39,12 @@ export interface Campaign {
   created_at: string;
   updated_at: string;
 }
+
+const couponProblem = (c: Partial<Coupon>) => amountProblem([
+  { label: 'قيمة الخصم', value: c.discount_value, min: 0.01, ...(c.discount_type === 'percentage' ? { max: 100 } : {}) },
+  { label: 'الحد الأدنى للطلب', value: c.min_order_amount },
+  { label: 'أقصى خصم', value: c.max_discount_amount },
+]);
 
 export function useMarketing() {
   const { merchant } = useAuth();
@@ -85,6 +92,8 @@ export function useMarketing() {
 
   const createCoupon = async (coupon: Omit<Coupon, 'id' | 'merchant_id' | 'used_count' | 'created_at' | 'updated_at'>) => {
     if (!merchant) return;
+    const invalid = couponProblem(coupon);
+    if (invalid) { toast({ title: 'لم يُحفظ الكوبون', description: invalid, variant: 'destructive' }); return false; }
     const { error } = await supabase.from('coupons').insert({
       ...coupon,
       merchant_id: merchant.id,
@@ -98,6 +107,8 @@ export function useMarketing() {
   };
 
   const updateCoupon = async (id: string, updates: Partial<Coupon>) => {
+    const invalid = couponProblem(updates);
+    if (invalid) { toast({ title: 'لم يُحفظ الكوبون', description: invalid, variant: 'destructive' }); return false; }
     const { error } = await supabase.from('coupons').update(updates as any).eq('id', id);
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });

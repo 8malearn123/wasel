@@ -106,20 +106,16 @@ async function signIn() {
     if (!s.access_token) throw new Error(`sign-in failed: ${JSON.stringify(s)}`);
     return s;
   }
-  // cashier and the custom profiles all sign in as the demo cashier; several
-  // runs signing in with one code at once are refused, so retry with a pause
-  let last;
-  for (let attempt = 0; attempt < 6; attempt++) {
-    const r = await fetch(`${SUPA}/functions/v1/login-by-code`, {
-      method: 'POST',
-      headers: { apikey: ANON, Authorization: `Bearer ${ANON}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code: '70035' }),
-    });
-    last = await r.json();
-    if (last.session?.access_token) return last.session;
-    await new Promise(res => setTimeout(res, 4000 + Math.random() * 6000));
-  }
-  throw new Error(`code sign-in failed: ${JSON.stringify(last)}`);
+  // cashier and the custom profiles sign in as the demo cashier of the Max
+  // demo shop (the old public login code belonged to a real shop and is gone)
+  const r = await fetch(`${SUPA}/auth/v1/token?grant_type=password`, {
+    method: 'POST',
+    headers: { apikey: ANON, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: 'demo-cashier@wasil.demo', password: 'demo1234' }),
+  });
+  const s = await r.json();
+  if (!s.access_token) throw new Error(`cashier sign-in failed: ${JSON.stringify(s)}`);
+  return s;
 }
 
 async function memberOf(session) {

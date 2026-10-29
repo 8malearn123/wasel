@@ -32,7 +32,7 @@ export const SECTION_ACCESS: Record<string, Door[]> = {
     { permission: 'store.manage', feature: 'onlineStore' },
     { permission: 'customers.manage', feature: 'customers' },
     { permission: 'marketing.manage', feature: 'marketing' },
-    { permission: 'wholesale.manage' },
+    { permission: 'wholesale.manage', feature: 'wholesale' },
   ],
   '/shipping': [{ permission: 'shipping.manage' }],
   '/reports': [
