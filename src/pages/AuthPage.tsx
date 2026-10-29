@@ -284,26 +284,6 @@ export default function AuthPage() {
         <div className="mt-6 bg-card/50 rounded-xl border border-dashed border-primary/30 p-4">
           <p className="text-xs font-semibold text-primary text-center mb-3"> حسابات تجريبية للديمو</p>
           <div className="space-y-2">
-            {/* كاشير */}
-            <button
-              type="button"
-              onClick={() => {
-                setLoginCode('70035');
-                showForm('code');
-                setError('');
-              }}
-              className="w-full flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors text-sm"
-              dir="rtl"
-            >
-              <div className="flex items-center gap-2">
-                <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">ك</span>
-                <div className="text-right">
-                  <span className="font-medium text-foreground">كاشير تجريبي</span>
-                  <span className="block text-xs text-muted-foreground">كاشير • نقطة البيع</span>
-                </div>
-              </div>
-              <code className="text-xs bg-primary/10 text-primary px-2 py-1 rounded font-mono">70035</code>
-            </button>
             {/* حسابات الباقات */}
             {[
               { label: 'باقة لايت (Lite)', email: 'demo-basic@wasil.demo', desc: 'تجربة باقة لايت', letter: 'L', color: 'bg-primary/10 text-primary' },
