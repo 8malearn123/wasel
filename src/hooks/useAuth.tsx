@@ -34,6 +34,8 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshMerchantData: () => Promise<void>;
+  /** Read the member's data again after it failed; the guards wait meanwhile */
+  retryMemberData: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -125,6 +127,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) {
       await fetchMerchantData(user.id);
     }
+  };
+
+  // Unlike a refresh after saving settings, this is a reload from nothing: the
+  // guards must wait, or they decide on an empty role and send the user away
+  const retryMemberData = async () => {
+    if (!user) return;
+    setMemberLoading(true);
+    await fetchMerchantData(user.id);
   };
 
   // آخر مستخدم جلبنا بياناته — حتى ما نعيد الجلب (وتحديث الصفحة كلها)
@@ -268,7 +278,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signIn,
       signUp,
       signOut,
-      refreshMerchantData
+      refreshMerchantData,
+      retryMemberData
     }}>
       {children}
     </AuthContext.Provider>

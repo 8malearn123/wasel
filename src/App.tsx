@@ -52,7 +52,7 @@ const queryClient = new QueryClient();
 // Signed in, but the account's own data could not be read: say so and offer a
 // retry, instead of carrying on as an account without a shop
 function MemberLoadError({ message }: { message: string }) {
-  const { refreshMerchantData, signOut } = useAuth();
+  const { retryMemberData, signOut } = useAuth();
   const [retrying, setRetrying] = useState(false);
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4" dir="rtl">
@@ -60,7 +60,7 @@ function MemberLoadError({ message }: { message: string }) {
         <p className="font-semibold text-foreground">{message}</p>
         <p className="text-sm text-muted-foreground">تحقّق من الاتصال بالإنترنت ثم أعد المحاولة.</p>
         <div className="flex gap-2 justify-center">
-          <Button disabled={retrying} onClick={async () => { setRetrying(true); await refreshMerchantData(); setRetrying(false); }}>
+          <Button disabled={retrying} onClick={async () => { setRetrying(true); await retryMemberData(); setRetrying(false); }}>
             {retrying ? 'جارٍ المحاولة…' : 'إعادة المحاولة'}
           </Button>
           <Button variant="outline" onClick={() => signOut()}>تسجيل الخروج</Button>
