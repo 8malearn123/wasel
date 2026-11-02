@@ -35,6 +35,8 @@ const messageFor = (error: { message?: string } | null) => {
   return key ? REDEEM_ERRORS[key] : 'تعذّر إتمام العملية، حاول مرة أخرى';
 };
 
+let subscriptionFailureShown = false;
+
 export function useSubscription() {
   const { subscription, merchant, refreshMerchantData } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -47,9 +49,16 @@ export function useSubscription() {
     if (!merchant) { setState(null); return; }
     const { data, error, missing } = await callOptionalRpc<SubscriptionState>('get_subscription_state', merchant.id);
     if (error) {
-      // Before the migration is applied the function does not exist yet; the
-      // screens still render, and RLS is the real boundary either way.
-      if (!missing) console.warn('[subscription] get_subscription_state failed:', error.message);
+      // Before the migration is applied the function does not exist yet (404);
+      // the subscription row read with the shop's data stands in, and RLS is
+      // the real boundary either way. Any other failure is said out loud.
+      if (!missing) {
+        console.warn('[subscription] get_subscription_state failed:', error.message);
+        if (!subscriptionFailureShown) {
+          subscriptionFailureShown = true;
+          toast.error('تعذّر التحقق من حالة الاشتراك من الخادم. المعروض من آخر بيانات محفوظة؛ أعد تحميل الصفحة للتأكد.', { duration: 8000 });
+        }
+      }
       setState(null);
       return;
     }

@@ -1,3 +1,4 @@
+import { isCashierMember } from "@/lib/cashier";
 import {
   Bell, User, Building2, Languages, Sun, Moon, LayoutGrid,
   LayoutDashboard, ShoppingCart, Package, Truck, BarChart3, ShoppingBag,
@@ -71,7 +72,7 @@ export function Header({ title, subtitle, onMenuClick, menuOnSmallScreens }: Hea
 
   const { can } = usePermissions();
   const { allows, loading: plansLoading } = useFeatureAccess();
-  const isCashier = merchantUser?.role === "cashier";
+  const isCashier = isCashierMember(merchantUser);
   // Who is signed in, and as what — a custom role by its own name
   const displayName = (user?.user_metadata?.full_name as string | undefined)?.trim() || "";
   const roleLabel = merchantUser?.role === "custom"

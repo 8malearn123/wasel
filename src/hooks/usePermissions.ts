@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { callOptionalRpc } from '@/lib/optionalRpc';
 import { useAuth } from './useAuth';
+import { toast } from 'sonner';
 import { permissionsForLegacyRole, CUSTOM_ROLE_FORBIDDEN } from '@/lib/legacyRolePermissions';
 
 /**
@@ -29,6 +30,10 @@ export type PermissionKey =
   | 'payroll.manage' | 'branches.manage' | 'settings.manage' | 'policy.manage'
   | 'subscription.manage';
 
+// one message per session, however many components ask
+const told = new Set<string>();
+const tellOnce = (key: string, show: () => void) => { if (!told.has(key)) { told.add(key); show(); } };
+
 export function usePermissions() {
   const { user, merchantUser, memberLoading } = useAuth();
   const [permissions, setPermissions] = useState<string[]>([]);
@@ -44,24 +49,33 @@ export function usePermissions() {
     setLoading(true);
     const { data, error, missing } = await callOptionalRpc<string[]>('my_permissions', user.id);
 
-    if (error) {
+    if (error && missing) {
       // The Phase 1 migration has not been applied, so my_permissions() does
-      // not exist yet. Returning an empty list here was wrong: it hid "add
-      // product" and "delete product" from everyone — owners included — while
-      // the database, still on its old merchant-scoped policy, allowed both.
-      // A UI stricter than the server protects nothing and only breaks screens.
-      //
-      // Falling back to the legacy role map gives the same answer the server
-      // gives in this state, and the same answer has_permission() will give
-      // once the migration lands.
-      if (!missing) console.warn('[permissions] my_permissions failed, falling back to the role map:', error.message);
-      // a custom role kept in the app's store carries its own list
-      // (a system role the shop changed keeps what only its system role holds)
+      // not exist yet (404). The role's own permission map is what the server
+      // checks in this state (and has_permission() unions the same map once
+      // the migration lands), so it is used — not guessed. The owner/admin is
+      // told once that the server function is missing.
       const system = merchantUser.customRole?.system;
       setPermissions(merchantUser.role === 'custom'
         ? (merchantUser.customRole?.permissions ?? [])
             .filter(k => !CUSTOM_ROLE_FORBIDDEN.has(k) || (!!system && permissionsForLegacyRole(system).includes(k)))
         : permissionsForLegacyRole(merchantUser.role));
+      if (merchantUser.role === 'owner' || merchantUser.role === 'admin') {
+        tellOnce('permissions-missing', () => toast.info(
+          'خدمة الصلاحيات غير مفعّلة على الخادم بعد، فتُطبَّق الصلاحيات الأساسية لكل دور. يلزم تفعيلها من جهة الخادم.',
+          { duration: 8000 },
+        ));
+      }
+    } else if (error) {
+      // Any other failure (connection, server error): the answer is unknown,
+      // so nothing extra is granted. A custom role then sees none of its
+      // screens; a system role keeps only its base map (merged below).
+      console.warn('[permissions] my_permissions failed:', error.message);
+      setPermissions([]);
+      tellOnce('permissions-failed', () => toast.error(
+        'تعذّر التحقق من صلاحياتك، فقد لا تظهر بعض الأقسام. تحقّق من الاتصال ثم أعد تحميل الصفحة.',
+        { duration: 8000 },
+      ));
     } else {
       setPermissions((data as unknown as string[]) || []);
     }

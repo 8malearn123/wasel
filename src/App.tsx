@@ -1,3 +1,4 @@
+import { isCashierMember } from "@/lib/cashier";
 import { lazy, Suspense } from "react";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { LegacyRedirect } from "@/components/common/LegacyRedirect";
@@ -184,7 +185,7 @@ function DashboardRoute({ children }: { children: React.ReactNode }) {
 // other page they open says why they were moved instead of bouncing silently.
 function CashierRedirect({ children, quiet = false }: { children: React.ReactNode; quiet?: boolean }) {
   const { merchantUser } = useAuth();
-  if (merchantUser?.role === 'cashier') {
+  if (isCashierMember(merchantUser)) {
     return quiet ? <Navigate to="/pos" replace /> : <DeniedRedirect to="/pos" reason="cashier" />;
   }
   return <>{children}</>;

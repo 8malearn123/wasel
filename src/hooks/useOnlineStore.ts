@@ -4,6 +4,7 @@ import { roundSar, VAT_RATE } from '@/lib/money';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { friendlyError } from '@/lib/errors';
 import { toOrderShipping } from '@/lib/shipping';
 
 export interface StoreSettings {
@@ -331,7 +332,7 @@ export function useStorePages() {
       is_published: true,
       sort_order: 999,
     } as any, { onConflict: 'merchant_id,slug' });
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error, 'حفظ الإعدادات')); return; }
     await fetchPages();
     toast.success(savedMessage);
   };
@@ -436,7 +437,7 @@ export function useOnlineOrders() {
       .from('online_orders')
       .update({ status } as any)
       .eq('id', orderId);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error, 'تحديث حالة الطلب')); return; }
     await fetchOrders();
     toast.success('تم تحديث حالة الطلب');
   };
@@ -449,7 +450,7 @@ export function useOnlineOrders() {
         status: 'shipped',
       } as any)
       .eq('id', orderId);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error, 'حفظ رقم الشحنة')); return; }
     await fetchOrders();
     toast.success('تم إضافة رقم التتبع');
   };

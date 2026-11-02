@@ -62,6 +62,7 @@ import { SearchableSelect } from '@/components/common/SearchableSelect';
 import { useRepairParts, RepairPart, RepairOrderPart } from "@/hooks/useRepairParts";
 import { useBranches } from "@/hooks/useBranches";
 import { useAuth } from "@/hooks/useAuth";
+import { isCashierMember } from "@/lib/cashier";
 import { RepairInvoiceDialog } from "@/components/repairs/RepairInvoiceDialog";
 import { format, differenceInDays, differenceInHours, differenceInMinutes } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -452,6 +453,8 @@ function CreateRepairDialog({
   repairParts: RepairPart[];
   onUseParts: (repairOrderId: string, items: { partId: string; quantity: number }[]) => Promise<any>;
 }) {
+  // a part's purchase cost is not shown to the cashier
+  const showCost = !isCashierMember(useAuth().merchantUser);
   const [loading, setLoading] = useState(false);
   const { customers } = useCustomers();
   const { devices } = useDevices();
@@ -768,7 +771,7 @@ function CreateRepairDialog({
                               className="w-full text-right px-3 py-2 hover:bg-muted flex items-center justify-between gap-2 border-b border-border/50 last:border-0"
                             >
                               <span className="text-sm font-medium">{p.name}</span>
-                              <span className="text-xs text-muted-foreground whitespace-nowrap">متوفر: {p.quantity} · {Number(p.cost).toLocaleString()} ر.س</span>
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">متوفر: {p.quantity}{showCost && <> · {Number(p.cost).toLocaleString()} ر.س</>}</span>
                             </button>
                           )) : (
                             <div className="px-3 py-2 text-xs text-muted-foreground">لا توجد قطعة مطابقة</div>
@@ -786,7 +789,7 @@ function CreateRepairDialog({
                           return (
                             <div key={i} className="flex items-center gap-2 rounded-md bg-background border border-border/60 px-2 py-1.5">
                               <span className="flex-1 text-sm font-medium truncate">{part?.name || '—'}</span>
-                              <span className="text-xs text-muted-foreground whitespace-nowrap">{Number(part?.cost || 0).toLocaleString()} ر.س</span>
+                              {showCost && <span className="text-xs text-muted-foreground whitespace-nowrap">{Number(part?.cost || 0).toLocaleString()} ر.س</span>}
                               <Input
                                 type="number" min={1} max={part?.quantity || 99}
                                 className="w-16 h-8" dir="ltr"
@@ -879,6 +882,8 @@ function RepairDetailsDialog({
   getRepairOrderParts: (repairOrderId: string) => Promise<RepairOrderPart[]>;
   onPrintInvoice: (repair: RepairOrder, parts: RepairOrderPart[]) => void;
 }) {
+  // a part's purchase cost is not shown to the cashier
+  const showCost = !isCashierMember(useAuth().merchantUser);
   const [diagnosisNotes, setDiagnosisNotes] = useState('');
   const [actualCost, setActualCost] = useState(0);
   const [partsCost, setPartsCost] = useState(0);
@@ -1104,7 +1109,7 @@ function RepairDetailsDialog({
                     value={selectedPartId}
                     onChange={setSelectedPartId}
                     placeholder="اختر قطعة..."
-                    options={repairParts.filter(p => p.quantity > 0).map(p => ({ value: p.id, label: p.name, hint: `${p.quantity} متوفر · ${p.cost} ر.س` }))}
+                    options={repairParts.filter(p => p.quantity > 0).map(p => ({ value: p.id, label: p.name, hint: showCost ? `${p.quantity} متوفر · ${p.cost} ر.س` : `${p.quantity} متوفر` }))}
                   />
                 </div>
                 <div className="w-20 space-y-1">
