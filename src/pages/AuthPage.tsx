@@ -12,9 +12,10 @@ import { useLanguage } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
+import { authErrorMessage, codeLoginFailure, takeSessionEnded, expectSignOut } from '@/lib/authErrors';
 
-const emailSchema = z.string().email('Invalid email address');
-const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
+const emailSchema = z.string().email('البريد الإلكتروني غير صحيح');
+const passwordSchema = z.string().min(6, 'كلمة المرور 6 أحرف على الأقل');
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -29,7 +30,8 @@ export default function AuthPage() {
     setLoginTab(tab);
     formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
-  const [error, setError] = useState('');
+  // a session that ended on its own (expired, revoked) is said so, once
+  const [error, setError] = useState(() => takeSessionEnded() ? 'انتهت جلستك. سجّل الدخول من جديد للمتابعة.' : '');
   const [loading, setLoading] = useState(false);
   const { user, signIn, signUp } = useAuth();
   const { t, isRTL } = useLanguage();
@@ -50,7 +52,7 @@ export default function AuthPage() {
       emailSchema.parse(email);
       passwordSchema.parse(password);
       if (!isLogin && !fullName.trim()) {
-        setError('Full name is required');
+        setError('الاسم الكامل مطلوب');
         return;
       }
     } catch (err) {
@@ -65,7 +67,7 @@ export default function AuthPage() {
       if (isLogin) {
         const { error } = await signIn(email, password);
         if (error) {
-          setError(error.message.includes('Invalid login') ? 'البريد أو كلمة المرور غير صحيحة' : error.message);
+          setError(authErrorMessage(error));
         } else {
           // Check if this is a platform admin account — redirect to admin panel
           const { data: { user: signedInUser } } = await supabase.auth.getUser();
@@ -84,6 +86,7 @@ export default function AuthPage() {
               .maybeSingle();
 
             if (adminRow && !merchantRow) {
+              expectSignOut();
               await supabase.auth.signOut();
               setError('هذا حساب مدير منصة. الرجاء استخدام صفحة دخول المسؤول /admin/login');
               return;
@@ -93,7 +96,7 @@ export default function AuthPage() {
       } else {
         const { error } = await signUp(email, password, fullName);
         if (error) {
-          setError(error.message.includes('already registered') ? 'هذا البريد مسجل مسبقاً' : error.message);
+          setError(authErrorMessage(error));
         }
       }
     } finally {
@@ -121,12 +124,11 @@ export default function AuthPage() {
         }
       );
 
-      const result = await response.json();
-
       if (!response.ok) {
-        setError(result.error || 'كود الدخول غير صحيح');
+        setError(await codeLoginFailure(response));
         return;
       }
+      const result = await response.json();
 
       if (result.session) {
         await supabase.auth.setSession({
@@ -134,8 +136,8 @@ export default function AuthPage() {
           refresh_token: result.session.refresh_token,
         });
       }
-    } catch {
-      setError('حدث خطأ في الاتصال');
+    } catch (err) {
+      setError(authErrorMessage(err));
     } finally {
       setLoading(false);
     }

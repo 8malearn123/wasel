@@ -1,3 +1,4 @@
+import { productAmountProblem } from '@/lib/amounts';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -60,6 +61,8 @@ export function useRepairParts() {
 
   const addPart = async (part: Omit<RepairPart, 'id' | 'merchant_id' | 'created_at' | 'updated_at' | 'branch'>) => {
     if (!merchant) return { error: new Error('No merchant') };
+    const invalid = productAmountProblem(part);
+    if (invalid) { toast.error(invalid); return { data: null, error: new Error(invalid) }; }
 
     const { data, error } = await supabase
       .from('repair_parts')
@@ -77,6 +80,8 @@ export function useRepairParts() {
   };
 
   const updatePart = async (id: string, updates: Partial<RepairPart>) => {
+    const invalid = productAmountProblem(updates);
+    if (invalid) { toast.error(invalid); return { data: null, error: new Error(invalid) }; }
     const { data, error } = await supabase
       .from('repair_parts')
       .update(updates as any)

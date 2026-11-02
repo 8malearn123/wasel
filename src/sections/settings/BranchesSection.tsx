@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { 
   Building2, 
   Plus, 
@@ -78,6 +79,9 @@ export default function BranchesSection() {
   const warehouseCount = activeBranches.filter(b => b.is_warehouse).length;
   const { branchLimit } = useCurrentPlan();
   const isAtLimit = activeBranches.length >= branchLimit;
+  // more active branches than the plan allows: the server let it happen and
+  // should not have; the screen says so instead of «limit reached»
+  const isOverLimit = branchLimit < 9999 && activeBranches.length > branchLimit;
   const isOwner = merchantUser?.role === 'owner';
   // the database lets the owner and the admin edit branches (is_owner_or_admin);
   // asking the platform for a new one stays with the owner (branch_requests policy)
@@ -151,9 +155,22 @@ export default function BranchesSection() {
           className="mb-6 p-4 rounded-xl bg-warning/10 border border-warning/20 flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-foreground">تم الوصول للحد الأقصى للفروع</p>
-            <p className="text-sm text-muted-foreground"> باقتك الحالية تسمح بـ {branchLimit} فرع فقط. يمكنك طلب إضافة فرع جديد أو ترقية باقتك.
-            </p>
+            {isOverLimit ? (
+              <>
+                <p className="font-semibold text-foreground">عدد الفروع النشطة أكبر مما تسمح به باقتك</p>
+                <p className="text-sm text-muted-foreground">
+                  لديك {activeBranches.length} فروع نشطة وباقتك تسمح بـ {branchLimit}. أوقف الفروع الزائدة أو{' '}
+                  <Link to="/subscription" className="text-primary underline underline-offset-2">رقِّ باقتك</Link>.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="font-semibold text-foreground">تم الوصول للحد الأقصى للفروع</p>
+                <p className="text-sm text-muted-foreground"> باقتك الحالية تسمح بـ {branchLimit} فرع فقط. يمكنك طلب إضافة فرع جديد أو{' '}
+                  <Link to="/subscription" className="text-primary underline underline-offset-2">ترقية باقتك</Link>.
+                </p>
+              </>
+            )}
           </div>
         </motion.div>
       )}

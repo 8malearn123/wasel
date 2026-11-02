@@ -74,7 +74,9 @@ export default function OnlineOrdersSection() {
 
   const handleShipping = async () => {
     if (!trackingNum.trim()) return;
-    await updateTracking(shippingOrderId, shippingProvider, trackingNum.trim());
+    const ok = await updateTracking(shippingOrderId, shippingProvider, trackingNum.trim());
+    // a failed save keeps the dialog and the number typed
+    if (!ok) return;
     setShowShipping(false);
     setTrackingNum("");
   };

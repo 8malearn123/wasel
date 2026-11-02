@@ -1,5 +1,7 @@
 import { isCashierMember } from "@/lib/cashier";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { useAccess } from "@/hooks/useAccess";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { LegacyRedirect } from "@/components/common/LegacyRedirect";
 import { Toaster } from "@/components/ui/toaster";
@@ -47,8 +49,29 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 
+// Signed in, but the account's own data could not be read: say so and offer a
+// retry, instead of carrying on as an account without a shop
+function MemberLoadError({ message }: { message: string }) {
+  const { refreshMerchantData, signOut } = useAuth();
+  const [retrying, setRetrying] = useState(false);
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background p-4" dir="rtl">
+      <div className="max-w-sm w-full bg-card border border-border rounded-2xl p-6 text-center space-y-4">
+        <p className="font-semibold text-foreground">{message}</p>
+        <p className="text-sm text-muted-foreground">تحقّق من الاتصال بالإنترنت ثم أعد المحاولة.</p>
+        <div className="flex gap-2 justify-center">
+          <Button disabled={retrying} onClick={async () => { setRetrying(true); await refreshMerchantData(); setRetrying(false); }}>
+            {retrying ? 'جارٍ المحاولة…' : 'إعادة المحاولة'}
+          </Button>
+          <Button variant="outline" onClick={() => signOut()}>تسجيل الخروج</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, memberError } = useAuth();
   const { isLocked } = useSubscription();
 
   if (loading) {
@@ -61,6 +84,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  if (memberError) {
+    return <MemberLoadError message={memberError} />;
   }
 
   if (isLocked) {
@@ -98,9 +125,10 @@ function LockedRoute({ children }: { children: React.ReactNode }) {
 // security boundary — that is RLS, which scopes every row to the merchant.
 function FeatureRoute({ feature, children }: { feature: FeatureKey; children: React.ReactNode }) {
   const { loading } = useAuth();
-  const { allows, loading: plansLoading } = useFeatureAccess();
+  const { decide } = useAccess();
+  const decision = decide({ feature });
 
-  if (loading || plansLoading) {
+  if (loading || (!decision.allowed && decision.reason === 'loading')) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -108,7 +136,7 @@ function FeatureRoute({ feature, children }: { feature: FeatureKey; children: Re
     );
   }
 
-  if (!allows(feature)) {
+  if (!decision.allowed && decision.reason === 'plan') {
     return <DeniedRedirect to="/subscription" reason="plan" />;
   }
 
@@ -141,9 +169,10 @@ function RoleRoute({ allow, children }: { allow: UserRole[]; children: React.Rea
 // blank screen — the data behind it is gated by RLS calling has_permission()
 // for the same key.
 function PermissionRoute({ require, children }: { require: PermissionKey | PermissionKey[]; children: React.ReactNode }) {
-  const { canAny, loading } = usePermissions();
+  const { decide } = useAccess();
+  const decision = decide({ anyOf: Array.isArray(require) ? require : [require] });
 
-  if (loading) {
+  if (!decision.allowed && decision.reason === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -151,7 +180,7 @@ function PermissionRoute({ require, children }: { require: PermissionKey | Permi
     );
   }
 
-  if (!canAny(...(Array.isArray(require) ? require : [require]))) {
+  if (!decision.allowed && decision.reason === 'permission') {
     return <DeniedRedirect to="/" reason="permission" />;
   }
 

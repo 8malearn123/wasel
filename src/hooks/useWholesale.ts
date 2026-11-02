@@ -1,3 +1,4 @@
+import { amountProblem } from '@/lib/amounts';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -174,6 +175,11 @@ export function useWholesale() {
 
   const createListing = async (data: { device_id?: string; accessory_id?: string; item_type: string; wholesale_price: number; min_quantity: number; notes?: string }) => {
     if (!merchant) return;
+    const invalid = amountProblem([
+      { label: 'سعر الجملة', value: data.wholesale_price, min: 0.01 },
+      { label: 'الحد الأدنى للكمية', value: data.min_quantity, min: 1, integer: true },
+    ]);
+    if (invalid) { toast.error(invalid); return; }
     // the description buyers will see, written with the listing (wholesaleProduct.ts)
     let notes = data.notes;
     if (!notes) {
@@ -204,6 +210,8 @@ export function useWholesale() {
 
   const createOrder = async (listingId: string, quantity: number, listing: WholesaleListing, creditType?: 'invoice' | 'consignment', dueDate?: string) => {
     if (!merchant || !user) return;
+    const invalidQty = amountProblem([{ label: 'الكمية', value: quantity, min: Math.max(1, listing.min_quantity || 1), integer: true }]);
+    if (invalidQty) { toast.error(invalidQty); return; }
     const orderNumber = `WO-${Date.now().toString(36).toUpperCase()}`;
     const totalAmount = listing.wholesale_price * quantity;
 

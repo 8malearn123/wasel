@@ -17,6 +17,8 @@ import { permissionsForLegacyRole, CUSTOM_ROLE_FORBIDDEN } from '@/lib/legacyRol
  * the UI still cannot write.
  */
 
+export type PermissionSource = 'server' | 'role-map' | 'failed' | 'none';
+
 export type PermissionKey =
   | 'products.view' | 'products.create' | 'products.update' | 'products.delete'
   | 'products.media.upload' | 'products.media.delete' | 'categories.manage'
@@ -38,10 +40,14 @@ export function usePermissions() {
   const { user, merchantUser, memberLoading } = useAuth();
   const [permissions, setPermissions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  // where the list came from: the server, the role map (function not
+  // installed), or nothing (the call failed)
+  const [source, setSource] = useState<PermissionSource>('none');
 
   const load = useCallback(async () => {
     if (!user || !merchantUser) {
       setPermissions([]);
+      setSource('none');
       setLoading(false);
       return;
     }
@@ -50,6 +56,7 @@ export function usePermissions() {
     const { data, error, missing } = await callOptionalRpc<string[]>('my_permissions', user.id);
 
     if (error && missing) {
+      setSource('role-map');
       // The Phase 1 migration has not been applied, so my_permissions() does
       // not exist yet (404). The role's own permission map is what the server
       // checks in this state (and has_permission() unions the same map once
@@ -67,6 +74,7 @@ export function usePermissions() {
         ));
       }
     } else if (error) {
+      setSource('failed');
       // Any other failure (connection, server error): the answer is unknown,
       // so nothing extra is granted. A custom role then sees none of its
       // screens; a system role keeps only its base map (merged below).
@@ -77,6 +85,7 @@ export function usePermissions() {
         { duration: 8000 },
       ));
     } else {
+      setSource('server');
       setPermissions((data as unknown as string[]) || []);
     }
     setLoading(false);
@@ -105,5 +114,5 @@ export function usePermissions() {
   // For a system role the map is known with the session, so nothing waits on
   // the round trip; a custom role, or a session not read yet, does
   const settled = memberLoading || (role && role !== 'custom' ? false : loading);
-  return { permissions: [...set], can, canAny, loading: settled, refresh: load };
+  return { permissions: [...set], can, canAny, loading: settled, source, refresh: load };
 }

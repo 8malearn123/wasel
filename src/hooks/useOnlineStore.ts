@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 import { friendlyError } from '@/lib/errors';
+import { fulfillment } from '@/services/fulfillment';
 import { toOrderShipping } from '@/lib/shipping';
 
 export interface StoreSettings {
@@ -442,17 +443,14 @@ export function useOnlineOrders() {
     toast.success('تم تحديث حالة الطلب');
   };
 
+  // Shipping goes through the fulfillment provider (manual today): the screen
+  // does not know whether the waybill is typed in or issued by a carrier
   const updateTracking = async (orderId: string, provider: string, trackingNumber: string) => {
-    const { error } = await supabase
-      .from('online_orders')
-      .update({
-        ...toOrderShipping(provider, trackingNumber),
-        status: 'shipped',
-      } as any)
-      .eq('id', orderId);
-    if (error) { toast.error(friendlyError(error, 'حفظ رقم الشحنة')); return; }
+    const result = await fulfillment.ship({ orderId, carrierId: provider, trackingNumber });
+    if (result.ok === false) { toast.error(result.message); return false; }
     await fetchOrders();
     toast.success('تم إضافة رقم التتبع');
+    return true;
   };
 
   const updatePaymentStatus = async (orderId: string, status: string) => {

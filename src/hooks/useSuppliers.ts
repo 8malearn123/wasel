@@ -1,3 +1,4 @@
+import { amountProblem } from '@/lib/amounts';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -155,6 +156,14 @@ export function usePurchaseOrders() {
   ) => {
     if (!merchant || !currentBranch || !user) {
       return { error: new Error('Missing merchant, branch, or user') };
+    }
+
+    for (const item of items) {
+      const invalid = amountProblem([
+        { label: 'الكمية', value: item.quantity, min: 1, integer: true },
+        { label: 'تكلفة الوحدة', value: item.unitCost },
+      ]);
+      if (invalid) { toast.error(invalid); return { error: new Error(invalid) }; }
     }
 
     const totalAmount = items.reduce((sum, item) => sum + item.unitCost * item.quantity, 0);

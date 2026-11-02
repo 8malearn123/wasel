@@ -145,7 +145,7 @@ function Shipments({
   loading: boolean;
   carrierSettings: CarrierSetting[];
   sender: { name: string; phone?: string | null };
-  onShip: (orderId: string, carrierId: string, trackingNumber: string) => Promise<void>;
+  onShip: (orderId: string, carrierId: string, trackingNumber: string) => Promise<boolean | void>;
   onDelivered: (orderId: string) => Promise<void>;
   getOrderItems: (orderId: string) => Promise<{ quantity: number }[]>;
 }) {
@@ -177,9 +177,10 @@ function Shipments({
   const confirmShip = async () => {
     if (!shipping || !carrierId || (numberRequired && !number.trim())) return;
     setBusy(shipping.id);
-    await onShip(shipping.id, carrierId, number.trim());
+    const ok = await onShip(shipping.id, carrierId, number.trim());
     setBusy(null);
-    setShipping(null);
+    // a refused or failed save keeps the dialog and what was typed
+    if (ok !== false) setShipping(null);
   };
 
   const delivered = async (o: OnlineOrder) => { setBusy(o.id); await onDelivered(o.id); setBusy(null); };
