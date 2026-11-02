@@ -66,3 +66,4 @@ await step('2.member-data-failure-and-retry', async () => {
 });
 
 await browser.close();
+// rerun after the retry fix
