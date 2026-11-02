@@ -1,0 +1,16 @@
+name: Verification of 9 items (one-off, read-only)
+on:
+  push:
+    branches: [claude/sweet-knuth-u4nbzm]
+    paths: ['e2e/verify9.mjs', '.github/workflows/verify9.yml']
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm i --no-save --no-package-lock playwright@1.48.2
+        working-directory: e2e
+      - run: export ANON=$(grep -E '^VITE_SUPABASE_PUBLISHABLE_KEY=' .env | cut -d= -f2- | tr -d '"') && cd e2e && node verify9.mjs
