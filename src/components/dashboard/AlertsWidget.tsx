@@ -24,6 +24,8 @@ export function AlertsWidget() {
   const { can } = usePermissions();
   // transfers are a Pro feature: a Lite shop is not told about them
   const showTransfers = allows('transfers') && can('transfers.manage');
+  // repair parts belong to the repairs feature (Pro and up)
+  const showRepairs = allows('repairs') && can('repairs.manage');
   const [alerts, setAlerts] = useState<Alert[]>([]);
 
   const fetchAlerts = useCallback(async () => {
@@ -31,7 +33,7 @@ export function AlertsWidget() {
     const newAlerts: Alert[] = [];
 
     // Check low-stock repair parts
-    const { data: lowParts } = await supabase
+    const { data: lowParts } = !showRepairs ? { data: null } : await supabase
       .from('repair_parts')
       .select('name, quantity, min_quantity')
       .eq('merchant_id', merchant.id)
@@ -123,7 +125,7 @@ export function AlertsWidget() {
     }
 
     setAlerts(newAlerts);
-  }, [merchant, t, showTransfers]);
+  }, [merchant, t, showTransfers, showRepairs]);
 
   useEffect(() => {
     fetchAlerts();

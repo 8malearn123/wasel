@@ -62,7 +62,7 @@ export function useNotifications() {
     }
 
     // 2. Low stock repair parts
-    const { data: lowParts } = await supabase
+    const { data: lowParts } = !showRepairs ? { data: null } : await supabase
       .from("repair_parts")
       .select("name, quantity, min_quantity")
       .eq("merchant_id", merchant.id)
