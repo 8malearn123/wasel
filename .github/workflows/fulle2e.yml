@@ -1,12 +1,12 @@
-name: Full E2E plans and roles (one-off, read-only)
+name: Targeted re-test (one-off, read-only)
 on:
   push:
     branches: [claude/sweet-knuth-u4nbzm]
-    paths: ['e2e/fulle2e.mjs', '.github/workflows/fecheck.yml']
+    paths: ['e2e/fulle2e.mjs', '.github/workflows/fulle2e.yml']
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
