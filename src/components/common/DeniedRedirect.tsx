@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useLanguage } from '@/i18n';
 
-export type DenialReason = 'plan' | 'permission' | 'cashier';
+export type DenialReason = 'plan' | 'permission' | 'cashier' | 'platform';
 
 const MESSAGES: Record<DenialReason, { ar: [string, string]; en: [string, string] }> = {
   plan: {
@@ -13,6 +13,10 @@ const MESSAGES: Record<DenialReason, { ar: [string, string]; en: [string, string
   permission: {
     ar: ['ليست لديك صلاحية لفتح هذه الصفحة', 'اطلب من مدير المتجر منحك الصلاحية من صفحة المستخدمين والصلاحيات.'],
     en: ['You do not have permission to open this page', 'Ask the shop manager to grant it from Users & permissions.'],
+  },
+  platform: {
+    ar: ['هذه الصفحة لمدير المنصة فقط', 'حسابك حساب متجر، فنقلناك إلى لوحة متجرك.'],
+    en: ['This page is for platform administrators only', 'Yours is a shop account, so we have taken you to your shop.'],
   },
   cashier: {
     ar: ['هذه الصفحة غير متاحة لحساب الكاشير', 'نقلناك إلى نقطة البيع. يمكن لمدير المتجر فتحها لك بتغيير دورك.'],

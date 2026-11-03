@@ -94,7 +94,7 @@ interface Payout {
 }
 
 export function usePlatformAdmin() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [companies, setCompanies] = useState<PlatformCompany[]>([]);
@@ -107,19 +107,39 @@ export function usePlatformAdmin() {
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [payouts, setPayouts] = useState<Payout[]>([]);
 
+  // 'error': the check itself failed — not the same as «not an admin»
+  const [checkError, setCheckError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+
   useEffect(() => {
-    if (!user) { setLoading(false); return; }
+    // The session is still being read: no user YET is not «signed out», and
+    // deciding now sent a real admin to the login page on every reload
+    if (authLoading) return;
+    if (!user) { setIsPlatformAdmin(false); setLoading(false); return; }
+    let live = true;
+    setLoading(true);
+    setCheckError(false);
     supabase
       .from('platform_admins')
       .select('id')
       .eq('user_id', user.id)
       .eq('is_active', true)
       .maybeSingle()
-      .then(({ data }) => {
-        setIsPlatformAdmin(!!data);
+      .then(({ data, error }) => {
+        if (!live) return;
+        setIsPlatformAdmin(!error && !!data);
+        setCheckError(!!error);
         setLoading(false);
       });
-  }, [user]);
+    return () => { live = false; };
+  }, [user, authLoading, attempt]);
+
+  const status: 'loading' | 'signed_out' | 'error' | 'admin' | 'not_admin' =
+    authLoading || loading ? 'loading'
+      : !user ? 'signed_out'
+      : checkError ? 'error'
+      : isPlatformAdmin ? 'admin' : 'not_admin';
+  const retryCheck = useCallback(() => setAttempt(a => a + 1), []);
 
   const fetchCompanies = useCallback(async () => {
     if (!isPlatformAdmin) return;
@@ -377,7 +397,9 @@ export function usePlatformAdmin() {
 
   return {
     isPlatformAdmin,
-    loading,
+    loading: status === 'loading',
+    status,
+    retryCheck,
     companies,
     branchRequests,
     platformStats,

@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 import { friendlyError } from '@/lib/errors';
+import { isMissingInDatabase } from './useCustomRoles';
 
 export type ProductItemType = 'device' | 'accessory' | 'repair_part';
 
@@ -103,11 +104,17 @@ export interface UploadReport {
   height: number | null;
 }
 
+export const MEDIA_MISSING = 'معرض صور المنتجات غير مفعّل على الخادم بعد — لا يمكن رفع الصور حتى يُطبَّق تحديثه';
+
 export function useProductMedia(itemType: ProductItemType, itemId?: string | null) {
   const { merchant } = useAuth();
   const [media, setMedia] = useState<ProductMedia[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  // 'missing': the product_media table is not on this database yet — the
+  // gallery says so instead of reading as «no photos», and uploads stop
+  // before a file goes to storage. 'failed': the photos could not be read.
+  const [status, setStatus] = useState<'ok' | 'missing' | 'failed'>('ok');
   // The last few uploads, so the user sees what the compression actually did
   const [reports, setReports] = useState<UploadReport[]>([]);
 
@@ -122,6 +129,7 @@ export function useProductMedia(itemType: ProductItemType, itemId?: string | nul
       .order('sort_order')
       .order('created_at');
     if (error) console.warn('[product media]', error.message);
+    setStatus(!error ? 'ok' : (error.code === 'PGRST205' || error.code === '42P01' || isMissingInDatabase(error.message)) ? 'missing' : 'failed');
     setMedia(((data || []) as unknown as ProductMedia[]));
     setLoading(false);
   }, [itemType, itemId, merchant]);
@@ -131,6 +139,7 @@ export function useProductMedia(itemType: ProductItemType, itemId?: string | nul
   const upload = async (file: File) => {
     if (!merchant || !itemId) return null;
 
+    if (status === 'missing') { toast.error(MEDIA_MISSING); return null; }
     const problem = validateImageFile(file);
     if (problem) { toast.error(problem); return null; }
 
@@ -207,6 +216,7 @@ export function useProductMedia(itemType: ProductItemType, itemId?: string | nul
   const uploadModel = async (file: File) => {
     if (!merchant || !itemId) return null;
 
+    if (status === 'missing') { toast.error(MEDIA_MISSING); return null; }
     const problem = validateModelFile(file);
     if (problem) { toast.error(problem); return null; }
 
@@ -314,7 +324,7 @@ export function useProductMedia(itemType: ProductItemType, itemId?: string | nul
   const model3d = media.find(m => m.media_type === 'model_3d') ?? null;
 
   return {
-    media, images, model3d, loading, uploading, reports, clearReports,
+    media, images, model3d, loading, uploading, reports, clearReports, status,
     upload, uploadModel, remove, setPrimary, reorder, setAltText, refetch: fetchMedia,
   };
 }

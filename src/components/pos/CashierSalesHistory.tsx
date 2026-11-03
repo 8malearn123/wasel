@@ -365,6 +365,8 @@ export function CashierSalesHistory({
                           variant="ghost"
                           size="sm"
                           disabled={!canEdit}
+                          // a disabled button with no reason reads as broken
+                          title={canEdit ? undefined : (isRTL ? "لا يمكن للكاشير تعديل فاتورة بعد طباعتها" : "A printed invoice cannot be edited by a cashier")}
                           onClick={() => openEdit(sale)}
                           className="gap-1"
                         >

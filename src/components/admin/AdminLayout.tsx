@@ -35,7 +35,8 @@ export function AdminLayout({ children, title, subtitle }: { children: React.Rea
 
   const handleSignOut = async () => {
     await signOut();
-    navigate("/auth");
+    // back to the platform login, not the shop one
+    navigate("/admin/login");
   };
 
   return (

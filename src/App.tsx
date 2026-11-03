@@ -19,6 +19,7 @@ import { firstOpenSection } from "@/lib/sectionAccess";
 import { useVersionCheck } from "./hooks/useVersionCheck";
 import { useSubscription } from "./hooks/useSubscription";
 import { DeniedRedirect } from '@/components/common/DeniedRedirect';
+import { AdminRoute } from "./components/admin/AdminRoute";
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const POSPage = lazy(() => import("./pages/POSPage"));
 const ReportsPage = lazy(() => import("./pages/ReportsPage"));
@@ -335,14 +336,14 @@ function AppRoutes() {
       {/* Admin Auth */}
       <Route path="/admin/login" element={<AdminAuthPage />} />
       {/* Independent Admin Dashboard */}
-      <Route path="/admin" element={<AdminDashboardPage />} />
-      <Route path="/admin/companies" element={<AdminCompaniesPage />} />
-      <Route path="/admin/branch-requests" element={<AdminBranchRequestsPage />} />
-      <Route path="/admin/payouts" element={<AdminPayoutsPage />} />
-      <Route path="/admin/plans" element={<AdminPlansPage />} />
-      <Route path="/admin/activity" element={<AdminActivityPage />} />
-      <Route path="/admin/tickets" element={<AdminTicketsPage />} />
-      <Route path="/admin/reports" element={<AdminReportsPage />} />
+      <Route path="/admin" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
+      <Route path="/admin/companies" element={<AdminRoute><AdminCompaniesPage /></AdminRoute>} />
+      <Route path="/admin/branch-requests" element={<AdminRoute><AdminBranchRequestsPage /></AdminRoute>} />
+      <Route path="/admin/payouts" element={<AdminRoute><AdminPayoutsPage /></AdminRoute>} />
+      <Route path="/admin/plans" element={<AdminRoute><AdminPlansPage /></AdminRoute>} />
+      <Route path="/admin/activity" element={<AdminRoute><AdminActivityPage /></AdminRoute>} />
+      <Route path="/admin/tickets" element={<AdminRoute><AdminTicketsPage /></AdminRoute>} />
+      <Route path="/admin/reports" element={<AdminRoute><AdminReportsPage /></AdminRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
     </Suspense>
