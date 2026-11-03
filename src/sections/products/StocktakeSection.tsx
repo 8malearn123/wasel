@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import { useAuth } from '@/hooks/useAuth';
+import { readShop, writeShop } from '@/lib/shopStorage';
 import { motion } from "framer-motion";
 import {
   ClipboardCheck,
@@ -84,14 +86,15 @@ interface ScheduledStocktake {
   createdAt: string;
 }
 
-function getSchedules(): ScheduledStocktake[] {
-  try {
-    return JSON.parse(localStorage.getItem('stocktake_schedules') || '[]');
-  } catch { return []; }
+// kept in this browser, per shop; a schedule for a branch this shop does not
+// have (left from before schedules were kept per shop) is not shown
+function getSchedules(shopId: string | undefined, branchIds: string[]): ScheduledStocktake[] {
+  const all = readShop<ScheduledStocktake[]>('stocktake_schedules', shopId, []);
+  return Array.isArray(all) ? all.filter(s => !s.branchId || branchIds.includes(s.branchId)) : [];
 }
 
-function saveSchedules(s: ScheduledStocktake[]) {
-  localStorage.setItem('stocktake_schedules', JSON.stringify(s));
+function saveSchedules(shopId: string | undefined, s: ScheduledStocktake[]) {
+  writeShop('stocktake_schedules', shopId, s);
 }
 
 // ============ Print helpers ============
@@ -533,7 +536,10 @@ function ScheduleDialog({ open, onOpenChange, branches }: {
   const [notes, setNotes] = useState("");
   const [selectedTypes, setSelectedTypes] = useState<StocktakeItemType[]>(['device', 'accessory', 'repair_part']);
 
-  useEffect(() => { if (open) setSchedules(getSchedules()); }, [open]);
+  const { merchant } = useAuth();
+  const shopId = merchant?.id;
+  const branchKey = branches.map(b => b.id).join(',');
+  useEffect(() => { if (open) setSchedules(getSchedules(shopId, branchKey.split(','))); }, [open, shopId, branchKey]);
 
   const freqLabels: Record<string, string> = { weekly: 'أسبوعي', monthly: 'شهري', quarterly: 'ربع سنوي' };
 
@@ -549,7 +555,7 @@ function ScheduleDialog({ open, onOpenChange, branches }: {
     };
     const updated = [...schedules, newSchedule];
     setSchedules(updated);
-    saveSchedules(updated);
+    saveSchedules(shopId, updated);
     setShowAdd(false);
     setBranchId(""); setNotes(""); setSelectedTypes(['device', 'accessory', 'repair_part']);
     toast.success('تمت جدولة الجرد');
@@ -558,7 +564,7 @@ function ScheduleDialog({ open, onOpenChange, branches }: {
   const removeSchedule = (id: string) => {
     const updated = schedules.filter(s => s.id !== id);
     setSchedules(updated);
-    saveSchedules(updated);
+    saveSchedules(shopId, updated);
     toast.success('تم حذف الجدولة');
   };
 

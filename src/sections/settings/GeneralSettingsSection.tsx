@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { readShop, writeShop } from '@/lib/shopStorage';
 import { motion } from "framer-motion";
 import {
   Building2, Key, CreditCard, Loader2, AlertTriangle, Printer,
@@ -79,20 +80,18 @@ export default function GeneralSettingsSection() {
   const [vatEnabled, setVatEnabled] = useState((merchant as any)?.vat_enabled ?? true);
   const [autoPrintClosing, setAutoPrintClosing] = useState((merchant as any)?.auto_print_closing ?? false);
 
-  // Store settings from localStorage
-  const [storeSettings, setStoreSettings] = useState<StoreSettings>(() => {
-    try {
-      const saved = localStorage.getItem('store_settings');
-      return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS;
-    } catch {
-      return DEFAULT_SETTINGS;
-    }
-  });
+  // Receipt and till settings kept in this browser, per shop
+  const [storeSettings, setStoreSettings] = useState<StoreSettings>(() =>
+    ({ ...DEFAULT_SETTINGS, ...readShop<Partial<StoreSettings>>('store_settings', merchant?.id, {}) }));
+  // the shop can change under the same screen (signing out and in): read its own
+  useEffect(() => {
+    setStoreSettings({ ...DEFAULT_SETTINGS, ...readShop<Partial<StoreSettings>>('store_settings', merchant?.id, {}) });
+  }, [merchant?.id]);
 
   const updateSetting = <K extends keyof StoreSettings>(key: K, value: StoreSettings[K]) => {
     setStoreSettings(prev => {
       const updated = { ...prev, [key]: value };
-      localStorage.setItem('store_settings', JSON.stringify(updated));
+      writeShop('store_settings', merchant?.id, updated);
       return updated;
     });
   };
