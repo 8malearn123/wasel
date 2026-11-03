@@ -907,8 +907,11 @@ function DeviceDialog({
     category: ''
   });
 
-  useState(() => {
-    if (device) {
+  // Fill the form from the item being edited each time the dialog opens
+  // (a useState initialiser ran once, before any item was chosen, so the
+  // edit form opened empty)
+  useEffect(() => {
+    if (open && device) {
       setFormData({
         imei: device.imei,
         model: device.model,
@@ -923,7 +926,7 @@ function DeviceDialog({
         category: device.category || ''
       });
     }
-  });
+  }, [device, open]);
 
   // Fill whatever the shop hasn't typed yet from a device just like this one.
   // Anything already entered is left exactly as it is.
@@ -969,7 +972,7 @@ function DeviceDialog({
     e.preventDefault();
     setLoading(true);
     
-    await onSave({
+    const result = await onSave({
       imei: formData.imei,
       model: formData.model,
       brand: formData.brand || null,
@@ -982,6 +985,8 @@ function DeviceDialog({
       condition: formData.condition,
       category: formData.category || null,
     });
+    // a refused or failed save keeps the dialog and what was typed; the hook says why
+    if (result?.error) { setLoading(false); return; }
     
     setLoading(false);
     onOpenChange(false);
@@ -1237,8 +1242,11 @@ function AccessoryDialog({
     branch_id: ''
   });
 
-  useState(() => {
-    if (accessory) {
+  // Fill the form from the item being edited each time the dialog opens
+  // (a useState initialiser ran once, before any item was chosen, so the
+  // edit form opened empty)
+  useEffect(() => {
+    if (open && accessory) {
       setFormData({
         sku: accessory.sku,
         name: accessory.name,
@@ -1251,13 +1259,13 @@ function AccessoryDialog({
         branch_id: accessory.branch_id || ''
       });
     }
-  });
+  }, [accessory, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
-    await onSave({
+    const result = await onSave({
       sku: formData.sku,
       name: formData.name,
       category: formData.category || null,
@@ -1268,6 +1276,8 @@ function AccessoryDialog({
       min_quantity: parseInt(formData.min_quantity) || 5,
       branch_id: formData.branch_id || null
     });
+    // a refused or failed save keeps the dialog and what was typed; the hook says why
+    if (result?.error) { setLoading(false); return; }
     
     setLoading(false);
     onOpenChange(false);
@@ -1450,8 +1460,11 @@ function RepairPartDialog({
     notes: ''
   });
 
-  useState(() => {
-    if (part) {
+  // Fill the form from the item being edited each time the dialog opens
+  // (a useState initialiser ran once, before any item was chosen, so the
+  // edit form opened empty)
+  useEffect(() => {
+    if (open && part) {
       setFormData({
         sku: part.sku,
         name: part.name,
@@ -1466,13 +1479,13 @@ function RepairPartDialog({
         notes: part.notes || ''
       });
     }
-  });
+  }, [part, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
-    await onSave({
+    const result = await onSave({
       sku: formData.sku,
       name: formData.name,
       category: formData.category || null,
@@ -1485,6 +1498,8 @@ function RepairPartDialog({
       branch_id: formData.branch_id || null,
       notes: formData.notes || null
     });
+    // a refused or failed save keeps the dialog and what was typed; the hook says why
+    if (result?.error) { setLoading(false); return; }
     
     setLoading(false);
     onOpenChange(false);

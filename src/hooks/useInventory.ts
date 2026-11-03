@@ -1,4 +1,5 @@
 import { productAmountProblem } from '@/lib/amounts';
+import { columnsOnly } from '@/lib/rowColumns';
 import { friendlyError } from '@/lib/errors';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -55,7 +56,7 @@ export function useDevices() {
 
     const { data, error } = await supabase
       .from('devices')
-      .insert({ ...device, merchant_id: merchant.id })
+      .insert({ ...columnsOnly(device), merchant_id: merchant.id })
       .select()
       .single();
 
@@ -74,7 +75,7 @@ export function useDevices() {
     if (invalid) { toast.error(invalid); return { data: null, error: new Error(invalid) }; }
     const { data, error } = await supabase
       .from('devices')
-      .update(updates)
+      .update(columnsOnly(updates))
       .eq('id', id)
       .select()
       .single();
@@ -163,7 +164,7 @@ export function useAccessories() {
 
     const { data, error } = await supabase
       .from('accessories')
-      .insert({ ...accessory, merchant_id: merchant.id })
+      .insert({ ...columnsOnly(accessory), merchant_id: merchant.id })
       .select()
       .single();
 
@@ -182,7 +183,7 @@ export function useAccessories() {
     if (invalid) { toast.error(invalid); return { data: null, error: new Error(invalid) }; }
     const { data, error } = await supabase
       .from('accessories')
-      .update(updates)
+      .update(columnsOnly(updates))
       .eq('id', id)
       .select()
       .single();

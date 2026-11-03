@@ -1,4 +1,5 @@
 import { amountProblem } from '@/lib/amounts';
+import { columnsOnly } from '@/lib/rowColumns';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -228,7 +229,7 @@ export function usePurchaseOrders() {
 
     const { error } = await supabase
       .from('purchase_orders')
-      .update(updates)
+      .update(columnsOnly(updates))
       .eq('id', orderId);
 
     if (error) {

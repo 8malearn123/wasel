@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { columnsOnly } from '@/lib/rowColumns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import type { StockTransfer, StockTransferItem, TransferStatus } from '@/types/database';
@@ -189,7 +190,7 @@ export function useTransfers() {
 
     const { error } = await supabase
       .from('stock_transfers')
-      .update(updates)
+      .update(columnsOnly(updates))
       .eq('id', transferId);
 
     if (error) {
