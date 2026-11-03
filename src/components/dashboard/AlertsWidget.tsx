@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface Alert {
   id: string;
@@ -18,6 +20,10 @@ interface Alert {
 export function AlertsWidget() {
   const { t } = useLanguage();
   const { merchant } = useAuth();
+  const { allows } = useFeatureAccess();
+  const { can } = usePermissions();
+  // transfers are a Pro feature: a Lite shop is not told about them
+  const showTransfers = allows('transfers') && can('transfers.manage');
   const [alerts, setAlerts] = useState<Alert[]>([]);
 
   const fetchAlerts = useCallback(async () => {
@@ -66,22 +72,24 @@ export function AlertsWidget() {
       }
     }
 
-    // Check pending transfers
-    const { count: pendingTransfers } = await supabase
-      .from('stock_transfers')
-      .select('id', { count: 'exact', head: true })
-      .eq('merchant_id', merchant.id)
-      .eq('status', 'pending');
+    if (showTransfers) {
+      // Check pending transfers
+      const { count: pendingTransfers } = await supabase
+        .from('stock_transfers')
+        .select('id', { count: 'exact', head: true })
+        .eq('merchant_id', merchant.id)
+        .eq('status', 'pending');
 
-    if (pendingTransfers && pendingTransfers > 0) {
-      newAlerts.push({
-        id: 'pending-transfers',
-        type: "info",
-        icon: Clock,
-        title: t.dashboard.pendingTransfer,
-        message: `${pendingTransfers} تحويلات بانتظار الموافقة`,
-        time: t.dashboard.today,
-      });
+      if (pendingTransfers && pendingTransfers > 0) {
+        newAlerts.push({
+          id: 'pending-transfers',
+          type: "info",
+          icon: Clock,
+          title: t.dashboard.pendingTransfer,
+          message: `${pendingTransfers} تحويلات بانتظار الموافقة`,
+          time: t.dashboard.today,
+        });
+      }
     }
 
     // Check unpaid sales
@@ -115,7 +123,7 @@ export function AlertsWidget() {
     }
 
     setAlerts(newAlerts);
-  }, [merchant, t]);
+  }, [merchant, t, showTransfers]);
 
   useEffect(() => {
     fetchAlerts();

@@ -1,4 +1,6 @@
 import { motion } from "framer-motion";
+import { usePermissions } from "@/hooks/usePermissions";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SalesChart } from "@/components/dashboard/SalesChart";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
@@ -95,6 +97,11 @@ function KpiCard({ title, value, unit, trend, sub, icon: Icon, highlight, compac
 export default function Dashboard() {
   const { t, isRTL } = useLanguage();
   const { metrics, salesChart, recentSales, branchStats, loading, error, refresh } = useDashboardData();
+  const { allows } = useFeatureAccess();
+  const { can } = usePermissions();
+  // repairs and suppliers are Pro features: a Lite shop does not see their figures
+  const showRepairs = allows("repairs") && can("repairs.manage");
+  const showSuppliers = allows("suppliers") && can("suppliers.manage");
   const kpiState = loading ? "loading" : error || !metrics ? "error" : "ready";
 
   // Today against yesterday — in words when there is nothing to compare with
@@ -148,24 +155,32 @@ export default function Dashboard() {
           icon={Package} />
       </div>
 
-      {/* المؤشرات الثانوية */}
+      {/* المؤشرات الثانوية — each only where the plan and the role include its section */}
+      {(showRepairs || showSuppliers) && (
       <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {showRepairs && (
         <KpiCard state={kpiState} index={4} compact isRTL={isRTL}
           title={L("طلبات صيانة مفتوحة", "Open repairs")}
           value={String(metrics?.pendingRepairs || 0)}
           sub={L("بانتظار الإنجاز", "Awaiting completion")}
           icon={Wrench} />
+        )}
+        {showSuppliers && (
         <KpiCard state={kpiState} index={5} compact isRTL={isRTL}
           title={L("مستحقات الموردين", "Supplier payables")}
           value={fmt(metrics?.supplierDebt || 0)} unit={currency}
           sub={L("مبالغ لم تُسدَّد بعد", "Not paid yet")}
           icon={Truck} />
+        )}
+        {showSuppliers && (
         <KpiCard state={kpiState} index={6} compact isRTL={isRTL}
           title={L("أوامر شراء غير مدفوعة", "Unpaid purchase orders")}
           value={String(metrics?.unpaidPurchaseOrders || 0)}
           sub={L("بانتظار السداد", "Awaiting payment")}
           icon={FileText} />
+        )}
       </div>
+      )}
 
       {/* أداء الفروع */}
       <motion.div
