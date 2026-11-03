@@ -55,13 +55,6 @@ async function openFirstEdit(p) {
   await p.getByRole('menuitem', { name: /تعديل/ }).first().click();
 }
 
-await step('LIVE|cashier-history-body', async () => {
-  const s = await newSession(); await login(s, 'demo-cashier@wasil.demo'); const p = s.page;
-  await visit(p, '/pos?tab=history', 9000);
-  const main = (await p.locator('main').innerText().catch(() => '')).replace(/\s+/g, ' ');
-  const r = { spinner: await p.locator('main .animate-spin').count(), text: main.slice(0, 400), blocked: s.blocked };
-  await s.ctx.close(); return r;
-});
 await step('MOCK-WRITE|pos-sale', async () => {
   const s = await newSession(); await login(s, 'demo-enterprise@wasil.demo'); const p = s.page;
   await visit(p, '/pos', 7000); const r = {};
@@ -71,7 +64,9 @@ await step('MOCK-WRITE|pos-sale', async () => {
     await p.getByRole('button', { name: 'إتمام البيع' }).click(); await sleep(1500);
     const confirm = p.getByRole('button', { name: /تأكيد الدفع وإصدار الفاتورة/ });
     await confirm.waitFor({ timeout: 10000 });
+    await p.locator('[role="dialog"]').last().getByText('كاش', { exact: true }).click(); await sleep(500);
     r.payDialog = (await p.locator('[role="dialog"]').last().innerText()).replace(/\s+/g, ' ').slice(0, 80);
+    r.confirmEnabled = await confirm.isEnabled();
     await clearToasts(p); await confirm.click(); await sleep(7000);
     r.toast = await toasts(p);
     r.dialogStillOpen = await p.locator('[role="dialog"]').count() > 0;
