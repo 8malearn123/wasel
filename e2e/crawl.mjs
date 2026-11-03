@@ -93,6 +93,38 @@ async function visit(s, role, path, { wait = 6000 } = {}) {
   });
 }
 
+
+// ---- focused re-checks of this round's fixes
+async function textOf(s, path, wait = 7000) {
+  await s.page.evaluate(() => { window.__t = []; }).catch(() => {});
+  await s.page.goto(`${SITE}${path}`, { waitUntil: 'domcontentloaded' }).catch(() => {}); await sleep(wait);
+  return { url: new URL(s.page.url()).pathname + new URL(s.page.url()).search, text: (await s.page.locator('body').innerText().catch(() => '')).replace(/\s+/g, ' '), toasts: await s.page.evaluate(() => window.__t.join(' | ')).catch(() => '') };
+}
+{
+  const e = await session('demo-employee@wasil.demo');
+  for (const p of ['/', '/reports', '/organization?tab=support']) {
+    const r = await textOf(e, p);
+    out(`FOCUS|employee ${p}`, { url: r.url, noShopScreen: /حسابك غير مرتبط بمتجر نشط/.test(r.text), toasts: r.toasts, spinners: await e.page.locator('.animate-spin').count() });
+  }
+  await e.ctx.close();
+  const c = await session('demo-cashier@wasil.demo');
+  for (const p of ['/sales?tab=closings', '/sales?tab=repairs', '/products?tab=suppliers', '/products?tab=inventory']) {
+    const r = await textOf(c, p);
+    out(`FOCUS|cashier ${p}`, { url: r.url, toasts: r.toasts, closingShown: /إجمالي مبيعات اليوم/.test(r.text), repairsShown: /طلبات الصيانة|طلب صيانة/.test(r.text), deniedInPlace: /ليست لديك صلاحية|غير متاح/.test(r.text) });
+  }
+  await c.ctx.close();
+  const a = await session('demo-admin@wasil.demo');
+  { const r = await textOf(a, '/team?tab=users'); out('FOCUS|admin users', { url: r.url, addUser: /إضافة مستخدم جديد/.test(r.text) }); }
+  await a.ctx.close();
+  const o = await session('demo-distributor@wasil.demo');
+  { const r = await textOf(o, '/team?tab=payroll'); out('FOCUS|owner payroll', { localNotice: /محفوظة على هذا الجهاز فقط/.test(r.text) }); }
+  { const r = await textOf(o, '/products?tab=inventory&sub=accessories');
+    await o.page.locator('table button:has(svg.lucide-more-horizontal)').first().click().catch(() => {}); await sleep(800);
+    const items = await o.page.getByRole('menuitem').allInnerTexts().catch(() => []);
+    out('FOCUS|owner accessory menu', { items }); }
+  await o.ctx.close();
+}
+
 const ROLES = [
   ['owner', 'demo-distributor@wasil.demo', allPages().concat(LEGACY)],
   ['admin', 'demo-admin@wasil.demo', allPages()],
@@ -127,3 +159,5 @@ for (const [role, email, pages] of ROLES) {
   await m.ctx.close();
 }
 await browser.close();
+
+// rerun after the permissions-race and no-shop fixes
