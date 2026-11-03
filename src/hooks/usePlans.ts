@@ -35,27 +35,49 @@ export function planDisplayName(name?: string | null): string {
   return PLAN_DISPLAY_NAMES[name] || name;
 }
 
+// The plans table changes rarely and every guard, menu and banner asks for it:
+// one request is shared by all of them for a minute instead of one per mount.
+const PLANS_TTL_MS = 60_000;
+let plansCache: { at: number; promise: Promise<Plan[]> } | null = null;
+
+function loadPlans(): Promise<Plan[]> {
+  if (plansCache && Date.now() - plansCache.at < PLANS_TTL_MS) return plansCache.promise;
+  const promise = Promise.resolve(
+    supabase
+      .from('plans')
+      .select('*')
+      .eq('is_active', true)
+      .order('sort_order'),
+  ).then(({ data, error }) => {
+    // a failed read is not kept: the next screen asks again
+    if (error) plansCache = null;
+    // باقة بلس (Professional) ملغاة — مميزاتها انتقلت لباقة برو
+    return ((data as any[]) || [])
+      .filter((p) => p.name !== 'Professional')
+      .map((p) => ({
+        ...p,
+        name_ar: PLAN_DISPLAY_NAMES[p.name] || p.name_ar,
+      })) as Plan[];
+  });
+  plansCache = { at: Date.now(), promise };
+  return promise;
+}
+
+/** for tests */
+export const resetPlansCache = () => { plansCache = null; };
+
 export function usePlans() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase
-      .from('plans')
-      .select('*')
-      .eq('is_active', true)
-      .order('sort_order')
-      .then(({ data }) => {
-        // باقة بلس (Professional) ملغاة — مميزاتها انتقلت لباقة برو
-        const rows = ((data as any[]) || [])
-          .filter((p) => p.name !== 'Professional')
-          .map((p) => ({
-            ...p,
-            name_ar: PLAN_DISPLAY_NAMES[p.name] || p.name_ar,
-          }));
-        setPlans(rows);
-        setLoading(false);
-      });
+    let alive = true;
+    loadPlans().then(rows => {
+      if (!alive) return;
+      setPlans(rows);
+      setLoading(false);
+    });
+    return () => { alive = false; };
   }, []);
 
   return { plans, loading };

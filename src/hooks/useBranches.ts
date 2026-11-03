@@ -4,6 +4,7 @@ import { useAuth } from './useAuth';
 import type { Branch, MerchantUser, Profile } from '@/types/database';
 import { toast } from 'sonner';
 import { loadCustomRolesConfig, storedRoleFor, CUSTOM_ROLE_BASE } from '@/lib/customRolesStore';
+import { friendlyError } from '@/lib/errors';
 
 export function useBranches() {
   const { merchant, refreshMerchantData } = useAuth();
@@ -50,7 +51,7 @@ export function useBranches() {
       await refreshMerchantData();
       toast.success('Branch added');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     }
 
     return { data, error };
@@ -69,7 +70,7 @@ export function useBranches() {
       await refreshMerchantData();
       toast.success('Branch updated');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     }
 
     return { data, error };
@@ -87,7 +88,7 @@ export function useBranches() {
       await refreshMerchantData();
       toast.success('Branch removed');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     }
 
     return { error };
@@ -194,7 +195,7 @@ export function useMerchantUsers() {
       await fetchUsers();
       toast.success('User role updated');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     }
 
     return { error };
@@ -210,7 +211,7 @@ export function useMerchantUsers() {
       await fetchUsers();
       toast.success('User branch updated');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     }
 
     return { error };
@@ -226,7 +227,7 @@ export function useMerchantUsers() {
       await fetchUsers();
       toast.success('User deactivated');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     }
 
     return { error };

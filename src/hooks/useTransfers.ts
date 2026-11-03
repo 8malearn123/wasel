@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import type { StockTransfer, StockTransferItem, TransferStatus } from '@/types/database';
 import { toast } from 'sonner';
+import { friendlyError } from '@/lib/errors';
 
 interface TransferItem {
   type: 'device' | 'accessory';
@@ -75,7 +76,7 @@ export function useTransfers() {
       .single();
 
     if (transferError) {
-      toast.error(transferError.message);
+      toast.error(friendlyError(transferError));
       return { error: transferError };
     }
 
@@ -192,7 +193,7 @@ export function useTransfers() {
       .eq('id', transferId);
 
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
       return { error };
     }
 

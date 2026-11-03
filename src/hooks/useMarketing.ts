@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from '@/hooks/use-toast';
+import { friendlyError } from '@/lib/errors';
 
 export interface Coupon {
   id: string;
@@ -99,7 +100,7 @@ export function useMarketing() {
       merchant_id: merchant.id,
     } as any);
     if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: 'تعذّر إتمام العملية', description: friendlyError(error), variant: 'destructive' });
       return false;
     }
     await fetchCoupons();
@@ -111,7 +112,7 @@ export function useMarketing() {
     if (invalid) { toast({ title: 'لم يُحفظ الكوبون', description: invalid, variant: 'destructive' }); return false; }
     const { error } = await supabase.from('coupons').update(updates as any).eq('id', id);
     if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: 'تعذّر إتمام العملية', description: friendlyError(error), variant: 'destructive' });
       return false;
     }
     await fetchCoupons();
@@ -121,7 +122,7 @@ export function useMarketing() {
   const deleteCoupon = async (id: string) => {
     const { error } = await supabase.from('coupons').delete().eq('id', id);
     if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: 'تعذّر إتمام العملية', description: friendlyError(error), variant: 'destructive' });
       return false;
     }
     await fetchCoupons();
@@ -135,7 +136,7 @@ export function useMarketing() {
       merchant_id: merchant.id,
     } as any);
     if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: 'تعذّر إتمام العملية', description: friendlyError(error), variant: 'destructive' });
       return false;
     }
     await fetchCampaigns();
@@ -145,7 +146,7 @@ export function useMarketing() {
   const updateCampaign = async (id: string, updates: Partial<Campaign>) => {
     const { error } = await supabase.from('campaigns').update(updates as any).eq('id', id);
     if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: 'تعذّر إتمام العملية', description: friendlyError(error), variant: 'destructive' });
       return false;
     }
     await fetchCampaigns();
@@ -155,7 +156,7 @@ export function useMarketing() {
   const deleteCampaign = async (id: string) => {
     const { error } = await supabase.from('campaigns').delete().eq('id', id);
     if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: 'تعذّر إتمام العملية', description: friendlyError(error), variant: 'destructive' });
       return false;
     }
     await fetchCampaigns();

@@ -13,6 +13,14 @@ export function friendlyError(err: unknown, action = 'تنفيذ العملية'
   const e = err as { message?: string; code?: string } | null;
   const m = String(e?.message ?? err ?? '');
   if (isNetworkError(err)) return `تعذّر الاتصال بالخادم، ولم يتم ${action}. تحقّق من الاتصال بالإنترنت ثم أعد المحاولة.`;
+  // the session ran out between two requests (401 / PGRST301)
+  if (e?.code === 'PGRST301' || e?.code === 'PGRST303' || /jwt expired|invalid jwt|jwt.*(missing|malformed)/i.test(m)) {
+    return 'انتهت جلستك. سجّل الدخول من جديد ثم أعد المحاولة.';
+  }
+  // a table or function this screen needs is not on the server yet (404)
+  if (e?.code === 'PGRST202' || e?.code === 'PGRST205' || e?.code === '42P01' || /schema cache|could not find the (function|table)/i.test(m)) {
+    return `هذه الميزة غير مفعّلة على الخادم بعد، فلم يتم ${action}.`;
+  }
   if (e?.code === '23505') return 'هذه القيمة مستخدمة من قبل (رقم مكرر). لم يُحفظ شيء.';
   if (e?.code === '42501' || /row-level security|permission denied/i.test(m)) return 'ليست لديك صلاحية لهذا الإجراء.';
   // the data was refused: a value out of range, missing or of the wrong kind

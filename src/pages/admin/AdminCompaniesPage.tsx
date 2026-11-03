@@ -20,6 +20,7 @@ import { usePlans, Plan } from '@/hooks/usePlans';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { friendlyError } from '@/lib/errors';
 
 const statusBadge = (status: string) => {
   const map: Record<string, { label: string; className: string }> = {
@@ -95,7 +96,7 @@ export default function AdminCompaniesPage() {
       case 'fee': result = await updateMerchantFee(target.id, actionValue !== '' ? parseFloat(actionValue) : 5); break;
     }
     if (result && !result.error) toast.success('تمت العملية');
-    else if (result?.error) toast.error((result.error as any).message || 'حدث خطأ');
+    else if (result?.error) toast.error(friendlyError(result.error));
     setActionLoading(false);
     setActionDialog(null);
     setActionValue('');

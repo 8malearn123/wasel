@@ -250,7 +250,7 @@ export function useStoreSettings() {
       .insert({ merchant_id: merchant.id, slug, store_name: merchant.name } as any)
       .select()
       .single();
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     setSettings(data as unknown as StoreSettings);
     toast.success('تم إنشاء المتجر الإلكتروني');
   };
@@ -261,7 +261,7 @@ export function useStoreSettings() {
       .from('store_settings')
       .update(updates as any)
       .eq('id', settings.id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     setSettings({ ...settings, ...updates });
     toast.success('تم حفظ الإعدادات');
   };
@@ -271,7 +271,7 @@ export function useStoreSettings() {
     const { error } = await supabase
       .from('store_categories')
       .insert({ merchant_id: merchant.id, name, sort_order: categories.length } as any);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     await fetchSettings();
     toast.success('تمت إضافة التصنيف');
   };
@@ -309,14 +309,14 @@ export function useStorePages() {
     if (!merchant) return;
     const payload: any = { ...page, merchant_id: merchant.id };
     const { error } = await supabase.from('store_pages').upsert(payload, { onConflict: 'merchant_id,slug' });
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     await fetchPages();
     toast.success('تم حفظ الصفحة');
   };
 
   const deletePage = async (id: string) => {
     const { error } = await supabase.from('store_pages').delete().eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     await fetchPages();
     toast.success('تم حذف الصفحة');
   };
@@ -408,7 +408,7 @@ export async function uploadStoreAsset(merchantId: string, file: File, kind: 'lo
     upsert: true, cacheControl: '3600',
     contentType: processed.type || file.type,
   });
-  if (error) { toast.error(error.message); return null; }
+  if (error) { toast.error(friendlyError(error)); return null; }
   const { data } = supabase.storage.from('store-assets').getPublicUrl(path);
   return data.publicUrl;
 }
@@ -447,7 +447,7 @@ export function useOnlineOrders() {
   // does not know whether the waybill is typed in or issued by a carrier
   const updateTracking = async (orderId: string, provider: string, trackingNumber: string) => {
     const result = await fulfillment.ship({ orderId, carrierId: provider, trackingNumber });
-    if (result.ok === false) { toast.error(result.message); return false; }
+    if (result.ok === false) { toast.error(friendlyError(result)); return false; }
     await fetchOrders();
     toast.success('تم إضافة رقم التتبع');
     return true;
@@ -458,7 +458,7 @@ export function useOnlineOrders() {
       .from('online_orders')
       .update({ payment_status: status } as any)
       .eq('id', orderId);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     await fetchOrders();
     toast.success('تم تحديث حالة الدفع');
   };
@@ -581,7 +581,7 @@ export function usePublicStore(slug: string) {
       .select()
       .single();
 
-    if (orderErr) { toast.error(orderErr.message); return null; }
+    if (orderErr) { toast.error(friendlyError(orderErr)); return null; }
 
     const items = orderData.items.map(i => ({
       order_id: (order as any).id,
@@ -651,7 +651,7 @@ export function useMerchantPayouts() {
     orders_count?: number; platform_fee?: number; net_amount?: number; notes?: string;
   }) => {
     const { error } = await supabase.from('merchant_payouts').insert(opts as any);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     await fetchPayouts();
     toast.success('تم إنشاء التحويل');
   };
@@ -660,7 +660,7 @@ export function useMerchantPayouts() {
     const update: any = { status, processed_at: new Date().toISOString() };
     if (reference) update.reference_number = reference;
     const { error } = await supabase.from('merchant_payouts').update(update).eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     await fetchPayouts();
     toast.success('تم تحديث حالة التحويل');
   };

@@ -51,6 +51,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { PermissionGate } from "@/components/common/PermissionGate";
 import { useLanguage } from "@/i18n";
 import { useMerchantUsers, useBranches } from "@/hooks/useBranches";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -163,9 +164,11 @@ export default function UsersSection() {
     <>
       {/* Add User Button */}
       <div className="flex justify-end mb-4">
-        <Button onClick={() => setShowAddUser(true)} className="bg-primary">
-          <UserPlus className="w-4 h-4 mr-2" /> إضافة مستخدم جديد
-        </Button>
+        <PermissionGate require="users.create">
+          <Button onClick={() => setShowAddUser(true)} className="bg-primary">
+            <UserPlus className="w-4 h-4 mr-2" /> إضافة مستخدم جديد
+          </Button>
+        </PermissionGate>
       </div>
 
       {/* Stats */}
@@ -298,17 +301,19 @@ export default function UsersSection() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setEditing(user)}>
-                      <Edit className="w-4 h-4 mr-2" /> تعديل الصلاحية
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setRegeneratingCode(user)}>
-                      <KeyRound className="w-4 h-4 mr-2" /> تعيين كود دخول جديد
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setResettingUser(user)}>
-                      <Shield className="w-4 h-4 mr-2" /> إعادة تعيين كلمة المرور
-                    </DropdownMenuItem>
+                    <PermissionGate require="users.update">
+                      <DropdownMenuItem onClick={() => setEditing(user)}>
+                        <Edit className="w-4 h-4 mr-2" /> تعديل الصلاحية
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setRegeneratingCode(user)}>
+                        <KeyRound className="w-4 h-4 mr-2" /> تعيين كود دخول جديد
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setResettingUser(user)}>
+                        <Shield className="w-4 h-4 mr-2" /> إعادة تعيين كلمة المرور
+                      </DropdownMenuItem>
+                    </PermissionGate>
                     {user.role !== 'owner' && (
-                      <>
+                      <PermissionGate require="users.delete">
                         <DropdownMenuSeparator />
                         <DropdownMenuItem 
                           className="text-destructive"
@@ -316,7 +321,7 @@ export default function UsersSection() {
                         >
                           <UserX className="w-4 h-4 mr-2" /> تعطيل
                         </DropdownMenuItem>
-                      </>
+                      </PermissionGate>
                     )}
                   </DropdownMenuContent>
                 </DropdownMenu>

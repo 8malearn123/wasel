@@ -536,9 +536,11 @@ export default function InventorySection() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => setEditingDevice(device)}>
+                              <PermissionGate require="products.update">
+                                <DropdownMenuItem onClick={() => setEditingDevice(device)}>
                                 <Edit className="w-4 h-4 mr-2" /> {t.inventory.edit}
                               </DropdownMenuItem>
+                              </PermissionGate>
                               <DropdownMenuSeparator />
                               <PermissionGate require="products.delete">
                                                               <DropdownMenuItem
@@ -681,9 +683,11 @@ export default function InventorySection() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => setEditingAccessory(accessory)}>
+                                <PermissionGate require="products.update">
+                                  <DropdownMenuItem onClick={() => setEditingAccessory(accessory)}>
                                   <Edit className="w-4 h-4 mr-2" /> {t.inventory.edit}
                                 </DropdownMenuItem>
+                                </PermissionGate>
                                 <DropdownMenuSeparator />
                                 <PermissionGate require="products.delete">
                                                                   <DropdownMenuItem
@@ -715,9 +719,11 @@ export default function InventorySection() {
               <div className="text-center py-20">
                 <Wrench className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
                 <p className="text-muted-foreground">{t.inventory.noRepairParts}</p>
-                <Button className="mt-4" onClick={() => setShowAddRepairPart(true)}>
-                  {t.inventory.addFirstPart}
-                </Button>
+                <PermissionGate require="products.create">
+                  <Button className="mt-4" onClick={() => setShowAddRepairPart(true)}>
+                    {t.inventory.addFirstPart}
+                  </Button>
+                </PermissionGate>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -775,13 +781,17 @@ export default function InventorySection() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => setEditingRepairPart(part)}>
+                                <PermissionGate require="products.update">
+                                  <DropdownMenuItem onClick={() => setEditingRepairPart(part)}>
                                   <Edit className="w-4 h-4 mr-2" /> {t.inventory.edit}
                                 </DropdownMenuItem>
+                                </PermissionGate>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem className="text-destructive" onClick={() => deletePart(part.id)}>
-                                  <Trash2 className="w-4 h-4 mr-2" /> {t.inventory.delete}
-                                </DropdownMenuItem>
+                                <PermissionGate require="products.delete">
+                                  <DropdownMenuItem className="text-destructive" onClick={() => deletePart(part.id)}>
+                                    <Trash2 className="w-4 h-4 mr-2" /> {t.inventory.delete}
+                                  </DropdownMenuItem>
+                                </PermissionGate>
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </td>

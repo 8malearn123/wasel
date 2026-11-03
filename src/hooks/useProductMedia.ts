@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { friendlyError } from '@/lib/errors';
 
 export type ProductItemType = 'device' | 'accessory' | 'repair_part';
 
@@ -144,7 +145,7 @@ export function useProductMedia(itemType: ProductItemType, itemId?: string | nul
         .from(BUCKET)
         .upload(path, blob, { contentType: blob.type, cacheControl: '31536000', upsert: false });
 
-      if (uploadError) { toast.error(uploadError.message); return null; }
+      if (uploadError) { toast.error(friendlyError(uploadError)); return null; }
 
       const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(path);
 
@@ -169,7 +170,7 @@ export function useProductMedia(itemType: ProductItemType, itemId?: string | nul
       if (error) {
         // the row failed, so the object would be an orphan
         await supabase.storage.from(BUCKET).remove([path]);
-        toast.error(error.message);
+        toast.error(friendlyError(error));
         return null;
       }
 
@@ -222,7 +223,7 @@ export function useProductMedia(itemType: ProductItemType, itemId?: string | nul
           upsert: false,
         });
 
-      if (uploadError) { toast.error(uploadError.message); return null; }
+      if (uploadError) { toast.error(friendlyError(uploadError)); return null; }
 
       const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(path);
 
@@ -246,7 +247,7 @@ export function useProductMedia(itemType: ProductItemType, itemId?: string | nul
 
       if (error) {
         await supabase.storage.from(BUCKET).remove([path]);
-        toast.error(error.message);
+        toast.error(friendlyError(error));
         return null;
       }
 
@@ -266,7 +267,7 @@ export function useProductMedia(itemType: ProductItemType, itemId?: string | nul
 
   const remove = async (item: ProductMedia) => {
     const { error } = await supabase.from('product_media' as never).delete().eq('id', item.id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     // The row is the record; a leftover object is wasted space, not a bug.
     await supabase.storage.from(BUCKET).remove([item.storage_path]);
     await fetchMedia();
@@ -278,7 +279,7 @@ export function useProductMedia(itemType: ProductItemType, itemId?: string | nul
       .from('product_media' as never)
       .update({ is_primary: true } as never)
       .eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     await fetchMedia();
   };
 
@@ -292,7 +293,7 @@ export function useProductMedia(itemType: ProductItemType, itemId?: string | nul
     );
     const failed = results.find(r => r.error);
     if (failed?.error) {
-      toast.error(failed.error.message);
+      toast.error(friendlyError(failed.error));
       setMedia(previous);
       return;
     }
@@ -304,7 +305,7 @@ export function useProductMedia(itemType: ProductItemType, itemId?: string | nul
       .from('product_media' as never)
       .update({ alt_text } as never)
       .eq('id', id);
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     else await fetchMedia();
   };
 

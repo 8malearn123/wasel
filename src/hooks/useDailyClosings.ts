@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { friendlyError } from '@/lib/errors';
 
 export interface DailyClosing {
   id: string;
@@ -192,7 +193,7 @@ export function useDailyClosings() {
       }, { onConflict: 'branch_id,closing_date' });
 
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
       return { error: error.message };
     }
 

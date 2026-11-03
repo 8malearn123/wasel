@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { friendlyError } from '@/lib/errors';
 
 export type StocktakeStatus = 'draft' | 'in_progress' | 'completed' | 'cancelled';
 export type StocktakeItemType = 'device' | 'accessory' | 'repair_part';
@@ -96,7 +97,7 @@ export function useStocktake() {
       .single();
 
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
       return null;
     }
 
@@ -196,7 +197,7 @@ export function useStocktake() {
       .eq('id', itemId);
 
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
       return false;
     }
     return true;

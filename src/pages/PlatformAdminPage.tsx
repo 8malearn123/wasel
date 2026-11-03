@@ -32,6 +32,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { friendlyError } from '@/lib/errors';
 
 const statusBadge = (status: string) => {
   const map: Record<string, { label: string; className: string }> = {
@@ -173,7 +174,7 @@ export default function PlatformAdminPage() {
     if (result && !result.error) {
       toast.success('تمت العملية');
     } else if (result?.error) {
-      toast.error((result.error as any).message || 'حدث خطأ');
+      toast.error(friendlyError(result.error));
     }
 
     setActionLoading(false);

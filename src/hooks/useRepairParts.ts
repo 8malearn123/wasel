@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { friendlyError } from '@/lib/errors';
 
 export interface RepairPart {
   id: string;
@@ -74,7 +75,7 @@ export function useRepairParts() {
       await fetchParts();
       toast.success('تم إضافة القطعة');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     }
     return { data, error };
   };
@@ -93,7 +94,7 @@ export function useRepairParts() {
       await fetchParts();
       toast.success('تم تحديث القطعة');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     }
     return { data, error };
   };
@@ -108,7 +109,7 @@ export function useRepairParts() {
       await fetchParts();
       toast.success('تم حذف القطعة');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     }
     return { error };
   };
@@ -134,7 +135,7 @@ export function useRepairParts() {
         } as any);
 
       if (insertError) {
-        toast.error(insertError.message);
+        toast.error(friendlyError(insertError));
         return { error: insertError };
       }
 
@@ -145,7 +146,7 @@ export function useRepairParts() {
         .eq('id', item.partId);
 
       if (updateError) {
-        toast.error(updateError.message);
+        toast.error(friendlyError(updateError));
         return { error: updateError };
       }
     }

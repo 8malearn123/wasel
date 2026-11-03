@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { friendlyError } from '@/lib/errors';
 
 export interface BranchRequest {
   id: string;
@@ -54,7 +55,7 @@ export function useBranchRequests() {
       });
 
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     } else {
       toast.success('تم إرسال طلب إضافة الفرع');
       await fetchRequests();

@@ -24,6 +24,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadStoreAsset } from "@/hooks/useOnlineStore";
 import { toast } from "sonner";
+import { friendlyError } from '@/lib/errors';
 
 interface StoreSettings {
   taxRate: number;
@@ -115,7 +116,7 @@ export default function GeneralSettingsSection() {
       .eq('id', merchant.id);
 
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     } else {
       toast.success(isRTL ? 'تم حفظ الإعدادات' : 'Settings saved');
       await refreshMerchantData();
@@ -145,7 +146,7 @@ export default function GeneralSettingsSection() {
         .from('merchants')
         .update({ logo_url: url } as any)
         .eq('id', merchant.id);
-      if (error) toast.error(error.message);
+      if (error) toast.error(friendlyError(error));
       else {
         toast.success(isRTL ? 'تم تحديث شعار الموقع' : 'Site logo updated');
         await refreshMerchantData();
@@ -160,7 +161,7 @@ export default function GeneralSettingsSection() {
       .from('merchants')
       .update({ logo_url: null } as any)
       .eq('id', merchant.id);
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     else {
       toast.success(isRTL ? 'تمت إزالة الشعار' : 'Logo removed');
       await refreshMerchantData();

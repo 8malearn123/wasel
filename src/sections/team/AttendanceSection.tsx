@@ -27,6 +27,7 @@ import {
 import {
   LoadingState, EmptyState, ErrorState, PermissionDeniedState, MockDataBanner,
 } from '@/components/common/StateViews';
+import { friendlyError } from '@/lib/errors';
 
 const STATUS: Record<AttendanceStatus, { ar: string; en: string; cls: string }> = {
   present:  { ar: 'حاضر',   en: 'Present',  cls: 'bg-success/15 text-success' },
@@ -135,7 +136,7 @@ function TodayPanel() {
     setPunching(false);
 
     if (!isOk(result)) {
-      toast.error(result.error.message);
+      toast.error(friendlyError(result.error));
       return;
     }
     setToday(result.data);

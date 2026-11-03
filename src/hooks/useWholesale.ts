@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 import { productFromDevice, productFromAccessory, productFromNotes, productNotes, type ListingProduct } from '@/lib/wholesaleProduct';
+import { friendlyError } from '@/lib/errors';
 
 export interface WholesaleListing {
   id: string;
@@ -192,7 +193,7 @@ export function useWholesale() {
       }
     }
     const { error } = await supabase.from('wholesale_listings').insert({ merchant_id: merchant.id, ...data, notes: notes ?? null } as any);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success('تمت إضافة المنتج للبيع بالجملة');
     fetchAll();
   };
@@ -223,7 +224,7 @@ export function useWholesale() {
       created_by: user.id,
     } as any).select().single();
 
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
 
     // An order without its line has no product: if the line is refused, the
     // order goes too rather than being left behind empty
@@ -235,7 +236,7 @@ export function useWholesale() {
     } as any);
     if (itemError) {
       await supabase.from('wholesale_orders').delete().eq('id', (order as any).id);
-      toast.error(itemError.message);
+      toast.error(friendlyError(itemError));
       return;
     }
 
@@ -253,7 +254,7 @@ export function useWholesale() {
         status: 'unpaid',
         created_by: user.id,
       } as any);
-      if (creditError) toast.error(`أُرسل الطلب #${orderNumber} لكن تعذّر تسجيل الآجل: ${creditError.message}`);
+      if (creditError) toast.error(`أُرسل الطلب #${orderNumber} لكن تعذّر تسجيل الآجل: ${friendlyError(creditError)}`);
     }
 
     toast.success(`تم إرسال الطلب #${orderNumber}`);

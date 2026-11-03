@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import type { Supplier, PurchaseOrder, PurchaseOrderItem, PurchaseStatus, PaymentStatus } from '@/types/database';
 import { toast } from 'sonner';
+import { friendlyError } from '@/lib/errors';
 
 interface PurchaseItem {
   type: 'device' | 'accessory';
@@ -66,7 +67,7 @@ export function useSuppliers() {
       await fetchSuppliers();
       toast.success('Supplier added');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     }
 
     return { data, error };
@@ -84,7 +85,7 @@ export function useSuppliers() {
       await fetchSuppliers();
       toast.success('Supplier updated');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     }
 
     return { data, error };
@@ -101,7 +102,7 @@ export function useSuppliers() {
       await fetchSuppliers();
       toast.success('Supplier removed');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     }
 
     return { error };
@@ -190,7 +191,7 @@ export function usePurchaseOrders() {
       .single();
 
     if (orderError) {
-      toast.error(orderError.message);
+      toast.error(friendlyError(orderError));
       return { error: orderError };
     }
 
@@ -231,7 +232,7 @@ export function usePurchaseOrders() {
       .eq('id', orderId);
 
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
       return { error };
     }
 
@@ -259,7 +260,7 @@ export function usePurchaseOrders() {
       .eq('id', orderId);
 
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
       return { error };
     }
 

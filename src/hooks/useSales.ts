@@ -109,7 +109,7 @@ export function useSales() {
       if (unavailable.length || (current || []).length !== new Set(deviceIds).size) {
         const names = unavailable.map(d => d.model).join('، ') || 'جهاز في السلة';
         const error = new Error(`لا يمكن بيع ${names}: الجهاز غير متاح (مباع أو محجوز أو قيد التحويل). أزِله من السلة.`);
-        toast.error(error.message);
+        toast.error(friendlyError(error));
         return { error };
       }
     }
@@ -253,7 +253,7 @@ export function useSales() {
     // a paid invoice's money is not the cashier's to change
     if (cashier && (updates.discount_amount !== undefined || updates.payment_method !== undefined)) {
       const error = new Error('لا يمكن للكاشير تعديل خصم الفاتورة المدفوعة أو طريقة دفعها. اطلب ذلك من المدير أو المالك.');
-      toast.error(error.message);
+      toast.error(friendlyError(error));
       return { error };
     }
 
@@ -292,7 +292,7 @@ export function useSales() {
     if (!sale) return { error: new Error('Sale not found') };
     if (cashier) {
       const error = new Error('حذف الفواتير من صلاحية المدير أو المالك فقط.');
-      toast.error(error.message);
+      toast.error(friendlyError(error));
       return { error };
     }
 

@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { planDisplayName } from '@/hooks/usePlans';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { friendlyError } from '@/lib/errors';
 
 const PLANS = [
   { name: 'Basic', name_ar: 'باقة لايت', price: '99' },
@@ -43,7 +44,7 @@ function DemoPlanSwitcherPanel() {
 
       if (error) {
         console.error('Subscription update error:', error);
-        toast.error('فشل تبديل الباقة: ' + error.message);
+        toast.error('فشل تبديل الباقة: ' + friendlyError(error));
         setSwitching(null);
         return;
       }

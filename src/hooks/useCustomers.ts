@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { friendlyError } from '@/lib/errors';
 
 export interface Customer {
   id: string;
@@ -78,14 +79,14 @@ export function useCustomers() {
       address: data.address || null,
       notes: data.notes || null,
     });
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success('تمت إضافة العميل');
     fetchCustomers();
   };
 
   const updateCustomer = async (id: string, data: Partial<Customer>) => {
     const { error } = await supabase.from('customers').update(data).eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success('تم تحديث العميل');
     fetchCustomers();
   };
@@ -100,7 +101,7 @@ export function useCustomers() {
       description,
       created_by: user.id,
     });
-    if (txError) { toast.error(txError.message); return; }
+    if (txError) { toast.error(friendlyError(txError)); return; }
 
     const customer = customers.find(c => c.id === customerId);
     if (customer) {
