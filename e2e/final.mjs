@@ -12,7 +12,7 @@ async function session(email) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'ar-SA' });
   const page = await ctx.newPage(); const s = { page, ctx, posts: [], offline: false, errors: [] };
   page.on('pageerror', e => s.errors.push(e.message.slice(0, 120)));
-  await page.addInitScript(() => { window.__t = []; const seen = new WeakSet(); new MutationObserver(() => document.querySelectorAll('[data-sonner-toast]').forEach(el => { if (seen.has(el)) return; seen.add(el); setTimeout(() => window.__t.push(el.innerText.replace(/\s+/g, ' ').trim()), 60); })).observe(document, { childList: true, subtree: true }); });
+  await page.addInitScript(() => { window.__t = []; const seen = new WeakSet(); new MutationObserver(() => document.querySelectorAll('[data-sonner-toast]').forEach(el => { if (seen.has(el)) return; seen.add(el); setTimeout(() => window.__t.push(el.innerText.replace(/\s+/g, ' ').trim()), 60); })).observe(document, { childList: true, subtree: true }); try { localStorage.setItem('language', 'ar'); } catch {} });
   await page.route(/supabase\.co\//, async route => {
     const r = route.request(); const m = r.method(); const u = r.url();
     if (!/\/(rest|functions|storage)\/v1\//.test(u)) return route.continue();
@@ -23,9 +23,9 @@ async function session(email) {
     return route.abort(s.offline ? 'internetdisconnected' : 'blockedbyclient');
   });
   await page.goto(`${SITE}/auth`, { waitUntil: 'domcontentloaded' }); await sleep(2000);
-  await page.getByRole('tab', { name: /دخول بالإيميل/ }).click();
+  await page.getByRole('tab', { name: /دخول بالإيميل|Email Login/ }).click();
   await page.locator('#email').fill(email); await page.locator('#password').fill(PW);
-  await page.getByRole('button', { name: /تسجيل الدخول/ }).click();
+  await page.getByRole('button', { name: /تسجيل الدخول|^Login$|Sign In/ }).click();
   await page.waitForURL(u => !u.pathname.startsWith('/auth'), { timeout: 25000 }).catch(() => {}); await sleep(3500);
   return s;
 }
