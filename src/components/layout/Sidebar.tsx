@@ -109,9 +109,10 @@ const navItems: NavItem[] = [
     icon: Truck, label: "Shipping", labelAr: "الشحن", path: "/shipping",
     denyRoles: ["cashier"],
     children: [
-      { key: "carriers", label: "Carriers", labelAr: "شركات الشحن", icon: Truck, requirePermission: "shipping.manage" },
-      { key: "api", label: "API settings", labelAr: "إعدادات الاتصال", icon: SlidersHorizontal, requirePermission: "shipping.manage" },
-      { key: "ai", label: "Shipping insights", labelAr: "تحليلات الشحن", icon: Sparkles, requirePermission: "shipping.manage" },
+      // the page's own tabs (ShippingPage TABS), same keys
+      { key: "shipments", label: "Shipments", labelAr: "الشحنات", icon: Truck, requirePermission: "shipping.manage" },
+      { key: "carriers", label: "Carriers", labelAr: "شركات الشحن", icon: SlidersHorizontal, requirePermission: "shipping.manage" },
+      { key: "insights", label: "Shipping insights", labelAr: "تحليلات الشحن", icon: Sparkles, requirePermission: "shipping.manage" },
     ],
   },
   {
