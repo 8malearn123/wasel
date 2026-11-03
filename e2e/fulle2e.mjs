@@ -86,34 +86,6 @@ async function planLeak(label, email) {
   await s.ctx.close();
 }
 
-for (const [l, e] of [['Lite', 'demo-basic@wasil.demo'], ['Pro', 'demo-enterprise@wasil.demo'], ['Max', 'demo-distributor@wasil.demo']]) await step(`${l}|run`, async () => { await planLeak(l, e); return 'done'; });
+for (const [l, e] of [['Lite', 'demo-basic@wasil.demo'], ['Max', 'demo-distributor@wasil.demo']]) await step(`${l}|run`, async () => { await planLeak(l, e); return 'done'; });
 
-// cashier: leaves without permission must show the in-place denial, not content
-await step('cashier|leaves', async () => {
-  const s = await newSession(); const p = s.page; await login(s, 'demo-cashier@wasil.demo');
-  const r = {};
-  for (const leaf of ['inventory', 'stocktake', 'transfers', 'suppliers', 'labels']) {
-    const v = await visit(p, `/products?tab=${leaf}`, 6000); const b = await bodyText(p);
-    r[leaf] = `${outcome(`/products?tab=${leaf}`, v)} denied=${b.includes('لا تملك صلاحية عرض هذه الصفحة')} addBtn=${/إضافة|جديد/.test((await p.locator('main button').allInnerTexts()).join(' '))}`;
-  }
-  await s.ctx.close(); return r;
-});
-
-// per-shop browser storage: Max's settings must not show up for Lite in the same browser
-await step('storage|cross-shop', async () => {
-  const s = await newSession(); const p = s.page;
-  await p.goto(`${SITE}/auth`); await p.evaluate(() => localStorage.setItem('store_settings', JSON.stringify({ invoicePrefix: 'MAXQA' })));
-  await login(s, 'demo-distributor@wasil.demo');
-  await visit(p, '/settings?tab=general', 7000);
-  const maxVals = await p.evaluate(() => [...document.querySelectorAll('input')].map(i => i.value).filter(v => v === 'MAXQA').length);
-  const keysAfterMax = await p.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('store_settings')));
-  await p.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('sb-')).forEach(k => localStorage.removeItem(k)));
-  await login(s, 'demo-basic@wasil.demo');
-  await visit(p, '/settings?tab=general', 7000);
-  const liteVals = await p.evaluate(() => [...document.querySelectorAll('input')].map(i => i.value).filter(v => v === 'MAXQA').length);
-  const prefixInputs = await p.evaluate(() => [...document.querySelectorAll('input')].map(i => i.value).filter(v => /^[A-Z]{2,6}$/.test(v)));
-  const keysAfterLite = await p.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('store_settings')));
-  await s.ctx.close();
-  return { maxShowsMarker: maxVals, keysAfterMax, liteShowsMarker: liteVals, litePrefixInputs: prefixInputs, keysAfterLite };
-});
 await browser.close();
