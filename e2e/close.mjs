@@ -122,23 +122,28 @@ await step('LIVE|admin|reload-keeps-page(mock admin)', async () => {
 async function invoiceDetails(label, email) {
   const s = await newSession(); await login(s, email); const p = s.page;
   const t0 = Date.now(); await visit(p, '/pos?tab=history', 3000);
-  await p.getByText(/الأصناف/).first().waitFor({ timeout: 25000 }).catch(() => {});
+  await p.locator('text=/الأصناف|لا توجد نتائج|تعذّر تحميل البيانات/').first().waitFor({ timeout: 25000 }).catch(() => {});
+  const shown = await bodyText(p);
   const loadMs = Date.now() - t0;
   const cards = p.locator('main .font-mono');
   const count = await cards.count();
-  const res = { loadMs, invoices: count, checked: [] };
+  const res = { loadMs, invoices: count, emptyState: shown.includes('لا توجد نتائج'), checked: [] };
   for (let i = 0; i < Math.min(3, count); i++) {
     const card = p.locator('main [class*="rounded"]:has(.font-mono)').filter({ has: p.getByRole('button', { name: /الأصناف/ }) }).nth(i);
     const head = (await card.innerText()).replace(/\s+/g, ' ');
     const inv = head.match(/[A-Z]{2,}[-\w]*\d+/)?.[0];
     const total = Number((head.match(/([\d,]+(?:\.\d+)?) ر\.س/) || [])[1]?.replace(/,/g, '') || NaN);
     await card.getByRole('button', { name: /الأصناف/ }).click(); await sleep(900);
-    const lines = (await card.innerText()).split('\n').filter(l => /×/.test(l));
+    const opened = await card.innerText();
+    const lines = opened.split('\n').filter(l => /×/.test(l));
+    const num = re => Number((opened.match(re) || [])[1]?.replace(/,/g, '') ?? NaN);
+    const breakdown = { subtotal: num(/المجموع قبل الضريبة\s*([\d,.]+)/), discount: num(/الخصم\s*-?([\d,.]+)/), vat: num(/ضريبة القيمة المضافة\s*([\d,.]+)/), total: num(/الإجمالي\s*([\d,.]+)/) };
     const sum = lines.reduce((a, l) => a + Number((l.match(/=\s*([\d,]+(?:\.\d+)?)/) || [])[1]?.replace(/,/g, '') || 0), 0);
     const date = head.match(/\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}|\d{4}-\d{2}-\d{2}/)?.[0] || head.match(/(يناير|فبراير|مارس|أبريل|مايو|يونيو|يوليو|أغسطس|سبتمبر|أكتوبر|نوفمبر|ديسمبر)[^ ]* ?\d*/)?.[0];
     await card.getByRole('button', { name: /الأصناف/ }).click(); await sleep(500);
     const collapsed = (await card.innerText()).split('\n').filter(l => /×/.test(l)).length === 0;
-    res.checked.push({ inv, total, itemsSum: Math.round(sum * 100) / 100, lines: lines.length, date, collapsed });
+    const calc = Math.round(((breakdown.subtotal || 0) - (breakdown.discount || 0) + (breakdown.vat || 0)) * 100) / 100;
+    res.checked.push({ inv, total, itemsSum: Math.round(sum * 100) / 100, breakdown, breakdownAddsUp: Math.abs(calc - total) < 0.02, lines: lines.length, date, collapsed });
   }
   // edit dialog: open and cancel — never saved
   const edit = p.getByRole('button', { name: /^تعديل$/ }).first();
@@ -161,7 +166,7 @@ await step('MOCK|invoice|sales-read-fails', async () => {
   await login(s, 'demo-distributor@wasil.demo');
   const v = await visit(s.page, '/pos?tab=history', 16000);
   const b = await bodyText(s.page);
-  const r = { toast: v.toast, emptyText: /لا توجد (فواتير|مبيعات)/.test(b), errorText: (b.match(/(تعذّر|تعذر|خطأ)[^.|]{0,60}/) || [])[0] || null };
+  const r = { toast: v.toast, saysNothingToShow: b.includes('لا توجد نتائج'), errorState: b.includes('تعذّر تحميل البيانات'), retry: await s.page.getByRole('button', { name: 'إعادة المحاولة' }).count() };
   await s.ctx.close(); return r;
 });
 
@@ -250,14 +255,21 @@ await step('MOCK-WRITE|pos-sale', async () => {
     await p.locator('main button:has-text("ر.س")').first().click(); await sleep(1200);
     r.cartBefore = (await bodyText(p)).match(/الإجمالي[^ر]{0,30}ر\.س/)?.[0];
     await p.getByRole('button', { name: /الدفع|إتمام/ }).first().click(); await sleep(1500);
+    const confirm = p.getByRole('button', { name: /تأكيد الدفع وإصدار الفاتورة/ });
+    await confirm.waitFor({ timeout: 10000 });
+    await clearToasts(p); await confirm.click(); await sleep(6000);
     const dlg = p.locator('[role="dialog"]').last();
-    await clearToasts(p); await dlg.getByRole('button', { name: /تأكيد|إتمام|دفع/ }).last().click(); await sleep(6000);
     r.toast = await toasts(p); r.dialogStillOpen = await dlg.isVisible().catch(() => false);
     r.cartAfter = (await bodyText(p)).match(/الإجمالي[^ر]{0,30}ر\.س/)?.[0];
   } catch (e) { r.err = e.message.slice(0, 120); }
   r.blocked = s.blocked; await s.ctx.close(); return r;
 });
 
+await step('LIVE|notice-once-per-session(Max owner)', async () => {
+  const s = await newSession(); await login(s, 'demo-distributor@wasil.demo'); const seen = [];
+  for (const path of ['/', '/pos', '/products?tab=inventory']) { const v = await visit(s.page, path, 5000); seen.push(/خدمة الصلاحيات غير مفعّلة/.test(v.toast)); }
+  await s.ctx.close(); return seen;
+});
 // ───────── 5. Consistency re-check ─────────
 for (const [label, email] of [['Lite', 'demo-basic@wasil.demo'], ['Pro', 'demo-enterprise@wasil.demo'], ['Max', 'demo-distributor@wasil.demo']]) {
   await step(`LIVE|consistency|${label}`, async () => {
