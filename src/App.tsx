@@ -70,8 +70,30 @@ function MemberLoadError({ message }: { message: string }) {
   );
 }
 
+// Signed in, but not an active member of any shop (removed, switched off, or
+// a shop still being set up): one clear screen, instead of permission notices
+// and pages waiting forever for a shop that is not there
+function NoShopScreen() {
+  const { retryMemberData, signOut } = useAuth();
+  const [retrying, setRetrying] = useState(false);
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background p-4" dir="rtl">
+      <div className="max-w-sm w-full bg-card border border-border rounded-2xl p-6 text-center space-y-4">
+        <p className="font-semibold text-foreground">حسابك غير مرتبط بمتجر نشط</p>
+        <p className="text-sm text-muted-foreground">قد يكون حسابك أُوقف أو أُزيل من المتجر. تواصل مع مالك المتجر، أو أعد المحاولة إن كان المتجر قيد الإنشاء.</p>
+        <div className="flex gap-2 justify-center">
+          <Button disabled={retrying} onClick={async () => { setRetrying(true); await retryMemberData(); setRetrying(false); }}>
+            {retrying ? 'جارٍ المحاولة…' : 'إعادة المحاولة'}
+          </Button>
+          <Button variant="outline" onClick={() => signOut()}>تسجيل الخروج</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading, memberError } = useAuth();
+  const { user, loading, memberError, memberLoading, merchantUser } = useAuth();
   const { isLocked } = useSubscription();
 
   if (loading) {
@@ -88,6 +110,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (memberError) {
     return <MemberLoadError message={memberError} />;
+  }
+
+  if (!memberLoading && !merchantUser) {
+    return <NoShopScreen />;
   }
 
   if (isLocked) {

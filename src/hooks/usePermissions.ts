@@ -43,11 +43,17 @@ export function usePermissions() {
   // where the list came from: the server, the role map (function not
   // installed), or nothing (the call failed)
   const [source, setSource] = useState<PermissionSource>('none');
+  // the member the list belongs to. Between the member arriving and the list
+  // being read there is a render where `loading` is still false from before —
+  // a custom role then looked like a role with no permissions, and the guards
+  // sent it away (the employee landed on /organization from every page)
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!user || !merchantUser) {
       setPermissions([]);
       setSource('none');
+      setLoadedFor(null);
       setLoading(false);
       return;
     }
@@ -88,6 +94,7 @@ export function usePermissions() {
       setSource('server');
       setPermissions((data as unknown as string[]) || []);
     }
+    setLoadedFor(merchantUser.id);
     setLoading(false);
   }, [user, merchantUser]);
 
@@ -113,6 +120,7 @@ export function usePermissions() {
 
   // For a system role the map is known with the session, so nothing waits on
   // the round trip; a custom role, or a session not read yet, does
-  const settled = memberLoading || (role && role !== 'custom' ? false : loading);
+  const settled = memberLoading
+    || (role && role !== 'custom' ? false : loading || (!!merchantUser && loadedFor !== merchantUser.id));
   return { permissions: [...set], can, canAny, loading: settled, source, refresh: load };
 }

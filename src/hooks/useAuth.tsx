@@ -246,6 +246,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             branch_id: branchData?.id
           });
 
+        // the membership is written after the sign-in event already read
+        // the account: read it again so the new owner lands in their shop
+        await fetchMerchantData(data.user.id);
+
         // The trial is started by the merchants_start_trial trigger, on the
         // database clock. It used to be inserted here from new Date(), which
         // meant the device clock decided when the trial ended — and merchants
