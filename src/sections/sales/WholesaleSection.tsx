@@ -195,7 +195,8 @@ export default function WholesaleSection() {
 
   const handlePayment = async () => {
     if (!selectedCredit || !paymentAmount) return;
-    await recordPayment(selectedCredit.id, parseFloat(paymentAmount));
+    const ok = await recordPayment(selectedCredit.id, parseFloat(paymentAmount));
+    if (!ok) return;
     setShowPaymentDialog(false);
     setSelectedCredit(null);
     setPaymentAmount('');

@@ -277,7 +277,8 @@ export function useStoreSettings() {
   };
 
   const removeCategory = async (id: string) => {
-    await supabase.from('store_categories').delete().eq('id', id);
+    const { error } = await supabase.from('store_categories').delete().eq('id', id);
+    if (error) { toast.error(friendlyError(error)); return; }
     await fetchSettings();
     toast.success('تم حذف التصنيف');
   };

@@ -722,7 +722,8 @@ function StocktakeDetailDialog({ stocktake, open, onOpenChange, getItems, update
   };
 
   const handleFinalize = async () => {
-    await onFinalize(stocktake.id, adjustInventory);
+    const ok = await onFinalize(stocktake.id, adjustInventory);
+    if (!ok) return;
     setShowFinalize(false);
     await onRefresh();
     await loadItems();

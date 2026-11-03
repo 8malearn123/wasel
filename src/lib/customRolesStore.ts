@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { friendlyError } from '@/lib/errors';
 
 /**
  * Custom roles WITHOUT the database migration.
@@ -86,7 +87,8 @@ export async function saveCustomRolesConfig(merchantId: string, config: CustomRo
     entity_type: CUSTOM_ROLES_ENTITY,
     new_data: config as never,
   });
-  return error ? { error: error.message } : {};
+  // in the reader's words, not the server's («Failed to fetch»)
+  return error ? { error: friendlyError(error) } : {};
 }
 
 /** The role a member holds in the store, if any. */

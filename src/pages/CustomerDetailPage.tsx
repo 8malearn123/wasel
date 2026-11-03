@@ -110,10 +110,12 @@ export default function CustomerDetailPage() {
     });
     if (txErr) { toast.error(friendlyError(txErr)); return; }
     const newPoints = Math.max(0, customer.loyalty_points + pts);
-    await supabase.from('customers').update({
+    const { error: balanceErr } = await supabase.from('customers').update({
       loyalty_points: newPoints,
       loyalty_tier: tierFromPoints(newPoints),
     }).eq('id', customer.id);
+    // the movement is recorded; only the running balance failed — say so
+    if (balanceErr) toast.warning(t ? `سُجّلت الحركة، لكن تعذّر تحديث رصيد النقاط: ${friendlyError(balanceErr)}` : `Recorded, but the points balance was not updated: ${friendlyError(balanceErr)}`);
     setCustomer({ ...customer, loyalty_points: newPoints, loyalty_tier: tierFromPoints(newPoints) });
     const { data: l } = await supabase.from('loyalty_transactions').select('*').eq('customer_id', customer.id)
       .order('created_at', { ascending: false }).limit(100);

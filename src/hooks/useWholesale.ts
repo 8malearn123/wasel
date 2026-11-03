@@ -199,14 +199,18 @@ export function useWholesale() {
   };
 
   const toggleListing = async (id: string, is_active: boolean) => {
-    await supabase.from('wholesale_listings').update({ is_active } as any).eq('id', id);
+    const { error } = await supabase.from('wholesale_listings').update({ is_active } as any).eq('id', id);
+    if (error) { toast.error(friendlyError(error)); return false; }
     fetchAll();
+    return true;
   };
 
   const deleteListing = async (id: string) => {
-    await supabase.from('wholesale_listings').delete().eq('id', id);
+    const { error } = await supabase.from('wholesale_listings').delete().eq('id', id);
+    if (error) { toast.error(friendlyError(error)); return false; }
     toast.success('تم حذف المنتج');
     fetchAll();
+    return true;
   };
 
   const createOrder = async (listingId: string, quantity: number, listing: WholesaleListing, creditType?: 'invoice' | 'consignment', dueDate?: string) => {
@@ -262,28 +266,35 @@ export function useWholesale() {
   };
 
   const updateOrderStatus = async (orderId: string, status: string) => {
-    await supabase.from('wholesale_orders').update({ status } as any).eq('id', orderId);
+    const { error } = await supabase.from('wholesale_orders').update({ status } as any).eq('id', orderId);
+    if (error) { toast.error(friendlyError(error)); return false; }
     toast.success('تم تحديث حالة الطلب');
     fetchAll();
+    return true;
   };
 
+  /** true when recorded — «تم تسجيل الدفعة» used to show whatever the server said */
   const recordPayment = async (creditId: string, amount: number) => {
     const credit = myCredits.find(c => c.id === creditId) || receivedCredits.find(c => c.id === creditId);
-    if (!credit) return;
+    if (!credit) return false;
+    const invalid = amountProblem([{ label: 'مبلغ الدفعة', value: amount, min: 0.01 }]);
+    if (invalid) { toast.error(invalid); return false; }
 
     const newPaid = credit.paid_amount + amount;
     const newRemaining = credit.amount - newPaid;
     const newStatus = newRemaining <= 0 ? 'paid' : 'partial';
 
-    await supabase.from('wholesale_credit_transactions' as any).update({
+    const { error } = await supabase.from('wholesale_credit_transactions' as any).update({
       paid_amount: newPaid,
       remaining_amount: Math.max(0, newRemaining),
       status: newStatus,
       paid_at: newRemaining <= 0 ? new Date().toISOString() : null,
     } as any).eq('id', creditId);
+    if (error) { toast.error(friendlyError(error)); return false; }
 
     toast.success('تم تسجيل الدفعة');
     fetchAll();
+    return true;
   };
 
   // Credit stats

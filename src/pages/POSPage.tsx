@@ -77,7 +77,7 @@ export default function POSPage() {
   }, [merchant?.id, user?.id, merchantUser?.role]);
 
   const { devices, accessories, loading, refetch, searchByIMEI, searchBySkuOrName } = usePOSInventory();
-  const { createSale, markAsPrinted, sales, loading: salesLoading, updateSale, deleteSale, refetch: refetchSales } = useSales();
+  const { createSale, markAsPrinted, sales, loading: salesLoading, error: salesError, updateSale, deleteSale, refetch: refetchSales } = useSales();
   const { activity, loading: activityLoading, refetch: refetchActivity } = usePOSActivity();
 
   const isCashier = isCashierMember(merchantUser);
@@ -327,6 +327,7 @@ export default function POSPage() {
             sales={cashierSales}
             activity={activity}
             loading={salesLoading || activityLoading}
+            error={salesError}
             isCashier={isCashier}
             onUpdateSale={updateSale}
             onDeleteSale={deleteSale}

@@ -38,9 +38,14 @@ export default function CustomersSection() {
     return matchSearch && matchTier;
   });
 
+  const [saving, setSaving] = useState(false);
+  // a failed save keeps the dialog and what was typed in it
   const handleAdd = async () => {
-    if (!form.name.trim()) return;
-    await createCustomer(form);
+    if (!form.name.trim() || saving) return;
+    setSaving(true);
+    const ok = await createCustomer(form);
+    setSaving(false);
+    if (!ok) return;
     setForm({ name: '', phone: '', email: '', address: '', notes: '' });
     setShowAddDialog(false);
   };
@@ -48,7 +53,8 @@ export default function CustomersSection() {
   const handleAddPoints = async (positive: boolean) => {
     if (!selectedCustomer || !pointsAmount) return;
     const pts = parseInt(pointsAmount) * (positive ? 1 : -1);
-    await addLoyaltyPoints(selectedCustomer.id, pts, pointsDesc || (positive ? 'إضافة نقاط يدوية' : 'استبدال نقاط'));
+    const ok = await addLoyaltyPoints(selectedCustomer.id, pts, pointsDesc || (positive ? 'إضافة نقاط يدوية' : 'استبدال نقاط'));
+    if (!ok) return;
     setPointsAmount('');
     setPointsDesc('');
     setShowLoyaltyDialog(false);
@@ -85,7 +91,7 @@ export default function CustomersSection() {
                 <div><Label>{t ? 'البريد' : 'Email'}</Label><Input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
                 <div><Label>{t ? 'العنوان' : 'Address'}</Label><Input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
                 <div><Label>{t ? 'ملاحظات' : 'Notes'}</Label><Textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>
-                <Button onClick={handleAdd} className="w-full">{t ? 'حفظ' : 'Save'}</Button>
+                <Button onClick={handleAdd} className="w-full" disabled={saving}>{saving ? (t ? 'جارٍ الحفظ…' : 'Saving…') : (t ? 'حفظ' : 'Save')}</Button>
               </div>
             </DialogContent>
           </Dialog>

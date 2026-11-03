@@ -47,6 +47,7 @@ export function useSales() {
     if (!merchant) return;
     
     setLoading(true);
+    setError(null);
     try {
       let query = supabase
         .from('sales')
@@ -307,24 +308,34 @@ export function useSales() {
       return { error: itemsError };
     }
 
+    // Stock back first; the invoice is deleted only once every item is back.
+    // A failure used to be skipped and the invoice deleted anyway, so the
+    // goods were neither sold nor in stock.
+    const stopRestock = (err: unknown) => {
+      toast.error(`لم تُحذف الفاتورة: تعذّر إرجاع أحد الأصناف إلى المخزون. راجع المخزون قبل إعادة المحاولة. ${friendlyError(err)}`, { duration: 10000 });
+      return { error: err as Error };
+    };
     for (const item of items || []) {
       if (item.device_id) {
-        await supabase
+        const { error: deviceError } = await supabase
           .from('devices')
           .update({ status: 'available' })
           .eq('id', item.device_id);
+        if (deviceError) return stopRestock(deviceError);
       } else if (item.accessory_id) {
-        const { data: accessory } = await supabase
+        const { data: accessory, error: readError } = await supabase
           .from('accessories')
           .select('quantity')
           .eq('id', item.accessory_id)
           .single();
+        if (readError) return stopRestock(readError);
 
         if (accessory) {
-          await supabase
+          const { error: qtyError } = await supabase
             .from('accessories')
             .update({ quantity: accessory.quantity + item.quantity })
             .eq('id', item.accessory_id);
+          if (qtyError) return stopRestock(qtyError);
         }
       }
     }

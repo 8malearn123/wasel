@@ -69,8 +69,9 @@ export function useCustomers() {
 
   useEffect(() => { fetchCustomers(); }, [fetchCustomers]);
 
-  const createCustomer = async (data: { name: string; phone?: string; email?: string; address?: string; notes?: string }) => {
-    if (!merchant) return;
+  /** true when saved — the caller keeps its form open otherwise */
+  const createCustomer = async (data: { name: string; phone?: string; email?: string; address?: string; notes?: string }): Promise<boolean> => {
+    if (!merchant) return false;
     const { error } = await supabase.from('customers').insert({
       merchant_id: merchant.id,
       name: data.name,
@@ -79,9 +80,10 @@ export function useCustomers() {
       address: data.address || null,
       notes: data.notes || null,
     });
-    if (error) { toast.error(friendlyError(error)); return; }
+    if (error) { toast.error(friendlyError(error)); return false; }
     toast.success('تمت إضافة العميل');
     fetchCustomers();
+    return true;
   };
 
   const updateCustomer = async (id: string, data: Partial<Customer>) => {
@@ -91,8 +93,9 @@ export function useCustomers() {
     fetchCustomers();
   };
 
-  const addLoyaltyPoints = async (customerId: string, points: number, description: string) => {
-    if (!merchant || !user) return;
+  /** true when recorded — the caller keeps its form open otherwise */
+  const addLoyaltyPoints = async (customerId: string, points: number, description: string): Promise<boolean> => {
+    if (!merchant || !user) return false;
     const { error: txError } = await supabase.from('loyalty_transactions').insert({
       merchant_id: merchant.id,
       customer_id: customerId,
@@ -101,19 +104,22 @@ export function useCustomers() {
       description,
       created_by: user.id,
     });
-    if (txError) { toast.error(friendlyError(txError)); return; }
+    if (txError) { toast.error(friendlyError(txError)); return false; }
 
     const customer = customers.find(c => c.id === customerId);
     if (customer) {
       const newPoints = customer.loyalty_points + points;
-      await supabase.from('customers').update({
+      const { error: balanceError } = await supabase.from('customers').update({
         loyalty_points: Math.max(0, newPoints),
         loyalty_tier: getTier(Math.max(0, newPoints)),
       }).eq('id', customerId);
+      // the movement is recorded; only the running balance failed — say so
+      if (balanceError) toast.warning(`سُجّلت الحركة، لكن تعذّر تحديث رصيد النقاط: ${friendlyError(balanceError)}`);
     }
 
     toast.success(points > 0 ? `تمت إضافة ${points} نقطة` : `تم استبدال ${Math.abs(points)} نقطة`);
     fetchCustomers();
+    return true;
   };
 
   const getLoyaltyHistory = async (customerId: string): Promise<LoyaltyTransaction[]> => {

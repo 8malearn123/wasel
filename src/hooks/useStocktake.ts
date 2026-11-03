@@ -160,7 +160,14 @@ export function useStocktake() {
     }
 
     if (items.length > 0) {
-      await supabase.from('stocktake_items').insert(items as any);
+      const { error: itemsError } = await supabase.from('stocktake_items').insert(items as any);
+      if (itemsError) {
+        // a stocktake with no lines to count is not a stocktake: remove it
+        await supabase.from('stocktakes').delete().eq('id', (stocktake as any).id);
+        toast.error(friendlyError(itemsError));
+        await fetchStocktakes();
+        return null;
+      }
       await supabase.from('stocktakes').update({
         total_items: items.length,
       } as any).eq('id', (stocktake as any).id);
@@ -203,6 +210,12 @@ export function useStocktake() {
     return true;
   };
 
+  /**
+   * Inventory first, then the stocktake is closed. Every adjustment sets an
+   * absolute quantity, so a retry after a partial failure is safe; closing
+   * first would leave a «completed» stocktake whose stock was never fixed.
+   * It used to ignore every answer and say «done» either way.
+   */
   const finalizeStocktake = async (stocktakeId: string, adjustInventory: boolean) => {
     if (!user) return false;
 
@@ -210,33 +223,36 @@ export function useStocktake() {
     const countedItems = items.filter(i => i.counted_quantity !== null);
     const discrepancies = countedItems.filter(i => i.discrepancy !== 0);
 
-    // Update stocktake summary
-    await supabase.from('stocktakes').update({
+    if (adjustInventory) {
+      let failed = 0;
+      let firstError: unknown = null;
+      for (const item of discrepancies) {
+        if (item.counted_quantity === null) continue;
+        const table = item.item_type === 'accessory' ? 'accessories' : item.item_type === 'repair_part' ? 'repair_parts' : null;
+        // Devices: if counted_quantity is 0, mark as missing (we skip for now)
+        if (!table) continue;
+        const { error } = await supabase.from(table)
+          .update({ quantity: item.counted_quantity } as any)
+          .eq('id', item.item_id);
+        if (error) { failed++; firstError ??= error; }
+      }
+      if (failed > 0) {
+        toast.error(`تعذّر تعديل كمية ${failed} صنف، فلم يُغلق الجرد. ${friendlyError(firstError)}`);
+        return false;
+      }
+    }
+
+    const { error: closeError } = await supabase.from('stocktakes').update({
       status: 'completed' as any,
       completed_at: new Date().toISOString(),
       completed_by: user.id,
       counted_items: countedItems.length,
       discrepancy_count: discrepancies.length,
     } as any).eq('id', stocktakeId);
+    if (closeError) { toast.error(friendlyError(closeError)); return false; }
 
-    // Adjust inventory if requested
     if (adjustInventory) {
-      for (const item of discrepancies) {
-        if (item.counted_quantity === null) continue;
-        
-        if (item.item_type === 'accessory') {
-          await supabase.from('accessories')
-            .update({ quantity: item.counted_quantity } as any)
-            .eq('id', item.item_id);
-        } else if (item.item_type === 'repair_part') {
-          await supabase.from('repair_parts')
-            .update({ quantity: item.counted_quantity } as any)
-            .eq('id', item.item_id);
-        }
-        // Devices: if counted_quantity is 0, mark as missing (we skip for now)
-      }
-
-      // Log activity
+      // the record of it — optional, never blocks the stocktake
       await supabase.from('activity_logs').insert({
         merchant_id: merchant!.id,
         user_id: user.id,
@@ -260,11 +276,13 @@ export function useStocktake() {
   };
 
   const cancelStocktake = async (stocktakeId: string) => {
-    await supabase.from('stocktakes').update({
+    const { error } = await supabase.from('stocktakes').update({
       status: 'cancelled' as any,
     } as any).eq('id', stocktakeId);
+    if (error) { toast.error(friendlyError(error)); return false; }
     await fetchStocktakes();
     toast.success('تم إلغاء الجرد');
+    return true;
   };
 
   return {

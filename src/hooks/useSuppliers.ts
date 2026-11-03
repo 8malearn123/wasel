@@ -267,13 +267,17 @@ export function usePurchaseOrders() {
 
     // Update supplier balance
     const remaining = Number(order.total_amount) - newPaidAmount;
-    await supabase
+    const { error: balanceError } = await supabase
       .from('suppliers')
       .update({ balance: remaining })
       .eq('id', order.supplier_id);
 
     await fetchOrders();
-    toast.success('Payment recorded');
+    if (balanceError) {
+      toast.warning(`سُجّلت الدفعة على أمر الشراء، لكن تعذّر تحديث رصيد المورد: ${friendlyError(balanceError)}`);
+    } else {
+      toast.success('تم تسجيل الدفعة');
+    }
     
     return { error: null };
   };
@@ -296,11 +300,20 @@ export function usePurchaseOrders() {
     // don't insert them again on receipt.
     const hasExistingItems = (order.items?.length ?? 0) > 0;
 
-    // Add items to inventory
+    // Add items to inventory. Each write is checked: a refused device (an
+    // IMEI already in stock, say) used to be skipped silently and the order
+    // marked received anyway. Now the receipt stops there, says what was
+    // added before it, and the order is not marked received.
+    let added = 0;
+    const stop = (err: unknown, what: string) => {
+      toast.error(`توقّف الاستلام عند «${what}»${added ? ` بعد إضافة ${added} صنف للمخزون` : ''}، ولم يُعلَّم الطلب كمستلَم. ${friendlyError(err)}`, { duration: 10000 });
+      void fetchOrders();
+      return { error: err as Error };
+    };
     for (const item of items) {
       if (item.type === 'device' && item.imei && item.model) {
         // Create device
-        const { data: device } = await supabase
+        const { data: device, error: deviceError } = await supabase
           .from('devices')
           .insert({
             merchant_id: merchant.id,
@@ -318,9 +331,11 @@ export function usePurchaseOrders() {
           })
           .select()
           .single();
+        if (deviceError) return stop(deviceError, `${item.model} (${item.imei})`);
+        added++;
 
         if (device && !hasExistingItems) {
-          await supabase
+          const { error: lineError } = await supabase
             .from('purchase_order_items')
             .insert({
               purchase_order_id: orderId,
@@ -328,24 +343,28 @@ export function usePurchaseOrders() {
               quantity: 1,
               unit_cost: item.unitCost
             });
+          if (lineError) return stop(lineError, `${item.model} (${item.imei})`);
         }
       } else if (item.type === 'accessory' && item.accessoryId) {
         // Update accessory quantity
-        const { data: acc } = await supabase
+        const { data: acc, error: readError } = await supabase
           .from('accessories')
           .select('quantity')
           .eq('id', item.accessoryId)
           .single();
+        if (readError) return stop(readError, 'إكسسوار');
 
         if (acc) {
-          await supabase
+          const { error: qtyError } = await supabase
             .from('accessories')
             .update({ quantity: acc.quantity + item.quantity })
             .eq('id', item.accessoryId);
+          if (qtyError) return stop(qtyError, 'إكسسوار');
+          added++;
         }
 
         if (!hasExistingItems) {
-          await supabase
+          const { error: lineError } = await supabase
             .from('purchase_order_items')
             .insert({
               purchase_order_id: orderId,
@@ -353,6 +372,7 @@ export function usePurchaseOrders() {
               quantity: item.quantity,
               unit_cost: item.unitCost
             });
+          if (lineError) return stop(lineError, 'إكسسوار');
         }
       }
     }
@@ -361,7 +381,8 @@ export function usePurchaseOrders() {
     if (opts?.markReceived === false) {
       if (opts?.note) {
         const prev = order.notes ? `${order.notes}\n` : '';
-        await supabase.from('purchase_orders').update({ notes: `${prev}${opts.note}` } as any).eq('id', orderId);
+        const { error: noteError } = await supabase.from('purchase_orders').update({ notes: `${prev}${opts.note}` } as any).eq('id', orderId);
+        if (noteError) toast.warning(`أُضيفت الكميات المستلمة، لكن تعذّر حفظ ملاحظة الباقي: ${friendlyError(noteError)}`);
       }
       await fetchOrders();
     } else {

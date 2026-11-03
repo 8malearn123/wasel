@@ -35,6 +35,15 @@ export type PermissionKey =
 // one message per session, however many components ask
 const told = new Set<string>();
 const tellOnce = (key: string, show: () => void) => { if (!told.has(key)) { told.add(key); show(); } };
+// A standing condition (the server function is not installed) is news once
+// per browser session, not on every page load
+const tellOncePerSession = (key: string, show: () => void) => {
+  try {
+    if (sessionStorage.getItem(`told:${key}`)) return;
+    sessionStorage.setItem(`told:${key}`, '1');
+  } catch { /* storage blocked: fall back to once per page load */ }
+  tellOnce(key, show);
+};
 
 export function usePermissions() {
   const { user, merchantUser, memberLoading } = useAuth();
@@ -74,7 +83,7 @@ export function usePermissions() {
             .filter(k => !CUSTOM_ROLE_FORBIDDEN.has(k) || (!!system && permissionsForLegacyRole(system).includes(k)))
         : permissionsForLegacyRole(merchantUser.role));
       if (merchantUser.role === 'owner' || merchantUser.role === 'admin') {
-        tellOnce('permissions-missing', () => toast.info(
+        tellOncePerSession('permissions-missing', () => toast.info(
           'خدمة الصلاحيات غير مفعّلة على الخادم بعد، فتُطبَّق الصلاحيات الأساسية لكل دور. يلزم تفعيلها من جهة الخادم.',
           { duration: 8000 },
         ));

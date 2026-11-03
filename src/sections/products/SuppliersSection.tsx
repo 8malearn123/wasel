@@ -784,7 +784,9 @@ function ReceiveDialog({ open, onOpenChange, order, onReceive, isRTL }: { open: 
             const full = verified.length === receiveItems.length;
             const note = full ? undefined
               : `استلام جزئي بتاريخ ${new Date().toLocaleDateString()}: تم استلام ${verified.length} من ${receiveItems.length} صنف`;
-            await onReceive(order.id, items, { markReceived: full, note });
+            const result = await onReceive(order.id, items, { markReceived: full, note });
+            // the hook has said what stopped it; the dialog stays as it was
+            if (result?.error) { setLoading(false); return; }
             toast.success(full
               ? (isRTL ? 'تم استلام الطلب كامل وإدخاله للمخزون' : 'Order fully received')
               : (isRTL ? `تم استلام ${verified.length} صنف — الطلب يظل مفتوحاً للباقي` : `Received ${verified.length} items — order stays open`));
