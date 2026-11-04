@@ -29,7 +29,7 @@ async function all(path, t) {
 }
 
 const browser = await chromium.launch({ channel: 'chrome' });
-for (const [label, email] of [['Max', 'demo-distributor@wasil.demo'], ['Pro', 'demo-enterprise@wasil.demo']]) {
+for (const [label, email] of [['Max', 'demo-distributor@wasil.demo']]) {
   const t = await token(email);
   const me = await (await fetch(`${SUPA}/rest/v1/merchant_users?select=merchant_id&limit=1`, { headers: { apikey: ANON, Authorization: `Bearer ${t}` } })).json();
   const M = me[0].merchant_id;
@@ -99,22 +99,11 @@ for (const [label, email] of [['Max', 'demo-distributor@wasil.demo'], ['Pro', 'd
   await p.getByRole('tab', { name: /دخول بالإيميل/ }).click(); await p.locator('#email').fill(email); await p.locator('#password').fill('demo1234');
   await p.getByRole('button', { name: /تسجيل الدخول/ }).click(); await p.waitForURL(u => !u.pathname.startsWith('/auth'), { timeout: 25000 }).catch(() => {}); await sleep(4000);
   const cardsOf = () => p.evaluate(() => [...document.querySelectorAll('main [class*="rounded"]')].filter(e => e.children.length < 8 && /ر\.س|٪|%/.test(e.innerText) && e.innerText.length < 160).map(e => e.innerText.replace(/\s+/g, ' ')).slice(0, 12));
-  await p.goto(`${SITE}/`); await sleep(9000);
-  out(`${label}|app:dashboard`, await cardsOf());
-  await p.goto(`${SITE}/reports?tab=sales`); await sleep(9000);
-  out(`${label}|app:sales`, await cardsOf());
-  await p.goto(`${SITE}/reports?tab=table-sales`); await sleep(9000);
-  const period = await p.locator('main button, main [role="combobox"]').allInnerTexts();
-  out(`${label}|app:table-sales`, { stats: await cardsOf(), controls: period.map(x => x.trim()).filter(Boolean).slice(0, 10), rowsInfo: (await p.locator('main').innerText()).match(/(\d+)\s*(من|of)\s*(\d+)|عرض[^\n]{0,40}/g)?.slice(0, 3) });
-  // try «all time» if the table has a period control
-  const allBtn = p.locator('main button, [role="option"]').filter({ hasText: /كل الفترات|الكل|كل الوقت/ }).first();
-  if (await allBtn.count()) { await allBtn.click().catch(() => {}); await sleep(2500); out(`${label}|app:table-sales(all)`, await cardsOf()); }
-  await p.goto(`${SITE}/reports?tab=employees`); await sleep(8000);
-  out(`${label}|app:employees`, (await p.locator('main').innerText()).replace(/\s+/g, ' ').slice(0, 700));
-  await p.goto(`${SITE}/reports?tab=inventory`); await sleep(8000);
-  out(`${label}|app:inventory`, await cardsOf());
-  await p.goto(`${SITE}/sales?tab=closings`); await sleep(8000);
-  out(`${label}|app:closings`, (await p.locator('main').innerText()).replace(/\s+/g, ' ').slice(0, 600));
+  const since = new Date(Date.now() - 31 * 864e5).toISOString();
+  const q = await fetch(`${SUPA}/rest/v1/sales?select=total_amount,tax_amount,payment_method,items:sale_items(cost_at_sale,quantity)&merchant_id=eq.${M}&sale_date=gte.${since}&order=id`, { headers: { apikey: ANON, Authorization: `Bearer ${t}`, Range: '0-999' } });
+  out(`${label}|summary-query`, { status: q.status, body: (await q.text()).slice(0, 300) });
+  await p.goto(`${SITE}/`); await sleep(14000);
+  out(`${label}|app:summary-card`, (await p.locator('main').innerText()).replace(/\s+/g, ' ').match(/ملخص مالي.{0,260}/)?.[0] || 'NOT FOUND');
   await ctx.close();
 }
 await browser.close();
