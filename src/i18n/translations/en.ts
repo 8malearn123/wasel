@@ -464,7 +464,7 @@ export const en = {
     noSalesData: "No sales data yet",
     noBranchData: "No branch data",
     currency: "SAR",
-    changeFromLastMonth: "vs last month",
+    changeFromLastMonth: "vs the same days last month",
   },
 
   // Users

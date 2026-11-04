@@ -5,68 +5,62 @@ import { useLanguage } from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { subDays, startOfDay } from "date-fns";
+import { saleTotal, saleCost, saleProfit } from "@/lib/salesMath";
 
 export function FinancialSummary() {
   const { isRTL } = useLanguage();
   const { merchant } = useAuth();
   const [data, setData] = useState({
     totalSalesMonth: 0,
+    vatMonth: 0,
     totalCostMonth: 0,
     grossProfit: 0,
     cashSales: 0,
     cardSales: 0,
     transferSales: 0,
+    mixedSales: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!merchant) return;
     setLoading(true);
-
+    setFailed(false);
     const thirtyDaysAgo = startOfDay(subDays(new Date(), 30)).toISOString();
 
-    const { data: sales } = await supabase
-      .from('sales')
-      .select('total_amount, payment_method')
-      .eq('merchant_id', merchant.id)
-      .gte('sale_date', thirtyDaysAgo);
-
-    // Get cost data from sale_items
-    const { data: salesWithItems } = await supabase
-      .from('sales')
-      .select('id')
-      .eq('merchant_id', merchant.id)
-      .gte('sale_date', thirtyDaysAgo);
-
-    let totalCost = 0;
-    if (salesWithItems && salesWithItems.length > 0) {
-      const saleIds = salesWithItems.map(s => s.id);
-      // Fetch in batches
-      for (let i = 0; i < saleIds.length; i += 50) {
-        const batch = saleIds.slice(i, i + 50);
-        const { data: items } = await supabase
-          .from('sale_items')
-          .select('cost_at_sale, quantity')
-          .in('sale_id', batch);
-
-        if (items) {
-          totalCost += items.reduce((s, item) => s + (Number(item.cost_at_sale || 0) * item.quantity), 0);
-        }
-      }
+    // one read for totals, VAT and cost, a page at a time (the server stops a
+    // single answer at 1,000 rows). A refused read used to show zeros.
+    type Row = { total_amount: number; tax_amount: number | null; payment_method: string; items: { cost_at_sale: number | null; quantity: number }[] | null };
+    const rows: Row[] = [];
+    for (let from = 0; ; from += 1000) {
+      const { data: page, error } = await supabase
+        .from('sales')
+        .select('total_amount, tax_amount, payment_method, items:sale_items(cost_at_sale, quantity)')
+        .eq('merchant_id', merchant.id)
+        .gte('sale_date', thirtyDaysAgo)
+        .order('id')
+        .range(from, from + 999);
+      if (error) { setFailed(true); setLoading(false); return; }
+      rows.push(...((page || []) as unknown as Row[]));
+      if (!page || page.length < 1000) break;
     }
 
-    const totalSales = (sales || []).reduce((s, r) => s + Number(r.total_amount || 0), 0);
-    const cashSales = (sales || []).filter(s => s.payment_method === 'cash').reduce((s, r) => s + Number(r.total_amount || 0), 0);
-    const cardSales = (sales || []).filter(s => s.payment_method === 'card').reduce((s, r) => s + Number(r.total_amount || 0), 0);
-    const transferSales = (sales || []).filter(s => s.payment_method === 'bank_transfer').reduce((s, r) => s + Number(r.total_amount || 0), 0);
+    const byMethod = (m: string) => rows.filter(s => s.payment_method === m).reduce((t, s) => t + saleTotal(s), 0);
+    const totalSales = rows.reduce((t, s) => t + saleTotal(s), 0);
+    const vat = rows.reduce((t, s) => t + Number(s.tax_amount || 0), 0);
+    const cost = rows.reduce((t, s) => t + saleCost(s), 0);
 
     setData({
       totalSalesMonth: totalSales,
-      totalCostMonth: totalCost,
-      grossProfit: totalSales - totalCost,
-      cashSales,
-      cardSales,
-      transferSales,
+      vatMonth: vat,
+      totalCostMonth: cost,
+      // before VAT: the tax is collected for the state, not earned
+      grossProfit: rows.reduce((t, s) => t + saleProfit(s), 0),
+      cashSales: byMethod('cash'),
+      cardSales: byMethod('card'),
+      transferSales: byMethod('bank_transfer'),
+      mixedSales: byMethod('mixed'),
     });
     setLoading(false);
   }, [merchant]);
@@ -79,17 +73,20 @@ export function FinancialSummary() {
 
   const items = [
     { label: isRTL ? 'إجمالي المبيعات (30 يوم)' : 'Total Sales (30d)', value: formatNum(data.totalSalesMonth), icon: ArrowUpRight, color: 'text-success' },
+    { label: isRTL ? 'منها ضريبة القيمة المضافة' : 'of which VAT', value: formatNum(data.vatMonth), icon: ArrowDownRight, color: 'text-muted-foreground' },
     { label: isRTL ? 'إجمالي التكاليف' : 'Total Costs', value: formatNum(data.totalCostMonth), icon: ArrowDownRight, color: 'text-destructive' },
-    { label: isRTL ? 'إجمالي الربح' : 'Gross Profit', value: formatNum(data.grossProfit), icon: Wallet, color: data.grossProfit >= 0 ? 'text-success' : 'text-destructive' },
+    { label: isRTL ? 'إجمالي الربح (بعد الضريبة)' : 'Gross Profit (ex VAT)', value: formatNum(data.grossProfit), icon: Wallet, color: data.grossProfit >= 0 ? 'text-success' : 'text-destructive' },
   ];
 
   const paymentBreakdown = [
     { label: isRTL ? 'نقداً' : 'Cash', value: data.cashSales, color: 'bg-success' },
     { label: isRTL ? 'بطاقة' : 'Card', value: data.cardSales, color: 'bg-primary' },
     { label: isRTL ? 'تحويل' : 'Transfer', value: data.transferSales, color: 'bg-accent' },
+    // a mixed (cash + card) sale used to vanish from the breakdown
+    { label: isRTL ? 'مختلط' : 'Mixed', value: data.mixedSales, color: 'bg-warning' },
   ];
 
-  const totalPayments = data.cashSales + data.cardSales + data.transferSales;
+  const totalPayments = data.cashSales + data.cardSales + data.transferSales + data.mixedSales;
 
   return (
     <motion.div
@@ -109,6 +106,13 @@ export function FinancialSummary() {
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : failed ? (
+          <div className="py-6 text-center space-y-2">
+            <p className="text-sm text-muted-foreground">{isRTL ? 'تعذّر تحميل الملخص المالي' : 'Could not load the financial summary'}</p>
+            <button type="button" className="text-sm text-primary underline" onClick={() => fetchData()}>
+              {isRTL ? 'إعادة المحاولة' : 'Try again'}
+            </button>
           </div>
         ) : (
           <>

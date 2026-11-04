@@ -14,7 +14,7 @@ const answer = (t: string): Answer => tables[t] ?? { data: [], error: null };
 const builder = (table: string) => {
   const b: any = {
     select: () => b, eq: () => b, neq: () => b, in: () => b, gte: () => b, lt: () => b, lte: () => b,
-    order: () => b, limit: () => b, insert: () => b, update: () => b, delete: () => b,
+    order: () => b, limit: () => b, range: () => b, insert: () => b, update: () => b, delete: () => b,
     single: async () => answer(table),
     maybeSingle: async () => answer(table),
     then: (res: any, rej: any) => Promise.resolve(answer(table)).then(res, rej),
