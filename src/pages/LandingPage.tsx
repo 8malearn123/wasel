@@ -19,9 +19,12 @@ const FEATURES = [
 ];
 
 const PLANS = [
-  { price: 99, popular: false, ar: { n: "باقة لايت", p: ["فرع واحد ومستخدمون بلا حدود", "نقطة بيع ومخزون كامل", "فواتير ضريبية برمز QR"] }, en: { n: "Lite Plan", p: ["1 branch, unlimited users", "Full POS and inventory", "Tax invoices with QR codes"] } },
-  { price: 399, popular: true, ar: { n: "باقة برو", p: ["فرع واحد ومستخدمون بلا حدود", "متجر إلكتروني وتقارير متقدمة", "كوبونات ونقاط ولاء ودعم 24/7"] }, en: { n: "Pro Plan", p: ["1 branch, unlimited users", "Online store & advanced reports", "Coupons, loyalty & 24/7 support"] } },
-  { price: 499, popular: false, ar: { n: "باقة ماكس", p: ["فرع واحد ومستخدمون بلا حدود", "أسعار جملة ودفع آجل", "مدير حساب مخصص ولوحة موزع"] }, en: { n: "Max Plan", p: ["1 branch, unlimited users", "Wholesale prices, credit terms", "Dedicated account manager"] } },
+  // Prices and limits as the plans table has them (Basic 99 · 1 branch · 3 users,
+  // Enterprise 399 · 10 · 50, Distributor 499 · 20 · 50). This page is public,
+  // before sign-in, so they are written here: change them with the table.
+  { price: 99, popular: false, ar: { n: "باقة لايت", p: ["فرع واحد و3 مستخدمين", "نقطة بيع ومخزون كامل", "فواتير ضريبية برمز QR"] }, en: { n: "Lite Plan", p: ["1 branch, 3 users", "Full POS and inventory", "Tax invoices with QR codes"] } },
+  { price: 399, popular: true, ar: { n: "باقة برو", p: ["10 فروع و50 مستخدمًا", "متجر إلكتروني وتقارير متقدمة", "عملاء ونقاط ولاء وصيانة ودعم 24/7"] }, en: { n: "Pro Plan", p: ["10 branches, 50 users", "Online store & advanced reports", "Customers, loyalty, repairs & 24/7 support"] } },
+  { price: 499, popular: false, ar: { n: "باقة ماكس", p: ["20 فرعًا و50 مستخدمًا", "بيع جملة بين التجار ودفع آجل", "استوديو تصميم المتجر ومدير حساب"] }, en: { n: "Max Plan", p: ["20 branches, 50 users", "B2B wholesale with credit terms", "Store design studio & account manager"] } },
 ];
 
 export default function LandingPage() {
