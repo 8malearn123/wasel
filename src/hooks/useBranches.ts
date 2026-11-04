@@ -4,6 +4,7 @@ import { useAuth } from './useAuth';
 import type { Branch, MerchantUser, Profile } from '@/types/database';
 import { toast } from 'sonner';
 import { loadCustomRolesConfig, storedRoleFor, CUSTOM_ROLE_BASE } from '@/lib/customRolesStore';
+import { MERCHANT_USER_COLUMNS } from '@/lib/merchantUsers';
 
 export function useBranches() {
   const { merchant, refreshMerchantData } = useAuth();
@@ -117,7 +118,7 @@ export function useMerchantUsers() {
     try {
       const { data, error } = await supabase
         .from('merchant_users')
-        .select('*, branch:branches(*)')
+        .select(`${MERCHANT_USER_COLUMNS}, branch:branches(*)`)
         .eq('merchant_id', merchant.id)
         .order('created_at');
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { MERCHANT_USER_COLUMNS } from '@/lib/merchantUsers';
 
 interface MerchantDetail {
   id: string;
@@ -154,7 +155,7 @@ export function useMerchantDetail(merchantId: string | undefined) {
       supabase.from('merchants').select('*').eq('id', merchantId).single(),
       supabase.from('subscriptions').select('*').eq('merchant_id', merchantId).maybeSingle(),
       supabase.from('branches').select('*').eq('merchant_id', merchantId).order('name'),
-      supabase.from('merchant_users').select('*, branch:branches(name)').eq('merchant_id', merchantId),
+      supabase.from('merchant_users').select(`${MERCHANT_USER_COLUMNS}, branch:branches(name)`).eq('merchant_id', merchantId),
       supabase.from('devices').select('*, branch:branches(name)').eq('merchant_id', merchantId).order('created_at', { ascending: false }).limit(500),
       supabase.from('accessories').select('*, branch:branches(name)').eq('merchant_id', merchantId).order('name'),
       supabase.from('sales').select('*, branch:branches(name)').eq('merchant_id', merchantId).order('sale_date', { ascending: false }).limit(500),

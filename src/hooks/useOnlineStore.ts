@@ -1,6 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { shippingOptions, shippingCost as shippingCostFor } from '@/lib/storeCheckout';
-import { roundSar, VAT_RATE } from '@/lib/money';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
@@ -431,12 +429,30 @@ export function useOnlineOrders() {
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
+  // Loyalty points are earned on a paid or delivered order, never at
+  // checkout — an order placed and never paid earns nothing. The function
+  // checks the order's state itself and awards each order once.
+  const awardLoyaltyFor = (orderId: string) => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+    supabase.functions.invoke('award-loyalty', {
+      body: {
+        merchant_id: order.merchant_id,
+        order_number: order.order_number,
+        customer_name: order.customer_name,
+        customer_phone: order.customer_phone,
+        customer_email: order.customer_email ?? null,
+      },
+    }).catch(() => { /* loyalty is optional */ });
+  };
+
   const updateOrderStatus = async (orderId: string, status: string) => {
     const { error } = await supabase
       .from('online_orders')
       .update({ status } as any)
       .eq('id', orderId);
     if (error) { toast.error(error.message); return; }
+    if (status === 'delivered') awardLoyaltyFor(orderId);
     await fetchOrders();
     toast.success('تم تحديث حالة الطلب');
   };
@@ -460,6 +476,7 @@ export function useOnlineOrders() {
       .update({ payment_status: status } as any)
       .eq('id', orderId);
     if (error) { toast.error(error.message); return; }
+    if (status === 'paid') awardLoyaltyFor(orderId);
     await fetchOrders();
     toast.success('تم تحديث حالة الدفع');
   };
@@ -541,67 +558,52 @@ export function usePublicStore(slug: string) {
     shipping_address: string;
     shipping_city: string;
     payment_method: string;
-    /** the shipping option chosen at checkout — its cost is looked up here, not taken from the page */
+    /** the shipping option chosen at checkout — the server looks its cost up */
     shipping_option?: string;
     items: { device_id?: string; accessory_id?: string; item_name: string; quantity: number; unit_price: number }[];
   }) => {
     if (!store) return null;
 
-    const { data: numData } = await supabase.rpc('generate_online_order_number', {
+    // The server prices every line from the merchant's own stock, applies the
+    // store's shipping rule and VAT, and always files the order as
+    // pending/unpaid — the browser only says what was picked and for whom.
+    const { items, ...customer } = orderData;
+    const { data, error } = await supabase.rpc('place_online_order' as never, {
       _merchant_id: store.merchant_id,
-    });
-    const orderNumber = numData || `ORD-${Date.now()}`;
+      _customer: customer,
+      _items: items.map(i => ({
+        device_id: i.device_id || null,
+        accessory_id: i.accessory_id || null,
+        quantity: i.quantity,
+      })),
+    } as never);
 
-    const subtotal = orderData.items.reduce((sum, i) => sum + i.unit_price * i.quantity, 0);
-    const option = shippingOptions(store, designExtras?.carriers).find(o => o.id === orderData.shipping_option);
-    const shippingCost = shippingCostFor(option, subtotal, store);
-    // VAT on the goods and on the delivery fee — the same sums the checkout page shows
-    const taxAmount = roundSar((subtotal + Number(shippingCost || 0)) * VAT_RATE);
-    const totalAmount = roundSar(subtotal + taxAmount + shippingCost);
-
-    const { data: order, error: orderErr } = await supabase
-      .from('online_orders')
-      .insert({
-        merchant_id: store.merchant_id,
-        order_number: orderNumber,
-        customer_name: orderData.customer_name,
-        customer_phone: orderData.customer_phone,
-        customer_email: orderData.customer_email || null,
-        shipping_address: orderData.shipping_address,
-        shipping_city: orderData.shipping_city,
-        shipping_cost: shippingCost,
-        // the carrier the customer picked, so the shipping step starts from it
-        // and the tracking link points at the right company ('store' = the shop's own delivery);
-        // stored the way the column's enum accepts (see toOrderShipping)
-        ...toOrderShipping(option && option.id !== 'store' ? option.id : null),
-        payment_method: orderData.payment_method,
-        subtotal,
-        tax_amount: taxAmount,
-        total_amount: totalAmount,
-      } as any)
-      .select()
-      .single();
-
-    if (orderErr) { toast.error(orderErr.message); return null; }
-
-    const items = orderData.items.map(i => ({
-      order_id: (order as any).id,
-      device_id: i.device_id || null,
-      accessory_id: i.accessory_id || null,
-      item_name: i.item_name,
-      quantity: i.quantity,
-      unit_price: i.unit_price,
-    }));
-
-    const { error: itemsErr } = await supabase.from('online_order_items').insert(items as any);
-    if (itemsErr) {
-      // an order with no lines cannot be prepared or shipped; say so instead of thanking the customer
-      toast.error('تعذّر حفظ منتجات الطلب، يرجى المحاولة مرة أخرى');
-      console.error('[store] order items refused:', itemsErr.message);
+    if (error || !data) {
+      const reason = error?.message || '';
+      toast.error(
+        reason.includes('item_unavailable') ? 'أحد المنتجات لم يعد متوفراً بالكمية المطلوبة'
+        : reason.includes('invalid_customer') ? 'تحقق من الاسم ورقم الجوال والعنوان'
+        : reason.includes('invalid_shipping_option') ? 'اختر طريقة الشحن مرة أخرى'
+        : reason.includes('invalid_payment_method') ? 'طريقة الدفع هذه غير متاحة حالياً'
+        : reason.includes('store_not_available') ? 'المتجر غير متاح حالياً'
+        : 'تعذّر إرسال الطلب',
+      );
       return null;
     }
 
-    return { orderNumber, totalAmount, shippingCost };
+    const placed = data as unknown as {
+      order_number: string; subtotal: number; tax_amount: number;
+      shipping_cost: number; total_amount: number;
+      items: { device_id: string | null; accessory_id: string | null; item_name: string; quantity: number; unit_price: number }[];
+    };
+    return {
+      orderNumber: placed.order_number,
+      subtotal: Number(placed.subtotal),
+      taxAmount: Number(placed.tax_amount),
+      shippingCost: Number(placed.shipping_cost),
+      totalAmount: Number(placed.total_amount),
+      items: placed.items,
+    };
   };
 
   return { store, devices, accessories, categories, pages, designExtras, merchantLegal, loading, error, placeOrder };
@@ -609,24 +611,16 @@ export function usePublicStore(slug: string) {
 
 // ===== Public Order Tracking (no auth, verifies via last 4 digits of phone) =====
 export async function trackPublicOrder(orderNumber: string, phoneLast4: string) {
-  const { data: order, error } = await supabase
-    .from('online_orders')
-    .select('*')
-    .eq('order_number', orderNumber)
-    .maybeSingle();
+  // One order, and only when the last four digits match — answered by the
+  // server, so visitors never need read access to the orders table
+  const { data, error } = await supabase.rpc('track_online_order' as never, {
+    _order_number: orderNumber,
+    _phone_last4: phoneLast4,
+  } as never);
 
-  if (error || !order) return { error: 'الطلب غير موجود' };
-  const phone = (order as any).customer_phone as string;
-  if (!phone || phone.replace(/\D/g, '').slice(-4) !== phoneLast4) {
-    return { error: 'بيانات التحقق غير صحيحة' };
-  }
-
-  const { data: items } = await supabase
-    .from('online_order_items')
-    .select('*')
-    .eq('order_id', (order as any).id);
-
-  return { order: order as unknown as OnlineOrder, items: (items || []) as unknown as OnlineOrderItem[] };
+  if (error || !data) return { error: 'لم نجد طلباً بهذا الرقم وآخر 4 أرقام من الجوال' };
+  const res = data as unknown as { order: OnlineOrder; items: OnlineOrderItem[] };
+  return { order: res.order, items: res.items || [] };
 }
 
 // ===== Platform Admin Payouts Hook =====

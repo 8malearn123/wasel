@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
     // 3) Find the order (must belong to merchant)
     const { data: order, error: orderErr } = await supa
       .from('online_orders')
-      .select('id, total_amount, customer_phone, customer_name, customer_email')
+      .select('id, total_amount, customer_phone, customer_name, customer_email, status, payment_status')
       .eq('merchant_id', body.merchant_id)
       .eq('order_number', body.order_number)
       .maybeSingle();
@@ -74,6 +74,17 @@ Deno.serve(async (req) => {
     if (orderErr || !order) {
       return new Response(JSON.stringify({ error: 'order_not_found' }), {
         status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 3a) Points are earned on a paid or delivered order. The order's total
+    // is the server-priced one (place_online_order), but an order that is
+    // never paid must not earn anything — so checkout earns nothing, and the
+    // merchant's dashboard calls this again when it marks the order paid or
+    // delivered.
+    if (order.payment_status !== 'paid' && order.status !== 'delivered') {
+      return new Response(JSON.stringify({ awarded: false, reason: 'not_paid_yet' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
