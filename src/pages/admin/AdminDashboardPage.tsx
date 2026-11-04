@@ -11,6 +11,7 @@ import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { actionLabel, entityLabel } from '@/lib/activityLabels';
 import { usePlatformAdmin } from '@/hooks/usePlatformAdmin';
 import { useAdminTickets } from '@/hooks/useTickets';
 import { cn } from '@/lib/utils';
@@ -327,7 +328,7 @@ export default function AdminDashboardPage() {
                 <div key={log.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
                   <div>
                     <p className="text-sm font-medium">{(log as any).merchant?.name || '—'}</p>
-                    <p className="text-xs text-muted-foreground">{log.action} • {log.entity_type}</p>
+                    <p className="text-xs text-muted-foreground">{actionLabel(log.action)} • {entityLabel(log.entity_type)}</p>
                   </div>
                   <p className="text-xs text-muted-foreground">{format(new Date(log.created_at), 'HH:mm dd/MM')}</p>
                 </div>

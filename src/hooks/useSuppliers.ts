@@ -66,7 +66,7 @@ export function useSuppliers() {
 
     if (!error) {
       await fetchSuppliers();
-      toast.success('Supplier added');
+      toast.success('تمت إضافة المورد');
     } else {
       toast.error(friendlyError(error));
     }
@@ -84,7 +84,7 @@ export function useSuppliers() {
 
     if (!error) {
       await fetchSuppliers();
-      toast.success('Supplier updated');
+      toast.success('تم تحديث المورد');
     } else {
       toast.error(friendlyError(error));
     }
@@ -101,7 +101,7 @@ export function useSuppliers() {
 
     if (!error) {
       await fetchSuppliers();
-      toast.success('Supplier removed');
+      toast.success('تم حذف المورد');
     } else {
       toast.error(friendlyError(error));
     }
@@ -212,7 +212,7 @@ export function usePurchaseOrders() {
     }
 
     await fetchOrders();
-    toast.success(`Purchase order created: ${order.order_number}`);
+    toast.success(`تم إنشاء أمر الشراء ${order.order_number}`);
 
     return { data: order, error: null };
   };
@@ -238,7 +238,7 @@ export function usePurchaseOrders() {
     }
 
     await fetchOrders();
-    toast.success(`Order ${status}`);
+    toast.success(({ draft: 'تم حفظ أمر الشراء كمسودة', pending: 'أمر الشراء بانتظار الاعتماد', approved: 'تم اعتماد أمر الشراء', received: 'تم استلام أمر الشراء', cancelled: 'تم إلغاء أمر الشراء' } as Record<string, string>)[status] ?? 'تم تحديث أمر الشراء');
     
     return { error: null };
   };

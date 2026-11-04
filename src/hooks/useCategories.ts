@@ -63,7 +63,7 @@ export function useCategories() {
 
     if (!error) {
       await fetchCategories();
-      toast.success('Category added');
+      toast.success('تمت إضافة التصنيف');
     } else {
       toast.error(friendlyError(error));
     }
@@ -81,7 +81,7 @@ export function useCategories() {
 
     if (!error) {
       await fetchCategories();
-      toast.success('Category updated');
+      toast.success('تم تحديث التصنيف');
     } else {
       toast.error(friendlyError(error));
     }
@@ -97,7 +97,7 @@ export function useCategories() {
 
     if (!error) {
       await fetchCategories();
-      toast.success('Category deleted');
+      toast.success('تم حذف التصنيف');
     } else {
       toast.error(friendlyError(error));
     }

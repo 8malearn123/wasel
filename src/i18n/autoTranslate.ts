@@ -651,6 +651,14 @@ export const AR_EN: Record<string, string> = {
   "بحث بالاسم أو البريد...": "Search by name or email...",
   "قاعدة العملاء": "Customer Base",
   "قاعدة عملاء أساسية": "Basic customer base",
+  // notices that used to be written in English only
+  "تمت إضافة الفرع": "Branch added", "تم تحديث الفرع": "Branch updated", "تم حذف الفرع": "Branch removed",
+  "تم تحديث دور المستخدم": "User role updated", "تم تحديث فرع المستخدم": "User branch updated", "تم إيقاف المستخدم": "User deactivated",
+  "تم تحديث التصنيف": "Category updated",
+  "تمت إضافة المورد": "Supplier added", "تم تحديث المورد": "Supplier updated", "تم حذف المورد": "Supplier removed",
+  "تم حفظ أمر الشراء كمسودة": "Purchase order saved as draft", "أمر الشراء بانتظار الاعتماد": "Purchase order awaiting approval",
+  "تم اعتماد أمر الشراء": "Purchase order approved", "تم استلام أمر الشراء": "Purchase order received", "تم إلغاء أمر الشراء": "Purchase order cancelled",
+  "تم تحديث أمر الشراء": "Purchase order updated",
   // plan descriptions, as the plans actually are
   "إدارة مخزون الأجهزة والإكسسوارات وطباعة الملصقات": "Device and accessory inventory with label printing",
   "تسجيل اسم العميل وجواله على الفاتورة": "Customer name and mobile on the invoice",

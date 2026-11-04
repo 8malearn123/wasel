@@ -49,7 +49,7 @@ export function useBranches() {
     if (!error) {
       await fetchBranches();
       await refreshMerchantData();
-      toast.success('Branch added');
+      toast.success('تمت إضافة الفرع');
     } else {
       toast.error(friendlyError(error));
     }
@@ -68,7 +68,7 @@ export function useBranches() {
     if (!error) {
       await fetchBranches();
       await refreshMerchantData();
-      toast.success('Branch updated');
+      toast.success('تم تحديث الفرع');
     } else {
       toast.error(friendlyError(error));
     }
@@ -86,7 +86,7 @@ export function useBranches() {
     if (!error) {
       await fetchBranches();
       await refreshMerchantData();
-      toast.success('Branch removed');
+      toast.success('تم حذف الفرع');
     } else {
       toast.error(friendlyError(error));
     }
@@ -193,7 +193,7 @@ export function useMerchantUsers() {
 
     if (!error) {
       await fetchUsers();
-      toast.success('User role updated');
+      toast.success('تم تحديث دور المستخدم');
     } else {
       toast.error(friendlyError(error));
     }
@@ -209,7 +209,7 @@ export function useMerchantUsers() {
 
     if (!error) {
       await fetchUsers();
-      toast.success('User branch updated');
+      toast.success('تم تحديث فرع المستخدم');
     } else {
       toast.error(friendlyError(error));
     }
@@ -225,7 +225,7 @@ export function useMerchantUsers() {
 
     if (!error) {
       await fetchUsers();
-      toast.success('User deactivated');
+      toast.success('تم إيقاف المستخدم');
     } else {
       toast.error(friendlyError(error));
     }

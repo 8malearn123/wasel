@@ -94,7 +94,7 @@ export default function POSPage() {
             : item
         )
       );
-      toast.success(`Added ${`${device.brand || ''} ${device.model}`.trim()}`);
+      toast.success(`${isRTL ? 'أُضيف' : 'Added'} ${`${device.brand || ''} ${device.model}`.trim()}`);
       return;
     }
     const newItem: POSCartItem = {
@@ -108,14 +108,14 @@ export default function POSPage() {
       deviceId: device.id,
     };
     setCart(prev => [...prev, newItem]);
-    toast.success(`Added ${newItem.name}`);
+    toast.success(`${isRTL ? 'أُضيف' : 'Added'} ${newItem.name}`);
   };
 
   const addAccessoryToCart = (accessory: Accessory) => {
     const existing = cart.find(item => item.accessoryId === accessory.id);
     if (existing) {
       if (existing.quantity >= accessory.quantity) {
-        toast.error("Not enough stock");
+        toast.error(isRTL ? "الكمية المتوفرة في المخزون لا تكفي" : "Not enough stock");
         return;
       }
       setCart(prev =>
@@ -138,7 +138,7 @@ export default function POSPage() {
       };
       setCart(prev => [...prev, newItem]);
     }
-    toast.success(`Added ${accessory.name}`);
+    toast.success(`${isRTL ? 'أُضيف' : 'Added'} ${accessory.name}`);
   };
 
   const handleScan = async (code: string) => {
@@ -152,9 +152,9 @@ export default function POSPage() {
         if (accessories.length === 1) {
           addAccessoryToCart(accessories[0]);
         } else if (accessories.length > 0) {
-          toast.info(`Found ${accessories.length} accessories. Select from the grid.`);
+          toast.info(isRTL ? `وُجد ${accessories.length} صنفًا مطابقًا — اختر من القائمة.` : `Found ${accessories.length} accessories. Select from the grid.`);
         } else {
-          toast.error("No products found");
+          toast.error(isRTL ? `لا يوجد منتج بهذا الرمز: ${code}` : `No product matches ${code}`);
         }
       }
     } finally {
@@ -165,7 +165,7 @@ export default function POSPage() {
   const addWarrantyToCart = (warranty: POSCartItem) => {
     if (cart.some(item => item.id === warranty.id)) return;
     setCart(prev => [...prev, warranty]);
-    toast.success(`Added ${warranty.identifier}`);
+    toast.success(`${isRTL ? 'أُضيف' : 'Added'} ${warranty.identifier}`);
   };
 
   // A warranty is only worth anything while the device it covers is still being sold
