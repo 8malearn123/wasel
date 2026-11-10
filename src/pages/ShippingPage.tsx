@@ -205,7 +205,7 @@ function Shipments({
         {STAGES.map(s => (
           <button key={s.key} type="button" onClick={() => setStage(s.key)} aria-pressed={stage === s.key}
             className={cn('px-3 py-1.5 rounded-full border text-sm transition-colors',
-              stage === s.key ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border text-muted-foreground hover:text-foreground')}>
+              stage === s.key ? 'bg-foreground text-background border-foreground shadow-sm' : 'bg-card border-border text-muted-foreground hover:text-foreground')}>
             {t ? s.ar : s.en} <span className="ms-1 tabular-nums opacity-80">{orders.filter(o => shipmentStage(o) === s.key).length}</span>
           </button>
         ))}

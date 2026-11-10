@@ -129,6 +129,7 @@ export default function CustomersSection() {
               variant={tierFilter === 'all' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setTierFilter('all')}
+              className={cn(tierFilter === 'all' && "bg-foreground text-background hover:bg-foreground/90")}
             >
               {t ? 'الكل' : 'All'}
             </Button>
