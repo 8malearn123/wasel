@@ -28,6 +28,7 @@ import {
   LoadingState, EmptyState, ErrorState, PermissionDeniedState, MockDataBanner,
 } from '@/components/common/StateViews';
 import { friendlyError } from '@/lib/errors';
+import { STAT_TONES } from '@/lib/tones';
 
 const STATUS: Record<AttendanceStatus, { ar: string; en: string; cls: string }> = {
   present:  { ar: 'حاضر',   en: 'Present',  cls: 'bg-success/15 text-success' },
@@ -159,11 +160,11 @@ function TodayPanel() {
   return (
     <div className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Tile icon={CalendarDays} label={t ? 'التاريخ' : 'Date'}
+        <Tile icon={CalendarDays} tone={STAT_TONES[0]} label={t ? 'التاريخ' : 'Date'}
           value={new Date(today.date).toLocaleDateString(t ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-GB')} />
-        <Tile icon={LogIn} label={t ? 'وقت الحضور' : 'Checked in'} value={time(today.checkInAt, t)} />
-        <Tile icon={LogOut} label={t ? 'وقت الانصراف' : 'Checked out'} value={time(today.checkOutAt, t)} />
-        <Tile icon={Timer} label={t ? 'مدة العمل' : 'Worked'} value={duration(today.workedMinutes, t)} />
+        <Tile icon={LogIn} tone={STAT_TONES[1]} label={t ? 'وقت الحضور' : 'Checked in'} value={time(today.checkInAt, t)} />
+        <Tile icon={LogOut} tone={STAT_TONES[2]} label={t ? 'وقت الانصراف' : 'Checked out'} value={time(today.checkOutAt, t)} />
+        <Tile icon={Timer} tone={STAT_TONES[3]} label={t ? 'مدة العمل' : 'Worked'} value={duration(today.workedMinutes, t)} />
       </div>
 
       <div className="bg-card rounded-xl border border-border p-5">
@@ -220,15 +221,15 @@ function TodayPanel() {
   );
 }
 
-function Tile({ icon: Icon, label, value }: { icon: typeof Clock; label: string; value: string }) {
+function Tile({ icon: Icon, label, value, tone }: { icon: typeof Clock; label: string; value: string; tone?: string }) {
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-      className="p-4 rounded-[18px] bg-card border border-border shadow-md">
+      className={`p-4 rounded-[18px] border shadow-md ${tone ?? "bg-card border-border"}`}>
       <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-primary/10 shrink-0"><Icon className="w-5 h-5 text-primary" /></div>
+        <div className="p-2 rounded-lg bg-primary/10 shrink-0 tone-tile"><Icon className="w-5 h-5 text-primary" /></div>
         <div className="min-w-0">
           <p className="text-xs text-muted-foreground truncate">{label}</p>
-          <p className="text-lg font-bold truncate">{value}</p>
+          <p className="text-lg font-bold text-foreground truncate">{value}</p>
         </div>
       </div>
     </motion.div>

@@ -122,6 +122,23 @@ export default function OnlineOrdersSection() {
         </Select>
       </div>
 
+      {/* Claude Design: the status chips with their counts — the same filter as the list above */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 mb-4 -mt-3 scrollbar-none" role="tablist" aria-label="تصفية حسب الحالة">
+        {[["all", "الكل", orders.length] as const, ...Object.entries(statusConfig)
+          .map(([k, v]) => [k, v.label, orders.filter(o => o.status === k).length] as const)
+          .filter(([k, , n]) => n > 0 || statusFilter === k)].map(([k, label, n]) => {
+          const active = statusFilter === k;
+          return (
+            <button key={k} type="button" role="tab" aria-selected={active} onClick={() => setStatusFilter(k)}
+              className={cn("px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap border transition-colors",
+                active ? "bg-foreground text-background border-foreground shadow-sm" : "bg-card text-muted-foreground border-border hover:text-foreground hover:border-primary/50")}>
+              {label}
+              <span className={cn("ms-1.5 inline-flex min-w-[1.25rem] justify-center rounded-full px-1.5 text-[10px] tabular-nums", active ? "bg-background/15" : "bg-muted")}>{n}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Orders List */}
       <div className="bg-card rounded-[18px] border border-border shadow-md overflow-hidden">
         {loading ? (
