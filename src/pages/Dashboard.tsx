@@ -9,6 +9,9 @@ import { TopProductsWidget } from "@/components/dashboard/TopProductsWidget";
 import { FinancialSummary } from "@/components/dashboard/FinancialSummary";
 import { DashboardHero } from "@/components/dashboard/DashboardHero";
 import { QuickShortcuts } from "@/components/dashboard/QuickShortcuts";
+import { MonthToDateCard, DashboardTiles, CategoryDonut, StockSummaryCard, MonthlyTargetCard } from "@/components/dashboard/DesignWidgets";
+import { useDashboardExtras } from "@/hooks/useDashboardExtras";
+import { useHRSettings } from "@/hooks/useHRSettings";
 import {
   ShoppingCart, Package, Smartphone, Wrench, Truck, FileText,
   TrendingUp, TrendingDown, Building2,
@@ -104,6 +107,9 @@ export default function Dashboard() {
   const showRepairs = allows("repairs") && can("repairs.manage");
   const showSuppliers = allows("suppliers") && can("suppliers.manage");
   const kpiState = loading ? "loading" : error || !metrics ? "error" : "ready";
+  const { extras, loading: extrasLoading } = useDashboardExtras();
+  const { settings: hrSettings, loading: hrLoading } = useHRSettings();
+  const todaySales = branchStats.reduce((t, b) => t + b.todaySales, 0);
 
   // Today against yesterday — in words when there is nothing to compare with
   const trendOf = (today: number, yesterday: number): Trend | undefined => {
@@ -131,8 +137,8 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Claude Design: the dark hero with today's figures, the indicators
-          beside it, and shortcuts to the screens this user can open */}
+      {/* Claude Design «لوحة التحكم», row 1: today on the dark card, the
+          month so far, shortcuts, then today's orders / products / customers */}
       <div className="grid gap-5 xl:grid-cols-12">
         <DashboardHero
           className="xl:col-span-5 xl:row-span-2"
@@ -141,24 +147,27 @@ export default function Dashboard() {
           state={kpiState}
           isRTL={isRTL}
         />
-        <div className="xl:col-span-7 grid gap-5 sm:grid-cols-3">
-          <KpiCard state={kpiState} index={1} isRTL={isRTL}
-            title={L("الوحدات المباعة اليوم", "Units sold today")}
-            value={String(metrics?.unitsSoldToday || 0)}
-            trend={unitsTrend}
-            icon={ShoppingCart} />
-          <KpiCard state={kpiState} index={2} isRTL={isRTL}
-            title={L("أجهزة في المخزون", "Devices in stock")}
-            value={String(metrics?.devicesInStock || 0)}
-            sub={L(`${metrics?.devicesForSale ?? 0} متاح للبيع`, `${metrics?.devicesForSale ?? 0} for sale`)}
-            icon={Smartphone} />
-          <KpiCard state={kpiState} index={3} isRTL={isRTL}
-            title={L("الإكسسوارات المتاحة", "Accessories in stock")}
-            value={fmt(metrics?.accessoriesInStock || 0)}
-            sub={L("قطعة في المخزون", "Pieces in stock")}
-            icon={Package} />
+        <MonthToDateCard className="xl:col-span-4" extras={extras} loading={extrasLoading} canOpenReports={allows("reports") && can("reports.view")} />
+        <QuickShortcuts className="xl:col-span-3" isRTL={isRTL} narrow />
+        <DashboardTiles className="xl:col-span-7" extras={extras} loading={extrasLoading} todaySales={todaySales} />
+      </div>
+
+      {/* row 2: sales over time beside sales by category */}
+      <div className="mt-5 grid gap-5 xl:grid-cols-12">
+        <div className="xl:col-span-8 min-w-0">
+          <SalesChart data={salesChart} loading={loading} />
         </div>
-        <QuickShortcuts className="xl:col-span-7" isRTL={isRTL} />
+        <CategoryDonut className="xl:col-span-4" extras={extras} loading={extrasLoading} />
+      </div>
+
+      {/* row 3: what is happening now beside what needs attention */}
+      <div className="mt-5 grid gap-5 xl:grid-cols-12">
+        <div className="xl:col-span-8 min-w-0">
+          <RecentActivity sales={recentSales} loading={loading} />
+        </div>
+        <div className="xl:col-span-4 min-w-0">
+          <AlertsWidget />
+        </div>
       </div>
 
       {/* المؤشرات الثانوية — each only where the plan and the role include its section */}
@@ -188,12 +197,13 @@ export default function Dashboard() {
       </div>
       )}
 
-      {/* أداء الفروع */}
+      {/* row 4: branches and channels · products and stock · the month's target */}
+      <div className="mt-5 grid gap-5 xl:grid-cols-12">
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.25 }}
-        className="mt-6 bg-card rounded-[24px] border shadow-md p-6"
+        className="xl:col-span-5 bg-card rounded-[24px] border shadow-md p-6 min-w-0"
       >
         <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
           <div className="flex items-center gap-2.5">
@@ -239,30 +249,26 @@ export default function Dashboard() {
               ))}
             </div>
             <div className="mt-4 pt-4 border-t flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">{L("إجمالي مبيعات الفروع اليوم", "All branches today")}</span>
+              <span className="text-muted-foreground">
+                {extras?.online
+                  ? L(`إجمالي الفروع اليوم · المتجر الإلكتروني ${fmt(extras.online.todayRevenue)} ${currency}`, `All branches today · online store ${fmt(extras.online.todayRevenue)} ${currency}`)
+                  : L("إجمالي مبيعات الفروع اليوم", "All branches today")}
+              </span>
               <span className="font-bold text-foreground tabular-nums">{fmt(branchesTotal)} {currency}</span>
             </div>
           </>
         )}
       </motion.div>
 
-      {/* نظرة عامة على المبيعات */}
-      <div className="mt-6">
-        <SalesChart data={salesChart} loading={loading} />
+        <StockSummaryCard className="xl:col-span-4" extras={extras} loading={extrasLoading} />
+        <MonthlyTargetCard className="xl:col-span-3" extras={extras} loading={extrasLoading || hrLoading}
+          target={hrSettings.targets.monthly || 0} canEditTarget={can("payroll.manage")} />
       </div>
 
-      {/* بقية الأدوات */}
-      <div className="mt-6 grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="grid gap-6 md:grid-cols-2">
-            <TopProductsWidget />
-            <FinancialSummary />
-          </div>
-          <RecentActivity sales={recentSales} loading={loading} />
-        </div>
-        <div className="space-y-6">
-          <AlertsWidget />
-        </div>
+      {/* the system's other widgets, kept: today's top products and the 30-day financial summary */}
+      <div className="mt-5 grid gap-5 md:grid-cols-2">
+        <TopProductsWidget />
+        <FinancialSummary />
       </div>
     </AppLayout>
   );

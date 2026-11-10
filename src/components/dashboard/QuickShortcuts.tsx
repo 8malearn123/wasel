@@ -21,7 +21,7 @@ const SHORTCUTS: { to: string; ar: string; en: string; icon: typeof ShoppingCart
   { to: "/ai-insights", ar: "المساعد", en: "Assistant", icon: Sparkles, permission: "ai_insights.view", denyCashier: true },
 ];
 
-export function QuickShortcuts({ isRTL, className }: { isRTL: boolean; className?: string }) {
+export function QuickShortcuts({ isRTL, className, narrow }: { isRTL: boolean; className?: string; narrow?: boolean }) {
   const { can, loading } = usePermissions();
   const { allows } = useFeatureAccess();
   const { merchantUser } = useAuth();
@@ -33,7 +33,7 @@ export function QuickShortcuts({ isRTL, className }: { isRTL: boolean; className
   return (
     <section className={cn("bg-card rounded-[24px] border shadow-md p-5", className)} aria-label={isRTL ? "اختصارات سريعة" : "Shortcuts"}>
       <h3 className="font-bold text-foreground mb-4">{isRTL ? "اختصارات سريعة" : "Shortcuts"}</h3>
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
+      <div className={cn("grid grid-cols-3 gap-2.5", !narrow && "sm:grid-cols-6")}>
         {shown.map(s => (
           <Link
             key={s.to}

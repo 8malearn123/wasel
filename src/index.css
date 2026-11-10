@@ -293,6 +293,11 @@
     background: radial-gradient(circle, rgba(240, 78, 26, 0.45) 0%, rgba(240, 78, 26, 0) 68%);
   }
 
+  .month-card {
+    background: linear-gradient(135deg, #FF8A55 0%, #F04E1A 55%, #D43A0B 100%);
+    box-shadow: 0 18px 36px -16px rgba(240, 78, 26, 0.6);
+  }
+
   /* ── Sidebar, Claude Design ── */
   .sidebar-shell {
     background: var(--sidebar-gradient);
