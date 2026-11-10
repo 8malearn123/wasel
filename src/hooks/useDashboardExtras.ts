@@ -37,7 +37,7 @@ export interface DashboardExtras {
 }
 
 type Row = Record<string, unknown>;
-async function readAll<T = Row>(build: (from: number, to: number) => PromiseLike<{ data: unknown; error: { message: string } | null }>): Promise<T[]> {
+export async function readAll<T = Row>(build: (from: number, to: number) => PromiseLike<{ data: unknown; error: { message: string } | null }>): Promise<T[]> {
   const out: T[] = [];
   for (let from = 0; ; from += 1000) {
     const { data, error } = await build(from, from + 999);
