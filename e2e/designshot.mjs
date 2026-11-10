@@ -24,9 +24,33 @@ async function run(label, email, viewport, pages) {
   }
   await ctx.close();
 }
-await run('owner', 'demo-distributor@wasil.demo', { width: 1440, height: 900 }, PAGES);
-await run('mobile', 'demo-distributor@wasil.demo', { width: 390, height: 844 }, ['/', '/products?tab=inventory']);
-await run('cashier', 'demo-cashier@wasil.demo', { width: 1440, height: 900 }, ['/pos']);
-await run('lite', 'demo-basic@wasil.demo', { width: 1440, height: 900 }, ['/']);
+await run('owner', 'demo-distributor@wasil.demo', { width: 1440, height: 900 }, ['/reports?tab=sales', '/sales?tab=repairs', '/products?tab=inventory', '/sales?tab=customers']);
+// repairs board + reports lower half
+{
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'ar-SA', timezoneId: 'Asia/Riyadh' });
+  await ctx.addInitScript(() => { try { localStorage.setItem('language', 'ar'); } catch {} });
+  await ctx.route(/supabase\.co\//, r => { const q = r.request(); if (!/\/(rest|functions|storage)\/v1\//.test(q.url()) || ['GET', 'HEAD', 'OPTIONS'].includes(q.method()) || READ.test(q.url())) return r.continue(); return r.abort('blockedbyclient'); });
+  const p = await ctx.newPage(); p.on('pageerror', e => errors.push('extra: ' + e.message.slice(0, 160)));
+  await p.goto(`${SITE}/auth`); await sleep(2500);
+  await p.getByRole('tab', { name: /دخول بالإيميل/ }).click(); await p.locator('#email').fill('demo-distributor@wasil.demo'); await p.locator('#password').fill('demo1234');
+  await p.getByRole('button', { name: /تسجيل الدخول/ }).click(); await p.waitForURL(u => !u.pathname.startsWith('/auth'), { timeout: 25000 }).catch(() => {}); await sleep(5000);
+  await p.goto(`${SITE}/sales?tab=repairs`); await sleep(8000);
+  await p.getByRole('button', { name: 'لوحة' }).click().catch(e => errors.push('board click ' + e.message.slice(0, 80))); await sleep(1500);
+  await p.screenshot({ path: 'shot-repairs-board.jpg', type: 'jpeg', quality: 70 });
+  await p.goto(`${SITE}/reports?tab=sales`); await sleep(9000);
+  await p.getByText('أنماط المبيعات').scrollIntoViewIfNeeded().catch(() => {}); await sleep(800);
+  await p.screenshot({ path: 'shot-reports-patterns.jpg', type: 'jpeg', quality: 70 });
+  await ctx.close();
+}
+// storefront, anonymous
+for (const [label, vp] of [['store-desktop', { width: 1440, height: 900 }], ['store-mobile', { width: 390, height: 844 }]]) {
+  const ctx = await browser.newContext({ viewport: vp, locale: 'ar-SA' });
+  await ctx.route(/supabase\.co\//, r => { const q = r.request(); if (['GET', 'HEAD', 'OPTIONS'].includes(q.method()) || /\/rpc\/get_public/.test(q.url())) return r.continue(); return r.abort('blockedbyclient'); });
+  const p = await ctx.newPage(); p.on('pageerror', e => errors.push(label + ': ' + e.message.slice(0, 160)));
+  await p.goto(`${SITE}/store/alanam-max`); await sleep(8000);
+  await p.screenshot({ path: `shot-${label}.jpg`, type: 'jpeg', quality: 70 });
+  await ctx.close();
+}
+await run('mobile', 'demo-distributor@wasil.demo', { width: 390, height: 844 }, ['/reports?tab=sales']);
 console.log('R|errors|' + JSON.stringify(errors));
 await browser.close();
