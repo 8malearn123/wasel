@@ -38,7 +38,7 @@ export function SectionNav({
   return (
     <nav
       aria-label={isRTL ? 'أقسام الصفحة' : 'Page sections'}
-      className="mb-6 flex flex-wrap items-stretch gap-x-5 gap-y-3 rounded-xl border border-border bg-card/60 p-2.5"
+      className="mb-6 flex flex-wrap items-stretch gap-x-5 gap-y-3 rounded-[18px] border border-border bg-card shadow-md p-2.5"
     >
       {groups.map((group, gi) => (
         <div
@@ -66,8 +66,9 @@ export function SectionNav({
                   aria-current={active ? 'page' : undefined}
                   className={cn(
                     'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
+                    // Claude Design: the active tab is a Midnight pill
                     active
-                      ? 'bg-primary/10 text-primary'
+                      ? 'bg-foreground text-background shadow-sm'
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                   )}
                 >

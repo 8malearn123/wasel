@@ -33,6 +33,7 @@ import {
   SlidersHorizontal,
   Smartphone,
   Sparkles,
+  LogOut,
   Store,
   Truck,
   Users,
@@ -42,6 +43,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n";
 import { useAuth } from "@/hooks/useAuth";
+import { useSignOut, useWhoAmI } from "@/hooks/useSignOut";
+import { supabase } from "@/integrations/supabase/client";
 import type { UserRole } from "@/types/database";
 
 interface NavChild {
@@ -206,6 +209,33 @@ export function Sidebar() {
     return true;
   };
 
+  // Claude Design: counts beside «الطلبات والمبيعات» (new store orders) and
+  // «الشحن» (orders still to ship) — read only, and only where the plan and
+  // the role open online orders
+  const [badges, setBadges] = useState<Record<string, number>>({});
+  const showOrderBadges = !plansLoading && !permsLoading && planAllowsFeature("onlineStore")
+    && (can("online_orders.manage") || can("shipping.manage"));
+  useEffect(() => {
+    if (!merchant || !showOrderBadges) { setBadges({}); return; }
+    let live = true;
+    supabase.from("online_orders").select("status")
+      .eq("merchant_id", merchant.id)
+      .in("status", ["pending", "confirmed", "processing"])
+      .then(({ data, error }) => {
+        if (!live || error) return;
+        const rows = (data || []) as { status: string }[];
+        setBadges({
+          "/sales": can("online_orders.manage") ? rows.filter(r => r.status === "pending").length : 0,
+          "/shipping": can("shipping.manage") ? rows.length : 0,
+        });
+      });
+    return () => { live = false; };
+  }, [merchant, showOrderBadges, can]);
+
+  const signOutNow = useSignOut();
+  const { displayName, roleLabel } = useWhoAmI(isRTL);
+  const aiOpen = permitted({ requirePermission: "ai_insights.view", denyRoles: ["cashier"] });
+
   const items = navItems
     .map(item => ({ ...item, children: item.children?.filter(permitted) }))
     // A section whose every leaf is closed to this user is not a section for them
@@ -314,6 +344,14 @@ export function Sidebar() {
                       </motion.span>
                     )}
                   </AnimatePresence>
+                  {!isCollapsed && (badges[item.path] ?? 0) > 0 && (
+                    <span className={cn(
+                      "min-w-[22px] h-[22px] px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center",
+                      isActive ? "bg-[#1C1733] text-white" : "bg-sidebar-primary/20 text-[#FFB394]"
+                    )}>
+                      {badges[item.path]}
+                    </span>
+                  )}
                   {tooltip(label)}
                 </Link>
               );
@@ -321,6 +359,43 @@ export function Sidebar() {
           </div>
         ))}
       </nav>
+
+      {/* Claude Design: the assistant card, for those the assistant page is open to */}
+      {aiOpen && !isCollapsed && (
+        <div className="relative mx-3 mb-3 rounded-2xl p-4 bg-white/[0.06] border border-white/10">
+          <p className="flex items-center gap-2 text-sm font-bold text-white">
+            <Sparkles className="w-4 h-4 text-[#FF8A55]" /> {isRTL ? "مساعد واصل" : "Wasel assistant"}
+          </p>
+          <p className="mt-1.5 text-xs text-[#C9C3DD] leading-relaxed">
+            {isRTL ? "اسأله عن مبيعاتك ومخزونك، واحصل على توصيات فورية." : "Ask about your sales and stock for instant suggestions."}
+          </p>
+          <Link to="/ai-insights" className="mt-3 inline-flex items-center h-8 px-3 rounded-lg bg-white text-[#1C1733] text-xs font-bold hover:bg-white/90">
+            {isRTL ? "اسأل الآن" : "Ask now"}
+          </Link>
+        </div>
+      )}
+
+      {/* Claude Design: who is signed in, with sign-out (the header's own flow) */}
+      <div className={cn("relative px-3 py-3 border-t border-white/10 flex items-center gap-3", isCollapsed && "flex-col")}>
+        <span className="w-9 h-9 rounded-xl avatar-signal flex items-center justify-center text-sm font-bold flex-shrink-0">
+          {displayName ? displayName.charAt(0) : "؟"}
+        </span>
+        {!isCollapsed && (
+          <span className="flex-1 min-w-0 leading-tight">
+            <span className="block text-sm font-semibold text-white truncate">{displayName || roleLabel}</span>
+            {displayName && <span className="block text-[11px] text-[#A9A2C4] truncate">{roleLabel}</span>}
+          </span>
+        )}
+        <button
+          type="button"
+          onClick={() => signOutNow()}
+          className="w-8 h-8 rounded-lg text-[#C9C3DD] hover:bg-white/10 hover:text-white flex items-center justify-center"
+          aria-label={isRTL ? "تسجيل الخروج" : "Sign out"}
+          title={isRTL ? "تسجيل الخروج" : "Sign out"}
+        >
+          <LogOut className="w-4 h-4" />
+        </button>
+      </div>
 
       <div className="relative p-3 border-t border-white/10">
         <button onClick={() => setIsCollapsed(!isCollapsed)} className={cn("nav-item w-full", isCollapsed && "justify-center px-0")}>
