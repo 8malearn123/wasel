@@ -38,6 +38,24 @@ async function full(label, email, vp) {
   console.log(`R|${label}|overflow=` + await p.evaluate(() => document.documentElement.scrollWidth - window.innerWidth));
   await ctx.close();
 }
-await run('owner', 'demo-distributor@wasil.demo', { width: 1440, height: 900 }, ['/sales?tab=orders', '/pos', '/products?tab=inventory', '/team?tab=users', '/sales?tab=repairs', '/products?tab=suppliers', '/sales?tab=customers', '/sales?tab=marketing', '/shipping']);
+await run('owner', 'demo-distributor@wasil.demo', { width: 1440, height: 900 }, ['/ai-insights']);
+{
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, locale: 'ar-SA', timezoneId: 'Asia/Riyadh' });
+  await ctx.addInitScript(() => { try { localStorage.setItem('language', 'ar'); } catch {} });
+  await ctx.route(/supabase\.co\//, r => { const q = r.request(); if (!/\/(rest|functions|storage)\/v1\//.test(q.url()) || ['GET', 'HEAD', 'OPTIONS'].includes(q.method()) || READ.test(q.url())) return r.continue(); return r.abort('blockedbyclient'); });
+  const p = await ctx.newPage(); p.on('pageerror', e => errors.push('chat: ' + e.message.slice(0, 160)));
+  await p.goto(`${SITE}/auth`); await sleep(2500);
+  await p.getByRole('tab', { name: /دخول بالإيميل/ }).click(); await p.locator('#email').fill('demo-distributor@wasil.demo'); await p.locator('#password').fill('demo1234');
+  await p.getByRole('button', { name: /تسجيل الدخول/ }).click(); await p.waitForURL(u => !u.pathname.startsWith('/auth'), { timeout: 25000 }).catch(() => {}); await sleep(5000);
+  await p.goto(`${SITE}/ai-insights`); await sleep(9000);
+  await p.getByRole('button', { name: /لخّص أداء المبيعات/ }).click(); await sleep(800);
+  await p.getByRole('button', { name: /أي المنتجات تحتاج/ }).click().catch(() => {});
+  await p.getByRole('button', { name: /اسأل عن التوقع/ }).click(); await sleep(800);
+  await p.locator('form input').fill('اكتب لي عرض ترويجي'); await p.locator('form button[type=submit]').click(); await sleep(800);
+  await p.screenshot({ path: 'shot-owner-ai-chat.jpg', type: 'jpeg', quality: 70 });
+  console.log('R|chat|overflow=' + await p.evaluate(() => document.documentElement.scrollWidth - window.innerWidth));
+  await ctx.close();
+}
+await run('owner-m', 'demo-distributor@wasil.demo', { width: 390, height: 844 }, ['/ai-insights']);
 console.log('R|errors|' + JSON.stringify(errors));
 await browser.close();
