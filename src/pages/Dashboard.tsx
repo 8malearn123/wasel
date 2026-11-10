@@ -7,11 +7,12 @@ import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { AlertsWidget } from "@/components/dashboard/AlertsWidget";
 import { TopProductsWidget } from "@/components/dashboard/TopProductsWidget";
 import { FinancialSummary } from "@/components/dashboard/FinancialSummary";
+import { DashboardHero } from "@/components/dashboard/DashboardHero";
+import { QuickShortcuts } from "@/components/dashboard/QuickShortcuts";
 import {
   ShoppingCart, Package, Smartphone, Wrench, Truck, FileText,
   TrendingUp, TrendingDown, Building2,
 } from "lucide-react";
-import { RiyalSign } from "@/components/icons/RiyalSign";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n";
 import { useDashboardData } from "@/hooks/useDashboardData";
@@ -43,7 +44,7 @@ function KpiCard({ title, value, unit, trend, sub, icon: Icon, highlight, compac
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
       className={cn(
-        "bg-card rounded-2xl border shadow-sm hover:shadow-md transition-shadow flex flex-col",
+        "bg-card rounded-[24px] border shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300 flex flex-col",
         compact ? "p-4" : "p-5",
         highlight && "border-primary/40 ring-1 ring-primary/15"
       )}
@@ -111,7 +112,6 @@ export default function Dashboard() {
     if (today === 0) return { note: isRTL ? "لا مبيعات اليوم حتى الآن" : "No sales yet today" };
     return { note: isRTL ? "لا مبيعات أمس للمقارنة" : "No sales yesterday to compare" };
   };
-  const revenueTrend = trendOf(metrics?.todaysRevenue || 0, metrics?.yesterdaysRevenue || 0);
   const unitsTrend = trendOf(metrics?.unitsSoldToday || 0, metrics?.unitsSoldYesterday || 0);
   const L = (ar: string, en: string) => (isRTL ? ar : en);
   const currency = L("ر.س", "SAR");
@@ -131,28 +131,34 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* المؤشرات الرئيسية */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard state={kpiState} index={0} highlight isRTL={isRTL}
-          title={L("إيرادات اليوم", "Today's revenue")}
-          value={fmt(metrics?.todaysRevenue || 0)} unit={currency}
-          trend={revenueTrend}
-          icon={RiyalSign} />
-        <KpiCard state={kpiState} index={1} isRTL={isRTL}
-          title={L("الوحدات المباعة اليوم", "Units sold today")}
-          value={String(metrics?.unitsSoldToday || 0)}
-          trend={unitsTrend}
-          icon={ShoppingCart} />
-        <KpiCard state={kpiState} index={2} isRTL={isRTL}
-          title={L("أجهزة في المخزون", "Devices in stock")}
-          value={String(metrics?.devicesInStock || 0)}
-          sub={L(`${metrics?.devicesForSale ?? 0} متاح للبيع`, `${metrics?.devicesForSale ?? 0} for sale`)}
-          icon={Smartphone} />
-        <KpiCard state={kpiState} index={3} isRTL={isRTL}
-          title={L("الإكسسوارات المتاحة", "Accessories in stock")}
-          value={fmt(metrics?.accessoriesInStock || 0)}
-          sub={L("قطعة في المخزون", "Pieces in stock")}
-          icon={Package} />
+      {/* Claude Design: the dark hero with today's figures, the indicators
+          beside it, and shortcuts to the screens this user can open */}
+      <div className="grid gap-5 xl:grid-cols-12">
+        <DashboardHero
+          className="xl:col-span-5 xl:row-span-2"
+          metrics={metrics}
+          branchStats={branchStats}
+          state={kpiState}
+          isRTL={isRTL}
+        />
+        <div className="xl:col-span-7 grid gap-5 sm:grid-cols-3">
+          <KpiCard state={kpiState} index={1} isRTL={isRTL}
+            title={L("الوحدات المباعة اليوم", "Units sold today")}
+            value={String(metrics?.unitsSoldToday || 0)}
+            trend={unitsTrend}
+            icon={ShoppingCart} />
+          <KpiCard state={kpiState} index={2} isRTL={isRTL}
+            title={L("أجهزة في المخزون", "Devices in stock")}
+            value={String(metrics?.devicesInStock || 0)}
+            sub={L(`${metrics?.devicesForSale ?? 0} متاح للبيع`, `${metrics?.devicesForSale ?? 0} for sale`)}
+            icon={Smartphone} />
+          <KpiCard state={kpiState} index={3} isRTL={isRTL}
+            title={L("الإكسسوارات المتاحة", "Accessories in stock")}
+            value={fmt(metrics?.accessoriesInStock || 0)}
+            sub={L("قطعة في المخزون", "Pieces in stock")}
+            icon={Package} />
+        </div>
+        <QuickShortcuts className="xl:col-span-7" isRTL={isRTL} />
       </div>
 
       {/* المؤشرات الثانوية — each only where the plan and the role include its section */}
@@ -187,7 +193,7 @@ export default function Dashboard() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.25 }}
-        className="mt-6 bg-card rounded-2xl border shadow-sm p-6"
+        className="mt-6 bg-card rounded-[24px] border shadow-md p-6"
       >
         <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
           <div className="flex items-center gap-2.5">

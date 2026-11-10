@@ -284,6 +284,15 @@
     box-shadow: 0 18px 36px -16px rgba(240, 78, 26, 0.6);
   }
 
+  /* ── Dashboard hero, Claude Design ── */
+  .hero-card {
+    background: linear-gradient(150deg, #322A66 0%, #1C1733 58%, #140F28 100%);
+    box-shadow: 0 26px 50px -24px rgba(28, 23, 51, 0.75);
+  }
+  .hero-glow {
+    background: radial-gradient(circle, rgba(240, 78, 26, 0.45) 0%, rgba(240, 78, 26, 0) 68%);
+  }
+
   /* ── Sidebar, Claude Design ── */
   .sidebar-shell {
     background: var(--sidebar-gradient);
