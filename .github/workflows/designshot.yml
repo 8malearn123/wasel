@@ -3,6 +3,8 @@ on:
   push:
     branches: [claude/sweet-knuth-u4nbzm]
     paths: ['e2e/designshot.mjs', '.github/workflows/designshot.yml']
+permissions:
+  contents: write
 jobs:
   shot:
     runs-on: ubuntu-latest
@@ -22,7 +24,9 @@ jobs:
       - run: node designshot.mjs
         working-directory: e2e
       - if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: shots
-          path: e2e/shot-*.png
+        name: Push the screenshots to a throwaway branch
+        run: |
+          mkdir -p /tmp/out && cp e2e/shot-*.jpg /tmp/out/
+          git config user.name "shots-bot" && git config user.email "shots@example.invalid"
+          git checkout --orphan design-shots-tmp && git rm -rfq . && cp /tmp/out/*.jpg .
+          git add *.jpg && git commit -qm "screenshots" && git push -f origin design-shots-tmp

@@ -18,7 +18,7 @@ async function run(label, email, viewport, pages) {
   for (const path of pages) {
     await p.goto(`${SITE}${path}`); await sleep(8000);
     const name = `${label}-${path.replace(/[^a-z0-9]+/gi, '_')}`.replace(/_+$/, '');
-    await p.screenshot({ path: `shot-${name}.png`, fullPage: false });
+    await p.screenshot({ path: `shot-${name}.jpg`, type: 'jpeg', quality: 70, fullPage: false });
     const over = await p.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     console.log(`R|${name}|overflow=${over}`);
   }
