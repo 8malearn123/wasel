@@ -38,17 +38,20 @@
      =========================================================== */
   :root {
     /* ألوان الهوية الخام — المرجع الوحيد لبقية التوكنات */
-    --brand-midnight: 248 40% 14%;   /* #1A1633 */
+    --brand-midnight: 251 38% 15%;   /* #1C1733 — Claude Design */
     --brand-signal: 15 88% 52%;      /* #F04E1A */
-    --brand-paper: 30 43% 97%;       /* #FBF8F5 */
+    --brand-paper: 34 41% 97%;       /* #FAF7F3 — Claude Design */
     --brand-peach: 19 100% 93%;      /* #FFE6DA */
-    --brand-mauve: 252 13% 47%;      /* #6F6987 */
+    --brand-mauve: 254 15% 40%;      /* #5F5876 — Claude Design: darker, 6.4:1 on paper */
     /* إشارة أعمق للنص فقط: البرتقالي الأصلي على الورقي 3.4:1، وهذا 5.2:1 */
     --brand-signal-deep: 17 88% 40%; /* #C2410C */
     /* الأخضر يبقى للدفع والنجاح فقط — معنى لا يحمله أي لون في الهوية */
-    --brand-green: 142 76% 36%;      /* #16A34A */
-    --brand-line: 28 25% 90%;        /* #ECE5DF */
-    --brand-sand: 27 33% 94%;        /* #F4EEE9 */
+    --brand-green: 149 70% 30%;      /* #17804A — Claude Design */
+    /* ألوان الحالات من Claude Design: الخطر أحمر، والمعلومة بنفسجي */
+    --brand-danger: 346 62% 46%;     /* #BE2D4F */
+    --brand-info: 250 43% 50%;       /* #5A48B5 */
+    --brand-line: 30 30% 89%;        /* #ECE4DC */
+    --brand-sand: 30 33% 93%;        /* #F3EDE7 */
 
     /* الأسطح والنصوص */
     --background: var(--brand-paper);
@@ -75,24 +78,30 @@
     --accent: var(--brand-peach);
     --accent-foreground: var(--brand-midnight);
 
-    /* الخطر — الليلي، أقوى تأكيد داخل اللوحة */
-    --destructive: var(--brand-midnight);
-    --destructive-foreground: var(--brand-paper);
+    /* الخطر — أحمر Claude Design، مفصول عن الليلي الذي هو لون الهوية */
+    --destructive: var(--brand-danger);
+    --destructive-foreground: 0 0% 100%;
+    --info: var(--brand-info);
+    --info-foreground: 0 0% 100%;
 
     --success: var(--brand-green);
     --success-foreground: 0 0% 100%;
 
-    --warning: var(--brand-mauve);
+    /* التحذير برتقالي عميق (#C2410C) كما في Claude Design */
+    --warning: var(--brand-signal-deep);
     --warning-foreground: 0 0% 100%;
 
     --border: var(--brand-line);
     --input: var(--brand-line);
     --ring: var(--brand-signal);
 
-    --radius: 0.75rem;
+    /* Claude Design: البطاقات والحقول 14px */
+    --radius: 0.875rem;
 
     /* الشريط الجانبي — ليلي، فالهوية نصفها ليلي */
     --sidebar-background: var(--brand-midnight);
+    /* Claude Design: تدرّج ليلي مع توهّج برتقالي خفيف */
+    --sidebar-gradient: linear-gradient(150deg, #322A66 0%, #1C1733 58%, #140F28 100%);
     --sidebar-foreground: 253 21% 75%;
     --sidebar-primary: var(--brand-signal);
     --sidebar-primary-foreground: var(--brand-midnight);
@@ -118,9 +127,10 @@
     --gradient-accent: linear-gradient(135deg, hsl(19 100% 93%) 0%, hsl(19 100% 88%) 100%);
     --gradient-surface: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(30 43% 97%) 100%);
 
-    --shadow-sm: 0 1px 2px 0 hsl(248 40% 14% / 0.06);
-    --shadow-md: 0 4px 6px -1px hsl(248 40% 14% / 0.08), 0 2px 4px -2px hsl(248 40% 14% / 0.05);
-    --shadow-lg: 0 10px 15px -3px hsl(248 40% 14% / 0.08), 0 4px 6px -4px hsl(248 40% 14% / 0.05);
+    /* ظلال Claude Design: ناعمة بلون الليلي */
+    --shadow-sm: 0 1px 2px hsl(251 38% 15% / 0.05);
+    --shadow-md: 0 1px 2px hsl(251 38% 15% / 0.05), 0 2px 8px -4px hsl(251 38% 15% / 0.08);
+    --shadow-lg: 0 10px 28px -14px hsl(251 38% 15% / 0.22), 0 2px 6px -2px hsl(251 38% 15% / 0.06);
     --shadow-xl: 0 20px 25px -5px hsl(248 40% 14% / 0.1), 0 8px 10px -6px hsl(248 40% 14% / 0.07);
     --shadow-glow: 0 0 0 4px hsl(15 88% 52% / 0.18);
   }
@@ -152,8 +162,10 @@
     --accent: 247 37% 25%;
     --accent-foreground: var(--brand-peach);
 
-    --destructive: var(--brand-paper);
+    --destructive: 346 70% 62%;
     --destructive-foreground: var(--brand-midnight);
+    --info: 250 60% 72%;
+    --info-foreground: var(--brand-midnight);
 
     --success: var(--brand-green);
     --success-foreground: var(--brand-midnight);
@@ -166,6 +178,7 @@
     --ring: var(--brand-signal);
 
     --sidebar-background: 250 44% 11%;
+    --sidebar-gradient: linear-gradient(150deg, #2A2357 0%, #161229 58%, #0E0B1E 100%);
     --sidebar-foreground: 253 21% 75%;
     --sidebar-primary: var(--brand-signal);
     --sidebar-primary-foreground: var(--brand-midnight);
@@ -257,12 +270,47 @@
   }
 
   /* Sidebar navigation */
-  .nav-item {
-    @apply flex items-center gap-3 px-4 py-2.5 rounded-lg text-sidebar-foreground/70 transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-foreground;
+  /* ── Header, Claude Design: paper glass, soft white controls ── */
+  .app-header {
+    background: hsl(var(--background) / 0.85);
+    backdrop-filter: blur(10px);
+  }
+  .app-header :is(button[class*="border"]) {
+    @apply rounded-[14px] bg-card shadow-md;
+  }
+  .avatar-signal {
+    background: linear-gradient(135deg, #FF8A55 0%, #F04E1A 55%, #D43A0B 100%);
+    color: #1C1733;
+    box-shadow: 0 18px 36px -16px rgba(240, 78, 26, 0.6);
   }
 
+  /* ── Sidebar, Claude Design ── */
+  .sidebar-shell {
+    background: var(--sidebar-gradient);
+  }
+  .sidebar-glow {
+    background: radial-gradient(circle, rgba(240, 78, 26, 0.28) 0%, rgba(240, 78, 26, 0) 70%);
+  }
+  /* the active item: a signal gradient, Midnight text */
+  .sidebar-active {
+    background: linear-gradient(135deg, #FF8A55 0%, #F04E1A 55%, #D43A0B 100%);
+    color: hsl(var(--sidebar-primary-foreground));
+    box-shadow: 0 18px 36px -16px rgba(240, 78, 26, 0.6);
+  }
+  .nav-item {
+    @apply flex items-center gap-3 min-h-[46px] px-2 py-1.5 rounded-[14px] text-[#C9C3DD] text-sm font-medium transition-colors duration-200 hover:bg-white/[0.07] hover:text-white;
+  }
+  .nav-item .nav-icon {
+    @apply w-[34px] h-[34px] rounded-[10px] bg-white/[0.06] flex items-center justify-center flex-shrink-0;
+  }
   .nav-item.active {
-    @apply bg-sidebar-primary text-sidebar-primary-foreground font-medium;
+    background: linear-gradient(135deg, #FF8A55 0%, #F04E1A 55%, #D43A0B 100%);
+    color: hsl(var(--sidebar-primary-foreground));
+    font-weight: 700;
+    box-shadow: 0 18px 36px -16px rgba(240, 78, 26, 0.6);
+  }
+  .nav-item.active .nav-icon {
+    background: rgba(28, 23, 51, 0.14);
   }
 
   /* Touch-optimized buttons */
