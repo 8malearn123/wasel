@@ -111,7 +111,7 @@ export function Header({ title, subtitle, onMenuClick, menuOnSmallScreens }: Hea
   };
 
   return (
-    <header className="app-header min-h-[72px] border-b border-border flex items-center justify-between gap-2 sm:gap-4 px-3 sm:px-7 py-3 sticky top-0 z-40">
+    <header className="app-header min-h-16 border-b border-border flex items-center justify-between gap-2 sm:gap-4 px-3 sm:px-6 py-2 sticky top-0 z-40">
       {/* The title takes the room the toolbar leaves and stays on one line —
           without flex-1 it shrank to a few characters and wrapped word by word */}
       {onMenuClick && (
@@ -127,9 +127,9 @@ export function Header({ title, subtitle, onMenuClick, menuOnSmallScreens }: Hea
         </Button>
       )}
       <div className="flex flex-col flex-1 min-w-0">
-        <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-foreground truncate" title={title}>{title}</h1>
+        <h1 className="text-lg font-bold text-foreground truncate" title={title}>{title}</h1>
         {subtitle && (
-          <p className="text-[13px] text-muted-foreground truncate mt-0.5" title={subtitle}>{subtitle}</p>
+          <p className="text-sm text-muted-foreground truncate" title={subtitle}>{subtitle}</p>
         )}
       </div>
 
@@ -294,7 +294,7 @@ export function Header({ title, subtitle, onMenuClick, menuOnSmallScreens }: Hea
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="gap-2 touch-target">
               {/* Claude Design: a signal tile with the user's initial */}
-              <div className="w-10 h-10 rounded-[14px] avatar-signal flex items-center justify-center font-bold">
+              <div className="w-8 h-8 rounded-full avatar-signal flex items-center justify-center text-sm font-bold">
                 {displayName ? displayName.charAt(0) : <User className="w-4 h-4" />}
               </div>
               <span className="hidden xl:flex flex-col items-start leading-tight text-start">

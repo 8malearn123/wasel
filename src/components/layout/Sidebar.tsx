@@ -240,64 +240,53 @@ export function Sidebar() {
       {/* a soft signal glow in the corner, as in the design */}
       <div aria-hidden="true" className="pointer-events-none absolute -bottom-20 -left-16 w-60 h-60 rounded-full sidebar-glow" />
 
-      {/* Brand + shop */}
-      <div className={cn("relative px-4 pt-5 pb-3 flex flex-col gap-3", isCollapsed && "items-center")}>
-        <div className="flex items-center gap-3">
-          <span className="w-11 h-11 rounded-[14px] bg-white/[0.06] border border-white/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
-            {logoUrl ? (
-              <img src={logoUrl} alt="logo" className="w-full h-full object-cover" />
-            ) : (
-              <img src="/brand/app-icon.svg" alt="PIXA" className="w-9 h-9 rounded-[10px]" />
-            )}
-          </span>
-          <AnimatePresence mode="wait">
-            {!isCollapsed && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-1 min-w-0">
-                {/* The sidebar is Midnight in both themes, so the light wordmark always */}
-                <img src="/brand/wordmark-white.svg" alt="PIXA" className="h-5 w-auto object-contain object-right" />
-                <span className="text-[11px] text-[#A9A2C4] truncate">
-                  {merchant?.name ? merchant.name : (isRTL ? "واصل · إدارة المتاجر" : "Wasel · store management")}
-                </span>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+      {/* Brand + shop — the same 64px band as before */}
+      <div className={cn("relative h-16 px-4 flex items-center gap-3 border-b border-white/10", isCollapsed && "justify-center")}>
+        {logoUrl ? (
+          <img src={logoUrl} alt="logo" className="w-10 h-10 rounded-xl object-cover flex-shrink-0" />
+        ) : (
+          <img src="/brand/app-icon.svg" alt="PIXA" className="w-10 h-10 rounded-xl flex-shrink-0" />
+        )}
+        <AnimatePresence mode="wait">
+          {!isCollapsed && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-0.5 min-w-0">
+              {/* The sidebar is Midnight in both themes, so the light wordmark always */}
+              <img src="/brand/wordmark-white.svg" alt="PIXA" className="h-5 w-auto object-contain object-right" />
+              <span className="text-[11px] text-[#A9A2C4] truncate">
+                {merchant?.name ? merchant.name : (isRTL ? "واصل · إدارة المتاجر" : "Wasel · store management")}
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* The till is the one screen a shop opens all day, so it leads and is not
           folded into a section */}
       {permitted({ requirePermission: "pos.access" }) && (
-        <div className="relative px-3 pb-2">
+        <div className="relative px-3 pt-3">
           <Link
             to="/pos"
             className={cn(
-              "group relative flex items-center gap-3 rounded-2xl p-2 min-h-[56px] border transition-colors",
+              "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 font-semibold transition-colors",
               location.pathname === "/pos"
-                ? "sidebar-active border-transparent"
-                : "bg-sidebar-primary/[0.12] border-sidebar-primary/35 text-sidebar-accent-foreground hover:bg-sidebar-primary/20",
+                ? "sidebar-active"
+                : "bg-sidebar-primary/[0.12] text-sidebar-primary hover:bg-sidebar-primary/20",
               isCollapsed && "justify-center"
             )}
           >
-            <span className="w-[38px] h-[38px] rounded-xl bg-sidebar-primary text-sidebar-primary-foreground flex items-center justify-center flex-shrink-0">
-              <ShoppingCart className="w-5 h-5" />
-            </span>
-            {!isCollapsed && (
-              <span className="flex-1 flex flex-col leading-tight">
-                <span className="text-sm font-bold">{isRTL ? "نقطة البيع" : "Point of Sale"}</span>
-                <span className="text-[11px] opacity-75">{isRTL ? "ابدأ عملية بيع" : "Start a sale"}</span>
-              </span>
-            )}
+            <ShoppingCart className="w-5 h-5 flex-shrink-0" />
+            {!isCollapsed && <span className="text-sm">{isRTL ? "نقطة البيع" : "Point of Sale"}</span>}
             {tooltip(isRTL ? "نقطة البيع" : "Point of Sale")}
           </Link>
         </div>
       )}
 
       {/* Navigation, in labelled groups */}
-      <nav className="relative flex-1 overflow-y-auto px-3 pb-3 space-y-4" aria-label={isRTL ? "القائمة الرئيسية" : "Main menu"}>
+      <nav className="relative flex-1 overflow-y-auto py-3 px-3 space-y-2" aria-label={isRTL ? "القائمة الرئيسية" : "Main menu"}>
         {grouped.map(group => (
-          <div key={group.key} className="space-y-1">
+          <div key={group.key} className="space-y-0.5">
             {!isCollapsed && (
-              <p className="px-2.5 pt-1 text-[11px] font-semibold text-[#8D86A8]">{isRTL ? group.ar : group.en}</p>
+              <p className="px-4 pt-1 pb-0.5 text-[11px] font-semibold text-[#8D86A8]">{isRTL ? group.ar : group.en}</p>
             )}
             {group.items.map((item) => {
               const isActive = location.pathname === item.path;
@@ -311,7 +300,7 @@ export function Sidebar() {
                   className={cn("nav-item relative group", isActive && "active", isCollapsed && "justify-center px-0")}
                 >
                   <span className="nav-icon">
-                    <Icon className="w-[18px] h-[18px]" />
+                    <Icon className="w-5 h-5" />
                   </span>
                   <AnimatePresence mode="wait">
                     {!isCollapsed && (
