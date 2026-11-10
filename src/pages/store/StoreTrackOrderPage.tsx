@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Loader2, Package, Truck, CheckCircle2, Clock } from 'lucide-react';
+import { Loader2, Package, Truck, CheckCircle2, Clock, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -80,7 +80,22 @@ export function StoreTrackOrderPage({ store }: { store: StoreSettings }) {
             <div className="bg-muted/30 rounded-lg p-3 text-sm">
               <p className="text-xs text-muted-foreground"> رقم الشحنة{shipment.carrier ? ` · ${shipment.carrier.name}` : ''}
               </p>
-              <p className="font-mono font-bold" dir="ltr">{shipment.number}</p>
+              <div className="flex items-center gap-2">
+                <p className="font-mono font-bold" dir="ltr">{shipment.number}</p>
+                {/* Claude Design: copy the tracking number in one tap */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard?.writeText(shipment.number!)
+                      .then(() => toast.success('تم نسخ رقم الشحنة'))
+                      .catch(() => toast.error('تعذّر النسخ — انسخ الرقم يدويًا'));
+                  }}
+                  className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-md hover:bg-muted"
+                  aria-label="نسخ رقم الشحنة"
+                >
+                  <Copy className="w-3.5 h-3.5" /> نسخ
+                </button>
+              </div>
               {shipment.url && (
                 <a href={shipment.url} target="_blank" rel="noopener"
                   className="inline-flex items-center gap-1 mt-2 px-4 py-2 rounded-lg text-white text-xs font-bold"
