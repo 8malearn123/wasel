@@ -150,7 +150,7 @@ export function AlertsWidget() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.4 }}
-      className="bg-card rounded-xl border border-border shadow-md overflow-hidden"
+      className="bg-card rounded-[18px] border border-border shadow-md overflow-hidden"
     >
       <div className="px-6 py-4 border-b border-border">
         <h3 className="text-lg font-semibold text-foreground">{t.dashboard.alerts}</h3>

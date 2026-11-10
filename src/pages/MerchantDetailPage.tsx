@@ -167,7 +167,7 @@ export default function MerchantDetailPage() {
           { icon: TrendingUp, label: 'قيمة المخزون', value: inventoryValue.toLocaleString(), sub: ' ر.س', color: 'text-primary' },
         ].map((stat, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-            className="p-3 rounded-xl bg-card border border-border shadow-sm">
+            className="p-3 rounded-[18px] bg-card border border-border shadow-md">
             <div className="flex items-center gap-2">
               <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center">
                 <stat.icon className={cn("w-4 h-4", stat.color)} />
@@ -195,7 +195,7 @@ export default function MerchantDetailPage() {
 
         {/* Sales Tab */}
         <TabsContent value="sales">
-          <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+          <div className="bg-card rounded-[18px] border border-border shadow-md overflow-hidden">
             {sales.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground"><ShoppingCart className="w-10 h-10 mx-auto mb-3 opacity-40" /><p>لا توجد مبيعات</p></div>
             ) : (
@@ -239,7 +239,7 @@ export default function MerchantDetailPage() {
 
         {/* Online Orders Tab */}
         <TabsContent value="online">
-          <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+          <div className="bg-card rounded-[18px] border border-border shadow-md overflow-hidden">
             {onlineOrders.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground"><Globe className="w-10 h-10 mx-auto mb-3 opacity-40" /><p>لا توجد طلبات أونلاين</p></div>
             ) : (
@@ -294,7 +294,7 @@ export default function MerchantDetailPage() {
 
         {/* Devices Tab */}
         <TabsContent value="devices">
-          <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+          <div className="bg-card rounded-[18px] border border-border shadow-md overflow-hidden">
             {devices.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground"><Smartphone className="w-10 h-10 mx-auto mb-3 opacity-40" /><p>لا توجد أجهزة</p></div>
             ) : (
@@ -335,7 +335,7 @@ export default function MerchantDetailPage() {
 
         {/* Accessories Tab */}
         <TabsContent value="accessories">
-          <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+          <div className="bg-card rounded-[18px] border border-border shadow-md overflow-hidden">
             {accessories.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground"><Package className="w-10 h-10 mx-auto mb-3 opacity-40" /><p>لا توجد إكسسوارات</p></div>
             ) : (
@@ -378,7 +378,7 @@ export default function MerchantDetailPage() {
 
         {/* Repairs Tab */}
         <TabsContent value="repairs">
-          <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+          <div className="bg-card rounded-[18px] border border-border shadow-md overflow-hidden">
             {repairs.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground"><Wrench className="w-10 h-10 mx-auto mb-3 opacity-40" /><p>لا توجد طلبات إصلاح</p></div>
             ) : (
@@ -434,7 +434,7 @@ export default function MerchantDetailPage() {
         <TabsContent value="team">
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Branches */}
-            <div className="bg-card rounded-xl border border-border shadow-sm p-5">
+            <div className="bg-card rounded-[18px] border border-border shadow-md p-5">
               <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2"><Store className="w-5 h-5 text-primary" /> الفروع ({branches.length})</h3>
               <div className="space-y-3">
                 {branches.map((branch) => (
@@ -458,7 +458,7 @@ export default function MerchantDetailPage() {
             </div>
 
             {/* Users */}
-            <div className="bg-card rounded-xl border border-border shadow-sm p-5">
+            <div className="bg-card rounded-[18px] border border-border shadow-md p-5">
               <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2"><Users className="w-5 h-5 text-primary" /> المستخدمين ({users.length})</h3>
               <div className="space-y-3">
                 {users.map((u) => {
@@ -490,7 +490,7 @@ export default function MerchantDetailPage() {
 
         {/* Activity Log Tab */}
         <TabsContent value="activity">
-          <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+          <div className="bg-card rounded-[18px] border border-border shadow-md overflow-hidden">
             {activityLogs.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground"><Activity className="w-10 h-10 mx-auto mb-3 opacity-40" /><p>لا يوجد نشاط مسجل</p></div>
             ) : (

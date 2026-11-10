@@ -213,7 +213,7 @@ export default function HRSection() {
           { icon: TrendingUp, value: `${teamMonthSales.toLocaleString()} ر.س`, label: isRTL ? "مبيعات الفريق هذا الشهر" : "Team Sales This Month", color: "text-primary bg-primary/10" },
         ].map((card, i) => (
           <motion.div key={card.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-            className="p-4 rounded-xl bg-card border border-border shadow-sm">
+            className="p-4 rounded-[18px] bg-card border border-border shadow-md">
             <div className="flex items-center gap-3">
               <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${card.color}`}>
                 <card.icon className="w-5 h-5" />

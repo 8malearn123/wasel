@@ -92,7 +92,7 @@ export default function BranchesSection() {
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-4 mb-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          className="p-4 rounded-xl bg-card border border-border shadow-sm">
+          className="p-4 rounded-[18px] bg-card border border-border shadow-md">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
               <Building2 className="w-5 h-5 text-primary" />
@@ -108,7 +108,7 @@ export default function BranchesSection() {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-          className="p-4 rounded-xl bg-card border border-border shadow-sm">
+          className="p-4 rounded-[18px] bg-card border border-border shadow-md">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
               <Warehouse className="w-5 h-5 text-accent" />
@@ -121,7 +121,7 @@ export default function BranchesSection() {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          className="p-4 rounded-xl bg-card border border-border shadow-sm">
+          className="p-4 rounded-[18px] bg-card border border-border shadow-md">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
               <Building2 className="w-5 h-5 text-success" />
@@ -134,7 +134,7 @@ export default function BranchesSection() {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-          className="p-4 rounded-xl bg-card border border-border shadow-sm">
+          className="p-4 rounded-[18px] bg-card border border-border shadow-md">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
               <Send className="w-5 h-5 text-warning" />

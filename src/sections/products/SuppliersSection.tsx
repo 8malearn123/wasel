@@ -418,7 +418,7 @@ export default function SuppliersSection() {
 function StatCard({ icon: Icon, value, label, color, delay }: { icon: any; value: any; label: string; color: string; delay: number }) {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay }}
-      className="p-4 rounded-xl bg-card border border-border shadow-sm">
+      className="p-4 rounded-[18px] bg-card border border-border shadow-md">
       <div className="flex items-center gap-3">
         <div className={`w-10 h-10 rounded-lg bg-${color}/10 flex items-center justify-center`}>
           <Icon className={`w-5 h-5 text-${color}`} />

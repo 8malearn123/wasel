@@ -176,7 +176,7 @@ export default function UsersSection() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 rounded-xl bg-card border border-border shadow-sm"
+          className="p-4 rounded-[18px] bg-card border border-border shadow-md"
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -193,7 +193,7 @@ export default function UsersSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="p-4 rounded-xl bg-card border border-border shadow-sm"
+          className="p-4 rounded-[18px] bg-card border border-border shadow-md"
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
@@ -210,7 +210,7 @@ export default function UsersSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="p-4 rounded-xl bg-card border border-border shadow-sm"
+          className="p-4 rounded-[18px] bg-card border border-border shadow-md"
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -227,7 +227,7 @@ export default function UsersSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="p-4 rounded-xl bg-card border border-border shadow-sm"
+          className="p-4 rounded-[18px] bg-card border border-border shadow-md"
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
@@ -246,7 +246,7 @@ export default function UsersSection() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="bg-card rounded-xl border border-border shadow-md overflow-hidden"
+        className="bg-card rounded-[18px] border border-border shadow-md overflow-hidden"
       >
         {loading ? (
           <div className="flex items-center justify-center py-20">

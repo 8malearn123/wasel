@@ -99,7 +99,7 @@ export default function SupportSection() {
             return (
               <motion.div key={ticket.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.03 }}
-                className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+                className="bg-card rounded-[18px] border border-border shadow-md overflow-hidden">
                 <div
                   className="p-4 flex items-center justify-between cursor-pointer hover:bg-muted/30 transition-colors"
                   onClick={() => setExpandedTicket(isExpanded ? null : ticket.id)}

@@ -92,7 +92,7 @@ export default function OnlineOrdersSection() {
           { label: "الإيرادات", value: `${formatSar(stats.revenue)} ر.س`, icon: CreditCard, color: "bg-success/10 text-success" },
         ].map((s, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-            className="p-4 rounded-xl bg-card border border-border shadow-sm">
+            className="p-4 rounded-[18px] bg-card border border-border shadow-md">
             <div className="flex items-center gap-3">
               <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", s.color)}>
                 <s.icon className="w-5 h-5" />
@@ -122,7 +122,7 @@ export default function OnlineOrdersSection() {
       </div>
 
       {/* Orders List */}
-      <div className="bg-card rounded-xl border border-border shadow-md overflow-hidden">
+      <div className="bg-card rounded-[18px] border border-border shadow-md overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
         ) : filtered.length === 0 ? (
