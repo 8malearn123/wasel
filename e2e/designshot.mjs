@@ -59,3 +59,4 @@ await run('owner', 'demo-distributor@wasil.demo', { width: 1440, height: 900 }, 
 await run('owner-m', 'demo-distributor@wasil.demo', { width: 390, height: 844 }, ['/ai-insights']);
 console.log('R|errors|' + JSON.stringify(errors));
 await browser.close();
+// rerun 2
