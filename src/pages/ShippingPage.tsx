@@ -28,6 +28,7 @@ import { CARRIERS, orderShipment, type CarrierSetting } from '@/lib/shipping';
 import { shipmentStage, shippingStats, collectOnDelivery, waybillHtml, type ShipmentStage } from '@/lib/shipments';
 import { formatSar } from '@/lib/money';
 import { storePaymentLabel } from '@/lib/storePayments';
+import { STAT_TONES } from '@/lib/tones';
 
 /**
  * Shipping, from the store's own orders: what is waiting to go out, what is on
@@ -84,10 +85,10 @@ export default function ShippingPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsContent value="shipments" className="m-0 space-y-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <Kpi icon={PackageOpen} tone="text-warning bg-warning/10" label={t ? 'بانتظار الشحن' : 'To ship'} value={String(stats.toShip)} />
-            <Kpi icon={Truck} tone="text-primary bg-primary/10" label={t ? 'في الطريق' : 'On the way'} value={String(stats.shipped)} />
-            <Kpi icon={PackageCheck} tone="text-success bg-success/10" label={t ? 'تم التسليم' : 'Delivered'} value={String(stats.delivered)} />
-            <Kpi icon={Wallet} tone="text-primary bg-primary/10" label={t ? 'تحصيل مع المندوب' : 'Cash with couriers'} value={`${formatSar(stats.codInTransit)} ${cur}`} />
+            <Kpi card={STAT_TONES[0]} icon={PackageOpen} tone="text-warning bg-warning/10" label={t ? 'بانتظار الشحن' : 'To ship'} value={String(stats.toShip)} />
+            <Kpi card={STAT_TONES[1]} icon={Truck} tone="text-primary bg-primary/10" label={t ? 'في الطريق' : 'On the way'} value={String(stats.shipped)} />
+            <Kpi card={STAT_TONES[2]} icon={PackageCheck} tone="text-success bg-success/10" label={t ? 'تم التسليم' : 'Delivered'} value={String(stats.delivered)} />
+            <Kpi card={STAT_TONES[3]} icon={Wallet} tone="text-primary bg-primary/10" label={t ? 'تحصيل مع المندوب' : 'Cash with couriers'} value={`${formatSar(stats.codInTransit)} ${cur}`} />
           </div>
           <Shipments
             orders={orders as OnlineOrder[]}
@@ -126,10 +127,10 @@ export default function ShippingPage() {
   );
 }
 
-function Kpi({ icon: Icon, tone, label, value }: { icon: typeof Truck; tone: string; label: string; value: string }) {
+function Kpi({ icon: Icon, tone, card, label, value }: { icon: typeof Truck; tone: string; card?: string; label: string; value: string }) {
   return (
-    <div className="bg-card rounded-xl border border-border p-4 flex items-center gap-3">
-      <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center shrink-0', tone)}><Icon className="w-5 h-5" /></div>
+    <div className={cn('rounded-xl border p-4 flex items-center gap-3', card ?? 'bg-card border-border')}>
+      <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center shrink-0 tone-tile', tone)}><Icon className="w-5 h-5" /></div>
       <div className="min-w-0">
         <p className="text-xs text-muted-foreground">{label}</p>
         <p className="text-lg font-bold text-foreground tabular-nums whitespace-nowrap">{value}</p>
@@ -388,10 +389,10 @@ function Insights({ stats }: { stats: ReturnType<typeof shippingStats> }) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Kpi icon={Truck} tone="text-primary bg-primary/10" label={t ? 'شحنات خرجت' : 'Shipped in total'} value={String(went)} />
-        <Kpi icon={PackageCheck} tone="text-success bg-success/10" label={t ? 'نسبة التسليم' : 'Delivered rate'} value={`${stats.deliveredRate}%`} />
-        <Kpi icon={Wallet} tone="text-primary bg-primary/10" label={t ? 'رسوم شحن محصّلة' : 'Shipping fees'} value={`${formatSar(stats.fees)} ${cur}`} />
-        <Kpi icon={Wallet} tone="text-warning bg-warning/10" label={t ? 'متوسط رسوم الشحنة' : 'Average fee'} value={`${formatSar(stats.fees / went)} ${cur}`} />
+        <Kpi card={STAT_TONES[0]} icon={Truck} tone="text-primary bg-primary/10" label={t ? 'شحنات خرجت' : 'Shipped in total'} value={String(went)} />
+        <Kpi card={STAT_TONES[1]} icon={PackageCheck} tone="text-success bg-success/10" label={t ? 'نسبة التسليم' : 'Delivered rate'} value={`${stats.deliveredRate}%`} />
+        <Kpi card={STAT_TONES[2]} icon={Wallet} tone="text-primary bg-primary/10" label={t ? 'رسوم شحن محصّلة' : 'Shipping fees'} value={`${formatSar(stats.fees)} ${cur}`} />
+        <Kpi card={STAT_TONES[3]} icon={Wallet} tone="text-warning bg-warning/10" label={t ? 'متوسط رسوم الشحنة' : 'Average fee'} value={`${formatSar(stats.fees / went)} ${cur}`} />
       </div>
       <div className="grid gap-4 md:grid-cols-2">
         <Bars title={t ? 'الشحنات حسب الشركة' : 'By carrier'} rows={stats.byCarrier.map(c => ({ label: c.name, value: c.count }))} max={max} />

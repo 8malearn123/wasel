@@ -24,6 +24,7 @@ import { toast } from "@/hooks/use-toast";
 import { Plus, Ticket, Megaphone, Trash2, Pencil, Copy, Zap, Package, Tag, PercentIcon , Sparkles } from "lucide-react";
 import { format } from "date-fns";
 import { formatSar } from "@/lib/money";
+import { STAT_TONES } from '@/lib/tones';
 
 export default function MarketingSection() {
   const { t, language } = useLanguage();
@@ -275,46 +276,46 @@ export default function MarketingSection() {
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card>
+          <Card className={STAT_TONES[0]}>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-                <Ticket className="h-5 w-5 text-primary" />
+                <Ticket className="h-5 w-5 tone-ico text-primary" />
                 <div>
                   <p className="text-sm text-muted-foreground">{mk.totalCoupons}</p>
-                  <p className="text-2xl font-bold">{coupons.length}</p>
+                  <p className="text-2xl font-bold text-foreground">{coupons.length}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className={STAT_TONES[1]}>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-                <Ticket className="h-5 w-5 text-accent-foreground" />
+                <Ticket className="h-5 w-5 tone-ico text-accent-foreground" />
                 <div>
                   <p className="text-sm text-muted-foreground">{mk.activeCoupons}</p>
-                  <p className="text-2xl font-bold">{activeCoupons.length}</p>
+                  <p className="text-2xl font-bold text-foreground">{activeCoupons.length}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className={STAT_TONES[2]}>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-                <Megaphone className="h-5 w-5 text-primary" />
+                <Megaphone className="h-5 w-5 tone-ico text-primary" />
                 <div>
                   <p className="text-sm text-muted-foreground">{mk.totalCampaigns}</p>
-                  <p className="text-2xl font-bold">{campaigns.length}</p>
+                  <p className="text-2xl font-bold text-foreground">{campaigns.length}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className={STAT_TONES[3]}>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-                <Megaphone className="h-5 w-5 text-accent-foreground" />
+                <Megaphone className="h-5 w-5 tone-ico text-accent-foreground" />
                 <div>
                   <p className="text-sm text-muted-foreground">{mk.activeCampaigns}</p>
-                  <p className="text-2xl font-bold">{activeCampaigns.length}</p>
+                  <p className="text-2xl font-bold text-foreground">{activeCampaigns.length}</p>
                 </div>
               </div>
             </CardContent>

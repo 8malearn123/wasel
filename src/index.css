@@ -306,7 +306,7 @@
   .dark .tone-violet, .dark .tone-peach, .dark .tone-rose { background: hsl(var(--card)); border-color: hsl(var(--border)); }
   .tone-signal .tone-muted { color: rgba(28, 23, 51, 0.75); }
   /* the card's own text and icon tile take the tone, so a section only names it */
-  .tone-signal .text-foreground { color: #1C1733; }
+  .tone-signal .text-foreground, .tone-signal.text-card-foreground { color: #1C1733; }
   .tone-signal .text-muted-foreground { color: rgba(28, 23, 51, 0.75); }
   .tone-signal .tone-tile { background: #1C1733; color: #FF7A45; }
   .tone-violet .tone-tile { background: #fff; color: #5A48B5; }
@@ -315,6 +315,7 @@
   .dark .tone-violet .tone-tile, .dark .tone-peach .tone-tile, .dark .tone-rose .tone-tile { background: hsl(var(--muted)); }
   .tone-tile { box-shadow: 0 1px 2px rgba(28, 23, 51, 0.08); }
   .tone-tile > * { color: inherit !important; }
+  .tone-signal .tone-ico { color: #1C1733; }
 
   /* ── Sidebar, Claude Design ── */
   .sidebar-shell {

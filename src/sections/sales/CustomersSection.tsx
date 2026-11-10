@@ -14,6 +14,7 @@ import { Users, UserPlus, Star, Award, Gift, TrendingUp, Search, Plus, Minus, Hi
 import { cn } from '@/lib/utils';
 import { LOYALTY_TIERS } from '@/lib/loyaltyTiers';
 import { TierBadge } from '@/components/customers/TierBadge';
+import { STAT_TONES } from '@/lib/tones';
 
 
 export default function CustomersSection() {
@@ -99,21 +100,21 @@ export default function CustomersSection() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card><CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10"><Users className="w-5 h-5 text-primary" /></div>
-            <div><p className="text-xs text-muted-foreground">{t ? 'إجمالي العملاء' : 'Total Customers'}</p><p className="text-xl font-bold">{stats.total}</p></div>
+          <Card className={STAT_TONES[0]}><CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg tone-tile bg-primary/10"><Users className="w-5 h-5 text-primary" /></div>
+            <div><p className="text-xs text-muted-foreground">{t ? 'إجمالي العملاء' : 'Total Customers'}</p><p className="text-xl font-bold text-foreground">{stats.total}</p></div>
           </CardContent></Card>
-          <Card><CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-warning/10"><Star className="w-5 h-5 text-warning" /></div>
-            <div><p className="text-xs text-muted-foreground">{t ? 'إجمالي النقاط' : 'Total Points'}</p><p className="text-xl font-bold">{stats.totalPoints.toLocaleString()}</p></div>
+          <Card className={STAT_TONES[1]}><CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg tone-tile bg-warning/10"><Star className="w-5 h-5 text-warning" /></div>
+            <div><p className="text-xs text-muted-foreground">{t ? 'إجمالي النقاط' : 'Total Points'}</p><p className="text-xl font-bold text-foreground">{stats.totalPoints.toLocaleString()}</p></div>
           </CardContent></Card>
-          <Card><CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-success/10"><TrendingUp className="w-5 h-5 text-success" /></div>
-            <div><p className="text-xs text-muted-foreground">{t ? 'إجمالي المشتريات' : 'Total Revenue'}</p><p className="text-xl font-bold">{stats.totalSpent.toLocaleString()} {t ? 'ر.س' : 'SAR'}</p></div>
+          <Card className={STAT_TONES[2]}><CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg tone-tile bg-success/10"><TrendingUp className="w-5 h-5 text-success" /></div>
+            <div><p className="text-xs text-muted-foreground">{t ? 'إجمالي المشتريات' : 'Total Revenue'}</p><p className="text-xl font-bold text-foreground">{stats.totalSpent.toLocaleString()} {t ? 'ر.س' : 'SAR'}</p></div>
           </CardContent></Card>
-          <Card><CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10"><Award className="w-5 h-5 text-primary" /></div>
-            <div><p className="text-xs text-muted-foreground">{t ? 'عملاء بلاتينيين' : 'Platinum'}</p><p className="text-xl font-bold">{stats.platinum}</p></div>
+          <Card className={STAT_TONES[3]}><CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg tone-tile bg-primary/10"><Award className="w-5 h-5 text-primary" /></div>
+            <div><p className="text-xs text-muted-foreground">{t ? 'عملاء بلاتينيين' : 'Platinum'}</p><p className="text-xl font-bold text-foreground">{stats.platinum}</p></div>
           </CardContent></Card>
         </div>
 
