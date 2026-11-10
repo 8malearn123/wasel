@@ -85,21 +85,22 @@ export default function OnlineOrdersSection() {
     <>
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-4 mb-6">
+        {/* Claude Design: the four cards in its tones — the same figures and sizes */}
         {[
-          { label: "إجمالي الطلبات", value: stats.total, icon: ShoppingBag, color: "bg-primary/10 text-primary" },
-          { label: "قيد الانتظار", value: stats.pending, icon: Clock, color: "bg-warning/10 text-warning" },
-          { label: "قيد التجهيز", value: stats.processing, icon: Package, color: "bg-primary/10 text-primary" },
-          { label: "الإيرادات", value: `${formatSar(stats.revenue)} ر.س`, icon: CreditCard, color: "bg-success/10 text-success" },
+          { label: "الإيرادات", value: `${formatSar(stats.revenue)} ر.س`, icon: CreditCard, tone: "tone-signal", tile: "bg-[#1C1733] text-[#FF7A45]" },
+          { label: "إجمالي الطلبات", value: stats.total, icon: ShoppingBag, tone: "tone-violet", tile: "bg-white text-[#5A48B5]" },
+          { label: "قيد الانتظار", value: stats.pending, icon: Clock, tone: "tone-peach", tile: "bg-white text-primary-text" },
+          { label: "قيد التجهيز", value: stats.processing, icon: Package, tone: "tone-rose", tile: "bg-white text-[#BE2D4F]" },
         ].map((s, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-            className="p-4 rounded-[18px] bg-card border border-border shadow-md">
+            className={cn("p-4 rounded-[18px] border shadow-md", s.tone)}>
             <div className="flex items-center gap-3">
-              <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", s.color)}>
+              <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center shadow-sm", s.tile)}>
                 <s.icon className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{s.value}</p>
-                <p className="text-sm text-muted-foreground">{s.label}</p>
+                <p className={cn("text-2xl font-bold", s.tone === "tone-signal" ? "text-[#1C1733]" : "text-foreground")}>{s.value}</p>
+                <p className={cn("text-sm", s.tone === "tone-signal" ? "tone-muted" : "text-muted-foreground")}>{s.label}</p>
               </div>
             </div>
           </motion.div>

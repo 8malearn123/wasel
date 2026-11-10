@@ -298,6 +298,14 @@
     box-shadow: 0 18px 36px -16px rgba(240, 78, 26, 0.6);
   }
 
+  /* ── Stat card tones, Claude Design (sizes are the card's own) ── */
+  .tone-signal { background: linear-gradient(135deg, #FF8A55 0%, #F04E1A 55%, #D43A0B 100%); color: #1C1733; border-color: transparent; box-shadow: 0 18px 36px -16px rgba(240, 78, 26, 0.6); }
+  .tone-violet { background: linear-gradient(135deg, #F4F1FE 0%, #E8E3FB 100%); border-color: #E0DAF7; }
+  .tone-peach  { background: linear-gradient(135deg, #FFF4EC 0%, #FFE7DA 100%); border-color: #FBDCCB; }
+  .tone-rose   { background: linear-gradient(135deg, #FFF1F4 0%, #FDE3E9 100%); border-color: #F8D3DC; }
+  .dark .tone-violet, .dark .tone-peach, .dark .tone-rose { background: hsl(var(--card)); border-color: hsl(var(--border)); }
+  .tone-signal .tone-muted { color: rgba(28, 23, 51, 0.75); }
+
   /* ── Sidebar, Claude Design ── */
   .sidebar-shell {
     background: var(--sidebar-gradient);
