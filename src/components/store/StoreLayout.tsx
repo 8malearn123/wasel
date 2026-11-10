@@ -1,9 +1,9 @@
-import { ReactNode } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { ShoppingCart, Search, Instagram, Twitter, Phone, Store as StoreIcon, ClipboardList, ShieldCheck, FileText, Heart } from 'lucide-react';
+import { ReactNode, useState, FormEvent } from 'react';
+import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
+import { ShoppingCart, Search, Instagram, Twitter, Phone, Store as StoreIcon, ClipboardList, ShieldCheck, FileText, Heart, Home, LayoutGrid } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import type { StoreSettings, StorePage, MerchantLegalInfo, DesignExtras } from '@/hooks/useOnlineStore';
+import type { StoreSettings, StorePage, MerchantLegalInfo, DesignExtras, StoreCategory } from '@/hooks/useOnlineStore';
 import { useStoreCart } from './StoreCart';
 import { useStoreFavorites } from './StoreFavorites';
 import { cn } from '@/lib/utils';
@@ -14,15 +14,27 @@ interface Props {
   merchantLegal?: MerchantLegalInfo | null;
   // نصوص الفوتر القابلة للتعديل من محرر المتجر
   designExtras?: DesignExtras | null;
+  /** the shop's own active categories — the design's category row */
+  categories?: StoreCategory[];
   children: ReactNode;
 }
 
-export function StoreLayout({ store, pages = [], merchantLegal, designExtras, children }: Props) {
+export function StoreLayout({ store, pages = [], merchantLegal, designExtras, categories = [], children }: Props) {
   const { slug } = useParams<{ slug: string }>();
   const { count } = useStoreCart();
   const { count: favCount } = useStoreFavorites();
   const base = `/store/${slug}`;
   const currency = store.currency_symbol || 'ر.س';
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [query, setQuery] = useState('');
+  // Claude Design: a search box in the header, into the products page's own search
+  const submitSearch = (e: FormEvent) => {
+    e.preventDefault();
+    const q = query.trim();
+    navigate(`${base}/products${q ? `?q=${encodeURIComponent(q)}` : ''}`);
+  };
+  const activeCategory = new URLSearchParams(location.search).get('category');
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -62,9 +74,21 @@ export function StoreLayout({ store, pages = [], merchantLegal, designExtras, ch
             <NavItem to={`${base}/products`} label="المنتجات" />
           </nav>
 
+          <form onSubmit={submitSearch} className="hidden lg:flex flex-1 max-w-md items-center gap-2 h-11 px-3.5 rounded-[14px] border bg-card shadow-sm" role="search">
+            <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+            <label htmlFor="store-search" className="sr-only">ابحث في المتجر</label>
+            <input
+              id="store-search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="ابحث عن جوال، سماعة، كفر…"
+              className="flex-1 min-w-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            />
+          </form>
+
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" asChild>
-              <Link to={`${base}/products`}><Search className="w-5 h-5" /></Link>
+            <Button variant="ghost" size="icon" asChild className="lg:hidden">
+              <Link to={`${base}/products`} aria-label="البحث"><Search className="w-5 h-5" /></Link>
             </Button>
             <Button variant="ghost" size="icon" asChild title="طلباتي">
               <Link to={`${base}/my-orders`}><ClipboardList className="w-5 h-5" /></Link>
@@ -94,9 +118,59 @@ export function StoreLayout({ store, pages = [], merchantLegal, designExtras, ch
             </Button>
           </div>
         </div>
+        {/* Claude Design: the shop's categories under the header */}
+        {categories.length > 0 && (
+          <nav className="hidden md:block border-t" aria-label="التصنيفات">
+            <div className="max-w-7xl mx-auto px-4 h-11 flex items-center gap-1 overflow-x-auto">
+              <Link
+                to={`${base}/products`}
+                className={cn('shrink-0 px-3 py-1.5 rounded-full text-sm transition-colors',
+                  location.pathname.endsWith('/products') && !activeCategory ? 'font-semibold text-foreground bg-muted' : 'text-muted-foreground hover:text-foreground hover:bg-muted')}
+              >
+                الكل
+              </Link>
+              {categories.map(c => (
+                <Link
+                  key={c.id}
+                  to={`${base}/products?category=${encodeURIComponent(c.name)}`}
+                  className={cn('shrink-0 px-3 py-1.5 rounded-full text-sm transition-colors',
+                    activeCategory === c.name ? 'font-semibold text-foreground bg-muted' : 'text-muted-foreground hover:text-foreground hover:bg-muted')}
+                >
+                  {c.name}
+                </Link>
+              ))}
+            </div>
+          </nav>
+        )}
       </header>
 
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 pb-20 md:pb-0">{children}</main>
+
+      {/* Claude Design: a tab bar at the bottom on phones */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur border-t" aria-label="التنقل">
+        <div className="grid grid-cols-5 h-16">
+          {[
+            { to: base, label: 'الرئيسية', icon: Home, active: location.pathname === base || location.pathname === `${base}/` },
+            { to: `${base}/products`, label: 'المنتجات', icon: LayoutGrid, active: location.pathname.startsWith(`${base}/products`) },
+            { to: `${base}/cart`, label: 'السلة', icon: ShoppingCart, active: location.pathname.startsWith(`${base}/cart`), badge: count },
+            { to: `${base}/favorites`, label: 'المفضلة', icon: Heart, active: location.pathname.startsWith(`${base}/favorites`), badge: favCount },
+            { to: `${base}/my-orders`, label: 'طلباتي', icon: ClipboardList, active: location.pathname.startsWith(`${base}/my-orders`) },
+          ].map(t => (
+            <Link key={t.label} to={t.to} aria-current={t.active ? 'page' : undefined}
+              className={cn('relative flex flex-col items-center justify-center gap-1 text-[11px] font-medium', t.active ? 'text-foreground' : 'text-muted-foreground')}>
+              <span className="relative">
+                <t.icon className="w-5 h-5" style={t.active ? { color: 'hsl(var(--store-primary))' } : undefined} />
+                {!!t.badge && t.badge > 0 && (
+                  <span className="absolute -top-1.5 -left-2 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold text-white flex items-center justify-center" style={{ background: 'hsl(var(--store-primary))' }}>
+                    {t.badge}
+                  </span>
+                )}
+              </span>
+              {t.label}
+            </Link>
+          ))}
+        </div>
+      </nav>
 
       {/* Footer */}
       <footer className="border-t bg-muted/30 mt-12">

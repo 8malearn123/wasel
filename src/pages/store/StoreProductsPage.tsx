@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useParams } from 'react-router-dom';
 import { Search, SlidersHorizontal } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,9 @@ export function StoreProductsPage({ store, devices, accessories, categories }: P
   const { slug } = useParams<{ slug: string }>();
   const [params, setParams] = useSearchParams();
   const [search, setSearch] = useState(params.get('q') || '');
+  // the header's search box can change ?q= while this page is open
+  const qParam = params.get('q') || '';
+  useEffect(() => { setSearch(qParam); }, [qParam]);
   const [sort, setSort] = useState<'newest' | 'price_asc' | 'price_desc'>('newest');
   const [type, setType] = useState<'all' | 'device' | 'accessory'>('all');
   const category = params.get('category') || '';
