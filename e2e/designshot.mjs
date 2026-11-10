@@ -38,7 +38,6 @@ async function full(label, email, vp) {
   console.log(`R|${label}|overflow=` + await p.evaluate(() => document.documentElement.scrollWidth - window.innerWidth));
   await ctx.close();
 }
-await run('owner', 'demo-distributor@wasil.demo', { width: 1440, height: 900 }, ['/sales?tab=orders', '/pos']);
-await run('cashier', 'demo-cashier@wasil.demo', { width: 1440, height: 900 }, ['/pos']);
+await run('owner', 'demo-distributor@wasil.demo', { width: 1440, height: 900 }, ['/sales?tab=orders', '/pos', '/products?tab=inventory', '/team?tab=users', '/sales?tab=repairs', '/products?tab=suppliers']);
 console.log('R|errors|' + JSON.stringify(errors));
 await browser.close();
