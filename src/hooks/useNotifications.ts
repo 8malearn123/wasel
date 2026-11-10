@@ -5,6 +5,9 @@ import {
 import { useLanguage } from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { usePermissions } from "@/hooks/usePermissions";
+import { isCashierMember } from "@/lib/cashier";
 
 export type AlertType = "urgent" | "warning" | "info";
 export type AlertCategory = "stock" | "transfers" | "sales" | "repairs";
@@ -22,7 +25,13 @@ export interface Notification {
 export function useNotifications() {
   const { t } = useLanguage();
   const n = t.notifications;
-  const { merchant } = useAuth();
+  const { merchant, merchantUser, user } = useAuth();
+  const { allows } = useFeatureAccess();
+  const { can } = usePermissions();
+  // a notice about a feature the plan or the role does not include would lead
+  // to a page the user cannot open
+  const showTransfers = allows('transfers') && can('transfers.manage');
+  const showRepairs = allows('repairs') && can('repairs.manage');
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -53,7 +62,7 @@ export function useNotifications() {
     }
 
     // 2. Low stock repair parts
-    const { data: lowParts } = await supabase
+    const { data: lowParts } = !showRepairs ? { data: null } : await supabase
       .from("repair_parts")
       .select("name, quantity, min_quantity")
       .eq("merchant_id", merchant.id)
@@ -73,34 +82,41 @@ export function useNotifications() {
       }
     }
 
-    // 3. Pending transfers
-    const { data: pendingTransfers } = await supabase
-      .from("stock_transfers")
-      .select("id, transfer_number, created_at")
-      .eq("merchant_id", merchant.id)
-      .eq("status", "pending")
-      .order("created_at", { ascending: false });
+    if (showTransfers) {
+  // 3. Pending transfers
+      const { data: pendingTransfers } = await supabase
+        .from("stock_transfers")
+        .select("id, transfer_number, created_at")
+        .eq("merchant_id", merchant.id)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
 
-    if (pendingTransfers) {
-      for (const tr of pendingTransfers) {
-        alerts.push({
-          id: `tr-${tr.id}`,
-          type: "info",
-          category: "transfers",
-          icon: ArrowRightLeft,
-          title: n.pendingTransfer,
-          message: `#${tr.transfer_number}`,
-          time: new Date(tr.created_at).toLocaleDateString(),
-        });
+      if (pendingTransfers) {
+        for (const tr of pendingTransfers) {
+          alerts.push({
+            id: `tr-${tr.id}`,
+            type: "info",
+            category: "transfers",
+            icon: ArrowRightLeft,
+            title: n.pendingTransfer,
+            message: `#${tr.transfer_number}`,
+            time: new Date(tr.created_at).toLocaleDateString(),
+          });
+        }
       }
+
+    
     }
 
     // 4. Unpaid sales
-    const { data: unpaidSales } = await supabase
+    // a cashier is told about their own invoices only
+    let unpaidQuery = supabase
       .from("sales")
       .select("id, invoice_number, total_amount, customer_name, created_at")
       .eq("merchant_id", merchant.id)
-      .eq("payment_status", "unpaid")
+      .eq("payment_status", "unpaid");
+    if (isCashierMember(merchantUser) && user) unpaidQuery = unpaidQuery.eq("sold_by", user.id);
+    const { data: unpaidSales } = await unpaidQuery
       .order("created_at", { ascending: false })
       .limit(20);
 
@@ -118,53 +134,57 @@ export function useNotifications() {
       }
     }
 
-    // 5. Repairs still in progress for > 2 days
-    const { data: pendingRepairs } = await supabase
-      .from("repair_orders")
-      .select("id, repair_number, customer_name, device_type, device_brand, device_model, status, received_at")
-      .eq("merchant_id", merchant.id)
-      .in("status", ["received", "diagnosing", "waiting_parts", "in_progress"])
-      .order("received_at", { ascending: true })
-      .limit(10);
+    if (showRepairs) {
+  // 5. Repairs still in progress for > 2 days
+      const { data: pendingRepairs } = await supabase
+        .from("repair_orders")
+        .select("id, repair_number, customer_name, device_type, device_brand, device_model, status, received_at")
+        .eq("merchant_id", merchant.id)
+        .in("status", ["received", "diagnosing", "waiting_parts", "in_progress"])
+        .order("received_at", { ascending: true })
+        .limit(10);
 
-    if (pendingRepairs) {
-      for (const repair of pendingRepairs) {
-        const daysSince = Math.floor((Date.now() - new Date(repair.received_at).getTime()) / 86400000);
-        if (daysSince >= 2) {
+      if (pendingRepairs) {
+        for (const repair of pendingRepairs) {
+          const daysSince = Math.floor((Date.now() - new Date(repair.received_at).getTime()) / 86400000);
+          if (daysSince >= 2) {
+            alerts.push({
+              id: `rep-${repair.id}`,
+              type: daysSince >= 5 ? "urgent" : "warning",
+              category: "repairs",
+              icon: Clock,
+              title: n.pendingRepair,
+              message: `#${repair.repair_number} — ${repair.customer_name} — ${repair.device_brand || ""} ${repair.device_model || ""} (${daysSince} ${t.reports?.daily === "Daily" ? "days" : "يوم"})`,
+              time: new Date(repair.received_at).toLocaleDateString(),
+            });
+          }
+        }
+      }
+
+      // 6. Completed repairs ready for pickup
+      const { data: completedRepairs } = await supabase
+        .from("repair_orders")
+        .select("id, repair_number, customer_name, customer_phone, completed_at")
+        .eq("merchant_id", merchant.id)
+        .eq("status", "completed")
+        .order("completed_at", { ascending: false })
+        .limit(10);
+
+      if (completedRepairs) {
+        for (const repair of completedRepairs) {
           alerts.push({
-            id: `rep-${repair.id}`,
-            type: daysSince >= 5 ? "urgent" : "warning",
+            id: `rep-done-${repair.id}`,
+            type: "info",
             category: "repairs",
-            icon: Clock,
-            title: n.pendingRepair,
-            message: `#${repair.repair_number} — ${repair.customer_name} — ${repair.device_brand || ""} ${repair.device_model || ""} (${daysSince} ${t.reports?.daily === "Daily" ? "days" : "يوم"})`,
-            time: new Date(repair.received_at).toLocaleDateString(),
+            icon: CheckCircle2,
+            title: n.completedRepair,
+            message: `#${repair.repair_number} — ${repair.customer_name} — ${n.repairReadyForPickup}`,
+            time: repair.completed_at ? new Date(repair.completed_at).toLocaleDateString() : n.today,
           });
         }
       }
-    }
 
-    // 6. Completed repairs ready for pickup
-    const { data: completedRepairs } = await supabase
-      .from("repair_orders")
-      .select("id, repair_number, customer_name, customer_phone, completed_at")
-      .eq("merchant_id", merchant.id)
-      .eq("status", "completed")
-      .order("completed_at", { ascending: false })
-      .limit(10);
-
-    if (completedRepairs) {
-      for (const repair of completedRepairs) {
-        alerts.push({
-          id: `rep-done-${repair.id}`,
-          type: "info",
-          category: "repairs",
-          icon: CheckCircle2,
-          title: n.completedRepair,
-          message: `#${repair.repair_number} — ${repair.customer_name} — ${n.repairReadyForPickup}`,
-          time: repair.completed_at ? new Date(repair.completed_at).toLocaleDateString() : n.today,
-        });
-      }
+    
     }
 
     // Sort: urgent first, then warning, then info
@@ -173,7 +193,7 @@ export function useNotifications() {
 
     setNotifications(alerts);
     setLoading(false);
-  }, [merchant, n, t]);
+  }, [merchant, merchantUser, user, n, t, showTransfers, showRepairs]);
 
   useEffect(() => {
     fetchNotifications();

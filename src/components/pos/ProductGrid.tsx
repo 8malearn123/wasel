@@ -171,10 +171,10 @@ export function ProductGrid({ devices, accessories, loading, onAddDevice, onAddA
   );
 
   const chip = (active: boolean) => cn(
-    "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all border",
+    "px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all border",
     active
-      ? "bg-primary text-primary-foreground border-primary"
-      : "bg-muted/50 text-muted-foreground border-border hover:border-primary/50"
+      ? "bg-foreground text-background border-foreground shadow-sm"
+      : "bg-card text-muted-foreground border-border hover:border-primary/50 hover:text-foreground"
   );
 
   const kinds: { key: 'all' | 'device' | 'accessory'; label: string; count: number }[] = [
@@ -194,7 +194,7 @@ export function ProductGrid({ devices, accessories, loading, onAddDevice, onAddA
             className={chip(kind === k.key && !selectedCategory)}
           >
             {k.label}
-            <span className="ms-1.5 opacity-70">{k.count}</span>
+            <span className={cn("ms-1.5 inline-flex min-w-[1.25rem] justify-center rounded-full px-1.5 text-[10px] tabular-nums", kind === k.key && !selectedCategory ? "bg-background/15" : "bg-muted")}>{k.count}</span>
           </button>
         ))}
         {activeCategories.length > 0 && <span className="w-px h-5 bg-border shrink-0" aria-hidden />}
@@ -267,7 +267,10 @@ export function ProductGrid({ devices, accessories, loading, onAddDevice, onAddA
                   <span className="text-lg font-bold text-foreground tabular-nums">
                     {formatSar(acc.price)} ر.س
                   </span>
-                  <span className="text-[11px] text-muted-foreground">
+                  <span className={cn(
+                    "rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                    acc.quantity <= (acc.min_quantity ?? 0) ? "bg-warning/10 text-warning" : "bg-success/10 text-success",
+                  )}>
                     {isRTL ? `${t.inventory.inStock}: ${acc.quantity}` : `${acc.quantity} in stock`}
                   </span>
                 </div>

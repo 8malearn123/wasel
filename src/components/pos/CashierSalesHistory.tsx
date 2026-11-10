@@ -15,6 +15,8 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { ErrorState } from "@/components/common/StateViews";
+import { friendlyError } from "@/lib/errors";
 import { useLanguage } from "@/i18n";
 import type { POSActivity } from "@/hooks/usePOSActivity";
 import type { PaymentMethod, Sale, SaleItem } from "@/types/database";
@@ -24,6 +26,8 @@ interface CashierSalesHistoryProps {
   sales: Sale[];
   activity: POSActivity[];
   loading: boolean;
+  /** the invoices could not be read — not the same as «no invoices» */
+  error?: Error | null;
   isCashier: boolean;
   onUpdateSale: (id: string, updates: {
     customer_name?: string;
@@ -47,6 +51,7 @@ export function CashierSalesHistory({
   sales,
   activity,
   loading,
+  error,
   isCashier,
   onUpdateSale,
   onDeleteSale,
@@ -140,12 +145,15 @@ export function CashierSalesHistory({
 
   const handleSave = async () => {
     if (!editSale) return;
+    // the cashier corrects the customer's details and notes only; the money stays as sold
     const result = await onUpdateSale(editSale.id, {
       customer_name: editForm.customer_name || undefined,
       customer_phone: editForm.customer_phone || undefined,
       notes: editForm.notes || undefined,
-      discount_amount: Number(editForm.discount_amount) || 0,
-      payment_method: editForm.payment_method,
+      ...(isCashier ? {} : {
+        discount_amount: Number(editForm.discount_amount) || 0,
+        payment_method: editForm.payment_method,
+      }),
     });
     if (!result.error) {
       setEditSale(null);
@@ -262,6 +270,8 @@ export function CashierSalesHistory({
         <div className="flex items-center justify-center py-16">
           <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
+      ) : error ? (
+        <ErrorState message={friendlyError(error)} onRetry={onRefresh} />
       ) : timeline.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">
           <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
@@ -362,6 +372,8 @@ export function CashierSalesHistory({
                           variant="ghost"
                           size="sm"
                           disabled={!canEdit}
+                          // a disabled button with no reason reads as broken
+                          title={canEdit ? undefined : (isRTL ? "لا يمكن للكاشير تعديل فاتورة بعد طباعتها" : "A printed invoice cannot be edited by a cashier")}
                           onClick={() => openEdit(sale)}
                           className="gap-1"
                         >
@@ -401,6 +413,23 @@ export function CashierSalesHistory({
                             </div>
                           ))
                         )}
+                        {/* the lines are before tax and discount: show how they reach the total */}
+                        <div className="pt-2 mt-1 border-t border-border/40 space-y-1 text-xs">
+                          {[
+                            { label: isRTL ? "المجموع قبل الضريبة" : "Subtotal", value: Number(sale.subtotal ?? 0), show: true },
+                            { label: isRTL ? "الخصم" : "Discount", value: -Number(sale.discount_amount ?? 0), show: Number(sale.discount_amount ?? 0) > 0 },
+                            { label: isRTL ? "ضريبة القيمة المضافة" : "VAT", value: Number(sale.tax_amount ?? 0), show: Number(sale.tax_amount ?? 0) > 0 },
+                          ].filter(r => r.show).map(r => (
+                            <div key={r.label} className="flex items-center justify-between gap-3">
+                              <span className="text-muted-foreground">{r.label}</span>
+                              <span className="text-foreground tabular-nums">{formatSar(r.value)} ر.س</span>
+                            </div>
+                          ))}
+                          <div className="flex items-center justify-between gap-3 font-semibold">
+                            <span>{isRTL ? "الإجمالي" : "Total"}</span>
+                            <span className="tabular-nums">{formatSar(sale.total_amount)} ر.س</span>
+                          </div>
+                        </div>
                         {sale.notes && (
                           <p className="text-xs text-muted-foreground pt-1">
                             {isRTL ? "ملاحظات:" : "Notes:"} {sale.notes}
@@ -441,6 +470,7 @@ export function CashierSalesHistory({
               <div>
                 <Label>{isRTL ? "طريقة الدفع" : "Payment method"}</Label>
                 <Select
+                  disabled={isCashier}
                   value={editForm.payment_method}
                   onValueChange={value => setEditForm(prev => ({ ...prev, payment_method: value as PaymentMethod }))}
                 >
@@ -460,6 +490,7 @@ export function CashierSalesHistory({
                 <Input
                   type="number"
                   min={0}
+                  disabled={isCashier}
                   value={editForm.discount_amount}
                   onChange={e => setEditForm(prev => ({ ...prev, discount_amount: e.target.value }))}
                 />
@@ -473,9 +504,13 @@ export function CashierSalesHistory({
               />
             </div>
             <p className="text-[11px] text-muted-foreground">
-              {isRTL
-                ? "تغيير الخصم يعيد احتساب إجمالي الفاتورة."
-                : "Changing the discount recalculates the invoice total."}
+              {isCashier
+                ? (isRTL
+                    ? "الخصم وطريقة الدفع لا تُعدَّل بعد الدفع إلا من المدير أو المالك."
+                    : "Only a manager or the owner can change the discount or payment method of a paid invoice.")
+                : (isRTL
+                    ? "تغيير الخصم يعيد احتساب إجمالي الفاتورة."
+                    : "Changing the discount recalculates the invoice total.")}
             </p>
           </div>
           <DialogFooter>

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { expectSignOut } from '@/lib/authErrors';
 import { z } from 'zod';
 
 const emailSchema = z.string().email('بريد إلكتروني غير صالح');
@@ -38,6 +39,7 @@ export default function AdminAuthPage() {
           setAdminStatus('admin');
         } else {
           // Not admin - sign out so they can log in with admin account
+          expectSignOut();
           supabase.auth.signOut().then(() => {
             setAdminStatus('ready');
           });

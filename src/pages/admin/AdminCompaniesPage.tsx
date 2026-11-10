@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Building2, Search, Download, ChevronDown, ChevronUp, Eye, CreditCard,
+  Building2, Search, Download, ChevronDown, ChevronUp, CreditCard,
   Calendar, FileText, XCircle, CheckCircle, Smartphone,
   Wrench, Shield, Loader2, Users,
 } from 'lucide-react';
@@ -20,6 +20,7 @@ import { usePlans, Plan } from '@/hooks/usePlans';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { friendlyError } from '@/lib/errors';
 
 const statusBadge = (status: string) => {
   const map: Record<string, { label: string; className: string }> = {
@@ -95,7 +96,7 @@ export default function AdminCompaniesPage() {
       case 'fee': result = await updateMerchantFee(target.id, actionValue !== '' ? parseFloat(actionValue) : 5); break;
     }
     if (result && !result.error) toast.success('تمت العملية');
-    else if (result?.error) toast.error((result.error as any).message || 'حدث خطأ');
+    else if (result?.error) toast.error(friendlyError(result.error));
     setActionLoading(false);
     setActionDialog(null);
     setActionValue('');
@@ -201,7 +202,6 @@ export default function AdminCompaniesPage() {
                   </div>
                 )}
                 <div className="flex flex-wrap gap-2">
-                  <Button size="sm" onClick={() => navigate(`/platform-admin/merchant/${company.id}`)}><Eye className="w-4 h-4 ml-1" /> تفاصيل</Button>
                   <Button size="sm" variant="outline" onClick={() => setActionDialog({ type: 'upgrade', target: company })}><CreditCard className="w-4 h-4 ml-1" /> ترقية</Button>
                   <Button size="sm" variant="outline" onClick={() => setActionDialog({ type: 'extend', target: company })}><Calendar className="w-4 h-4 ml-1" /> تمديد</Button>
                   <Button size="sm" variant="outline" onClick={() => setActionDialog({ type: 'fee', target: company })}><RiyalSign className="w-4 h-4 ml-1" /> عمولة</Button>

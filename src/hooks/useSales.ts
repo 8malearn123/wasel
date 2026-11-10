@@ -4,6 +4,8 @@ import { useAuth } from './useAuth';
 import type { Sale, SaleItem, Device, Accessory, PaymentMethod } from '@/types/database';
 import { toast } from 'sonner';
 import { vatInclusive } from '@/lib/money';
+import { friendlyError, isNetworkError } from '@/lib/errors';
+import { isCashierMember } from '@/lib/cashier';
 
 interface CartItem {
   id: string;
@@ -35,7 +37,8 @@ export function saleLineRows(saleId: string, cart: CartItem[]) {
 }
 
 export function useSales() {
-  const { merchant, currentBranch, user } = useAuth();
+  const { merchant, currentBranch, user, merchantUser } = useAuth();
+  const cashier = isCashierMember(merchantUser);
   const [sales, setSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -44,11 +47,16 @@ export function useSales() {
     if (!merchant) return;
     
     setLoading(true);
+    setError(null);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('sales')
         .select('*, branch:branches(*), items:sale_items(*, device:devices(*), accessory:accessories(*))')
-        .eq('merchant_id', merchant.id)
+        .eq('merchant_id', merchant.id);
+      // a cashier's history shows the invoices they sold. This is display
+      // only: the database still lets a cashier read the rest (backend item)
+      if (cashier && user) query = query.eq('sold_by', user.id);
+      const { data, error } = await query
         .order('sale_date', { ascending: false })
         .limit(100);
 
@@ -60,7 +68,7 @@ export function useSales() {
     } finally {
       setLoading(false);
     }
-  }, [merchant]);
+  }, [merchant, cashier, user]);
 
   useEffect(() => {
     fetchSales();
@@ -95,14 +103,14 @@ export function useSales() {
     if (deviceIds.length) {
       const { data: current, error: statusError } = statusCheck;
       if (statusError) {
-        toast.error(statusError.message);
+        toast.error(friendlyError(statusError, 'إتمام البيع'));
         return { error: statusError };
       }
       const unavailable = (current || []).filter(d => d.status !== 'available');
       if (unavailable.length || (current || []).length !== new Set(deviceIds).size) {
         const names = unavailable.map(d => d.model).join('، ') || 'جهاز في السلة';
         const error = new Error(`لا يمكن بيع ${names}: الجهاز غير متاح (مباع أو محجوز أو قيد التحويل). أزِله من السلة.`);
-        toast.error(error.message);
+        toast.error(friendlyError(error));
         return { error };
       }
     }
@@ -131,7 +139,12 @@ export function useSales() {
       .single();
 
     if (saleError) {
-      toast.error(saleError.message);
+      // A dropped connection leaves the result unknown: the invoice may or may
+      // not have been saved. Nothing is sent again by itself; the cart stays,
+      // and the cashier checks the history before pressing «pay» again.
+      toast.error(isNetworkError(saleError)
+        ? 'انقطع الاتصال أثناء إتمام البيع، ولم نتأكد إن كانت الفاتورة قد حُفظت. تحقّق من الإنترنت ثم راجِع «سجل المبيعات» قبل إعادة المحاولة. السلة ما زالت كما هي.'
+        : friendlyError(saleError, 'إتمام البيع'));
       return { error: saleError };
     }
 
@@ -146,7 +159,9 @@ export function useSales() {
     if (itemsError) {
       // an invoice without its lines would count as revenue with nothing sold
       await supabase.from('sales').delete().eq('id', sale.id);
-      toast.error(itemsError.message);
+      toast.error(isNetworkError(itemsError)
+        ? `انقطع الاتصال أثناء حفظ أصناف الفاتورة ${invoiceNumber}، ولم نتأكد من اكتمالها. راجِع «سجل المبيعات» قبل إعادة المحاولة. السلة ما زالت كما هي.`
+        : friendlyError(itemsError, 'إتمام البيع'));
       return { error: itemsError };
     }
 
@@ -236,6 +251,13 @@ export function useSales() {
     const sale = sales.find(s => s.id === saleId);
     if (!sale) return { error: new Error('Sale not found') };
 
+    // a paid invoice's money is not the cashier's to change
+    if (cashier && (updates.discount_amount !== undefined || updates.payment_method !== undefined)) {
+      const error = new Error('لا يمكن للكاشير تعديل خصم الفاتورة المدفوعة أو طريقة دفعها. اطلب ذلك من المدير أو المالك.');
+      toast.error(friendlyError(error));
+      return { error };
+    }
+
     const patch: typeof updates & { total_amount?: number; subtotal?: number; tax_amount?: number } = { ...updates };
 
     // A changed discount has to carry through to the invoice total, or the
@@ -256,7 +278,7 @@ export function useSales() {
       .eq('id', saleId);
 
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error, 'تعديل الفاتورة'));
       return { error };
     }
 
@@ -269,6 +291,11 @@ export function useSales() {
   const deleteSale = async (saleId: string) => {
     const sale = sales.find(s => s.id === saleId);
     if (!sale) return { error: new Error('Sale not found') };
+    if (cashier) {
+      const error = new Error('حذف الفواتير من صلاحية المدير أو المالك فقط.');
+      toast.error(friendlyError(error));
+      return { error };
+    }
 
     // Put the stock back before the invoice goes
     const { data: items, error: itemsError } = await supabase
@@ -277,28 +304,38 @@ export function useSales() {
       .eq('sale_id', saleId);
 
     if (itemsError) {
-      toast.error(itemsError.message);
+      toast.error(friendlyError(itemsError, 'حذف الفاتورة'));
       return { error: itemsError };
     }
 
+    // Stock back first; the invoice is deleted only once every item is back.
+    // A failure used to be skipped and the invoice deleted anyway, so the
+    // goods were neither sold nor in stock.
+    const stopRestock = (err: unknown) => {
+      toast.error(`لم تُحذف الفاتورة: تعذّر إرجاع أحد الأصناف إلى المخزون. راجع المخزون قبل إعادة المحاولة. ${friendlyError(err)}`, { duration: 10000 });
+      return { error: err as Error };
+    };
     for (const item of items || []) {
       if (item.device_id) {
-        await supabase
+        const { error: deviceError } = await supabase
           .from('devices')
           .update({ status: 'available' })
           .eq('id', item.device_id);
+        if (deviceError) return stopRestock(deviceError);
       } else if (item.accessory_id) {
-        const { data: accessory } = await supabase
+        const { data: accessory, error: readError } = await supabase
           .from('accessories')
           .select('quantity')
           .eq('id', item.accessory_id)
           .single();
+        if (readError) return stopRestock(readError);
 
         if (accessory) {
-          await supabase
+          const { error: qtyError } = await supabase
             .from('accessories')
             .update({ quantity: accessory.quantity + item.quantity })
             .eq('id', item.accessory_id);
+          if (qtyError) return stopRestock(qtyError);
         }
       }
     }
@@ -307,7 +344,7 @@ export function useSales() {
     const { error } = await supabase.from('sales').delete().eq('id', saleId);
 
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error, 'حذف الفاتورة'));
       return { error };
     }
 

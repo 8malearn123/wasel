@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { seoService, isOk, type SeoFields } from '@/services';
 import { SeoEditor } from '@/components/seo/SeoEditor';
 import { LoadingState, ErrorState } from '@/components/common/StateViews';
+import { friendlyError } from '@/lib/errors';
 
 /**
  * SEO for the storefront itself.
@@ -40,7 +41,7 @@ export default function StoreSeoSection() {
     setSaving(true);
     const result = await seoService.saveStoreSeo(fields);
     setSaving(false);
-    if (!isOk(result)) { toast.error(result.error.message); return; }
+    if (!isOk(result)) { toast.error(friendlyError(result.error)); return; }
     toast.success(t ? 'تم حفظ إعدادات محركات البحث' : 'SEO settings saved');
   };
 

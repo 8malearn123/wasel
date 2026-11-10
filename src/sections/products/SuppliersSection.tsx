@@ -32,6 +32,7 @@ import { useSuppliers, usePurchaseOrders } from "@/hooks/useSuppliers";
 import { useDevices, useAccessories } from "@/hooks/useInventory";
 import type { Supplier, PurchaseOrder, PurchaseStatus } from "@/types/database";
 import { toast } from "sonner";
+import { STAT_TONES } from '@/lib/tones';
 
 const statusConfig: Record<string, { label: string; labelAr: string; color: string }> = {
   draft: { label: 'Draft', labelAr: 'مسودة', color: 'bg-muted text-muted-foreground' },
@@ -124,10 +125,10 @@ export default function SuppliersSection() {
     <>
       {/* Summary Stats */}
       <div className="grid gap-4 sm:grid-cols-4 mb-6">
-        <StatCard icon={Truck} value={activeSuppliers.length} label={isRTL ? 'الموردين النشطين' : 'Active Suppliers'} color="primary" delay={0} />
-        <StatCard icon={FileText} value={orders.length} label={isRTL ? 'أوامر الشراء' : 'Purchase Orders'} color="primary" delay={0.05} />
-        <StatCard icon={RiyalSign} value={`${totalOwed.toLocaleString()} ر.س`} label={isRTL ? 'إجمالي المديونيات' : 'Total Owed'} color="destructive" delay={0.1} />
-        <StatCard icon={PackageCheck} value={pendingReceiveCount} label={isRTL ? 'بانتظار الاستلام' : 'Pending Receive'} color="warning" delay={0.15} />
+        <StatCard icon={Truck} value={activeSuppliers.length} label={isRTL ? 'الموردين النشطين' : 'Active Suppliers'} color="primary" delay={0} tone={STAT_TONES[0]} />
+        <StatCard icon={FileText} value={orders.length} label={isRTL ? 'أوامر الشراء' : 'Purchase Orders'} color="primary" delay={0.05} tone={STAT_TONES[1]} />
+        <StatCard icon={RiyalSign} value={`${totalOwed.toLocaleString()} ر.س`} label={isRTL ? 'إجمالي المديونيات' : 'Total Owed'} color="destructive" delay={0.1} tone={STAT_TONES[2]} />
+        <StatCard icon={PackageCheck} value={pendingReceiveCount} label={isRTL ? 'بانتظار الاستلام' : 'Pending Receive'} color="warning" delay={0.15} tone={STAT_TONES[3]} />
       </div>
 
       {/* أوامر الشراء used to be reachable only from the sidebar's own
@@ -415,12 +416,12 @@ export default function SuppliersSection() {
 }
 
 // --- Stat Card ---
-function StatCard({ icon: Icon, value, label, color, delay }: { icon: any; value: any; label: string; color: string; delay: number }) {
+function StatCard({ icon: Icon, value, label, color, delay, tone }: { icon: any; value: any; label: string; color: string; delay: number; tone?: string }) {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay }}
-      className="p-4 rounded-xl bg-card border border-border shadow-sm">
+      className={`p-4 rounded-[18px] border shadow-md ${tone ?? "bg-card border-border"}`}>
       <div className="flex items-center gap-3">
-        <div className={`w-10 h-10 rounded-lg bg-${color}/10 flex items-center justify-center`}>
+        <div className={`w-10 h-10 rounded-lg bg-${color}/10 flex items-center justify-center tone-tile`}>
           <Icon className={`w-5 h-5 text-${color}`} />
         </div>
         <div>
@@ -784,7 +785,9 @@ function ReceiveDialog({ open, onOpenChange, order, onReceive, isRTL }: { open: 
             const full = verified.length === receiveItems.length;
             const note = full ? undefined
               : `استلام جزئي بتاريخ ${new Date().toLocaleDateString()}: تم استلام ${verified.length} من ${receiveItems.length} صنف`;
-            await onReceive(order.id, items, { markReceived: full, note });
+            const result = await onReceive(order.id, items, { markReceived: full, note });
+            // the hook has said what stopped it; the dialog stays as it was
+            if (result?.error) { setLoading(false); return; }
             toast.success(full
               ? (isRTL ? 'تم استلام الطلب كامل وإدخاله للمخزون' : 'Order fully received')
               : (isRTL ? `تم استلام ${verified.length} صنف — الطلب يظل مفتوحاً للباقي` : `Received ${verified.length} items — order stays open`));

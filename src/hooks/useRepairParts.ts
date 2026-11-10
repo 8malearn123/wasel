@@ -1,7 +1,9 @@
+import { productAmountProblem } from '@/lib/amounts';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { friendlyError } from '@/lib/errors';
 
 export interface RepairPart {
   id: string;
@@ -60,6 +62,8 @@ export function useRepairParts() {
 
   const addPart = async (part: Omit<RepairPart, 'id' | 'merchant_id' | 'created_at' | 'updated_at' | 'branch'>) => {
     if (!merchant) return { error: new Error('No merchant') };
+    const invalid = productAmountProblem(part);
+    if (invalid) { toast.error(invalid); return { data: null, error: new Error(invalid) }; }
 
     const { data, error } = await supabase
       .from('repair_parts')
@@ -71,12 +75,14 @@ export function useRepairParts() {
       await fetchParts();
       toast.success('تم إضافة القطعة');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     }
     return { data, error };
   };
 
   const updatePart = async (id: string, updates: Partial<RepairPart>) => {
+    const invalid = productAmountProblem(updates);
+    if (invalid) { toast.error(invalid); return { data: null, error: new Error(invalid) }; }
     const { data, error } = await supabase
       .from('repair_parts')
       .update(updates as any)
@@ -88,7 +94,7 @@ export function useRepairParts() {
       await fetchParts();
       toast.success('تم تحديث القطعة');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     }
     return { data, error };
   };
@@ -103,7 +109,7 @@ export function useRepairParts() {
       await fetchParts();
       toast.success('تم حذف القطعة');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     }
     return { error };
   };
@@ -129,7 +135,7 @@ export function useRepairParts() {
         } as any);
 
       if (insertError) {
-        toast.error(insertError.message);
+        toast.error(friendlyError(insertError));
         return { error: insertError };
       }
 
@@ -140,7 +146,7 @@ export function useRepairParts() {
         .eq('id', item.partId);
 
       if (updateError) {
-        toast.error(updateError.message);
+        toast.error(friendlyError(updateError));
         return { error: updateError };
       }
     }

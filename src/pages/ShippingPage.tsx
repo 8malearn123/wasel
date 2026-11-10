@@ -28,6 +28,7 @@ import { CARRIERS, orderShipment, type CarrierSetting } from '@/lib/shipping';
 import { shipmentStage, shippingStats, collectOnDelivery, waybillHtml, type ShipmentStage } from '@/lib/shipments';
 import { formatSar } from '@/lib/money';
 import { storePaymentLabel } from '@/lib/storePayments';
+import { STAT_TONES } from '@/lib/tones';
 
 /**
  * Shipping, from the store's own orders: what is waiting to go out, what is on
@@ -84,10 +85,10 @@ export default function ShippingPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsContent value="shipments" className="m-0 space-y-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <Kpi icon={PackageOpen} tone="text-warning bg-warning/10" label={t ? 'بانتظار الشحن' : 'To ship'} value={String(stats.toShip)} />
-            <Kpi icon={Truck} tone="text-primary bg-primary/10" label={t ? 'في الطريق' : 'On the way'} value={String(stats.shipped)} />
-            <Kpi icon={PackageCheck} tone="text-success bg-success/10" label={t ? 'تم التسليم' : 'Delivered'} value={String(stats.delivered)} />
-            <Kpi icon={Wallet} tone="text-primary bg-primary/10" label={t ? 'تحصيل مع المندوب' : 'Cash with couriers'} value={`${formatSar(stats.codInTransit)} ${cur}`} />
+            <Kpi card={STAT_TONES[0]} icon={PackageOpen} tone="text-warning bg-warning/10" label={t ? 'بانتظار الشحن' : 'To ship'} value={String(stats.toShip)} />
+            <Kpi card={STAT_TONES[1]} icon={Truck} tone="text-primary bg-primary/10" label={t ? 'في الطريق' : 'On the way'} value={String(stats.shipped)} />
+            <Kpi card={STAT_TONES[2]} icon={PackageCheck} tone="text-success bg-success/10" label={t ? 'تم التسليم' : 'Delivered'} value={String(stats.delivered)} />
+            <Kpi card={STAT_TONES[3]} icon={Wallet} tone="text-primary bg-primary/10" label={t ? 'تحصيل مع المندوب' : 'Cash with couriers'} value={`${formatSar(stats.codInTransit)} ${cur}`} />
           </div>
           <Shipments
             orders={orders as OnlineOrder[]}
@@ -126,10 +127,10 @@ export default function ShippingPage() {
   );
 }
 
-function Kpi({ icon: Icon, tone, label, value }: { icon: typeof Truck; tone: string; label: string; value: string }) {
+function Kpi({ icon: Icon, tone, card, label, value }: { icon: typeof Truck; tone: string; card?: string; label: string; value: string }) {
   return (
-    <div className="bg-card rounded-xl border border-border p-4 flex items-center gap-3">
-      <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center shrink-0', tone)}><Icon className="w-5 h-5" /></div>
+    <div className={cn('rounded-xl border p-4 flex items-center gap-3', card ?? 'bg-card border-border')}>
+      <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center shrink-0 tone-tile', tone)}><Icon className="w-5 h-5" /></div>
       <div className="min-w-0">
         <p className="text-xs text-muted-foreground">{label}</p>
         <p className="text-lg font-bold text-foreground tabular-nums whitespace-nowrap">{value}</p>
@@ -145,7 +146,7 @@ function Shipments({
   loading: boolean;
   carrierSettings: CarrierSetting[];
   sender: { name: string; phone?: string | null };
-  onShip: (orderId: string, carrierId: string, trackingNumber: string) => Promise<void>;
+  onShip: (orderId: string, carrierId: string, trackingNumber: string) => Promise<boolean | void>;
   onDelivered: (orderId: string) => Promise<void>;
   getOrderItems: (orderId: string) => Promise<{ quantity: number }[]>;
 }) {
@@ -177,9 +178,10 @@ function Shipments({
   const confirmShip = async () => {
     if (!shipping || !carrierId || (numberRequired && !number.trim())) return;
     setBusy(shipping.id);
-    await onShip(shipping.id, carrierId, number.trim());
+    const ok = await onShip(shipping.id, carrierId, number.trim());
     setBusy(null);
-    setShipping(null);
+    // a refused or failed save keeps the dialog and what was typed
+    if (ok !== false) setShipping(null);
   };
 
   const delivered = async (o: OnlineOrder) => { setBusy(o.id); await onDelivered(o.id); setBusy(null); };
@@ -203,7 +205,7 @@ function Shipments({
         {STAGES.map(s => (
           <button key={s.key} type="button" onClick={() => setStage(s.key)} aria-pressed={stage === s.key}
             className={cn('px-3 py-1.5 rounded-full border text-sm transition-colors',
-              stage === s.key ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border text-muted-foreground hover:text-foreground')}>
+              stage === s.key ? 'bg-foreground text-background border-foreground shadow-sm' : 'bg-card border-border text-muted-foreground hover:text-foreground')}>
             {t ? s.ar : s.en} <span className="ms-1 tabular-nums opacity-80">{orders.filter(o => shipmentStage(o) === s.key).length}</span>
           </button>
         ))}
@@ -387,10 +389,10 @@ function Insights({ stats }: { stats: ReturnType<typeof shippingStats> }) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Kpi icon={Truck} tone="text-primary bg-primary/10" label={t ? 'شحنات خرجت' : 'Shipped in total'} value={String(went)} />
-        <Kpi icon={PackageCheck} tone="text-success bg-success/10" label={t ? 'نسبة التسليم' : 'Delivered rate'} value={`${stats.deliveredRate}%`} />
-        <Kpi icon={Wallet} tone="text-primary bg-primary/10" label={t ? 'رسوم شحن محصّلة' : 'Shipping fees'} value={`${formatSar(stats.fees)} ${cur}`} />
-        <Kpi icon={Wallet} tone="text-warning bg-warning/10" label={t ? 'متوسط رسوم الشحنة' : 'Average fee'} value={`${formatSar(stats.fees / went)} ${cur}`} />
+        <Kpi card={STAT_TONES[0]} icon={Truck} tone="text-primary bg-primary/10" label={t ? 'شحنات خرجت' : 'Shipped in total'} value={String(went)} />
+        <Kpi card={STAT_TONES[1]} icon={PackageCheck} tone="text-success bg-success/10" label={t ? 'نسبة التسليم' : 'Delivered rate'} value={`${stats.deliveredRate}%`} />
+        <Kpi card={STAT_TONES[2]} icon={Wallet} tone="text-primary bg-primary/10" label={t ? 'رسوم شحن محصّلة' : 'Shipping fees'} value={`${formatSar(stats.fees)} ${cur}`} />
+        <Kpi card={STAT_TONES[3]} icon={Wallet} tone="text-warning bg-warning/10" label={t ? 'متوسط رسوم الشحنة' : 'Average fee'} value={`${formatSar(stats.fees / went)} ${cur}`} />
       </div>
       <div className="grid gap-4 md:grid-cols-2">
         <Bars title={t ? 'الشحنات حسب الشركة' : 'By carrier'} rows={stats.byCarrier.map(c => ({ label: c.name, value: c.count }))} max={max} />

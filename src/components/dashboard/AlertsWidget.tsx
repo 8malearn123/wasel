@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface Alert {
   id: string;
@@ -18,6 +20,12 @@ interface Alert {
 export function AlertsWidget() {
   const { t } = useLanguage();
   const { merchant } = useAuth();
+  const { allows } = useFeatureAccess();
+  const { can } = usePermissions();
+  // transfers are a Pro feature: a Lite shop is not told about them
+  const showTransfers = allows('transfers') && can('transfers.manage');
+  // repair parts belong to the repairs feature (Pro and up)
+  const showRepairs = allows('repairs') && can('repairs.manage');
   const [alerts, setAlerts] = useState<Alert[]>([]);
 
   const fetchAlerts = useCallback(async () => {
@@ -25,7 +33,7 @@ export function AlertsWidget() {
     const newAlerts: Alert[] = [];
 
     // Check low-stock repair parts
-    const { data: lowParts } = await supabase
+    const { data: lowParts } = !showRepairs ? { data: null } : await supabase
       .from('repair_parts')
       .select('name, quantity, min_quantity')
       .eq('merchant_id', merchant.id)
@@ -66,22 +74,24 @@ export function AlertsWidget() {
       }
     }
 
-    // Check pending transfers
-    const { count: pendingTransfers } = await supabase
-      .from('stock_transfers')
-      .select('id', { count: 'exact', head: true })
-      .eq('merchant_id', merchant.id)
-      .eq('status', 'pending');
+    if (showTransfers) {
+      // Check pending transfers
+      const { count: pendingTransfers } = await supabase
+        .from('stock_transfers')
+        .select('id', { count: 'exact', head: true })
+        .eq('merchant_id', merchant.id)
+        .eq('status', 'pending');
 
-    if (pendingTransfers && pendingTransfers > 0) {
-      newAlerts.push({
-        id: 'pending-transfers',
-        type: "info",
-        icon: Clock,
-        title: t.dashboard.pendingTransfer,
-        message: `${pendingTransfers} تحويلات بانتظار الموافقة`,
-        time: t.dashboard.today,
-      });
+      if (pendingTransfers && pendingTransfers > 0) {
+        newAlerts.push({
+          id: 'pending-transfers',
+          type: "info",
+          icon: Clock,
+          title: t.dashboard.pendingTransfer,
+          message: `${pendingTransfers} تحويلات بانتظار الموافقة`,
+          time: t.dashboard.today,
+        });
+      }
     }
 
     // Check unpaid sales
@@ -115,7 +125,7 @@ export function AlertsWidget() {
     }
 
     setAlerts(newAlerts);
-  }, [merchant, t]);
+  }, [merchant, t, showTransfers, showRepairs]);
 
   useEffect(() => {
     fetchAlerts();
@@ -140,7 +150,7 @@ export function AlertsWidget() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.4 }}
-      className="bg-card rounded-xl border border-border shadow-md overflow-hidden"
+      className="bg-card rounded-[18px] border border-border shadow-md overflow-hidden"
     >
       <div className="px-6 py-4 border-b border-border">
         <h3 className="text-lg font-semibold text-foreground">{t.dashboard.alerts}</h3>

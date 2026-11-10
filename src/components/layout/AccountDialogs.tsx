@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { friendlyError } from '@/lib/errors';
 import { User, Mail, Building2, Shield, Activity, Loader2, Save } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -38,7 +39,7 @@ export function ProfileDialog({ open, onOpenChange }: { open: boolean; onOpenCha
       .upsert({ id: user.id, full_name: fullName.trim() });
     setSaving(false);
     if (error) {
-      toast.error("تعذر حفظ الملف الشخصي: " + error.message);
+      toast.error(friendlyError(error, "حفظ الملف الشخصي"));
       return;
     }
     toast.success("تم حفظ الملف الشخصي");

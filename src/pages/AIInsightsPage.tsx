@@ -17,6 +17,7 @@ import {
 import {
   LoadingState, ErrorState, UnavailableState, MockDataBanner,
 } from '@/components/common/StateViews';
+import { friendlyError } from '@/lib/errors';
 
 const SEVERITY: Record<InsightSeverity, { cls: string; icon: typeof Info; ar: string; en: string }> = {
   info:        { cls: 'border-primary/30 bg-primary/5',        icon: Info,          ar: 'معلومة',  en: 'Info' },
@@ -74,7 +75,7 @@ export default function AIInsightsPage() {
     setGenerating(true);
     const result = await aiService.generateInsights(domain === 'all' ? undefined : domain);
     setGenerating(false);
-    if (!isOk(result)) { toast.error(result.error.message); return; }
+    if (!isOk(result)) { toast.error(friendlyError(result.error)); return; }
     setInsights(result.data);
     toast.success(t ? 'تم تحديث التحليلات' : 'Insights refreshed');
   };

@@ -74,7 +74,9 @@ export default function OnlineOrdersSection() {
 
   const handleShipping = async () => {
     if (!trackingNum.trim()) return;
-    await updateTracking(shippingOrderId, shippingProvider, trackingNum.trim());
+    const ok = await updateTracking(shippingOrderId, shippingProvider, trackingNum.trim());
+    // a failed save keeps the dialog and the number typed
+    if (!ok) return;
     setShowShipping(false);
     setTrackingNum("");
   };
@@ -83,21 +85,22 @@ export default function OnlineOrdersSection() {
     <>
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-4 mb-6">
+        {/* Claude Design: the four cards in its tones — the same figures and sizes */}
         {[
-          { label: "إجمالي الطلبات", value: stats.total, icon: ShoppingBag, color: "bg-primary/10 text-primary" },
-          { label: "قيد الانتظار", value: stats.pending, icon: Clock, color: "bg-warning/10 text-warning" },
-          { label: "قيد التجهيز", value: stats.processing, icon: Package, color: "bg-primary/10 text-primary" },
-          { label: "الإيرادات", value: `${formatSar(stats.revenue)} ر.س`, icon: CreditCard, color: "bg-success/10 text-success" },
+          { label: "الإيرادات", value: `${formatSar(stats.revenue)} ر.س`, icon: CreditCard, tone: "tone-signal", tile: "bg-[#1C1733] text-[#FF7A45]" },
+          { label: "إجمالي الطلبات", value: stats.total, icon: ShoppingBag, tone: "tone-violet", tile: "bg-white text-[#5A48B5]" },
+          { label: "قيد الانتظار", value: stats.pending, icon: Clock, tone: "tone-peach", tile: "bg-white text-primary-text" },
+          { label: "قيد التجهيز", value: stats.processing, icon: Package, tone: "tone-rose", tile: "bg-white text-[#BE2D4F]" },
         ].map((s, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-            className="p-4 rounded-xl bg-card border border-border shadow-sm">
+            className={cn("p-4 rounded-[18px] border shadow-md", s.tone)}>
             <div className="flex items-center gap-3">
-              <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", s.color)}>
+              <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center shadow-sm", s.tile)}>
                 <s.icon className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{s.value}</p>
-                <p className="text-sm text-muted-foreground">{s.label}</p>
+                <p className={cn("text-2xl font-bold", s.tone === "tone-signal" ? "text-[#1C1733]" : "text-foreground")}>{s.value}</p>
+                <p className={cn("text-sm", s.tone === "tone-signal" ? "tone-muted" : "text-muted-foreground")}>{s.label}</p>
               </div>
             </div>
           </motion.div>
@@ -119,8 +122,25 @@ export default function OnlineOrdersSection() {
         </Select>
       </div>
 
+      {/* Claude Design: the status chips with their counts — the same filter as the list above */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 mb-4 -mt-3 scrollbar-none" role="tablist" aria-label="تصفية حسب الحالة">
+        {[["all", "الكل", orders.length] as const, ...Object.entries(statusConfig)
+          .map(([k, v]) => [k, v.label, orders.filter(o => o.status === k).length] as const)
+          .filter(([k, , n]) => n > 0 || statusFilter === k)].map(([k, label, n]) => {
+          const active = statusFilter === k;
+          return (
+            <button key={k} type="button" role="tab" aria-selected={active} onClick={() => setStatusFilter(k)}
+              className={cn("px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap border transition-colors",
+                active ? "bg-foreground text-background border-foreground shadow-sm" : "bg-card text-muted-foreground border-border hover:text-foreground hover:border-primary/50")}>
+              {label}
+              <span className={cn("ms-1.5 inline-flex min-w-[1.25rem] justify-center rounded-full px-1.5 text-[10px] tabular-nums", active ? "bg-background/15" : "bg-muted")}>{n}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Orders List */}
-      <div className="bg-card rounded-xl border border-border shadow-md overflow-hidden">
+      <div className="bg-card rounded-[18px] border border-border shadow-md overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
         ) : filtered.length === 0 ? (

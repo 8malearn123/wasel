@@ -51,6 +51,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { PermissionGate } from "@/components/common/PermissionGate";
 import { useLanguage } from "@/i18n";
 import { useMerchantUsers, useBranches } from "@/hooks/useBranches";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -163,9 +164,11 @@ export default function UsersSection() {
     <>
       {/* Add User Button */}
       <div className="flex justify-end mb-4">
-        <Button onClick={() => setShowAddUser(true)} className="bg-primary">
-          <UserPlus className="w-4 h-4 mr-2" /> إضافة مستخدم جديد
-        </Button>
+        <PermissionGate require="users.create">
+          <Button onClick={() => setShowAddUser(true)} className="bg-primary">
+            <UserPlus className="w-4 h-4 mr-2" /> إضافة مستخدم جديد
+          </Button>
+        </PermissionGate>
       </div>
 
       {/* Stats */}
@@ -173,10 +176,10 @@ export default function UsersSection() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 rounded-xl bg-card border border-border shadow-sm"
+          className="p-4 rounded-[18px] border shadow-md tone-signal"
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center tone-tile">
               <Users className="w-5 h-5 text-primary" />
             </div>
             <div>
@@ -190,10 +193,10 @@ export default function UsersSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="p-4 rounded-xl bg-card border border-border shadow-sm"
+          className="p-4 rounded-[18px] border shadow-md tone-violet"
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center tone-tile">
               <Crown className="w-5 h-5 text-warning" />
             </div>
             <div>
@@ -207,10 +210,10 @@ export default function UsersSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="p-4 rounded-xl bg-card border border-border shadow-sm"
+          className="p-4 rounded-[18px] border shadow-md tone-peach"
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center tone-tile">
               <ShieldCheck className="w-5 h-5 text-primary" />
             </div>
             <div>
@@ -224,10 +227,10 @@ export default function UsersSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="p-4 rounded-xl bg-card border border-border shadow-sm"
+          className="p-4 rounded-[18px] border shadow-md tone-rose"
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center tone-tile">
               <Wallet className="w-5 h-5 text-success" />
             </div>
             <div>
@@ -243,7 +246,7 @@ export default function UsersSection() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="bg-card rounded-xl border border-border shadow-md overflow-hidden"
+        className="bg-card rounded-[18px] border border-border shadow-md overflow-hidden"
       >
         {loading ? (
           <div className="flex items-center justify-center py-20">
@@ -298,17 +301,19 @@ export default function UsersSection() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setEditing(user)}>
-                      <Edit className="w-4 h-4 mr-2" /> تعديل الصلاحية
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setRegeneratingCode(user)}>
-                      <KeyRound className="w-4 h-4 mr-2" /> تعيين كود دخول جديد
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setResettingUser(user)}>
-                      <Shield className="w-4 h-4 mr-2" /> إعادة تعيين كلمة المرور
-                    </DropdownMenuItem>
+                    <PermissionGate require="users.update">
+                      <DropdownMenuItem onClick={() => setEditing(user)}>
+                        <Edit className="w-4 h-4 mr-2" /> تعديل الصلاحية
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setRegeneratingCode(user)}>
+                        <KeyRound className="w-4 h-4 mr-2" /> تعيين كود دخول جديد
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setResettingUser(user)}>
+                        <Shield className="w-4 h-4 mr-2" /> إعادة تعيين كلمة المرور
+                      </DropdownMenuItem>
+                    </PermissionGate>
                     {user.role !== 'owner' && (
-                      <>
+                      <PermissionGate require="users.delete">
                         <DropdownMenuSeparator />
                         <DropdownMenuItem 
                           className="text-destructive"
@@ -316,7 +321,7 @@ export default function UsersSection() {
                         >
                           <UserX className="w-4 h-4 mr-2" /> تعطيل
                         </DropdownMenuItem>
-                      </>
+                      </PermissionGate>
                     )}
                   </DropdownMenuContent>
                 </DropdownMenu>

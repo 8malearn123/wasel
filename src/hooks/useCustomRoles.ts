@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { friendlyError } from '@/lib/errors';
 import { CUSTOM_ROLE_FORBIDDEN } from '@/lib/legacyRolePermissions';
 import { CUSTOM_ROLE_CATALOG } from '@/lib/permissionCatalog';
 import {
@@ -48,7 +49,7 @@ export function isMissingInDatabase(message?: string): boolean {
 export function roleErrorMessage(message?: string): string {
   if (!message) return 'حدث خطأ';
   const known = Object.keys(ERRORS).find(k => message.includes(k));
-  return known ? ERRORS[known] : message;
+  return known ? ERRORS[known] : friendlyError({ message });
 }
 
 /**

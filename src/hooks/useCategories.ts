@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { friendlyError } from '@/lib/errors';
 
 export interface MerchantCategory {
   id: string;
@@ -62,9 +63,9 @@ export function useCategories() {
 
     if (!error) {
       await fetchCategories();
-      toast.success('Category added');
+      toast.success('تمت إضافة التصنيف');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     }
 
     return { data, error };
@@ -80,9 +81,9 @@ export function useCategories() {
 
     if (!error) {
       await fetchCategories();
-      toast.success('Category updated');
+      toast.success('تم تحديث التصنيف');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     }
 
     return { data, error };
@@ -96,9 +97,9 @@ export function useCategories() {
 
     if (!error) {
       await fetchCategories();
-      toast.success('Category deleted');
+      toast.success('تم حذف التصنيف');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     }
 
     return { error };

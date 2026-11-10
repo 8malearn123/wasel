@@ -21,6 +21,7 @@ import { policyService, usingMock, isOk, type PolicyItem } from '@/services';
 import {
   LoadingState, EmptyState, ErrorState, MockDataBanner,
 } from '@/components/common/StateViews';
+import { friendlyError } from '@/lib/errors';
 
 const TABS = [
   { key: 'modification', ar: 'التعديلات', en: 'Modifications', icon: FileText },
@@ -94,7 +95,7 @@ export default function BusinessPolicySection() {
       ? await policyService.update(editing.id, payload)
       : await policyService.create(payload);
     setSaving(false);
-    if (!isOk(result)) { toast.error(result.error.message); return; }
+    if (!isOk(result)) { toast.error(friendlyError(result.error)); return; }
     toast.success(editing ? (t ? 'تم الحفظ' : 'Saved') : (t ? 'تمت الإضافة' : 'Added'));
     close();
     load();
@@ -102,7 +103,7 @@ export default function BusinessPolicySection() {
 
   const remove = async (item: PolicyItem) => {
     const result = await policyService.remove(item.id);
-    if (!isOk(result)) { toast.error(result.error.message); return; }
+    if (!isOk(result)) { toast.error(friendlyError(result.error)); return; }
     toast.success(t ? 'تم الحذف' : 'Removed');
     load();
   };

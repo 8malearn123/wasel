@@ -1,8 +1,11 @@
+import { amountProblem } from '@/lib/amounts';
+import { columnsOnly } from '@/lib/rowColumns';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import type { Supplier, PurchaseOrder, PurchaseOrderItem, PurchaseStatus, PaymentStatus } from '@/types/database';
 import { toast } from 'sonner';
+import { friendlyError } from '@/lib/errors';
 
 interface PurchaseItem {
   type: 'device' | 'accessory';
@@ -63,9 +66,9 @@ export function useSuppliers() {
 
     if (!error) {
       await fetchSuppliers();
-      toast.success('Supplier added');
+      toast.success('تمت إضافة المورد');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     }
 
     return { data, error };
@@ -81,9 +84,9 @@ export function useSuppliers() {
 
     if (!error) {
       await fetchSuppliers();
-      toast.success('Supplier updated');
+      toast.success('تم تحديث المورد');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     }
 
     return { data, error };
@@ -98,9 +101,9 @@ export function useSuppliers() {
 
     if (!error) {
       await fetchSuppliers();
-      toast.success('Supplier removed');
+      toast.success('تم حذف المورد');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     }
 
     return { error };
@@ -157,6 +160,14 @@ export function usePurchaseOrders() {
       return { error: new Error('Missing merchant, branch, or user') };
     }
 
+    for (const item of items) {
+      const invalid = amountProblem([
+        { label: 'الكمية', value: item.quantity, min: 1, integer: true },
+        { label: 'تكلفة الوحدة', value: item.unitCost },
+      ]);
+      if (invalid) { toast.error(invalid); return { error: new Error(invalid) }; }
+    }
+
     const totalAmount = items.reduce((sum, item) => sum + item.unitCost * item.quantity, 0);
 
     // Generate PO number
@@ -181,7 +192,7 @@ export function usePurchaseOrders() {
       .single();
 
     if (orderError) {
-      toast.error(orderError.message);
+      toast.error(friendlyError(orderError));
       return { error: orderError };
     }
 
@@ -201,7 +212,7 @@ export function usePurchaseOrders() {
     }
 
     await fetchOrders();
-    toast.success(`Purchase order created: ${order.order_number}`);
+    toast.success(`تم إنشاء أمر الشراء ${order.order_number}`);
 
     return { data: order, error: null };
   };
@@ -218,16 +229,16 @@ export function usePurchaseOrders() {
 
     const { error } = await supabase
       .from('purchase_orders')
-      .update(updates)
+      .update(columnsOnly(updates))
       .eq('id', orderId);
 
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
       return { error };
     }
 
     await fetchOrders();
-    toast.success(`Order ${status}`);
+    toast.success(({ draft: 'تم حفظ أمر الشراء كمسودة', pending: 'أمر الشراء بانتظار الاعتماد', approved: 'تم اعتماد أمر الشراء', received: 'تم استلام أمر الشراء', cancelled: 'تم إلغاء أمر الشراء' } as Record<string, string>)[status] ?? 'تم تحديث أمر الشراء');
     
     return { error: null };
   };
@@ -250,19 +261,23 @@ export function usePurchaseOrders() {
       .eq('id', orderId);
 
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
       return { error };
     }
 
     // Update supplier balance
     const remaining = Number(order.total_amount) - newPaidAmount;
-    await supabase
+    const { error: balanceError } = await supabase
       .from('suppliers')
       .update({ balance: remaining })
       .eq('id', order.supplier_id);
 
     await fetchOrders();
-    toast.success('Payment recorded');
+    if (balanceError) {
+      toast.warning(`سُجّلت الدفعة على أمر الشراء، لكن تعذّر تحديث رصيد المورد: ${friendlyError(balanceError)}`);
+    } else {
+      toast.success('تم تسجيل الدفعة');
+    }
     
     return { error: null };
   };
@@ -285,11 +300,20 @@ export function usePurchaseOrders() {
     // don't insert them again on receipt.
     const hasExistingItems = (order.items?.length ?? 0) > 0;
 
-    // Add items to inventory
+    // Add items to inventory. Each write is checked: a refused device (an
+    // IMEI already in stock, say) used to be skipped silently and the order
+    // marked received anyway. Now the receipt stops there, says what was
+    // added before it, and the order is not marked received.
+    let added = 0;
+    const stop = (err: unknown, what: string) => {
+      toast.error(`توقّف الاستلام عند «${what}»${added ? ` بعد إضافة ${added} صنف للمخزون` : ''}، ولم يُعلَّم الطلب كمستلَم. ${friendlyError(err)}`, { duration: 10000 });
+      void fetchOrders();
+      return { error: err as Error };
+    };
     for (const item of items) {
       if (item.type === 'device' && item.imei && item.model) {
         // Create device
-        const { data: device } = await supabase
+        const { data: device, error: deviceError } = await supabase
           .from('devices')
           .insert({
             merchant_id: merchant.id,
@@ -307,9 +331,11 @@ export function usePurchaseOrders() {
           })
           .select()
           .single();
+        if (deviceError) return stop(deviceError, `${item.model} (${item.imei})`);
+        added++;
 
         if (device && !hasExistingItems) {
-          await supabase
+          const { error: lineError } = await supabase
             .from('purchase_order_items')
             .insert({
               purchase_order_id: orderId,
@@ -317,24 +343,28 @@ export function usePurchaseOrders() {
               quantity: 1,
               unit_cost: item.unitCost
             });
+          if (lineError) return stop(lineError, `${item.model} (${item.imei})`);
         }
       } else if (item.type === 'accessory' && item.accessoryId) {
         // Update accessory quantity
-        const { data: acc } = await supabase
+        const { data: acc, error: readError } = await supabase
           .from('accessories')
           .select('quantity')
           .eq('id', item.accessoryId)
           .single();
+        if (readError) return stop(readError, 'إكسسوار');
 
         if (acc) {
-          await supabase
+          const { error: qtyError } = await supabase
             .from('accessories')
             .update({ quantity: acc.quantity + item.quantity })
             .eq('id', item.accessoryId);
+          if (qtyError) return stop(qtyError, 'إكسسوار');
+          added++;
         }
 
         if (!hasExistingItems) {
-          await supabase
+          const { error: lineError } = await supabase
             .from('purchase_order_items')
             .insert({
               purchase_order_id: orderId,
@@ -342,6 +372,7 @@ export function usePurchaseOrders() {
               quantity: item.quantity,
               unit_cost: item.unitCost
             });
+          if (lineError) return stop(lineError, 'إكسسوار');
         }
       }
     }
@@ -350,7 +381,8 @@ export function usePurchaseOrders() {
     if (opts?.markReceived === false) {
       if (opts?.note) {
         const prev = order.notes ? `${order.notes}\n` : '';
-        await supabase.from('purchase_orders').update({ notes: `${prev}${opts.note}` } as any).eq('id', orderId);
+        const { error: noteError } = await supabase.from('purchase_orders').update({ notes: `${prev}${opts.note}` } as any).eq('id', orderId);
+        if (noteError) toast.warning(`أُضيفت الكميات المستلمة، لكن تعذّر حفظ ملاحظة الباقي: ${friendlyError(noteError)}`);
       }
       await fetchOrders();
     } else {

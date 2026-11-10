@@ -32,6 +32,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { friendlyError } from '@/lib/errors';
 
 const statusBadge = (status: string) => {
   const map: Record<string, { label: string; className: string }> = {
@@ -173,7 +174,7 @@ export default function PlatformAdminPage() {
     if (result && !result.error) {
       toast.success('تمت العملية');
     } else if (result?.error) {
-      toast.error((result.error as any).message || 'حدث خطأ');
+      toast.error(friendlyError(result.error));
     }
 
     setActionLoading(false);
@@ -225,7 +226,7 @@ export default function PlatformAdminPage() {
           { icon: TrendingUp, label: 'انضموا هذا الأسبوع', value: stats.recentSignups, color: 'text-success', bg: 'bg-success/10' },
         ].map((stat, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
-            className="p-3 rounded-xl bg-card border border-border shadow-sm">
+            className="p-3 rounded-[18px] bg-card border border-border shadow-md">
             <div className="flex items-center gap-2">
               <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center", stat.bg)}>
                 <stat.icon className={cn("w-4 h-4", stat.color)} />
@@ -303,7 +304,7 @@ export default function PlatformAdminPage() {
               </div>
             ) : filteredCompanies.map((company) => (
               <motion.div key={company.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+                className="bg-card rounded-[18px] border border-border shadow-md overflow-hidden">
                 <div
                   className="p-4 flex items-center justify-between cursor-pointer hover:bg-muted/30 transition-colors"
                   onClick={() => setExpandedCompany(expandedCompany === company.id ? null : company.id)}
@@ -430,7 +431,7 @@ export default function PlatformAdminPage() {
             ) : (
               branchRequests.map((req) => (
                 <motion.div key={req.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                  className="bg-card rounded-xl border border-border shadow-sm p-4">
+                  className="bg-card rounded-[18px] border border-border shadow-md p-4">
                   <div className="flex items-start justify-between">
                     <div>
                       <h3 className="font-semibold text-foreground">{req.branch_name}</h3>
@@ -479,7 +480,7 @@ export default function PlatformAdminPage() {
               <p className="text-muted-foreground">لا توجد مدفوعات</p>
             </div>
           ) : (
-            <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+            <div className="bg-card rounded-[18px] border border-border shadow-md overflow-hidden">
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -538,7 +539,7 @@ export default function PlatformAdminPage() {
               const subscriberCount = companies.filter(c => c.subscription?.plan_id === plan.id).length;
               return (
                 <motion.div key={plan.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                  className="bg-card rounded-xl border border-border shadow-sm p-5">
+                  className="bg-card rounded-[18px] border border-border shadow-md p-5">
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h3 className="font-bold text-foreground">{plan.name_ar}</h3>
@@ -576,7 +577,7 @@ export default function PlatformAdminPage() {
               <p className="text-muted-foreground">لا يوجد نشاط مسجل</p>
             </div>
           ) : (
-            <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+            <div className="bg-card rounded-[18px] border border-border shadow-md overflow-hidden">
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -639,7 +640,7 @@ export default function PlatformAdminPage() {
                 const statusLabelsMap: Record<string, string> = { open: 'مفتوحة', in_progress: 'قيد المعالجة', resolved: 'تم الحل', closed: 'مغلقة' };
 
                 return (
-                  <div key={ticket.id} className="bg-card rounded-xl border border-border shadow-sm p-4 space-y-3">
+                  <div key={ticket.id} className="bg-card rounded-[18px] border border-border shadow-md p-4 space-y-3">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">

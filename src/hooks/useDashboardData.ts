@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useFeatureAccess } from './useFeatureAccess';
+import { usePermissions } from './usePermissions';
 import { deviceCounts, accessoryCounts, unitsSold } from '@/lib/inventoryMetrics';
 import { startOfDay, subDays, format, startOfWeek, endOfWeek } from 'date-fns';
 
@@ -51,6 +53,11 @@ export interface BranchStats {
 
 export function useDashboardData() {
   const { merchant } = useAuth();
+  const { allows } = useFeatureAccess();
+  const { can } = usePermissions();
+  // a plan without repairs or suppliers is not asked for their figures at all
+  const wantRepairs = allows('repairs') && can('repairs.manage');
+  const wantSuppliers = allows('suppliers') && can('suppliers.manage');
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [salesChart, setSalesChart] = useState<DailySalesData[]>([]);
   const [recentSales, setRecentSales] = useState<RecentSale[]>([]);
@@ -98,13 +105,13 @@ export function useDashboardData() {
         .select('quantity, price')
         .eq('merchant_id', merchant.id),
       // Pending repairs
-      supabase
+      !wantRepairs ? Promise.resolve({ data: null, count: 0, error: null }) : supabase
         .from('repair_orders')
         .select('id', { count: 'exact', head: true })
         .eq('merchant_id', merchant.id)
         .in('status', ['received', 'diagnosing', 'in_progress', 'waiting_parts']),
       // Unpaid purchase orders
-      supabase
+      !wantSuppliers ? Promise.resolve({ data: null, count: 0, error: null }) : supabase
         .from('purchase_orders')
         .select('total_amount, paid_amount')
         .eq('merchant_id', merchant.id)
@@ -143,7 +150,7 @@ export function useDashboardData() {
       unpaidPurchaseOrders: unpaidPORes.data?.length || 0,
       supplierDebt,
     });
-  }, [merchant]);
+  }, [merchant, wantRepairs, wantSuppliers]);
 
   const fetchSalesChart = useCallback(async () => {
     if (!merchant) return;

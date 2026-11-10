@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import { useAuth } from '@/hooks/useAuth';
+import { readShop, writeShop } from '@/lib/shopStorage';
 import { motion } from "framer-motion";
 import {
   ClipboardCheck,
@@ -84,14 +86,15 @@ interface ScheduledStocktake {
   createdAt: string;
 }
 
-function getSchedules(): ScheduledStocktake[] {
-  try {
-    return JSON.parse(localStorage.getItem('stocktake_schedules') || '[]');
-  } catch { return []; }
+// kept in this browser, per shop; a schedule for a branch this shop does not
+// have (left from before schedules were kept per shop) is not shown
+function getSchedules(shopId: string | undefined, branchIds: string[]): ScheduledStocktake[] {
+  const all = readShop<ScheduledStocktake[]>('stocktake_schedules', shopId, []);
+  return Array.isArray(all) ? all.filter(s => !s.branchId || branchIds.includes(s.branchId)) : [];
 }
 
-function saveSchedules(s: ScheduledStocktake[]) {
-  localStorage.setItem('stocktake_schedules', JSON.stringify(s));
+function saveSchedules(shopId: string | undefined, s: ScheduledStocktake[]) {
+  writeShop('stocktake_schedules', shopId, s);
 }
 
 // ============ Print helpers ============
@@ -208,9 +211,9 @@ export default function StocktakeSection() {
     <>
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-4 mb-6">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-4 rounded-xl bg-card border border-border shadow-sm">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-4 rounded-[18px] border shadow-md tone-signal">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center tone-tile">
               <ClipboardCheck className="w-5 h-5 text-primary" />
             </div>
             <div>
@@ -220,9 +223,9 @@ export default function StocktakeSection() {
           </div>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="p-4 rounded-xl bg-card border border-border shadow-sm">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="p-4 rounded-[18px] border shadow-md tone-violet">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center tone-tile">
               <Loader2 className="w-5 h-5 text-primary" />
             </div>
             <div>
@@ -232,9 +235,9 @@ export default function StocktakeSection() {
           </div>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="p-4 rounded-xl bg-card border border-border shadow-sm">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="p-4 rounded-[18px] border shadow-md tone-peach">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center tone-tile">
               <CheckCircle2 className="w-5 h-5 text-success" />
             </div>
             <div>
@@ -244,9 +247,9 @@ export default function StocktakeSection() {
           </div>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="p-4 rounded-xl bg-card border border-border shadow-sm">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="p-4 rounded-[18px] border shadow-md tone-rose">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center tone-tile">
               <AlertTriangle className="w-5 h-5 text-warning" />
             </div>
             <div>
@@ -287,7 +290,7 @@ export default function StocktakeSection() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="bg-card rounded-xl border border-border shadow-md overflow-hidden"
+        className="bg-card rounded-[18px] border border-border shadow-md overflow-hidden"
       >
         {loading ? (
           <div className="flex items-center justify-center py-20">
@@ -533,7 +536,10 @@ function ScheduleDialog({ open, onOpenChange, branches }: {
   const [notes, setNotes] = useState("");
   const [selectedTypes, setSelectedTypes] = useState<StocktakeItemType[]>(['device', 'accessory', 'repair_part']);
 
-  useEffect(() => { if (open) setSchedules(getSchedules()); }, [open]);
+  const { merchant } = useAuth();
+  const shopId = merchant?.id;
+  const branchKey = branches.map(b => b.id).join(',');
+  useEffect(() => { if (open) setSchedules(getSchedules(shopId, branchKey.split(','))); }, [open, shopId, branchKey]);
 
   const freqLabels: Record<string, string> = { weekly: 'أسبوعي', monthly: 'شهري', quarterly: 'ربع سنوي' };
 
@@ -549,7 +555,7 @@ function ScheduleDialog({ open, onOpenChange, branches }: {
     };
     const updated = [...schedules, newSchedule];
     setSchedules(updated);
-    saveSchedules(updated);
+    saveSchedules(shopId, updated);
     setShowAdd(false);
     setBranchId(""); setNotes(""); setSelectedTypes(['device', 'accessory', 'repair_part']);
     toast.success('تمت جدولة الجرد');
@@ -558,7 +564,7 @@ function ScheduleDialog({ open, onOpenChange, branches }: {
   const removeSchedule = (id: string) => {
     const updated = schedules.filter(s => s.id !== id);
     setSchedules(updated);
-    saveSchedules(updated);
+    saveSchedules(shopId, updated);
     toast.success('تم حذف الجدولة');
   };
 
@@ -716,7 +722,8 @@ function StocktakeDetailDialog({ stocktake, open, onOpenChange, getItems, update
   };
 
   const handleFinalize = async () => {
-    await onFinalize(stocktake.id, adjustInventory);
+    const ok = await onFinalize(stocktake.id, adjustInventory);
+    if (!ok) return;
     setShowFinalize(false);
     await onRefresh();
     await loadItems();

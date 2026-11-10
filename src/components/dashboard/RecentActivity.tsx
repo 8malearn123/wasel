@@ -24,7 +24,7 @@ export function RecentActivity({ sales, loading }: RecentActivityProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.2 }}
-      className="bg-card rounded-xl border border-border shadow-md overflow-hidden"
+      className="bg-card rounded-[18px] border border-border shadow-md overflow-hidden"
     >
       <div className="px-6 py-4 border-b border-border flex items-center justify-between">
         <div>

@@ -1,7 +1,9 @@
+import { amountProblem } from '@/lib/amounts';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from '@/hooks/use-toast';
+import { friendlyError } from '@/lib/errors';
 
 export interface Coupon {
   id: string;
@@ -38,6 +40,12 @@ export interface Campaign {
   created_at: string;
   updated_at: string;
 }
+
+const couponProblem = (c: Partial<Coupon>) => amountProblem([
+  { label: 'قيمة الخصم', value: c.discount_value, min: 0.01, ...(c.discount_type === 'percentage' ? { max: 100 } : {}) },
+  { label: 'الحد الأدنى للطلب', value: c.min_order_amount },
+  { label: 'أقصى خصم', value: c.max_discount_amount },
+]);
 
 export function useMarketing() {
   const { merchant } = useAuth();
@@ -85,12 +93,14 @@ export function useMarketing() {
 
   const createCoupon = async (coupon: Omit<Coupon, 'id' | 'merchant_id' | 'used_count' | 'created_at' | 'updated_at'>) => {
     if (!merchant) return;
+    const invalid = couponProblem(coupon);
+    if (invalid) { toast({ title: 'لم يُحفظ الكوبون', description: invalid, variant: 'destructive' }); return false; }
     const { error } = await supabase.from('coupons').insert({
       ...coupon,
       merchant_id: merchant.id,
     } as any);
     if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: 'تعذّر إتمام العملية', description: friendlyError(error), variant: 'destructive' });
       return false;
     }
     await fetchCoupons();
@@ -98,9 +108,11 @@ export function useMarketing() {
   };
 
   const updateCoupon = async (id: string, updates: Partial<Coupon>) => {
+    const invalid = couponProblem(updates);
+    if (invalid) { toast({ title: 'لم يُحفظ الكوبون', description: invalid, variant: 'destructive' }); return false; }
     const { error } = await supabase.from('coupons').update(updates as any).eq('id', id);
     if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: 'تعذّر إتمام العملية', description: friendlyError(error), variant: 'destructive' });
       return false;
     }
     await fetchCoupons();
@@ -110,7 +122,7 @@ export function useMarketing() {
   const deleteCoupon = async (id: string) => {
     const { error } = await supabase.from('coupons').delete().eq('id', id);
     if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: 'تعذّر إتمام العملية', description: friendlyError(error), variant: 'destructive' });
       return false;
     }
     await fetchCoupons();
@@ -124,7 +136,7 @@ export function useMarketing() {
       merchant_id: merchant.id,
     } as any);
     if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: 'تعذّر إتمام العملية', description: friendlyError(error), variant: 'destructive' });
       return false;
     }
     await fetchCampaigns();
@@ -134,7 +146,7 @@ export function useMarketing() {
   const updateCampaign = async (id: string, updates: Partial<Campaign>) => {
     const { error } = await supabase.from('campaigns').update(updates as any).eq('id', id);
     if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: 'تعذّر إتمام العملية', description: friendlyError(error), variant: 'destructive' });
       return false;
     }
     await fetchCampaigns();
@@ -144,7 +156,7 @@ export function useMarketing() {
   const deleteCampaign = async (id: string) => {
     const { error } = await supabase.from('campaigns').delete().eq('id', id);
     if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: 'تعذّر إتمام العملية', description: friendlyError(error), variant: 'destructive' });
       return false;
     }
     await fetchCampaigns();

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { friendlyError } from '@/lib/errors';
 
 export type RepairStatus = 'received' | 'diagnosing' | 'waiting_parts' | 'in_progress' | 'completed' | 'delivered' | 'cancelled' | 'warranty_expired';
 
@@ -138,7 +139,7 @@ export function useRepairs() {
       .single();
 
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     } else {
       toast.success('تم إنشاء طلب الإصلاح');
       await fetchRepairs();
@@ -166,7 +167,7 @@ export function useRepairs() {
       .eq('id', id);
 
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     } else {
       toast.success('تم تحديث حالة الإصلاح');
       await fetchRepairs();
@@ -181,7 +182,7 @@ export function useRepairs() {
       .eq('id', id);
 
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     } else {
       toast.success('تم تحديث بيانات الإصلاح');
       await fetchRepairs();
@@ -196,7 +197,7 @@ export function useRepairs() {
       .eq('id', id);
 
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     } else {
       toast.success('تم حذف طلب الإصلاح');
       await fetchRepairs();

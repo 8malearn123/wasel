@@ -23,6 +23,7 @@ import {
 import {
   LoadingState, EmptyState, ErrorState, MockDataBanner,
 } from '@/components/common/StateViews';
+import { friendlyError } from '@/lib/errors';
 
 const STATUS: Record<DeviceConnectionStatus, { ar: string; en: string; cls: string; icon: typeof Wifi }> = {
   connected:       { ar: 'متصل',        en: 'Connected',    cls: 'bg-success/15 text-success',        icon: Wifi },
@@ -76,7 +77,7 @@ export default function DevicesSection() {
       ? await deviceService.update(editing.id, payload)
       : await deviceService.create(payload);
     setSaving(false);
-    if (!isOk(result)) { toast.error(result.error.message); return; }
+    if (!isOk(result)) { toast.error(friendlyError(result.error)); return; }
     toast.success(editing ? (t ? 'تم الحفظ' : 'Saved') : (t ? 'تمت إضافة الجهاز' : 'Device added'));
     close();
     load();
@@ -84,7 +85,7 @@ export default function DevicesSection() {
 
   const remove = async (device: ConnectedDevice) => {
     const result = await deviceService.remove(device.id);
-    if (!isOk(result)) { toast.error(result.error.message); return; }
+    if (!isOk(result)) { toast.error(friendlyError(result.error)); return; }
     toast.success(t ? 'تم حذف الجهاز' : 'Device removed');
     load();
   };
@@ -93,7 +94,7 @@ export default function DevicesSection() {
     setTesting(device.id);
     const result = await deviceService.testConnection(device.id);
     setTesting(null);
-    if (!isOk(result)) { toast.error(result.error.message); return; }
+    if (!isOk(result)) { toast.error(friendlyError(result.error)); return; }
     toast.success(result.data.message);
     load();
   };

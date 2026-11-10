@@ -20,6 +20,7 @@ import type { PartConsumption } from '@/components/reports/panels/PartsPanel';
 import { LoadingState } from '@/components/common/StateViews';
 import { salesReport, devicesReport, accessoriesReport } from '@/lib/reportDefinitions';
 import { downloadCsv, type SheetColumn } from '@/lib/xlsx';
+import { SalesPatterns } from "@/components/reports/panels/SalesPatterns";
 
 // Only mounted on their own report, so selecting المبيعات does not also fetch
 // the customer and supplier lists
@@ -273,6 +274,7 @@ export default function ReportsPage() {
             topDevices={topDevices}
             onExport={exportSalesChart}
           />
+          <SalesPatterns sales={salesData} isRTL={isRTL} />
         </ReportPanel>
       )}
 

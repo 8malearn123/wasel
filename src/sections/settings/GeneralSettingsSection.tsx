@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { readShop, writeShop } from '@/lib/shopStorage';
 import { motion } from "framer-motion";
 import {
   Building2, Key, CreditCard, Loader2, AlertTriangle, Printer,
@@ -24,6 +25,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadStoreAsset } from "@/hooks/useOnlineStore";
 import { toast } from "sonner";
+import { friendlyError } from '@/lib/errors';
 
 interface StoreSettings {
   taxRate: number;
@@ -78,20 +80,18 @@ export default function GeneralSettingsSection() {
   const [vatEnabled, setVatEnabled] = useState((merchant as any)?.vat_enabled ?? true);
   const [autoPrintClosing, setAutoPrintClosing] = useState((merchant as any)?.auto_print_closing ?? false);
 
-  // Store settings from localStorage
-  const [storeSettings, setStoreSettings] = useState<StoreSettings>(() => {
-    try {
-      const saved = localStorage.getItem('store_settings');
-      return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS;
-    } catch {
-      return DEFAULT_SETTINGS;
-    }
-  });
+  // Receipt and till settings kept in this browser, per shop
+  const [storeSettings, setStoreSettings] = useState<StoreSettings>(() =>
+    ({ ...DEFAULT_SETTINGS, ...readShop<Partial<StoreSettings>>('store_settings', merchant?.id, {}) }));
+  // the shop can change under the same screen (signing out and in): read its own
+  useEffect(() => {
+    setStoreSettings({ ...DEFAULT_SETTINGS, ...readShop<Partial<StoreSettings>>('store_settings', merchant?.id, {}) });
+  }, [merchant?.id]);
 
   const updateSetting = <K extends keyof StoreSettings>(key: K, value: StoreSettings[K]) => {
     setStoreSettings(prev => {
       const updated = { ...prev, [key]: value };
-      localStorage.setItem('store_settings', JSON.stringify(updated));
+      writeShop('store_settings', merchant?.id, updated);
       return updated;
     });
   };
@@ -115,7 +115,7 @@ export default function GeneralSettingsSection() {
       .eq('id', merchant.id);
 
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     } else {
       toast.success(isRTL ? 'تم حفظ الإعدادات' : 'Settings saved');
       await refreshMerchantData();
@@ -145,7 +145,7 @@ export default function GeneralSettingsSection() {
         .from('merchants')
         .update({ logo_url: url } as any)
         .eq('id', merchant.id);
-      if (error) toast.error(error.message);
+      if (error) toast.error(friendlyError(error));
       else {
         toast.success(isRTL ? 'تم تحديث شعار الموقع' : 'Site logo updated');
         await refreshMerchantData();
@@ -160,7 +160,7 @@ export default function GeneralSettingsSection() {
       .from('merchants')
       .update({ logo_url: null } as any)
       .eq('id', merchant.id);
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     else {
       toast.success(isRTL ? 'تمت إزالة الشعار' : 'Logo removed');
       await refreshMerchantData();

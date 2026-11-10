@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef, createContext, useContext, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { isNetworkError } from '@/lib/errors';
 import type { MerchantUser, Merchant, Subscription, Branch } from '@/types/database';
 import { loadCustomRolesConfig, storedRoleFor, CUSTOM_ROLE_BASE, isEditableSystemRole } from '@/lib/customRolesStore';
 import { LEGACY_ROLE_PERMISSIONS, CUSTOM_ROLE_FORBIDDEN } from '@/lib/legacyRolePermissions';
+import { markSessionEnded, consumeSignOutRequest, expectSignOut } from '@/lib/authErrors';
 
 interface AuthContextType {
   user: User | null;
@@ -21,11 +23,19 @@ interface AuthContextType {
    * this does — a guard deciding on the role or the plan must wait for both.
    */
   memberLoading: boolean;
+  /**
+   * The member's own data (role, shop, subscription, branches) could not be
+   * read — a dropped connection or a server error. Not the same as having no
+   * shop: the screens wait on a retry instead of treating the user as shopless.
+   */
+  memberError: string | null;
   isLocked: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshMerchantData: () => Promise<void>;
+  /** Read the member's data again after it failed; the guards wait meanwhile */
+  retryMemberData: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,29 +50,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentBranch, setCurrentBranch] = useState<Branch | null>(null);
   const [loading, setLoading] = useState(true);
   const [memberLoading, setMemberLoading] = useState(true);
+  const [memberError, setMemberError] = useState<string | null>(null);
 
   const isLocked = subscription?.status === 'expired' || 
     (subscription?.status === 'trial' && subscription?.trial_ends_at && new Date(subscription.trial_ends_at) < new Date());
 
   const fetchMerchantData = async (userId: string) => {
     try {
+      setMemberError(null);
       // Get merchant user
-      const { data: merchantUserData } = await supabase
+      const { data: merchantUserData, error: memberReadError } = await supabase
         .from('merchant_users')
         .select('*')
         .eq('user_id', userId)
         .eq('is_active', true)
         .maybeSingle();
+      if (memberReadError) throw memberReadError;
 
       if (merchantUserData) {
         setMerchantUser(await withStoredCustomRole(merchantUserData as MerchantUser));
 
         // Get merchant
-        const { data: merchantData } = await supabase
+        const { data: merchantData, error: merchantReadError } = await supabase
           .from('merchants')
           .select('*')
           .eq('id', merchantUserData.merchant_id)
           .maybeSingle();
+        if (merchantReadError) throw merchantReadError;
 
         if (merchantData) {
           setMerchant(merchantData as Merchant);
@@ -100,6 +114,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('Error fetching merchant data:', error);
+      setMemberError(isNetworkError(error)
+        ? 'تعذّر تحميل بيانات حسابك بسبب انقطاع الاتصال.'
+        : 'تعذّر تحميل بيانات حسابك من الخادم.');
     } finally {
       // role, merchant, subscription and branches are all in place now
       setMemberLoading(false);
@@ -110,6 +127,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) {
       await fetchMerchantData(user.id);
     }
+  };
+
+  // Unlike a refresh after saving settings, this is a reload from nothing: the
+  // guards must wait, or they decide on an empty role and send the user away
+  const retryMemberData = async () => {
+    if (!user) return;
+    setMemberLoading(true);
+    await fetchMerchantData(user.id);
   };
 
   // آخر مستخدم جلبنا بياناته — حتى ما نعيد الجلب (وتحديث الصفحة كلها)
@@ -128,6 +153,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Set up auth state listener FIRST
     const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        // signed out without asking for it here: the session expired or was revoked
+        if (event === 'SIGNED_OUT' && lastFetchedUid.current && !consumeSignOutRequest()) markSessionEnded();
         setSession(session);
         setUser(session?.user ?? null);
 
@@ -144,6 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           lastFetchedUid.current = null;
           setMemberLoading(false);
+          setMemberError(null);
           setMerchantUser(null);
           setMerchant(null);
           setSubscription(null);
@@ -218,6 +246,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             branch_id: branchData?.id
           });
 
+        // the membership is written after the sign-in event already read
+        // the account: read it again so the new owner lands in their shop
+        await fetchMerchantData(data.user.id);
+
         // The trial is started by the merchants_start_trial trigger, on the
         // database clock. It used to be inserted here from new Date(), which
         // meant the device clock decided when the trial ended — and merchants
@@ -229,6 +261,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    expectSignOut();
     await supabase.auth.signOut();
   };
 
@@ -244,11 +277,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setCurrentBranch,
       loading,
       memberLoading,
+      memberError,
       isLocked,
       signIn,
       signUp,
       signOut,
-      refreshMerchantData
+      refreshMerchantData,
+      retryMemberData
     }}>
       {children}
     </AuthContext.Provider>

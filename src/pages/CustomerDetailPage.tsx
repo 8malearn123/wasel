@@ -23,6 +23,7 @@ import { ar } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { tierFromPoints } from '@/lib/loyaltyTiers';
 import { TierBadge } from '@/components/customers/TierBadge';
+import { friendlyError } from '@/lib/errors';
 
 export default function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -90,7 +91,7 @@ export default function CustomerDetailPage() {
   const handleSave = async () => {
     if (!customer) return;
     const { error } = await supabase.from('customers').update(form).eq('id', customer.id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success(t ? 'تم الحفظ' : 'Saved');
     setCustomer({ ...customer, ...form });
     setEditing(false);
@@ -107,12 +108,14 @@ export default function CustomerDetailPage() {
       type: pts > 0 ? 'earn' : 'redeem',
       description: pointsDesc || (pts > 0 ? 'إضافة يدوية' : 'استبدال'),
     });
-    if (txErr) { toast.error(txErr.message); return; }
+    if (txErr) { toast.error(friendlyError(txErr)); return; }
     const newPoints = Math.max(0, customer.loyalty_points + pts);
-    await supabase.from('customers').update({
+    const { error: balanceErr } = await supabase.from('customers').update({
       loyalty_points: newPoints,
       loyalty_tier: tierFromPoints(newPoints),
     }).eq('id', customer.id);
+    // the movement is recorded; only the running balance failed — say so
+    if (balanceErr) toast.warning(t ? `سُجّلت الحركة، لكن تعذّر تحديث رصيد النقاط: ${friendlyError(balanceErr)}` : `Recorded, but the points balance was not updated: ${friendlyError(balanceErr)}`);
     setCustomer({ ...customer, loyalty_points: newPoints, loyalty_tier: tierFromPoints(newPoints) });
     const { data: l } = await supabase.from('loyalty_transactions').select('*').eq('customer_id', customer.id)
       .order('created_at', { ascending: false }).limit(100);

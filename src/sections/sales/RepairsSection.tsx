@@ -24,6 +24,8 @@ import {
   Hash,
   Printer,
   Trash2,
+  List,
+  LayoutGrid,
 } from "lucide-react";
 import { RiyalSign } from "@/components/icons/RiyalSign";
 import { Button } from "@/components/ui/button";
@@ -62,6 +64,7 @@ import { SearchableSelect } from '@/components/common/SearchableSelect';
 import { useRepairParts, RepairPart, RepairOrderPart } from "@/hooks/useRepairParts";
 import { useBranches } from "@/hooks/useBranches";
 import { useAuth } from "@/hooks/useAuth";
+import { isCashierMember } from "@/lib/cashier";
 import { RepairInvoiceDialog } from "@/components/repairs/RepairInvoiceDialog";
 import { format, differenceInDays, differenceInHours, differenceInMinutes } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -111,6 +114,8 @@ export default function RepairsSection() {
   const [invoiceRepair, setInvoiceRepair] = useState<{ repair: RepairOrder; parts: RepairOrderPart[] } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  // Claude Design: the same repairs as a board by stage; the list stays the default
+  const [view, setView] = useState<"list" | "board">("list");
 
   // Auto-refresh for warranty countdown
   const [, setTick] = useState(0);
@@ -147,9 +152,9 @@ export default function RepairsSection() {
     <>
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-4 mb-6">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-4 rounded-xl bg-card border border-border shadow-sm">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-4 rounded-[18px] border shadow-md tone-signal">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center tone-tile">
               <Wrench className="w-5 h-5 text-primary" />
             </div>
             <div>
@@ -159,9 +164,9 @@ export default function RepairsSection() {
           </div>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="p-4 rounded-xl bg-card border border-border shadow-sm">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="p-4 rounded-[18px] border shadow-md tone-violet">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center tone-tile">
               <Clock className="w-5 h-5 text-primary" />
             </div>
             <div>
@@ -171,9 +176,9 @@ export default function RepairsSection() {
           </div>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="p-4 rounded-xl bg-card border border-border shadow-sm">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="p-4 rounded-[18px] border shadow-md tone-peach">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center tone-tile">
               <Shield className="w-5 h-5 text-success" />
             </div>
             <div>
@@ -183,9 +188,9 @@ export default function RepairsSection() {
           </div>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="p-4 rounded-xl bg-card border border-border shadow-sm">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="p-4 rounded-[18px] border shadow-md tone-rose">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center tone-tile">
               <RiyalSign className="w-5 h-5 text-warning" />
             </div>
             <div>
@@ -223,17 +228,39 @@ export default function RepairsSection() {
             ))}
           </SelectContent>
         </Select>
+        <div className="inline-flex rounded-[14px] border bg-card p-1 shrink-0" role="group" aria-label="طريقة العرض">
+          {([["list", "قائمة", List], ["board", "لوحة", LayoutGrid]] as const).map(([key, label, Icon]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setView(key)}
+              aria-pressed={view === key}
+              className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-[10px] text-sm font-medium transition-colors ${view === key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
+            >
+              <Icon className="w-4 h-4" /> {label}
+            </button>
+          ))}
+        </div>
         <Button onClick={() => setShowCreate(true)} className="bg-primary shrink-0">
           <Plus className="w-4 h-4 mr-2" /> طلب إصلاح جديد
         </Button>
       </div>
 
+      {view === "board" && !loading && (
+        <RepairsBoard
+          repairs={filtered}
+          onView={setViewRepair}
+          onStatusChange={(id, status) => updateRepairStatus(id, status)}
+        />
+      )}
+
       {/* Repairs List */}
+      {(view === "list" || loading) && (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="bg-card rounded-xl border border-border shadow-md overflow-hidden"
+        className="bg-card rounded-[18px] border border-border shadow-md overflow-hidden"
       >
         {loading ? (
           <div className="flex items-center justify-center py-20">
@@ -269,6 +296,7 @@ export default function RepairsSection() {
           </div>
         )}
       </motion.div>
+      )}
 
       <CreateRepairDialog
         open={showCreate}
@@ -452,6 +480,8 @@ function CreateRepairDialog({
   repairParts: RepairPart[];
   onUseParts: (repairOrderId: string, items: { partId: string; quantity: number }[]) => Promise<any>;
 }) {
+  // a part's purchase cost is not shown to the cashier
+  const showCost = !isCashierMember(useAuth().merchantUser);
   const [loading, setLoading] = useState(false);
   const { customers } = useCustomers();
   const { devices } = useDevices();
@@ -768,7 +798,7 @@ function CreateRepairDialog({
                               className="w-full text-right px-3 py-2 hover:bg-muted flex items-center justify-between gap-2 border-b border-border/50 last:border-0"
                             >
                               <span className="text-sm font-medium">{p.name}</span>
-                              <span className="text-xs text-muted-foreground whitespace-nowrap">متوفر: {p.quantity} · {Number(p.cost).toLocaleString()} ر.س</span>
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">متوفر: {p.quantity}{showCost && <> · {Number(p.cost).toLocaleString()} ر.س</>}</span>
                             </button>
                           )) : (
                             <div className="px-3 py-2 text-xs text-muted-foreground">لا توجد قطعة مطابقة</div>
@@ -786,7 +816,7 @@ function CreateRepairDialog({
                           return (
                             <div key={i} className="flex items-center gap-2 rounded-md bg-background border border-border/60 px-2 py-1.5">
                               <span className="flex-1 text-sm font-medium truncate">{part?.name || '—'}</span>
-                              <span className="text-xs text-muted-foreground whitespace-nowrap">{Number(part?.cost || 0).toLocaleString()} ر.س</span>
+                              {showCost && <span className="text-xs text-muted-foreground whitespace-nowrap">{Number(part?.cost || 0).toLocaleString()} ر.س</span>}
                               <Input
                                 type="number" min={1} max={part?.quantity || 99}
                                 className="w-16 h-8" dir="ltr"
@@ -879,6 +909,8 @@ function RepairDetailsDialog({
   getRepairOrderParts: (repairOrderId: string) => Promise<RepairOrderPart[]>;
   onPrintInvoice: (repair: RepairOrder, parts: RepairOrderPart[]) => void;
 }) {
+  // a part's purchase cost is not shown to the cashier
+  const showCost = !isCashierMember(useAuth().merchantUser);
   const [diagnosisNotes, setDiagnosisNotes] = useState('');
   const [actualCost, setActualCost] = useState(0);
   const [partsCost, setPartsCost] = useState(0);
@@ -1104,7 +1136,7 @@ function RepairDetailsDialog({
                     value={selectedPartId}
                     onChange={setSelectedPartId}
                     placeholder="اختر قطعة..."
-                    options={repairParts.filter(p => p.quantity > 0).map(p => ({ value: p.id, label: p.name, hint: `${p.quantity} متوفر · ${p.cost} ر.س` }))}
+                    options={repairParts.filter(p => p.quantity > 0).map(p => ({ value: p.id, label: p.name, hint: showCost ? `${p.quantity} متوفر · ${p.cost} ر.س` : `${p.quantity} متوفر` }))}
                   />
                 </div>
                 <div className="w-20 space-y-1">
@@ -1193,5 +1225,67 @@ function RepairDetailsDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/**
+ * Claude Design's repairs board: one column per stage of the shop's own flow
+ * (in progress → completed → delivered), cards that open the same details
+ * dialog, and a «next stage» button that calls the same status change the
+ * list's menu does. Nothing about the flow itself changes.
+ */
+function RepairsBoard({ repairs, onView, onStatusChange }: {
+  repairs: RepairOrder[];
+  onView: (r: RepairOrder) => void;
+  onStatusChange: (id: string, status: RepairStatus) => void;
+}) {
+  const columns = statusFlow.map(stage => ({
+    stage,
+    items: repairs.filter(r => normalizeStatus(r.status) === stage),
+  }));
+  return (
+    <div className="grid gap-4 md:grid-cols-3 mb-6" aria-label="لوحة الصيانة">
+      {columns.map(col => {
+        const conf = statusConfig[col.stage];
+        const next = statusFlow[statusFlow.indexOf(col.stage) + 1];
+        return (
+          <section key={col.stage} className="rounded-[20px] bg-muted/50 border p-3 flex flex-col gap-3 min-h-[200px]">
+            <header className="flex items-center justify-between px-1">
+              <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${conf.color}`}>
+                {conf.icon} {conf.label}
+              </span>
+              <span className="text-xs font-bold text-muted-foreground tabular-nums">{col.items.length}</span>
+            </header>
+            {col.items.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-8">لا طلبات في هذه المرحلة</p>
+            ) : col.items.map(r => (
+              <article key={r.id} className="bg-card rounded-[16px] border shadow-sm p-3.5 flex flex-col gap-2 hover:shadow-md transition-shadow">
+                <button type="button" onClick={() => onView(r)} className="text-start flex flex-col gap-1">
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="font-semibold text-sm text-foreground truncate">{r.device_model || "جهاز"}</span>
+                    <span className="text-[11px] font-mono text-muted-foreground shrink-0" dir="ltr">{r.repair_number}</span>
+                  </span>
+                  <span className="text-xs text-muted-foreground truncate">{r.customer_name}{r.issue_description ? ` · ${r.issue_description}` : ""}</span>
+                </button>
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <span className="text-xs font-semibold text-foreground tabular-nums">
+                    {(r.actual_cost ?? r.estimated_cost ?? 0).toLocaleString()} ر.س
+                  </span>
+                  {next && (
+                    <button
+                      type="button"
+                      onClick={() => onStatusChange(r.id, next)}
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-primary-text hover:underline"
+                    >
+                      نقل إلى: {statusConfig[next].label}
+                    </button>
+                  )}
+                </div>
+              </article>
+            ))}
+          </section>
+        );
+      })}
+    </div>
   );
 }

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { friendlyError } from '@/lib/errors';
 
 // إعدادات الأهداف والعمولات — تُخزَّن كصفحة مخفية مثل إعدادات التصميم
 // لأن تعديل مخطط قاعدة البيانات غير متاح من هنا، وبهذي الطريقة تكون
@@ -68,7 +69,7 @@ export function useHRSettings() {
       is_published: false,
       sort_order: 998,
     } as any, { onConflict: 'merchant_id,slug' });
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     setSettings(next);
     toast.success('تم حفظ الأهداف والعمولات');
   };

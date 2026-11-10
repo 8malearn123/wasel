@@ -7,6 +7,9 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { isCashierMember } from "@/lib/cashier";
 
 interface SearchResult {
   id: string;
@@ -20,7 +23,16 @@ interface SearchResult {
 
 export function GlobalSearch() {
   const { t, isRTL } = useLanguage();
-  const { merchant } = useAuth();
+  const { merchant, merchantUser, user } = useAuth();
+  const { canAny, can } = usePermissions();
+  const { allows } = useFeatureAccess();
+  // results only for sections this plan and role open: a Lite shop searching
+  // does not get repairs or customers it cannot open
+  const searchRepairs = allows("repairs") && can("repairs.manage");
+  const searchCustomers = allows("customers") && can("customers.manage");
+  // invoices show up for whoever may see invoices; a cashier sees their own
+  const cashier = isCashierMember(merchantUser);
+  const searchInvoices = cashier || canAny("invoices.view", "reports.view");
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -71,21 +83,27 @@ export function GlobalSearch() {
           .eq("merchant_id", merchant.id)
           .or(`name.ilike.${like},sku.ilike.${like}`)
           .limit(4),
-        supabase.from("customers")
-          .select("id, name, phone")
-          .eq("merchant_id", merchant.id)
-          .or(`name.ilike.${like},phone.ilike.${like}`)
-          .limit(4),
-        supabase.from("repair_orders")
-          .select("id, repair_number, customer_name, device_model")
-          .eq("merchant_id", merchant.id)
-          .or(`repair_number.ilike.${like},customer_name.ilike.${like}`)
-          .limit(3),
-        supabase.from("sales")
-          .select("id, invoice_number, total_amount, customer_name")
-          .eq("merchant_id", merchant.id)
-          .ilike("invoice_number", like)
-          .limit(3),
+        searchCustomers
+          ? supabase.from("customers")
+              .select("id, name, phone")
+              .eq("merchant_id", merchant.id)
+              .or(`name.ilike.${like},phone.ilike.${like}`)
+              .limit(4)
+          : Promise.resolve({ data: [] as { id: string; name: string; phone: string | null }[] }),
+        searchRepairs
+          ? supabase.from("repair_orders")
+              .select("id, repair_number, customer_name, device_model")
+              .eq("merchant_id", merchant.id)
+              .or(`repair_number.ilike.${like},customer_name.ilike.${like}`)
+              .limit(3)
+          : Promise.resolve({ data: [] as { id: string; repair_number: string; customer_name: string; device_model: string | null }[] }),
+        searchInvoices
+          ? (cashier && user
+              ? supabase.from("sales").select("id, invoice_number, total_amount, customer_name")
+                  .eq("merchant_id", merchant.id).eq("sold_by", user.id).ilike("invoice_number", like).limit(3)
+              : supabase.from("sales").select("id, invoice_number, total_amount, customer_name")
+                  .eq("merchant_id", merchant.id).ilike("invoice_number", like).limit(3))
+          : Promise.resolve({ data: [] as { id: string; invoice_number: string; total_amount: number; customer_name: string | null }[] }),
       ]);
 
       const found: SearchResult[] = [];
@@ -137,7 +155,7 @@ export function GlobalSearch() {
       setOpen(true);
     }, 300);
     return () => clearTimeout(timer);
-  }, [query, merchant, isRTL]);
+  }, [query, merchant, isRTL, searchInvoices, cashier, user, searchRepairs, searchCustomers]);
 
   const go = (r: SearchResult) => {
     setOpen(false);

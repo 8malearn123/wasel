@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/i18n';
 import { usePermissions } from '@/hooks/usePermissions';
-import { useProductMedia, type ProductItemType } from '@/hooks/useProductMedia';
+import { useProductMedia, MEDIA_MISSING, type ProductItemType } from '@/hooks/useProductMedia';
 import { UploadReportList } from '@/components/common/UploadReport';
 
 interface Props {
@@ -27,7 +27,7 @@ export function ProductMediaManager({ itemType, itemId }: Props) {
   const { can } = usePermissions();
   const {
     images: media, model3d, loading, uploading, reports, clearReports,
-    upload, uploadModel, remove, setPrimary, reorder,
+    upload, uploadModel, remove, setPrimary, reorder, status, refetch,
   } = useProductMedia(itemType, itemId);
   const inputRef = useRef<HTMLInputElement>(null);
   const modelRef = useRef<HTMLInputElement>(null);
@@ -56,6 +56,29 @@ export function ProductMediaManager({ itemType, itemId }: Props) {
     return (
       <div className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
         {t ? 'احفظ المنتج أولاً ثم أضف صوره' : 'Save the product first, then add its photos'}
+      </div>
+    );
+  }
+
+  // Not on the server yet, or could not be read: say which — an empty
+  // gallery would read as «this product has no photos»
+  if (status !== 'ok' && !loading) {
+    return (
+      <div className="space-y-2">
+        <Label>{t ? 'صور المنتج' : 'Product photos'}</Label>
+        <div role="status" className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
+          <ImageOff className="w-6 h-6 mx-auto text-muted-foreground/50 mb-2" />
+          {status === 'missing'
+            ? (t ? MEDIA_MISSING : 'Product photos are not enabled on the server yet — uploads wait for its update')
+            : (t ? 'تعذّر تحميل صور المنتج' : 'Could not load the product photos')}
+          {status === 'failed' && (
+            <div className="mt-2">
+              <Button type="button" size="sm" variant="outline" onClick={() => refetch()}>
+                {t ? 'إعادة المحاولة' : 'Retry'}
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     );
   }

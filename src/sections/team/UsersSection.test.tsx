@@ -75,7 +75,7 @@ describe('custom roles in users & permissions', () => {
   });
 
   it('saves a new role with exactly the permissions ticked', async () => {
-    permissions = ['roles.manage', 'users.view', 'users.update'];
+    permissions = ['roles.manage', 'users.view', 'users.update', 'users.create'];
     saveRole.mockResolvedValue({ id: 'r2' });
     render(<UsersSection />);
 
@@ -91,7 +91,7 @@ describe('custom roles in users & permissions', () => {
   });
 
   it('refuses to save a role with no permissions', async () => {
-    permissions = ['roles.manage'];
+    permissions = ['roles.manage', 'users.create'];
     render(<UsersSection />);
     fireEvent.click(screen.getByText('إضافة مستخدم جديد'));
     fireEvent.click(await screen.findByText('إنشاء دور مخصص'));
@@ -104,7 +104,7 @@ describe('custom roles in users & permissions', () => {
   });
 
   it('the permissions are listed even before the database has its table', async () => {
-    permissions = ['roles.manage'];
+    permissions = ['roles.manage', 'users.create'];
     databaseReady = false;
     render(<UsersSection />);
     fireEvent.click(screen.getByText('إضافة مستخدم جديد'));
@@ -187,7 +187,7 @@ describe('custom roles in users & permissions', () => {
   });
 
   it('adding a user: the chosen role shows its permissions, and changes are saved before the user is made', async () => {
-    permissions = ['roles.manage', 'users.view', 'users.update'];
+    permissions = ['roles.manage', 'users.view', 'users.update', 'users.create'];
     databaseReady = false;
     saveSystemRole.mockResolvedValue({});
     const { supabase } = await import('@/integrations/supabase/client');
@@ -215,5 +215,13 @@ describe('custom roles in users & permissions', () => {
     expect(saveSystemRole.mock.invocationCallOrder[0]).toBeLessThan(fetchMock.mock.invocationCallOrder[0]);
     vi.unstubAllGlobals();
     databaseReady = true;
+  });
+});
+
+describe('the actions follow the permissions', () => {
+  it('without users.create there is no «add user»; without users.update no edit', async () => {
+    permissions = ['users.view'];
+    render(<UsersSection />);
+    expect(screen.queryByText('إضافة مستخدم جديد')).toBeNull();
   });
 });

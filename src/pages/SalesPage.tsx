@@ -124,6 +124,7 @@ export default function SalesPage() {
             : 'Marketplace, listings, orders and credits in one place',
           denyRoles: ['cashier'],
           permission: 'wholesale.manage',
+          feature: 'wholesale',
           render: () => <WholesaleSection />,
         },
       ],

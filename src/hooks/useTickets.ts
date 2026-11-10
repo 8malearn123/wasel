@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { friendlyError } from '@/lib/errors';
 
 export interface SupportTicket {
   id: string;
@@ -57,7 +58,7 @@ export function useTickets() {
       } as any);
 
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
       return { error: error.message };
     }
 
@@ -102,7 +103,7 @@ export function useAdminTickets() {
       .eq('id', ticketId);
 
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
       return { error: error.message };
     }
 
@@ -118,7 +119,7 @@ export function useAdminTickets() {
       .eq('id', ticketId);
 
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
       return { error: error.message };
     }
 

@@ -1,8 +1,10 @@
+import { amountProblem } from '@/lib/amounts';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 import { productFromDevice, productFromAccessory, productFromNotes, productNotes, type ListingProduct } from '@/lib/wholesaleProduct';
+import { friendlyError } from '@/lib/errors';
 
 export interface WholesaleListing {
   id: string;
@@ -174,6 +176,11 @@ export function useWholesale() {
 
   const createListing = async (data: { device_id?: string; accessory_id?: string; item_type: string; wholesale_price: number; min_quantity: number; notes?: string }) => {
     if (!merchant) return;
+    const invalid = amountProblem([
+      { label: 'سعر الجملة', value: data.wholesale_price, min: 0.01 },
+      { label: 'الحد الأدنى للكمية', value: data.min_quantity, min: 1, integer: true },
+    ]);
+    if (invalid) { toast.error(invalid); return; }
     // the description buyers will see, written with the listing (wholesaleProduct.ts)
     let notes = data.notes;
     if (!notes) {
@@ -186,24 +193,30 @@ export function useWholesale() {
       }
     }
     const { error } = await supabase.from('wholesale_listings').insert({ merchant_id: merchant.id, ...data, notes: notes ?? null } as any);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success('تمت إضافة المنتج للبيع بالجملة');
     fetchAll();
   };
 
   const toggleListing = async (id: string, is_active: boolean) => {
-    await supabase.from('wholesale_listings').update({ is_active } as any).eq('id', id);
+    const { error } = await supabase.from('wholesale_listings').update({ is_active } as any).eq('id', id);
+    if (error) { toast.error(friendlyError(error)); return false; }
     fetchAll();
+    return true;
   };
 
   const deleteListing = async (id: string) => {
-    await supabase.from('wholesale_listings').delete().eq('id', id);
+    const { error } = await supabase.from('wholesale_listings').delete().eq('id', id);
+    if (error) { toast.error(friendlyError(error)); return false; }
     toast.success('تم حذف المنتج');
     fetchAll();
+    return true;
   };
 
   const createOrder = async (listingId: string, quantity: number, listing: WholesaleListing, creditType?: 'invoice' | 'consignment', dueDate?: string) => {
     if (!merchant || !user) return;
+    const invalidQty = amountProblem([{ label: 'الكمية', value: quantity, min: Math.max(1, listing.min_quantity || 1), integer: true }]);
+    if (invalidQty) { toast.error(invalidQty); return; }
     const orderNumber = `WO-${Date.now().toString(36).toUpperCase()}`;
     const totalAmount = listing.wholesale_price * quantity;
 
@@ -215,7 +228,7 @@ export function useWholesale() {
       created_by: user.id,
     } as any).select().single();
 
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
 
     // An order without its line has no product: if the line is refused, the
     // order goes too rather than being left behind empty
@@ -227,7 +240,7 @@ export function useWholesale() {
     } as any);
     if (itemError) {
       await supabase.from('wholesale_orders').delete().eq('id', (order as any).id);
-      toast.error(itemError.message);
+      toast.error(friendlyError(itemError));
       return;
     }
 
@@ -245,7 +258,7 @@ export function useWholesale() {
         status: 'unpaid',
         created_by: user.id,
       } as any);
-      if (creditError) toast.error(`أُرسل الطلب #${orderNumber} لكن تعذّر تسجيل الآجل: ${creditError.message}`);
+      if (creditError) toast.error(`أُرسل الطلب #${orderNumber} لكن تعذّر تسجيل الآجل: ${friendlyError(creditError)}`);
     }
 
     toast.success(`تم إرسال الطلب #${orderNumber}`);
@@ -253,28 +266,35 @@ export function useWholesale() {
   };
 
   const updateOrderStatus = async (orderId: string, status: string) => {
-    await supabase.from('wholesale_orders').update({ status } as any).eq('id', orderId);
+    const { error } = await supabase.from('wholesale_orders').update({ status } as any).eq('id', orderId);
+    if (error) { toast.error(friendlyError(error)); return false; }
     toast.success('تم تحديث حالة الطلب');
     fetchAll();
+    return true;
   };
 
+  /** true when recorded — «تم تسجيل الدفعة» used to show whatever the server said */
   const recordPayment = async (creditId: string, amount: number) => {
     const credit = myCredits.find(c => c.id === creditId) || receivedCredits.find(c => c.id === creditId);
-    if (!credit) return;
+    if (!credit) return false;
+    const invalid = amountProblem([{ label: 'مبلغ الدفعة', value: amount, min: 0.01 }]);
+    if (invalid) { toast.error(invalid); return false; }
 
     const newPaid = credit.paid_amount + amount;
     const newRemaining = credit.amount - newPaid;
     const newStatus = newRemaining <= 0 ? 'paid' : 'partial';
 
-    await supabase.from('wholesale_credit_transactions' as any).update({
+    const { error } = await supabase.from('wholesale_credit_transactions' as any).update({
       paid_amount: newPaid,
       remaining_amount: Math.max(0, newRemaining),
       status: newStatus,
       paid_at: newRemaining <= 0 ? new Date().toISOString() : null,
     } as any).eq('id', creditId);
+    if (error) { toast.error(friendlyError(error)); return false; }
 
     toast.success('تم تسجيل الدفعة');
     fetchAll();
+    return true;
   };
 
   // Credit stats

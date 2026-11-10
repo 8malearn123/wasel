@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { saleTotal, saleNet, saleProfit, localDayKey, monthToDateWindows } from '@/lib/salesMath';
 import { deviceCounts, accessoryCounts, stockValue, isInStock } from '@/lib/inventoryMetrics';
 import type { Sale, Device, Accessory, Branch } from '@/types/database';
 
@@ -65,6 +66,18 @@ interface EmployeePerformance {
   accessoriesSold: number;
 }
 
+const PAGE = 1000;
+type Page<T> = { data: T[] | null; error: { message: string } | null };
+async function readAllPages<T>(page: (from: number) => PromiseLike<Page<unknown>>): Promise<Page<T>> {
+  const rows: T[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await page(from);
+    if (error) return { data: null, error };
+    rows.push(...((data || []) as T[]));
+    if (!data || data.length < PAGE) return { data: rows, error: null };
+  }
+}
+
 export function useReports() {
   const { merchant } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -84,10 +97,14 @@ export function useReports() {
     setError(null);
     try {
       const [salesRes, devicesRes, accessoriesRes, branchesRes, merchantUsersRes] = await Promise.all([
-        supabase.from('sales')
+        // every invoice, a page at a time: one request stops at the server's
+        // row cap (1,000), and the totals would silently leave the rest out
+        readAllPages<Sale>(from => supabase.from('sales')
           .select('*, items:sale_items(*, device:devices(*), accessory:accessories(*))')
           .eq('merchant_id', merchant.id)
-          .order('sale_date', { ascending: false }),
+          .order('sale_date', { ascending: false })
+          .order('id', { ascending: true })
+          .range(from, from + PAGE - 1)),
         supabase.from('devices').select('*').eq('merchant_id', merchant.id),
         supabase.from('accessories').select('*').eq('merchant_id', merchant.id),
         supabase.from('branches').select('*').eq('merchant_id', merchant.id).eq('is_active', true),
@@ -135,20 +152,22 @@ export function useReports() {
     for (let i = 0; i < days; i++) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = localDayKey(date);
       reports.set(dateStr, { date: dateStr, totalSales: 0, totalRevenue: 0, totalCost: 0, profit: 0, devicesSold: 0, accessoriesSold: 0 });
     }
     for (const sale of salesData) {
-      const dateStr = new Date(sale.sale_date).toISOString().split('T')[0];
+      // the shop's calendar day: a sale at 01:00 in Riyadh used to land on the
+      // day before, which is what UTC calls it
+      const dateStr = localDayKey(sale.sale_date);
       const report = reports.get(dateStr);
       if (report) {
         report.totalSales++;
-        report.totalRevenue += Number(sale.total_amount);
+        report.totalRevenue += saleTotal(sale);
         for (const item of (sale.items || [])) {
           report.totalCost += Number(item.cost_at_sale) * item.quantity;
           if (item.device_id) report.devicesSold++; else report.accessoriesSold += item.quantity;
         }
-        report.profit = report.totalRevenue - report.totalCost;
+        report.profit += saleProfit(sale);
       }
     }
     return Array.from(reports.values()).reverse();
@@ -168,12 +187,12 @@ export function useReports() {
       const report = reports.get(dateStr);
       if (report) {
         report.totalSales++;
-        report.totalRevenue += Number(sale.total_amount);
+        report.totalRevenue += saleTotal(sale);
         for (const item of (sale.items || [])) {
           report.totalCost += Number(item.cost_at_sale) * item.quantity;
           if (item.device_id) report.devicesSold++; else report.accessoriesSold += item.quantity;
         }
-        report.profit = report.totalRevenue - report.totalCost;
+        report.profit += saleProfit(sale);
       }
     }
     return Array.from(reports.values()).reverse();
@@ -239,6 +258,7 @@ export function useReports() {
 
   const getEmployeePerformance = useCallback((): EmployeePerformance[] => {
     const empMap: Map<string, EmployeePerformance> = new Map();
+    const netBy = new Map<string, number>();
     
     for (const sale of salesData) {
       if (!sale.sold_by) continue;
@@ -251,15 +271,18 @@ export function useReports() {
       };
 
       existing.totalSales++;
-      existing.totalRevenue += Number(sale.total_amount);
+      existing.totalRevenue += saleTotal(sale);
+      netBy.set(userId, (netBy.get(userId) || 0) + saleNet(sale));
       
       for (const item of (sale.items || [])) {
         existing.totalCost += Number(item.cost_at_sale) * item.quantity;
         if (item.device_id) existing.devicesSold++; else existing.accessoriesSold += item.quantity;
       }
 
-      existing.totalProfit = existing.totalRevenue - existing.totalCost;
-      existing.margin = existing.totalRevenue > 0 ? (existing.totalProfit / existing.totalRevenue) * 100 : 0;
+      // profit and margin on the amount before VAT — VAT is not earned
+      existing.totalProfit += saleProfit(sale);
+      const net = netBy.get(userId) || 0;
+      existing.margin = net > 0 ? (existing.totalProfit / net) * 100 : 0;
       existing.avgSaleValue = existing.totalSales > 0 ? existing.totalRevenue / existing.totalSales : 0;
       
       empMap.set(userId, existing);
@@ -271,31 +294,25 @@ export function useReports() {
   const getSummaryStats = useCallback(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-    const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+    // this month so far, against the same stretch of last month. The old
+    // window also ended at 00:00 of last month's final day, so that day's
+    // sales were never counted.
+    const { thisStart, lastStart, lastEnd } = monthToDateWindows();
 
     const todaySales = salesData.filter(s => new Date(s.sale_date) >= today);
-    const thisMonthSales = salesData.filter(s => new Date(s.sale_date) >= thisMonth);
+    const thisMonthSales = salesData.filter(s => new Date(s.sale_date) >= thisStart);
     const lastMonthSales = salesData.filter(s => {
       const d = new Date(s.sale_date);
-      return d >= lastMonth && d <= lastMonthEnd;
+      return d >= lastStart && d <= lastEnd;
     });
 
-    const todayRevenue = todaySales.reduce((sum, s) => sum + Number(s.total_amount), 0);
-    const thisMonthRevenue = thisMonthSales.reduce((sum, s) => sum + Number(s.total_amount), 0);
-    const lastMonthRevenue = lastMonthSales.reduce((sum, s) => sum + Number(s.total_amount), 0);
+    const todayRevenue = todaySales.reduce((sum, s) => sum + saleTotal(s), 0);
+    const thisMonthRevenue = thisMonthSales.reduce((sum, s) => sum + saleTotal(s), 0);
+    const lastMonthRevenue = lastMonthSales.reduce((sum, s) => sum + saleTotal(s), 0);
     const revenueChange = lastMonthRevenue > 0 ? ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 : 0;
 
-    let todayProfit = 0, thisMonthProfit = 0;
-    for (const sale of todaySales) {
-      const cost = (sale.items || []).reduce((sum, i) => sum + Number(i.cost_at_sale) * i.quantity, 0);
-      todayProfit += Number(sale.total_amount) - cost;
-    }
-    for (const sale of thisMonthSales) {
-      const cost = (sale.items || []).reduce((sum, i) => sum + Number(i.cost_at_sale) * i.quantity, 0);
-      thisMonthProfit += Number(sale.total_amount) - cost;
-    }
+    const todayProfit = todaySales.reduce((sum, s) => sum + saleProfit(s), 0);
+    const thisMonthProfit = thisMonthSales.reduce((sum, s) => sum + saleProfit(s), 0);
 
     const inventory = getInventoryReport();
     return {

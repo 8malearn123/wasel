@@ -4,6 +4,7 @@ import { useAuth } from './useAuth';
 import type { Branch, MerchantUser, Profile } from '@/types/database';
 import { toast } from 'sonner';
 import { loadCustomRolesConfig, storedRoleFor, CUSTOM_ROLE_BASE } from '@/lib/customRolesStore';
+import { friendlyError } from '@/lib/errors';
 
 export function useBranches() {
   const { merchant, refreshMerchantData } = useAuth();
@@ -48,9 +49,9 @@ export function useBranches() {
     if (!error) {
       await fetchBranches();
       await refreshMerchantData();
-      toast.success('Branch added');
+      toast.success('تمت إضافة الفرع');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     }
 
     return { data, error };
@@ -67,9 +68,9 @@ export function useBranches() {
     if (!error) {
       await fetchBranches();
       await refreshMerchantData();
-      toast.success('Branch updated');
+      toast.success('تم تحديث الفرع');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     }
 
     return { data, error };
@@ -85,9 +86,9 @@ export function useBranches() {
     if (!error) {
       await fetchBranches();
       await refreshMerchantData();
-      toast.success('Branch removed');
+      toast.success('تم حذف الفرع');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     }
 
     return { error };
@@ -192,9 +193,9 @@ export function useMerchantUsers() {
 
     if (!error) {
       await fetchUsers();
-      toast.success('User role updated');
+      toast.success('تم تحديث دور المستخدم');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     }
 
     return { error };
@@ -208,9 +209,9 @@ export function useMerchantUsers() {
 
     if (!error) {
       await fetchUsers();
-      toast.success('User branch updated');
+      toast.success('تم تحديث فرع المستخدم');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     }
 
     return { error };
@@ -224,9 +225,9 @@ export function useMerchantUsers() {
 
     if (!error) {
       await fetchUsers();
-      toast.success('User deactivated');
+      toast.success('تم إيقاف المستخدم');
     } else {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     }
 
     return { error };

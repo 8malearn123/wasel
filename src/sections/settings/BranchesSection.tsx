@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { 
   Building2, 
   Plus, 
@@ -78,6 +79,9 @@ export default function BranchesSection() {
   const warehouseCount = activeBranches.filter(b => b.is_warehouse).length;
   const { branchLimit } = useCurrentPlan();
   const isAtLimit = activeBranches.length >= branchLimit;
+  // more active branches than the plan allows: the server let it happen and
+  // should not have; the screen says so instead of «limit reached»
+  const isOverLimit = branchLimit < 9999 && activeBranches.length > branchLimit;
   const isOwner = merchantUser?.role === 'owner';
   // the database lets the owner and the admin edit branches (is_owner_or_admin);
   // asking the platform for a new one stays with the owner (branch_requests policy)
@@ -88,9 +92,9 @@ export default function BranchesSection() {
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-4 mb-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          className="p-4 rounded-xl bg-card border border-border shadow-sm">
+          className="p-4 rounded-[18px] border shadow-md tone-signal">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center tone-tile">
               <Building2 className="w-5 h-5 text-primary" />
             </div>
             <div>
@@ -104,9 +108,9 @@ export default function BranchesSection() {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-          className="p-4 rounded-xl bg-card border border-border shadow-sm">
+          className="p-4 rounded-[18px] border shadow-md tone-violet">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center tone-tile">
               <Warehouse className="w-5 h-5 text-accent" />
             </div>
             <div>
@@ -117,9 +121,9 @@ export default function BranchesSection() {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          className="p-4 rounded-xl bg-card border border-border shadow-sm">
+          className="p-4 rounded-[18px] border shadow-md tone-peach">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center tone-tile">
               <Building2 className="w-5 h-5 text-success" />
             </div>
             <div>
@@ -130,9 +134,9 @@ export default function BranchesSection() {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-          className="p-4 rounded-xl bg-card border border-border shadow-sm">
+          className="p-4 rounded-[18px] border shadow-md tone-rose">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center tone-tile">
               <Send className="w-5 h-5 text-warning" />
             </div>
             <div>
@@ -151,9 +155,22 @@ export default function BranchesSection() {
           className="mb-6 p-4 rounded-xl bg-warning/10 border border-warning/20 flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-foreground">تم الوصول للحد الأقصى للفروع</p>
-            <p className="text-sm text-muted-foreground"> باقتك الحالية تسمح بـ {branchLimit} فرع فقط. يمكنك طلب إضافة فرع جديد أو ترقية باقتك.
-            </p>
+            {isOverLimit ? (
+              <>
+                <p className="font-semibold text-foreground">عدد الفروع النشطة أكبر مما تسمح به باقتك</p>
+                <p className="text-sm text-muted-foreground">
+                  لديك {activeBranches.length} فروع نشطة وباقتك تسمح بـ {branchLimit}. أوقف الفروع الزائدة أو{' '}
+                  <Link to="/subscription" className="text-primary underline underline-offset-2">رقِّ باقتك</Link>.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="font-semibold text-foreground">تم الوصول للحد الأقصى للفروع</p>
+                <p className="text-sm text-muted-foreground"> باقتك الحالية تسمح بـ {branchLimit} فرع فقط. يمكنك طلب إضافة فرع جديد أو{' '}
+                  <Link to="/subscription" className="text-primary underline underline-offset-2">ترقية باقتك</Link>.
+                </p>
+              </>
+            )}
           </div>
         </motion.div>
       )}

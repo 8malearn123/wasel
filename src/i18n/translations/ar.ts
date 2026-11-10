@@ -466,7 +466,7 @@ export const ar: TranslationKeys = {
     noSalesData: "لا توجد بيانات مبيعات بعد",
     noBranchData: "لا توجد بيانات فروع",
     currency: "ر.س",
-    changeFromLastMonth: "مقارنة بالشهر الماضي",
+    changeFromLastMonth: "مقارنة بنفس الفترة من الشهر الماضي",
   },
 
   // Users

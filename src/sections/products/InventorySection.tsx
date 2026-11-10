@@ -262,10 +262,10 @@ export default function InventorySection() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 rounded-xl bg-card border border-border shadow-sm"
+          className="p-4 rounded-[18px] border shadow-md tone-signal"
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center tone-tile">
               <Smartphone className="w-5 h-5 text-primary" />
             </div>
             <div>
@@ -282,10 +282,10 @@ export default function InventorySection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="p-4 rounded-xl bg-card border border-border shadow-sm"
+          className="p-4 rounded-[18px] border shadow-md tone-violet"
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center tone-tile">
               <Package className="w-5 h-5 text-success" />
             </div>
             <div>
@@ -299,10 +299,10 @@ export default function InventorySection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="p-4 rounded-xl bg-card border border-border shadow-sm"
+          className="p-4 rounded-[18px] border shadow-md tone-peach"
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center tone-tile">
               <Tag className="w-5 h-5 text-warning" />
             </div>
             <div>
@@ -316,10 +316,10 @@ export default function InventorySection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="p-4 rounded-xl bg-card border border-border shadow-sm"
+          className="p-4 rounded-[18px] border shadow-md tone-rose"
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center tone-tile">
               <span className="text-accent font-bold">ر.س</span>
             </div>
             <div>
@@ -337,7 +337,7 @@ export default function InventorySection() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="bg-card rounded-xl border border-border shadow-md overflow-hidden"
+        className="bg-card rounded-[18px] border border-border shadow-md overflow-hidden"
       >
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           {/* in Arabic the kinds sit on the right and add / favourites / search on the left */}
@@ -536,9 +536,11 @@ export default function InventorySection() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => setEditingDevice(device)}>
+                              <PermissionGate require="products.update">
+                                <DropdownMenuItem onClick={() => setEditingDevice(device)}>
                                 <Edit className="w-4 h-4 mr-2" /> {t.inventory.edit}
                               </DropdownMenuItem>
+                              </PermissionGate>
                               <DropdownMenuSeparator />
                               <PermissionGate require="products.delete">
                                                               <DropdownMenuItem
@@ -681,9 +683,11 @@ export default function InventorySection() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => setEditingAccessory(accessory)}>
+                                <PermissionGate require="products.update">
+                                  <DropdownMenuItem onClick={() => setEditingAccessory(accessory)}>
                                   <Edit className="w-4 h-4 mr-2" /> {t.inventory.edit}
                                 </DropdownMenuItem>
+                                </PermissionGate>
                                 <DropdownMenuSeparator />
                                 <PermissionGate require="products.delete">
                                                                   <DropdownMenuItem
@@ -715,9 +719,11 @@ export default function InventorySection() {
               <div className="text-center py-20">
                 <Wrench className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
                 <p className="text-muted-foreground">{t.inventory.noRepairParts}</p>
-                <Button className="mt-4" onClick={() => setShowAddRepairPart(true)}>
-                  {t.inventory.addFirstPart}
-                </Button>
+                <PermissionGate require="products.create">
+                  <Button className="mt-4" onClick={() => setShowAddRepairPart(true)}>
+                    {t.inventory.addFirstPart}
+                  </Button>
+                </PermissionGate>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -775,13 +781,17 @@ export default function InventorySection() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => setEditingRepairPart(part)}>
+                                <PermissionGate require="products.update">
+                                  <DropdownMenuItem onClick={() => setEditingRepairPart(part)}>
                                   <Edit className="w-4 h-4 mr-2" /> {t.inventory.edit}
                                 </DropdownMenuItem>
+                                </PermissionGate>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem className="text-destructive" onClick={() => deletePart(part.id)}>
-                                  <Trash2 className="w-4 h-4 mr-2" /> {t.inventory.delete}
-                                </DropdownMenuItem>
+                                <PermissionGate require="products.delete">
+                                  <DropdownMenuItem className="text-destructive" onClick={() => deletePart(part.id)}>
+                                    <Trash2 className="w-4 h-4 mr-2" /> {t.inventory.delete}
+                                  </DropdownMenuItem>
+                                </PermissionGate>
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </td>
@@ -897,8 +907,11 @@ function DeviceDialog({
     category: ''
   });
 
-  useState(() => {
-    if (device) {
+  // Fill the form from the item being edited each time the dialog opens
+  // (a useState initialiser ran once, before any item was chosen, so the
+  // edit form opened empty)
+  useEffect(() => {
+    if (open && device) {
       setFormData({
         imei: device.imei,
         model: device.model,
@@ -913,7 +926,7 @@ function DeviceDialog({
         category: device.category || ''
       });
     }
-  });
+  }, [device, open]);
 
   // Fill whatever the shop hasn't typed yet from a device just like this one.
   // Anything already entered is left exactly as it is.
@@ -959,7 +972,7 @@ function DeviceDialog({
     e.preventDefault();
     setLoading(true);
     
-    await onSave({
+    const result = await onSave({
       imei: formData.imei,
       model: formData.model,
       brand: formData.brand || null,
@@ -972,6 +985,8 @@ function DeviceDialog({
       condition: formData.condition,
       category: formData.category || null,
     });
+    // a refused or failed save keeps the dialog and what was typed; the hook says why
+    if (result?.error) { setLoading(false); return; }
     
     setLoading(false);
     onOpenChange(false);
@@ -1227,8 +1242,11 @@ function AccessoryDialog({
     branch_id: ''
   });
 
-  useState(() => {
-    if (accessory) {
+  // Fill the form from the item being edited each time the dialog opens
+  // (a useState initialiser ran once, before any item was chosen, so the
+  // edit form opened empty)
+  useEffect(() => {
+    if (open && accessory) {
       setFormData({
         sku: accessory.sku,
         name: accessory.name,
@@ -1241,13 +1259,13 @@ function AccessoryDialog({
         branch_id: accessory.branch_id || ''
       });
     }
-  });
+  }, [accessory, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
-    await onSave({
+    const result = await onSave({
       sku: formData.sku,
       name: formData.name,
       category: formData.category || null,
@@ -1258,6 +1276,8 @@ function AccessoryDialog({
       min_quantity: parseInt(formData.min_quantity) || 5,
       branch_id: formData.branch_id || null
     });
+    // a refused or failed save keeps the dialog and what was typed; the hook says why
+    if (result?.error) { setLoading(false); return; }
     
     setLoading(false);
     onOpenChange(false);
@@ -1440,8 +1460,11 @@ function RepairPartDialog({
     notes: ''
   });
 
-  useState(() => {
-    if (part) {
+  // Fill the form from the item being edited each time the dialog opens
+  // (a useState initialiser ran once, before any item was chosen, so the
+  // edit form opened empty)
+  useEffect(() => {
+    if (open && part) {
       setFormData({
         sku: part.sku,
         name: part.name,
@@ -1456,13 +1479,13 @@ function RepairPartDialog({
         notes: part.notes || ''
       });
     }
-  });
+  }, [part, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
-    await onSave({
+    const result = await onSave({
       sku: formData.sku,
       name: formData.name,
       category: formData.category || null,
@@ -1475,6 +1498,8 @@ function RepairPartDialog({
       branch_id: formData.branch_id || null,
       notes: formData.notes || null
     });
+    // a refused or failed save keeps the dialog and what was typed; the hook says why
+    if (result?.error) { setLoading(false); return; }
     
     setLoading(false);
     onOpenChange(false);

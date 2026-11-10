@@ -74,7 +74,7 @@ export default function TransfersSection() {
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-6 p-4 rounded-xl bg-card border border-border shadow-sm grid grid-cols-3 divide-x divide-border rtl:divide-x-reverse"
+        className="mb-6 p-4 rounded-[18px] bg-card border border-border shadow-md grid grid-cols-3 divide-x divide-border rtl:divide-x-reverse"
       >
         {[
           { count: pendingCount, label: isRTL ? "بانتظار الموافقة" : "Pending approval", tone: "text-warning" },
@@ -105,7 +105,7 @@ export default function TransfersSection() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="bg-card rounded-xl border border-border shadow-md overflow-hidden"
+        className="bg-card rounded-[18px] border border-border shadow-md overflow-hidden"
       >
         {loading ? (
           <div className="flex items-center justify-center py-20">

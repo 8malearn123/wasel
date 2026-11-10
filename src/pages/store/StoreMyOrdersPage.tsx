@@ -30,6 +30,8 @@ export function StoreMyOrdersPage({ store }: { store: StoreSettings }) {
   const { slug } = useParams<{ slug: string }>();
   const [orders, setOrders] = useState<OrderWithStatus[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
+  // Claude Design: current orders apart from past ones (delivered, cancelled, refunded)
+  const [tab, setTab] = useState<'current' | 'past'>('current');
   const currency = store.currency_symbol || 'ر.س';
 
   // Load + refresh statuses from server (using last 4 of saved phone)
@@ -79,6 +81,11 @@ export function StoreMyOrdersPage({ store }: { store: StoreSettings }) {
     );
   }
 
+  const PAST = ['delivered', 'cancelled', 'refunded'];
+  const past = orders.filter(o => PAST.includes(o.status || ''));
+  const current = orders.filter(o => !PAST.includes(o.status || ''));
+  const shown = tab === 'current' ? current : past;
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
       <StoreSEO title={`طلباتي - ${store.store_name}`} noindex />
@@ -87,8 +94,29 @@ export function StoreMyOrdersPage({ store }: { store: StoreSettings }) {
         <Badge variant="secondary">{orders.length} طلب</Badge>
       </div>
 
+      <div className="inline-flex rounded-xl border bg-card p-1 mb-4" role="tablist" aria-label="تصنيف الطلبات">
+        {([['current', 'الحالية', current.length], ['past', 'السابقة', past.length]] as const).map(([key, label, n]) => (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={tab === key}
+            onClick={() => setTab(key)}
+            className={`h-9 px-4 rounded-lg text-sm font-medium transition-colors ${tab === key ? 'text-white' : 'text-muted-foreground hover:bg-muted'}`}
+            style={tab === key ? { background: 'hsl(var(--store-primary))' } : undefined}
+          >
+            {label} · {n}
+          </button>
+        ))}
+      </div>
+      {shown.length === 0 && (
+        <p className="text-sm text-muted-foreground text-center py-10">
+          {tab === 'current' ? 'لا توجد طلبات حالية' : 'لا توجد طلبات سابقة'}
+        </p>
+      )}
+
       <div className="space-y-3">
-        {orders.map((o) => {
+        {shown.map((o) => {
           const meta = STATUS_META[o.status || 'pending'] || STATUS_META.pending;
           const StatusIcon = meta.icon;
           const isOpen = openId === o.order_number;

@@ -1,3 +1,4 @@
+import { FlaskConical } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
@@ -24,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n";
 import { toast } from "sonner";
 import type { MerchantUser } from "@/types/database";
+import { STAT_TONES } from '@/lib/tones';
 
 // Extra HR details are kept on this device (no employees table in the DB)
 interface HRInfo {
@@ -180,7 +182,8 @@ export default function HRSection() {
     const next = { ...hr, [muId]: info };
     setHr(next);
     try { localStorage.setItem(HR_KEY, JSON.stringify(next)); } catch { /* ignore */ }
-    toast.success(isRTL ? "تم حفظ بيانات الموظف" : "Employee info saved");
+    // kept in this browser only until payroll has a table on the server
+    toast.success(isRTL ? "حُفظت بيانات الموظف على هذا الجهاز فقط" : "Employee info saved on this device only");
   };
 
   const activeUsers = users.filter(u => u.is_active);
@@ -189,6 +192,19 @@ export default function HRSection() {
 
   return (
     <>
+      {/* Salaries, titles and hire dates live in this browser (localStorage),
+          not on the server: say so, so nobody takes them for shared records */}
+      <div className="flex items-start gap-2 p-3 rounded-lg border border-warning/40 bg-warning/5 mb-4 text-sm">
+        <FlaskConical className="w-4 h-4 text-warning shrink-0 mt-0.5" />
+        <div>
+          <p className="font-medium text-foreground">{isRTL ? 'محفوظة على هذا الجهاز فقط' : 'Saved on this device only'}</p>
+          <p className="text-muted-foreground">
+            {isRTL
+              ? 'الرواتب والمسميات وتواريخ التعيين هنا تُحفظ في هذا المتصفح، ولا تظهر على جهاز آخر أو لمستخدم آخر، حتى تُربط الرواتب بالخادم. المبيعات والعمولات محسوبة من بيانات المتجر الحقيقية.'
+              : 'Salaries, titles and hire dates here are kept in this browser only — not on other devices or for other users — until payroll is connected to the server. Sales and commissions come from the shop\'s real data.'}
+          </p>
+        </div>
+      </div>
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-4 mb-6">
         {[
@@ -198,9 +214,9 @@ export default function HRSection() {
           { icon: TrendingUp, value: `${teamMonthSales.toLocaleString()} ر.س`, label: isRTL ? "مبيعات الفريق هذا الشهر" : "Team Sales This Month", color: "text-primary bg-primary/10" },
         ].map((card, i) => (
           <motion.div key={card.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-            className="p-4 rounded-xl bg-card border border-border shadow-sm">
+            className={`p-4 rounded-[18px] border shadow-md ${STAT_TONES[i % 4]}`}>
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${card.color}`}>
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center tone-tile ${card.color}`}>
                 <card.icon className="w-5 h-5" />
               </div>
               <div>
