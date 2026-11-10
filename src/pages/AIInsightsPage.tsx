@@ -95,11 +95,10 @@ export default function AIInsightsPage() {
       title={t ? 'المساعد الذكي' : 'AI assistant'}
       subtitle={t ? 'اسأل عن بياناتك، واحصل على إجابات وتوصيات فورية' : 'Ask about your data and get answers and pointers'}
     >
-      {usingMock('ai') && <MockDataBanner what={t ? 'خدمة الذكاء الاصطناعي' : 'the AI service'} />}
 
       {/* Claude Design: the conversation beside the forecast and today's notes */}
-      <div className="grid gap-5 lg:grid-cols-3 items-start">
-        <div className="lg:col-span-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3 items-start">
+        <div className="lg:col-span-2 min-w-0">
           <AssistantChat
             isRTL={isRTL} name={firstName}
             sales={data.sales} reorder={data.reorder}
@@ -109,7 +108,7 @@ export default function AIInsightsPage() {
           />
         </div>
 
-        <div className="space-y-5">
+        <div className="space-y-5 min-w-0">
           {data.canSales && (
             <ForecastCard isRTL={isRTL} sales={data.sales} loading={data.loading} onAsk={() => setAsk('forecast')} />
           )}
@@ -120,6 +119,8 @@ export default function AIInsightsPage() {
               {t ? 'ملاحظات اليوم' : 'Today’s notes'}
             </h3>
             <p className="text-xs text-muted-foreground mb-4">{t ? 'مبنية على بيانات متجرك' : 'Drawn from your shop’s data'}</p>
+            {/* the notes alone come from the AI service; the conversation and forecast are real figures */}
+            {usingMock('ai') && <MockDataBanner what={t ? 'خدمة الذكاء الاصطناعي' : 'the AI service'} />}
             <div className="flex flex-wrap items-center gap-2 mb-4">
               <div className="inline-flex flex-wrap items-center gap-1 p-1 rounded-xl bg-muted/50 border border-border">
                 {DOMAINS.map(item => (

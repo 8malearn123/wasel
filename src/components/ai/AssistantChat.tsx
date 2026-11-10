@@ -78,7 +78,8 @@ export function AssistantChat({
       if (!f) return [t ? 'لا توجد مبيعات كافية في الأسابيع الأخيرة لتقدير الأسبوع القادم.' : 'Not enough recent sales to estimate next week.'];
       return [
         t ? `التقدير للأسبوع القادم: نحو ${formatSar(f.value, { decimals: 0 })} ${cur}.` : `Next week: about ${formatSar(f.value, { decimals: 0 })} ${cur}.`,
-        t ? `مبني على متوسط آخر ${f.basisWeeks} أسابيع فيها مبيعات — تقدير حسابي وليس وعداً.` : `The average of the last ${f.basisWeeks} weeks with sales — arithmetic, not a promise.`,
+        t ? `مبني على ${f.basisWeeks === 1 ? 'آخر أسبوع فيه مبيعات' : f.basisWeeks === 2 ? 'متوسط آخر أسبوعين فيهما مبيعات' : `متوسط آخر ${f.basisWeeks} أسابيع فيها مبيعات`} — تقدير حسابي وليس وعداً.`
+          : `${f.basisWeeks === 1 ? 'The last week with sales' : `The average of the last ${f.basisWeeks} weeks with sales`} — arithmetic, not a promise.`,
       ];
     }
     const cutoff = Date.now() - 7 * 864e5;
@@ -181,9 +182,9 @@ export function AssistantChat({
       </div>
 
       <form onSubmit={submit} className="mt-4 flex items-center gap-2 rounded-2xl border bg-muted/40 p-2">
-        <input value={text} onChange={e => setText(e.target.value)}
+        <input value={text} aria-label={t ? "سؤالك" : "Your question"} onChange={e => setText(e.target.value)}
           placeholder={t ? 'اسأل عن مبيعاتك، مخزونك، منتجاتك...' : 'Ask about your sales, stock, products…'}
-          className="flex-1 bg-transparent px-3 py-2 text-sm outline-none placeholder:text-muted-foreground" />
+          className="flex-1 min-w-0 bg-transparent px-3 py-2 text-sm outline-none placeholder:text-muted-foreground" />
         <button type="submit" disabled={!text.trim() || loading} aria-label={t ? 'إرسال' : 'Send'}
           className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shadow-sm disabled:opacity-50">
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 rtl:-scale-x-100" />}
