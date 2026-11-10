@@ -652,6 +652,9 @@ export const AR_EN: Record<string, string> = {
   "قاعدة العملاء": "Customer Base",
   "قاعدة عملاء أساسية": "Basic customer base",
   // notices that used to be written in English only
+  "السلة": "Cart",
+  "ابحث عن جوال، سماعة، كفر…": "Search for a phone, headphones, a case…",
+  "تم نسخ رقم الشحنة": "Tracking number copied",
   "تمت إضافة الفرع": "Branch added", "تم تحديث الفرع": "Branch updated", "تم حذف الفرع": "Branch removed",
   "تم تحديث دور المستخدم": "User role updated", "تم تحديث فرع المستخدم": "User branch updated", "تم إيقاف المستخدم": "User deactivated",
   "تم تحديث التصنيف": "Category updated",
